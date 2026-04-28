@@ -1,0 +1,27 @@
+{
+  "name": "game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "apk:init": "npx cap init \"Nayza Jangi\" \"uz.nayzajangi.app\" --web-dir=public",
+    "apk:add:android": "npx cap add android",
+    "apk:sync": "npx cap sync android",
+    "apk:open": "npx cap open android"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@supabase/supabase-js": "^2.105.1",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  }
+}
