@@ -3,16 +3,25 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: true,
+        methods: ['GET', 'POST']
+    }
+});
 
+app.use(cors({ origin: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const leaderboardDbPath = path.join(__dirname, 'ratings.json');
+const usersDbPath = path.join(__dirname, 'users.json');
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
@@ -39,11 +48,31 @@ function normalizeEntry(body) {
     return {
         name: String(body?.name || 'Jangchi').slice(0, 30),
         flag: String(body?.flag || '🏳️').slice(0, 8),
+        phone: String(body?.phone || '').replace(/\D/g, '').slice(-15),
         score: Math.max(0, Number(body?.score) || 0),
         wins: Math.max(0, Number(body?.wins) || 0),
         games: Math.max(0, Number(body?.games) || 0),
         updatedAt: Date.now()
     };
+}
+
+function loadUsers() {
+    try {
+        if (!fs.existsSync(usersDbPath)) return [];
+        const raw = fs.readFileSync(usersDbPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveUsers(users) {
+    fs.writeFileSync(usersDbPath, JSON.stringify(users, null, 2), 'utf8');
+}
+
+function hashPassword(password) {
+    return crypto.createHash('sha256').update(String(password || '')).digest('hex');
 }
 
 async function fetchLeaderboardRows(limit) {
@@ -73,18 +102,21 @@ async function fetchLeaderboardRows(limit) {
 async function upsertLeaderboardEntry(entry) {
     if (!supabaseEnabled) {
         const rows = loadLeaderboard();
-        const key = `${entry.name}|${entry.flag}`;
-        const existingIndex = rows.findIndex((r) => `${r.name}|${r.flag}` === key);
+        const key = entry.phone ? `phone:${entry.phone}` : `${entry.name}|${entry.flag}`;
+        const idx = entry.phone
+            ? rows.findIndex((r) => `phone:${String(r.phone || '')}` === key)
+            : rows.findIndex((r) => `${r.name}|${r.flag}` === key);
 
-        if (existingIndex === -1) {
+        if (idx === -1) {
             rows.push(entry);
         } else {
-            const prev = rows[existingIndex];
-            rows[existingIndex] = {
+            const prev = rows[idx];
+            rows[idx] = {
                 ...prev,
                 score: Math.max(prev.score || 0, entry.score),
                 wins: Math.max(prev.wins || 0, entry.wins),
                 games: Math.max(prev.games || 0, entry.games),
+                phone: entry.phone || prev.phone || '',
                 updatedAt: Date.now()
             };
         }
@@ -92,7 +124,7 @@ async function upsertLeaderboardEntry(entry) {
         return;
     }
 
-    const playerKey = `${entry.name}|${entry.flag}`;
+    const playerKey = entry.phone ? `phone:${entry.phone}` : `${entry.name}|${entry.flag}`;
     const { data: existing, error: existingError } = await supabase
         .from('leaderboard')
         .select('score,wins,games')
@@ -138,8 +170,10 @@ app.post('/api/leaderboard', async (req, res) => {
         // Emergency fallback so gameplay never breaks if DB is down.
         try {
             const rows = loadLeaderboard();
-            const key = `${entry.name}|${entry.flag}`;
-            const existingIndex = rows.findIndex((r) => `${r.name}|${r.flag}` === key);
+            const key = entry.phone ? `phone:${entry.phone}` : `${entry.name}|${entry.flag}`;
+            const existingIndex = entry.phone
+                ? rows.findIndex((r) => `phone:${String(r.phone || '')}` === key)
+                : rows.findIndex((r) => `${r.name}|${r.flag}` === key);
             if (existingIndex === -1) rows.push(entry);
             else {
                 const prev = rows[existingIndex];
@@ -148,6 +182,7 @@ app.post('/api/leaderboard', async (req, res) => {
                     score: Math.max(prev.score || 0, entry.score),
                     wins: Math.max(prev.wins || 0, entry.wins),
                     games: Math.max(prev.games || 0, entry.games),
+                    phone: entry.phone || prev.phone || '',
                     updatedAt: Date.now()
                 };
             }
@@ -157,6 +192,74 @@ app.post('/api/leaderboard', async (req, res) => {
             res.status(500).json({ ok: false, error: 'leaderboard_write_failed' });
         }
     }
+});
+
+app.post('/api/auth/register', (req, res) => {
+    const name = String(req.body?.name || '').trim().slice(0, 30);
+    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const age = Math.max(7, Math.min(99, Number(req.body?.age) || 0));
+    const password = String(req.body?.password || '');
+    if (!name || phone.length < 7 || !age || password.length < 4) {
+        res.status(400).json({ ok: false, error: 'invalid_payload' });
+        return;
+    }
+    const users = loadUsers();
+    if (users.some((u) => u.phone === phone)) {
+        res.status(409).json({ ok: false, error: 'phone_exists' });
+        return;
+    }
+    const user = {
+        id: String(Date.now()),
+        name,
+        phone,
+        age,
+        passwordHash: hashPassword(password),
+        createdAt: Date.now()
+    };
+    users.push(user);
+    saveUsers(users);
+    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
+});
+
+app.post('/api/auth/login', (req, res) => {
+    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const password = String(req.body?.password || '');
+    const users = loadUsers();
+    const user = users.find((u) => u.phone === phone);
+    if (!user || user.passwordHash !== hashPassword(password)) {
+        res.status(401).json({ ok: false, error: 'invalid_credentials' });
+        return;
+    }
+    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const newPassword = String(req.body?.newPassword || '');
+    if (phone.length < 7 || newPassword.length < 4) {
+        res.status(400).json({ ok: false, error: 'invalid_payload' });
+        return;
+    }
+    const users = loadUsers();
+    const idx = users.findIndex((u) => u.phone === phone);
+    if (idx === -1) {
+        res.status(404).json({ ok: false, error: 'user_not_found' });
+        return;
+    }
+    users[idx].passwordHash = hashPassword(newPassword);
+    saveUsers(users);
+    res.json({ ok: true });
+});
+
+app.get('/api/auth/user', (req, res) => {
+    const phone = String(req.query.phone || '').replace(/\D/g, '').slice(-15);
+    const users = loadUsers();
+    const user = users.find((u) => u.phone === phone);
+    if (!user) {
+        res.status(404).json({ ok: false, error: 'user_not_found' });
+        return;
+    }
+    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
 });
 
 const waitingQueue = [];
@@ -194,6 +297,7 @@ io.on('connection', (socket) => {
                 Math.max(0, Number(player2.profile?.superPowers ?? 5))
             ],
             defending: [false, false],
+            ducking: [false, false],
             inFlight: false,
             options: existingOptions
         };
@@ -499,6 +603,19 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('duckState', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1) return;
+        room.ducking[playerIndex] = !!(data && data.active);
+        socket.to(roomName).emit('duckStateChanged', {
+            playerIndex,
+            active: room.ducking[playerIndex]
+        });
+    });
+
     socket.on('throwComplete', (data) => {
         const { hitOpponent, hitX, hitY, hitAngle } = data;
         const roomName = socket.roomId;
@@ -509,63 +626,73 @@ io.on('connection', (socket) => {
         if (!room.inFlight) return; // ignore stale/duplicate completion events
         room.inFlight = false;
 
-        if (hitOpponent) {
-            let targetIndex = data.targetIndex !== undefined ? data.targetIndex : (room.turnIndex === 0 ? 1 : 0);
-            const hitZone = data.hitZone || 'body';
-            const baseDamage = Number(data.damage) || 0;
+        const applyHitPayload = (payload) => {
+            if (!payload || !payload.hitOpponent) return;
+            let targetIndex = payload.targetIndex !== undefined ? payload.targetIndex : (room.turnIndex === 0 ? 1 : 0);
+            const hitZone = payload.hitZone || 'body';
+            const baseDamage = Number(payload.damage) || 0;
             const defending = room.defending && room.defending[targetIndex];
+            const ducking = room.ducking && room.ducking[targetIndex];
             let appliedDamage = baseDamage;
             let shieldHit = false;
             let shieldActiveBlock = false;
             let shieldlessDefense = false;
             let shieldBroke = false;
-            
-            if (room.shield[targetIndex] > 0 && defending && (hitZone === 'head' || hitZone === 'body')) {
+            let duckDodged = false;
+
+            if (ducking && (hitZone === 'head' || hitZone === 'body')) {
+                appliedDamage = 0;
+                duckDodged = true;
+            } else if (room.shield[targetIndex] > 0 && defending && (hitZone === 'head' || hitZone === 'body')) {
                 shieldHit = true;
                 shieldActiveBlock = true;
                 appliedDamage = 0;
                 room.shield[targetIndex] -= 1;
-            } else if (room.shield[targetIndex] > 0 && data.isShieldHit && hitZone === 'body') {
+            } else if (room.shield[targetIndex] > 0 && payload.isShieldHit && hitZone === 'body') {
                 shieldHit = true;
                 appliedDamage = Math.min(5, Math.max(0, baseDamage || 5));
                 room.shield[targetIndex] -= 1;
-            } else {
-                if (room.shield[targetIndex] <= 0 && defending) {
-                    shieldlessDefense = true;
-                    appliedDamage = Math.max(5, Math.round(baseDamage * 0.45));
-                }
+            } else if (room.shield[targetIndex] <= 0 && defending) {
+                shieldlessDefense = true;
+                appliedDamage = Math.max(5, Math.round(baseDamage * 0.45));
             }
-
             if (shieldHit && room.shield[targetIndex] <= 0) {
                 room.shield[targetIndex] = 0;
                 shieldBroke = true;
             }
-
             if (appliedDamage > 0) room.health[targetIndex] -= appliedDamage;
-            
             io.to(roomName).emit('hitRegistered', {
-                targetIndex: targetIndex,
+                targetIndex,
                 damage: appliedDamage,
                 newHealth: room.health[targetIndex],
                 newShield: room.shield[targetIndex],
-                hitX: hitX,
-                hitY: hitY,
+                hitX: payload.hitX,
+                hitY: payload.hitY,
                 isShieldHit: shieldHit,
                 shieldActiveBlock,
                 shieldlessDefense,
                 shieldBroke,
+                duckDodged,
                 hitZone,
-                hitAngle: hitAngle
+                hitAngle: payload.hitAngle
             });
-
             if (room.health[targetIndex] <= 0) {
                 room.gameOver = true;
                 io.to(roomName).emit('gameOver', { winnerIndex: room.turnIndex });
-                return;
+                return true;
             }
+            return false;
+        };
+
+        if (hitOpponent) {
+            if (applyHitPayload({ ...data, hitOpponent: true, hitX, hitY, hitAngle })) return;
         } else {
             // Tell others about ground hit so it sticks
             io.to(roomName).emit('groundHit', { hitX, hitY, hitAngle });
+        }
+
+        if (data.extraHit && !room.gameOver) {
+            if (applyHitPayload({ ...data.extraHit, hitOpponent: true })) return;
         }
 
         room.turnIndex = room.turnIndex === 0 ? 1 : 0;
