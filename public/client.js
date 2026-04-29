@@ -1,4 +1,9 @@
-const IS_NATIVE_APP = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+const IS_NATIVE_APP = (() => {
+    const viaCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    const viaProtocol = String(window.location?.protocol || '').startsWith('capacitor');
+    const viaAndroidWebView = /android/i.test(String(navigator.userAgent || '')) && window.location?.hostname === 'localhost' && !window.location?.port;
+    return viaCapacitor || viaProtocol || viaAndroidWebView;
+})();
 const REMOTE_SERVER_URL = 'https://nayza-jangi.onrender.com';
 const API_BASE = IS_NATIVE_APP ? REMOTE_SERVER_URL : '';
 const FALLBACK_SOCKET = {
@@ -3180,14 +3185,26 @@ function saveProfile() {
 }
 
 async function authRequest(endpoint, payload) {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload || {})
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.error || 'auth_failed');
-    return data;
+    const request = async (base) => {
+        const res = await fetch(`${base}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload || {})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'auth_failed');
+        return data;
+    };
+    try {
+        return await request(API_BASE);
+    } catch (err) {
+        const fallbackAllowed = (!API_BASE || API_BASE !== REMOTE_SERVER_URL) && IS_NATIVE_APP;
+        if (fallbackAllowed) return request(REMOTE_SERVER_URL);
+        if (String(err?.message || '').toLowerCase().includes('failed to fetch')) {
+            throw new Error('server_unreachable');
+        }
+        throw err;
+    }
 }
 
 function applyAuthedUser(user) {
@@ -3211,6 +3228,16 @@ function setAuthStatus(msg, isError = false) {
     if (!authStatus) return;
     authStatus.innerText = msg || '';
     authStatus.style.color = isError ? '#fca5a5' : '#86efac';
+}
+
+function formatAuthError(err) {
+    const code = String(err?.message || 'auth_failed');
+    if (code === 'server_unreachable') return "Server bilan aloqa yo'q. Internetni tekshirib qayta urinib ko'ring.";
+    if (code === 'phone_exists') return "Bu telefon raqam allaqachon ro'yxatdan o'tgan.";
+    if (code === 'invalid_credentials') return "Telefon raqam yoki parol noto'g'ri.";
+    if (code === 'user_not_found') return "Foydalanuvchi topilmadi.";
+    if (code === 'invalid_payload') return "Kiritilgan ma'lumotlarni tekshiring.";
+    return `Xatolik: ${code}`;
 }
 
 function switchAuthTab(mode) {
@@ -3749,7 +3776,7 @@ if (btnAuthRegister) {
             setAuthStatus("Ro'yxatdan o'tildi.");
             applyAuthedUser(data.user);
         } catch (err) {
-            setAuthStatus(`Xatolik: ${err.message}`, true);
+            setAuthStatus(formatAuthError(err), true);
         }
     });
 }
@@ -3768,7 +3795,7 @@ if (btnAuthLogin) {
             setAuthStatus("Muvaffaqiyatli kirildi.");
             applyAuthedUser(data.user);
         } catch (err) {
-            setAuthStatus(`Xatolik: ${err.message}`, true);
+            setAuthStatus(formatAuthError(err), true);
         }
     });
 }
@@ -3786,7 +3813,7 @@ if (btnAuthReset) {
             });
             setAuthStatus("Parol yangilandi. Endi kirishingiz mumkin.");
         } catch (err) {
-            setAuthStatus(`Xatolik: ${err.message}`, true);
+            setAuthStatus(formatAuthError(err), true);
         }
     });
 }
