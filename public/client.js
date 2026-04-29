@@ -227,6 +227,7 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 let bgMusicNode = null;
 let bgMusicAudio = null;
+let audioUnlockAttached = false;
 let musicVolume = parseFloat(localStorage.getItem('nayza_music_volume') || '0.4');
 let musicMuted = localStorage.getItem('nayza_music_muted') === '1';
 let sfxVolume = parseFloat(localStorage.getItem('nayza_sfx_volume') || '0.8');
@@ -255,6 +256,9 @@ function initAudio() {
         bgMusicAudio = new Audio('music.mp3');
         bgMusicAudio.loop = true;
         bgMusicAudio.preload = 'auto';
+        bgMusicAudio.playsInline = true;
+        bgMusicAudio.setAttribute('playsinline', 'true');
+        bgMusicAudio.setAttribute('webkit-playsinline', 'true');
     }
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     bgMusicAudio.play().catch(() => {});
@@ -265,8 +269,12 @@ function playSfx(key, volumeScale = 1) {
     const src = sfxPaths[key];
     if (!src) return;
     try {
+        if (!audioCtx) initAudio();
+        else if (audioCtx.state === 'suspended') audioCtx.resume();
         const audio = new Audio(src);
         audio.preload = 'auto';
+        audio.playsInline = true;
+        audio.setAttribute('playsinline', 'true');
         audio.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
         audio.play().catch(() => {});
     } catch (_) {}
@@ -3946,6 +3954,17 @@ applyLanguage();
 updateShieldUI();
 updateCampaignUI();
 updateSuperUI();
+if (!audioUnlockAttached) {
+    const unlockAudio = () => {
+        initAudio();
+        document.removeEventListener('pointerdown', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+        audioUnlockAttached = false;
+    };
+    document.addEventListener('pointerdown', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+    audioUnlockAttached = true;
+}
 if (authModal) authModal.classList.remove('hidden');
 menuScreen.classList.add('hidden');
 if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
