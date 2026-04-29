@@ -51,9 +51,15 @@ function loadTextureWithBgRemoval(url) {
             tex.image = canvas;
             tex.needsUpdate = true;
         }
+        loadedTex.generateMipmaps = true;
+        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
+        loadedTex.magFilter = THREE.LinearFilter;
+        loadedTex.anisotropy = 8;
     });
-    tex.minFilter = THREE.NearestFilter;
-    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 8;
     return tex;
 }
 
@@ -84,9 +90,10 @@ function loadTexture(url, options = {}) {
 
         loadedTex.needsUpdate = true;
     });
-    tex.minFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
+    tex.anisotropy = 8;
     return tex;
 }
 
@@ -350,11 +357,19 @@ camera.position.set(0, 0, 1000);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 
+function getPreferredPixelRatio() {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.min(dpr, IS_NATIVE_APP ? 3 : 2.5);
+}
+
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(getPreferredPixelRatio());
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
+if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+else renderer.outputEncoding = THREE.sRGBEncoding;
 container.appendChild(renderer.domElement);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
@@ -832,6 +847,7 @@ function updateCameraBounds() {
     camera.right = frustumSize * aspect / 2;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(getPreferredPixelRatio());
     
     // Ensure world width of 2200 is always visible (zoomed in closer)
     const minWorldWidth = 3200;
@@ -3177,7 +3193,7 @@ let myStats = JSON.parse(localStorage.getItem('nayza_stats')) || {
     games: 0,
     wins: 0
 };
-let authPhone = String(localStorage.getItem('nayza_auth_phone') || '').replace(/\D/g, '').slice(-15);
+let authPhone = normalizePhone(localStorage.getItem('nayza_auth_phone') || '');
 let authUserCache = null;
 try {
     const rawAuthUser = localStorage.getItem('nayza_auth_user');
@@ -3239,7 +3255,12 @@ function applyAuthedUser(user) {
 }
 
 function normalizePhone(value) {
-    return String(value || '').replace(/\D/g, '').slice(-15);
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 9) return `998${digits}`;
+    if (digits.length === 12 && digits.startsWith('998')) return digits;
+    if (digits.length > 9) return `998${digits.slice(-9)}`;
+    return '';
 }
 
 function setAuthStatus(msg, isError = false) {
@@ -3250,6 +3271,7 @@ function setAuthStatus(msg, isError = false) {
 
 function formatAuthError(err) {
     const code = String(err?.message || 'auth_failed');
+    if (code === 'endpoint_not_found') return "Server auth endpointlari hali yangilanmagan. Birozdan so'ng qayta urinib ko'ring.";
     if (code === 'local_api_missing') return "Lokal server yangilanmagan. `npm run dev` ni qayta ishga tushiring.";
     if (code === 'server_unreachable') return "Server bilan aloqa yo'q. Internetni tekshirib qayta urinib ko'ring.";
     if (code === 'phone_exists') return "Bu telefon raqam allaqachon ro'yxatdan o'tgan.";
