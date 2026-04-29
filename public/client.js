@@ -5,7 +5,13 @@ const IS_NATIVE_APP = (() => {
     return viaCapacitor || viaProtocol || viaAndroidWebView;
 })();
 const REMOTE_SERVER_URL = 'https://nayza-jangi.onrender.com';
-const API_BASE = IS_NATIVE_APP ? REMOTE_SERVER_URL : '';
+const WEB_LOCAL_BASE = (() => {
+    const origin = String(window.location?.origin || '');
+    if (origin.startsWith('http://') || origin.startsWith('https://')) return origin;
+    return '';
+})();
+// Web: use current local server. Native app: use Render.
+const API_BASE = IS_NATIVE_APP ? REMOTE_SERVER_URL : (WEB_LOCAL_BASE || REMOTE_SERVER_URL);
 const FALLBACK_SOCKET = {
     connected: false,
     id: null,
@@ -102,14 +108,32 @@ const nayzabozTexture = loadTextureWithBgRemoval('Nayzaboz.png');
 const qargaTexture = loadTextureWithBgRemoval('qarga.png');
 const daraxtKattaTexture = loadTexture('daraxtkatta.png');
 const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
+const qalaTexture = loadTexture('Qala.png');
+const devorTusiqTexture = loadTexture('devortusiq.png');
 const ottomanArcherTextures = {
     shieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
     shieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20monjal.png'),
     shieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%202%20himoya.png'),
+    shieldDuck: loadTexture('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png'),
+    shieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png'),
     shieldBreak: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png'),
     noShieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
     noShieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png'),
     noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
+    noShieldDuck: loadTexture('Kamonlik%20Usmoniy/utirganqalqonsizkamonboz.png'),
+    noShieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png'),
+    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
+};
+const ottomanSpearmanTextures = {
+    shieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
+    shieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
+    shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
+    shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
+    shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
+    noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
+    noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
+    noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
+    noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
     celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
 };
 
@@ -150,6 +174,8 @@ const superCountText = document.getElementById('super-count');
 const duckButton = document.getElementById('duck-button');
 const doubleButton = document.getElementById('double-button');
 const doubleCountText = document.getElementById('double-count');
+const wallButton = document.getElementById('wall-button');
+const wallCountText = document.getElementById('wall-count');
 const gameOptionsModal = document.getElementById('game-options-modal');
 const btnConfirmCreate = document.getElementById('btn-confirm-create');
 const btnCancelOptions = document.getElementById('btn-cancel-options');
@@ -164,19 +190,28 @@ const musicVolumeInput = document.getElementById('music-volume');
 const musicMuteInput = document.getElementById('music-mute');
 const sfxVolumeInput = document.getElementById('sfx-volume');
 const sfxMuteInput = document.getElementById('sfx-mute');
+const settingsMusicVolumeInput = document.getElementById('settings-music-volume');
+const settingsSfxVolumeInput = document.getElementById('settings-sfx-volume');
+const settingsMusicTrackSelect = document.getElementById('settings-music-track');
+const inGameMusicTrackSelect = document.getElementById('in-game-music-track');
 const btnVolDown = document.getElementById('btn-vol-down');
 const btnVolMute = document.getElementById('btn-vol-mute');
 const btnVolUp = document.getElementById('btn-vol-up');
 const campaignLevelText = document.getElementById('campaign-level-text');
+const hudScoreText = document.getElementById('hud-score');
 const btnResetCampaign = document.getElementById('btn-reset-campaign');
 const btnBuySuper = document.getElementById('btn-buy-super');
 const superCountSettings = document.getElementById('super-count-settings');
 const btnBuyDouble = document.getElementById('btn-buy-double');
 const doubleCountSettings = document.getElementById('double-count-settings');
+const btnBuyWall = document.getElementById('btn-buy-wall');
+const wallCountSettings = document.getElementById('wall-count-settings');
 const shopScoreText = document.getElementById('shop-score-text');
 const shopSuperMaxText = document.getElementById('shop-super-max');
 const shopDoubleMaxText = document.getElementById('shop-double-max');
+const shopWallMaxText = document.getElementById('shop-wall-max');
 const btnShop = document.getElementById('btn-shop');
+const btnLogout = document.getElementById('btn-logout');
 const shopModal = document.getElementById('shop-modal');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const singleModeModal = document.getElementById('single-mode-modal');
@@ -232,6 +267,7 @@ let musicVolume = parseFloat(localStorage.getItem('nayza_music_volume') || '0.4'
 let musicMuted = localStorage.getItem('nayza_music_muted') === '1';
 let sfxVolume = parseFloat(localStorage.getItem('nayza_sfx_volume') || '0.8');
 let sfxMuted = localStorage.getItem('nayza_sfx_muted') === '1';
+let selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
 const sfxPaths = {
     button: 'mp3/buttonlarbosilganda.mp3',
     aim: 'mp3/monjalgaolish.mp3',
@@ -253,13 +289,24 @@ function initAudio() {
     }
     if (audioCtx.state === 'suspended') audioCtx.resume();
     if (!bgMusicAudio) {
-        bgMusicAudio = new Audio('music.mp3');
+        bgMusicAudio = new Audio(selectedMusicTrack);
         bgMusicAudio.loop = true;
         bgMusicAudio.preload = 'auto';
         bgMusicAudio.playsInline = true;
         bgMusicAudio.setAttribute('playsinline', 'true');
         bgMusicAudio.setAttribute('webkit-playsinline', 'true');
     }
+    bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
+    bgMusicAudio.play().catch(() => {});
+}
+
+function applySelectedMusicTrack() {
+    if (!bgMusicAudio) return;
+    const currentSrc = String(bgMusicAudio.src || '');
+    if (currentSrc.endsWith(selectedMusicTrack)) return;
+    bgMusicAudio.src = selectedMusicTrack;
+    bgMusicAudio.loop = true;
+    bgMusicAudio.preload = 'auto';
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     bgMusicAudio.play().catch(() => {});
 }
@@ -340,6 +387,7 @@ function saveMusicSettings() {
     localStorage.setItem('nayza_music_muted', musicMuted ? '1' : '0');
     localStorage.setItem('nayza_sfx_volume', String(sfxVolume));
     localStorage.setItem('nayza_sfx_muted', sfxMuted ? '1' : '0');
+    localStorage.setItem('nayza_music_track', selectedMusicTrack);
 }
 
 function applyMusicSettings() {
@@ -347,9 +395,14 @@ function applyMusicSettings() {
     if (musicMuteInput) musicMuteInput.checked = musicMuted;
     if (sfxVolumeInput) sfxVolumeInput.value = String(sfxVolume);
     if (sfxMuteInput) sfxMuteInput.checked = sfxMuted;
+    if (settingsMusicVolumeInput) settingsMusicVolumeInput.value = String(musicVolume);
+    if (settingsSfxVolumeInput) settingsSfxVolumeInput.value = String(sfxVolume);
+    if (settingsMusicTrackSelect) settingsMusicTrackSelect.value = selectedMusicTrack;
+    if (inGameMusicTrackSelect) inGameMusicTrackSelect.value = selectedMusicTrack;
     if (bgMusicAudio) bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     if (btnVolMute) btnVolMute.innerText = musicMuted ? '🔇' : '🔊';
     if (btnMusicToggle) btnMusicToggle.innerText = musicMuted ? '🔇' : '🔊';
+    applySelectedMusicTrack();
 }
 
 // Three.js Setup (Cinematic)
@@ -469,6 +522,7 @@ function createWeatherSystem(type) {
 let entities = [];
 let clouds = [];
 let decorTrees = [];
+let mapBackdrops = [];
 let currentSeed = 0.5;
 function seededRandom() {
     const x = Math.sin(currentSeed++) * 10000;
@@ -521,6 +575,8 @@ function buildMap(mapType, weather = 'sunny') {
     createWeatherSystem(weatherType);
 
     // Decorative mixed trees placed away from fighters, with depth layers
+    mapBackdrops.forEach((obj) => scene.remove(obj));
+    mapBackdrops = [];
     decorTrees.forEach((tree) => scene.remove(tree));
     decorTrees = [];
     let treesPerSide = 6;
@@ -539,6 +595,30 @@ function buildMap(mapType, weather = 'sunny') {
         smallTreeChance = 0.52;
     }
     const safeRadius = Math.max(1300, currentBattleDistance / 2 + 420);
+    if (mapType === 'castle') {
+        for (const side of [-1, 1]) {
+            const qala = new THREE.Mesh(
+                new THREE.PlaneGeometry(920, 660),
+                new THREE.MeshBasicMaterial({
+                    map: qalaTexture,
+                    transparent: true,
+                    side: THREE.FrontSide,
+                    alphaTest: 0.02,
+                    depthWrite: false
+                })
+            );
+            qala.position.set(
+                side * (safeRadius + 260),
+                ground.position.y + 300,
+                -280
+            );
+            if (weatherType === 'night') qala.material.color.setRGB(0.72, 0.76, 0.9);
+            else if (weatherType === 'storm') qala.material.color.setRGB(0.82, 0.86, 0.95);
+            else if (weatherType === 'snow') qala.material.color.setRGB(0.93, 0.95, 1);
+            scene.add(qala);
+            mapBackdrops.push(qala);
+        }
+    }
     for (let side = -1; side <= 1; side += 2) {
         for (let i = 0; i < treesPerSide; i++) {
             const useSmallTree = Math.random() < smallTreeChance;
@@ -547,15 +627,16 @@ function buildMap(mapType, weather = 'sunny') {
             const depthBand = Math.floor(Math.random() * 3); // 0: front, 1: middle, 2: back
             const depthOffsetX = depthBand * (110 + Math.random() * 70);
             const zByBand = depthBand === 0 ? (30 + Math.random() * 50) : (depthBand === 1 ? (-40 + Math.random() * 50) : (-150 + Math.random() * 70));
-            const opacityByBand = depthBand === 0 ? (0.94 + Math.random() * 0.06) : (depthBand === 1 ? (0.82 + Math.random() * 0.12) : (0.72 + Math.random() * 0.14));
+            const opacityByBand = depthBand === 0 ? (0.98 + Math.random() * 0.02) : (depthBand === 1 ? (0.94 + Math.random() * 0.04) : (0.9 + Math.random() * 0.05));
             const tree = new THREE.Mesh(
                 new THREE.PlaneGeometry(w, h),
                 new THREE.MeshBasicMaterial({
                     map: useSmallTree ? daraxtKichkinaTexture : daraxtKattaTexture,
                     transparent: true,
                     opacity: opacityByBand,
-                    side: THREE.DoubleSide,
-                    alphaTest: 0.2
+                    side: THREE.FrontSide,
+                    alphaTest: 0.01,
+                    depthWrite: false
                 })
             );
             tree.position.set(
@@ -570,18 +651,8 @@ function buildMap(mapType, weather = 'sunny') {
             tree.userData.swayPhase = Math.random() * Math.PI * 2;
             tree.userData.depthBand = depthBand;
 
-            // Weather tint per tree for better scene mood.
-            if (weatherType === 'storm') {
-                tree.material.color.setRGB(0.78, 0.84, 0.9);
-            } else if (weatherType === 'rain') {
-                tree.material.color.setRGB(0.86, 0.9, 0.95);
-            } else if (weatherType === 'snow') {
-                tree.material.color.setRGB(0.95, 0.97, 1.0);
-            } else if (weatherType === 'desert') {
-                tree.material.color.setRGB(0.95, 0.9, 0.8);
-            } else {
-                tree.material.color.setRGB(1, 1, 1);
-            }
+            // Keep trees crisp and neutral in all weather types.
+            tree.material.color.setRGB(1, 1, 1);
             scene.add(tree);
             decorTrees.push(tree);
         }
@@ -618,7 +689,7 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            bird.position.set((seededRandom() - 0.5) * 3200, 180 + seededRandom() * 520, -30 + seededRandom() * 60);
+            bird.position.set((seededRandom() - 0.5) * 3200, 320 + seededRandom() * 560, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -630,17 +701,7 @@ function spawnEntities(options) {
             });
         }
     }
-    if (options.animals) {
-        for(let i=0; i<4; i++) {
-            const animal = createAnimal();
-            const leftX = -currentBattleDistance / 2;
-            const rightX = currentBattleDistance / 2;
-            const px = i % 2 === 0 ? leftX + (seededRandom()*400 - 200) : rightX + (seededRandom()*400 - 200);
-            animal.position.set(px, ground.position.y + 100, 0);
-            scene.add(animal);
-            entities.push({ type: 'animal', mesh: animal, alive: true });
-        }
-    }
+    // Animals removed by request: only birds are used as obstacles.
 }
 
 const bloodParticles = [];
@@ -700,9 +761,11 @@ const pHeight = 160;
 function createSoldier(isP1, charType = 0) {
     const group = new THREE.Group();
     
-    const normalizedCharType = 2;
+    const normalizedCharType = Number(charType || 0);
     group.userData.charType = normalizedCharType;
     group.userData.isOttomanArcher = normalizedCharType === 2;
+    group.userData.isOttomanSpearman = normalizedCharType === 3;
+    group.userData.isOttomanUnit = group.userData.isOttomanArcher || group.userData.isOttomanSpearman;
     group.userData.shieldBroken = false;
     group.userData.visualState = 'idle';
     group.userData.forceState = null;
@@ -723,9 +786,10 @@ function createSoldier(isP1, charType = 0) {
     let selectedTexture = soldierTexture;
     if (normalizedCharType === 1) selectedTexture = nayzabozTexture;
     if (normalizedCharType === 2) selectedTexture = ottomanArcherTextures.shieldIdle;
+    if (normalizedCharType === 3) selectedTexture = ottomanSpearmanTextures.shieldIdle;
     const tex = selectedTexture.clone();
     tex.needsUpdate = true;
-    if (group.userData.isOttomanArcher) {
+    if (group.userData.isOttomanUnit) {
         tex.repeat.set(1, 1);
     } else {
         tex.repeat.set(0.26, 0.78); // 0.26 width, 0.78 height cuts off the top 22% (numbers)
@@ -737,7 +801,7 @@ function createSoldier(isP1, charType = 0) {
         map: tex, 
         transparent: true, 
         side: THREE.DoubleSide, 
-        alphaTest: group.userData.isOttomanArcher ? 0.2 : 0.5,
+        alphaTest: group.userData.isOttomanUnit ? 0.2 : 0.5,
         toneMapped: false,
         fog: false
     });
@@ -746,12 +810,12 @@ function createSoldier(isP1, charType = 0) {
     
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
-    const planeWidth = (group.userData.isOttomanArcher ? 560 : 360) * mobileScaleBoost;
-    const planeHeight = (group.userData.isOttomanArcher ? 430 : 480) * mobileScaleBoost;
+    const planeWidth = (group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360)) * mobileScaleBoost;
+    const planeHeight = (group.userData.isOttomanUnit ? 430 : 480) * mobileScaleBoost;
     const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
     const planeMesh = new THREE.Mesh(planeGeo, soldierMat);
     planeMesh.position.y = planeHeight / 2;
-    if (group.userData.isOttomanArcher) planeMesh.position.x = 0;
+    if (group.userData.isOttomanUnit) planeMesh.position.x = 0;
     group.userData.planeMesh = planeMesh;
     
     // Proper shadow casting requires a material that responds to light + castShadow flag
@@ -766,7 +830,7 @@ function createSoldier(isP1, charType = 0) {
     group.add(group.userData.torso);
     
     // Keep feet on the visible top of the ground.
-    group.position.y = ground.position.y + (group.userData.isOttomanArcher ? 78 : 86);
+    group.position.y = ground.position.y + (group.userData.isOttomanUnit ? 78 : 86);
     
     scene.add(group);
     return group;
@@ -776,27 +840,75 @@ function getOttomanArcherTexture(model, state) {
     const broken = model.userData.shieldBroken;
     if (state === 'celebrate') return ottomanArcherTextures.celebrate;
     if (state === 'break') return ottomanArcherTextures.shieldBreak;
+    if (state === 'hurt') return broken ? ottomanArcherTextures.noShieldHurt : ottomanArcherTextures.shieldHurt;
+    if (state === 'duck') return broken ? ottomanArcherTextures.noShieldDuck : ottomanArcherTextures.shieldDuck;
     if (state === 'defend') return broken ? ottomanArcherTextures.noShieldDefend : ottomanArcherTextures.shieldDefend;
     if (state === 'aim') return broken ? ottomanArcherTextures.noShieldAim : ottomanArcherTextures.shieldAim;
     return broken ? ottomanArcherTextures.noShieldIdle : ottomanArcherTextures.shieldIdle;
 }
 
+function getOttomanSpearmanTexture(model, state) {
+    const broken = model.userData.shieldBroken;
+    if (state === 'break') return ottomanSpearmanTextures.shieldBreak;
+    if (state === 'celebrate') return ottomanSpearmanTextures.celebrate;
+    if (!broken) {
+        if (state === 'defend') return ottomanSpearmanTextures.shieldDefend;
+        if (state === 'aim') return ottomanSpearmanTextures.shieldAim;
+        if (state === 'afterShot') return ottomanSpearmanTextures.shieldAfterShot;
+        return ottomanSpearmanTextures.shieldIdle;
+    }
+    if (state === 'defend') return ottomanSpearmanTextures.noShieldDefend;
+    if (state === 'aim') return ottomanSpearmanTextures.noShieldAim;
+    if (state === 'afterShot') return ottomanSpearmanTextures.noShieldAfterShot;
+    return ottomanSpearmanTextures.noShieldIdle;
+}
+
+function getOttomanTexture(model, state) {
+    if (model.userData.isOttomanSpearman) return getOttomanSpearmanTexture(model, state);
+    return getOttomanArcherTexture(model, state);
+}
+
 function setSoldierVisual(model, state) {
     if (!model || !model.userData) return;
-    model.userData.visualState = state;
+    let targetState = state;
+    const modelIndex = getPlayerIndexByModel(model);
+    if (model.userData.isOttomanArcher && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
+        targetState = 'duck';
+    }
+    model.userData.visualState = targetState;
 
-    if (!model.userData.isOttomanArcher) {
+    if (!model.userData.isOttomanUnit) {
         const frameMap = { idle: 0, load: 0.25, aim: 0.5, afterShot: 0.75 };
         if (model.userData.tex) model.userData.tex.offset.set(frameMap[state] || 0, 0);
         return;
     }
 
-    const texture = getOttomanArcherTexture(model, state);
+    const texture = getOttomanTexture(model, targetState);
     const mat = model.userData.mats && model.userData.mats[0];
     if (!mat || mat.map === texture) return;
     mat.map = texture;
     mat.needsUpdate = true;
     model.userData.tex = texture;
+}
+
+function getSoldierWeatherTone(weather) {
+    if (weather === 'night') return 0.62;
+    if (weather === 'storm') return 0.7;
+    if (weather === 'rain') return 0.82;
+    if (weather === 'snow') return 0.9;
+    return 1;
+}
+
+function applySoldierWeatherTone() {
+    const tone = getSoldierWeatherTone(weatherType);
+    [p1Model, p2Model, p3Model].forEach((model) => {
+        if (!model || !model.userData || !model.userData.mats) return;
+        model.userData.mats.forEach((mat) => {
+            if (!mat || !mat.color) return;
+            mat.color.setRGB(tone, tone, tone);
+            mat.needsUpdate = true;
+        });
+    });
 }
 
 const pos1X = -1300;
@@ -816,12 +928,15 @@ let secondarySpear = null;
 const spearGroup = new THREE.Group();
 
 const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 110), new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.8 }));
+spearShaft.name = 'spear-shaft';
 spearShaft.rotateZ(Math.PI / 2);
 spearShaft.castShadow = true;
 spearGroup.add(spearShaft);
 const spearTipGroup = new THREE.Group();
+spearTipGroup.name = 'spear-tip-group';
 spearTipGroup.position.x = 60;
 const spearBlade = new THREE.Mesh(new THREE.ConeGeometry(5, 25, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.2 }));
+spearBlade.name = 'spear-blade';
 spearBlade.rotateZ(-Math.PI / 2);
 spearBlade.castShadow = true;
 spearTipGroup.add(spearBlade);
@@ -830,6 +945,7 @@ spearGroup.add(spearTipGroup);
 // add feathers
 const featherMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
 const feather1 = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 1), featherMat);
+feather1.name = 'spear-feather';
 feather1.position.x = -50;
 spearGroup.add(feather1);
 
@@ -846,6 +962,27 @@ secondarySpearGroup.traverse((obj) => {
 });
 scene.add(secondarySpearGroup);
 
+function applySpearVisualStyle(isSpearmanThrow) {
+    const styleScale = isSpearmanThrow ? 1.3 : 1;
+    [spearGroup, secondarySpearGroup].forEach((group) => {
+        if (!group) return;
+        const shaft = group.getObjectByName('spear-shaft');
+        const tipGroup = group.getObjectByName('spear-tip-group');
+        const blade = group.getObjectByName('spear-blade');
+        const feather = group.getObjectByName('spear-feather');
+        if (shaft) shaft.scale.set(1, styleScale, styleScale);
+        if (tipGroup) tipGroup.scale.set(styleScale, styleScale, styleScale);
+        if (blade && blade.material && blade.material.color) {
+            blade.material.color.setHex(isSpearmanThrow ? 0xe2e8f0 : 0xffffff);
+            blade.material.needsUpdate = true;
+        }
+        if (feather && feather.material && feather.material.color) {
+            feather.material.color.setHex(isSpearmanThrow ? 0x7c3aed : 0xff0000);
+            feather.material.needsUpdate = true;
+        }
+    });
+}
+
 
 let baseZoom = 1;
 
@@ -859,9 +996,9 @@ function updateCameraBounds() {
     renderer.setPixelRatio(getPreferredPixelRatio());
     
     // Ensure world width of 2200 is always visible (zoomed in closer)
-    const minWorldWidth = 3200;
+    const minWorldWidth = 2800;
     const zoomX = (frustumSize * aspect) / minWorldWidth;
-    const mobileZoomBoost = isMobileView ? 1.22 : 1;
+    const mobileZoomBoost = isMobileView ? 1.24 : 1.1;
     baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5); // Allow zooming in more
     
     if(cameraState === 'static') {
@@ -895,7 +1032,8 @@ let isDoubleSpearActive = false;
 let pendingDoubleShot = null;
 const SUPER_BUY_COST = 150;
 const DOUBLE_BUY_COST = 220;
-const DOUBLE_MAX = 5;
+const WALL_BUY_COST = 500;
+const WALL_HP_MAX = 5;
 let enemyShieldUsesRemaining = 0;
 let enemySuperUsesRemaining = 0;
 let enemyShieldAutoUsedThisFlight = false;
@@ -913,6 +1051,12 @@ let currentOpponentProfile = null;
 let pendingFriendInvite = null;
 let pendingFriendAddRequest = null;
 let randomWaitTimer = null;
+const wallStates = {
+    0: { active: false, x: 0, hp: 0, mesh: null, ownerIndex: 0 },
+    1: { active: false, x: 0, hp: 0, mesh: null, ownerIndex: 1 }
+};
+let isWallPlacementMode = false;
+let isWallDragActive = false;
 const aiProfiles = {
     easy: { angleJitter: 11, powerJitter: 260, shieldChance: 0.22, skillBias: 0.25 },
     normal: { angleJitter: 6, powerJitter: 160, shieldChance: 0.4, skillBias: 0.5 },
@@ -926,40 +1070,79 @@ function updateCampaignUI() {
     if (campaignLevelText) campaignLevelText.innerText = `Lv.${singleCampaignLevel}`;
     if (levelBadge) levelBadge.innerText = gameMode === 'single' ? `${levelWord} ${singleCampaignLevel}` : `${levelWord} -`;
     const menuScoreText = document.getElementById('menu-score-text');
-    if (menuScoreText) menuScoreText.innerText = String(Math.max(0, Number(myStats.score || 0)));
+    if (menuScoreText) {
+        const score = Number(myStats.score || 0);
+        menuScoreText.innerText = score < 0 ? `Qarz: ${score}` : String(score);
+        menuScoreText.style.color = score < 0 ? '#ef4444' : '#fbbf24';
+    }
+    if (hudScoreText) {
+        const score = Number(myStats.score || 0);
+        hudScoreText.innerText = score < 0 ? `Qarz: ${score}` : `Ball: ${score}`;
+        hudScoreText.style.color = score < 0 ? '#ef4444' : '#fbbf24';
+        hudScoreText.style.borderColor = score < 0 ? 'rgba(239,68,68,0.45)' : 'rgba(251,191,36,0.32)';
+    }
 }
 
 function getCampaignConfig(level) {
     const lvl = Math.max(1, level || 1);
     const distance = Math.min(3600, 2500 + (lvl - 1) * 60);
     const birds = 5 + (lvl - 1) * 2;
-    let hitRate = 0.25;
+    let hitRate = 0.4;
     let enemySuperCharges = 1;
     let enemySuperUseChance = 0.08;
+    let enemyCount = 1;
+    let enemyWallEnabled = false;
+    let enemyShieldAutoUses = 2;
+    let enemySuperAutoUses = 2;
     if (lvl >= 11 && lvl <= 20) {
-        const t = (lvl - 11) / 9;
-        hitRate = 0.333 + t * (0.5 - 0.333);
-        enemySuperCharges = 1 + Math.round(t); // 1 -> 2
-        enemySuperUseChance = 0.14 + t * 0.12; // 14% -> 26%
-    } else if (lvl > 20 && lvl < 30) {
-        hitRate = 0.5;
+        hitRate = 0.6;
+        enemySuperCharges = 2;
+        enemySuperUseChance = 0.24;
+        enemyShieldAutoUses = 3;
+        enemySuperAutoUses = 3;
+    } else if (lvl >= 21 && lvl <= 30) {
+        hitRate = 0.8;
         enemySuperCharges = 3;
         enemySuperUseChance = 0.35;
-    } else if (lvl >= 30) {
-        hitRate = 0.3;
+        enemyWallEnabled = true;
+        enemyShieldAutoUses = 5;
+        enemySuperAutoUses = 5;
+    } else if (lvl >= 31 && lvl <= 40) {
+        hitRate = 0.84;
+        enemySuperCharges = 3;
+        enemySuperUseChance = 0.4;
+        enemyCount = 2;
+        enemyShieldAutoUses = 5;
+        enemySuperAutoUses = 5;
+    } else if (lvl >= 41 && lvl <= 60) {
+        // Hardcore campaign band: two enemies + higher AI precision/ability pressure.
+        hitRate = 0.92;
         enemySuperCharges = 4;
-        enemySuperUseChance = 0.42;
+        enemySuperUseChance = 0.55;
+        enemyCount = 2;
+        enemyWallEnabled = true;
+        enemyShieldAutoUses = 7;
+        enemySuperAutoUses = 7;
+    } else if (lvl > 60) {
+        hitRate = 0.95;
+        enemySuperCharges = 5;
+        enemySuperUseChance = 0.62;
+        enemyCount = 2;
+        enemyWallEnabled = true;
+        enemyShieldAutoUses = 8;
+        enemySuperAutoUses = 8;
     }
     return {
         level: lvl,
         distance,
         birds,
-        enemyCount: lvl >= 30 ? 2 : 1,
+        enemyCount,
+        enemyWallEnabled,
         hitRate,
         enemySuperCharges,
         enemySuperUseChance,
-        enemyShieldAutoUses: lvl <= 10 ? 2 : (lvl <= 20 ? 3 : 5),
-        enemySuperAutoUses: lvl <= 10 ? 2 : (lvl <= 20 ? 3 : 5)
+        enemyShieldAutoUses,
+        enemySuperAutoUses
     };
 }
 
@@ -982,6 +1165,13 @@ function modelForPlayer(index) {
     if (index === 0) return p1Model;
     if (index === 2 && p3Model) return p3Model;
     return p2Model;
+}
+
+function getPlayerIndexByModel(model) {
+    if (model === p1Model) return 0;
+    if (model === p2Model) return 1;
+    if (p3Model && model === p3Model) return 2;
+    return -1;
 }
 
 function shieldForPlayer(index) {
@@ -1014,6 +1204,13 @@ function updateSuperUI() {
     if (superCountSettings) superCountSettings.innerText = String(Math.max(0, myProfile.superPowers || mySuper || 0));
     if (doubleCountText) doubleCountText.innerText = String(Math.max(0, Number(myProfile.doubleSpears || 0)));
     if (doubleCountSettings) doubleCountSettings.innerText = String(Math.max(0, Number(myProfile.doubleSpears || 0)));
+    if (wallCountText) wallCountText.innerText = String(Math.max(0, Number(myProfile.walls || 0)));
+    if (wallCountSettings) wallCountSettings.innerText = String(Math.max(0, Number(myProfile.walls || 0)));
+    if (wallButton) {
+        const hasWall = Number(myProfile.walls || 0) > 0;
+        wallButton.classList.toggle('broken', !hasWall);
+        wallButton.classList.toggle('active', isWallPlacementMode);
+    }
     if (doubleButton) {
         const hasDouble = Number(myProfile.doubleSpears || 0) > 0;
         doubleButton.classList.toggle('broken', !hasDouble);
@@ -1026,25 +1223,125 @@ function updateSuperUI() {
 }
 
 function updateShopUI() {
-    const score = Math.max(0, Number(myStats.score || 0));
+    const score = Number(myStats.score || 0);
     const doubleCount = Math.max(0, Number(myProfile.doubleSpears || 0));
     if (shopScoreText) shopScoreText.innerText = String(score);
     if (shopSuperMaxText) shopSuperMaxText.innerText = `Narx: ${SUPER_BUY_COST} ball`;
-    if (shopDoubleMaxText) shopDoubleMaxText.innerText = doubleCount >= DOUBLE_MAX ? 'max 5 (to\'ldi)' : `max 5 (qoldi: ${DOUBLE_MAX - doubleCount})`;
+    if (shopDoubleMaxText) shopDoubleMaxText.innerText = `Soni: ${doubleCount}`;
+    if (shopWallMaxText) shopWallMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.walls || 0))}`;
     if (btnBuySuper) btnBuySuper.disabled = score < SUPER_BUY_COST;
-    if (btnBuyDouble) btnBuyDouble.disabled = (score < DOUBLE_BUY_COST) || (doubleCount >= DOUBLE_MAX);
+    if (btnBuyDouble) btnBuyDouble.disabled = score < DOUBLE_BUY_COST;
+    if (btnBuyWall) btnBuyWall.disabled = score < WALL_BUY_COST;
+}
+
+function getWallPlacementLimits() {
+    const leftModel = modelForPlayer(0) || p1Model;
+    const rightModel = modelForPlayer(1) || p2Model;
+    const leftX = Math.min(leftModel.position.x, rightModel.position.x);
+    const rightX = Math.max(leftModel.position.x, rightModel.position.x);
+    return { minX: leftX + 120, maxX: rightX - 120 };
+}
+
+function ensureWallMesh(ownerIndex) {
+    const wall = wallStates[ownerIndex];
+    if (!wall || wall.mesh) return wall;
+    const width = 280;
+    const height = 460;
+    const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, height),
+        new THREE.MeshLambertMaterial({
+            map: devorTusiqTexture,
+            transparent: true,
+            alphaTest: 0.015,
+            opacity: 0.98,
+            side: THREE.DoubleSide
+        })
+    );
+    mesh.visible = false;
+    mesh.userData.wallOwnerIndex = ownerIndex;
+    mesh.userData.wallWidth = width;
+    mesh.userData.wallHeight = height;
+    if (mesh.material && mesh.material.map) {
+        mesh.material.map.minFilter = THREE.LinearMipmapLinearFilter;
+        mesh.material.map.magFilter = THREE.LinearFilter;
+        mesh.material.map.generateMipmaps = true;
+        mesh.material.map.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 8);
+    }
+    mesh.position.set(0, ground.position.y + 230, ownerIndex === 0 ? 8 : -8);
+    scene.add(mesh);
+    wall.mesh = mesh;
+    return wall;
+}
+
+function setWallState(ownerIndex, active, x = 0, hp = 0) {
+    const wall = ensureWallMesh(ownerIndex);
+    if (!wall) return;
+    wall.active = !!active;
+    wall.x = Number(x || 0);
+    wall.hp = Math.max(0, Number(hp || 0));
+    if (wall.mesh) {
+        wall.mesh.visible = wall.active;
+        wall.mesh.position.x = wall.x;
+        wall.mesh.position.y = ground.position.y + 230;
+    }
+}
+
+function removeWall(ownerIndex) {
+    setWallState(ownerIndex, false, 0, 0);
+}
+
+function clampWallX(x) {
+    const { minX, maxX } = getWallPlacementLimits();
+    return Math.max(minX, Math.min(maxX, x));
+}
+
+function pointerToWorldPos(e) {
+    const p = getPointerPos(e);
+    const nx = (p.x / Math.max(1, window.innerWidth)) - 0.5;
+    const ny = 0.5 - (p.y / Math.max(1, window.innerHeight));
+    const worldWidth = (camera.right - camera.left) / Math.max(0.0001, camera.zoom);
+    const worldHeight = (camera.top - camera.bottom) / Math.max(0.0001, camera.zoom);
+    return {
+        x: camera.position.x + nx * worldWidth,
+        y: camera.position.y + ny * worldHeight
+    };
+}
+
+function isPointerOnMyWall(e) {
+    if (myPlayerIndex < 0) return false;
+    const myWall = wallStates[myPlayerIndex];
+    if (!myWall || !myWall.active || !myWall.mesh || !myWall.mesh.visible) return false;
+    const pos = pointerToWorldPos(e);
+    const halfW = Number(myWall.mesh.userData.wallWidth || 250) / 2;
+    const halfH = Number(myWall.mesh.userData.wallHeight || 380) / 2;
+    return (
+        Math.abs(pos.x - myWall.mesh.position.x) <= halfW &&
+        Math.abs(pos.y - myWall.mesh.position.y) <= halfH
+    );
 }
 
 function setDefenseActive(active, shouldEmit = true) {
     myDefenseActive = active;
     if (shieldButton) shieldButton.classList.toggle('active', active);
+    if (active) triggerAbilityPulse(shieldButton);
     if (myPlayerIndex >= 0 && !isDragging) setSoldierVisual(modelForPlayer(myPlayerIndex), active ? 'defend' : 'idle');
     if (gameMode === 'multi' && shouldEmit) socket.emit('defenseState', { active });
+}
+
+function triggerAbilityPulse(btn) {
+    if (!btn) return;
+    btn.classList.remove('cooldown-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('cooldown-pulse');
+    setTimeout(() => btn.classList.remove('cooldown-pulse'), 360);
 }
 
 function setDuckActive(active, shouldEmit = true) {
     myDuckActive = !!active;
     if (duckButton) duckButton.classList.toggle('active', myDuckActive);
+    if (myPlayerIndex >= 0 && !isDragging) {
+        setSoldierVisual(modelForPlayer(myPlayerIndex), myDefenseActive ? 'defend' : 'idle');
+    }
     if (gameMode === 'multi' && shouldEmit) socket.emit('duckState', { active: myDuckActive });
 }
 
@@ -1358,6 +1655,23 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
     setTimeout(() => el.remove(), 1500);
 }
 
+function showCenterNotice(text) {
+    const el = document.createElement('div');
+    el.className = 'damage-text';
+    el.innerText = text;
+    el.style.left = '50%';
+    el.style.top = '48%';
+    el.style.transform = 'translate(-50%, -50%)';
+    el.style.textAlign = 'center';
+    el.style.maxWidth = '86vw';
+    el.style.padding = '8px 12px';
+    el.style.background = 'rgba(15, 23, 42, 0.78)';
+    el.style.borderRadius = '10px';
+    el.style.color = '#38bdf8';
+    damageContainer.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
+}
+
 function hideFlyingSpear() {
     spearGroup.visible = false;
     spearGroup.children.slice().forEach((child) => {
@@ -1388,6 +1702,14 @@ function knockDownModel(model) {
     if (!model || model.userData.isKnockedDown) return;
 
     model.userData.isKnockedDown = true;
+    if (model.userData.isOttomanArcher) {
+        setSoldierVisual(model, 'hurt');
+        setTimeout(() => {
+            model.userData.isKnockedDown = false;
+            setSoldierVisual(model, 'idle');
+        }, 900);
+        return;
+    }
     const originalY = model.position.y;
     const direction = model.position.x > 0 ? -1 : 1;
     model.rotation.z = direction * Math.PI / 2;
@@ -1418,6 +1740,12 @@ function handleStart(e) {
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
     if (isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) return;
     if (gameMode === 'single' && singleShotLocked) return;
+    if (isPointerOnMyWall(e)) {
+        isWallPlacementMode = true;
+        isWallDragActive = true;
+        updateSuperUI();
+        return;
+    }
     isDragging = true;
     aimSfxPlayed = false;
     dragStart = getPointerPos(e);
@@ -1430,6 +1758,7 @@ function handleMove(e) {
 }
 
 function handleEnd(e) {
+    isWallDragActive = false;
     if (!isDragging) return;
     isDragging = false;
     aimSfxPlayed = false;
@@ -1455,6 +1784,10 @@ const isUiTarget = (target) => {
     return !!(target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'));
 };
 
+function pointerToWorldX(e) {
+    return pointerToWorldPos(e).x;
+}
+
 if (window.PointerEvent) {
     let dragPointerId = null;
     document.addEventListener('pointerdown', (e) => {
@@ -1463,17 +1796,27 @@ if (window.PointerEvent) {
         handleStart(e);
     });
     document.addEventListener('pointermove', (e) => {
+        if (isWallPlacementMode && isWallDragActive) {
+            const myWall = wallStates[myPlayerIndex];
+            if (myWall && myWall.active) {
+                const x = clampWallX(pointerToWorldX(e));
+                setWallState(myPlayerIndex, true, x, myWall.hp || WALL_HP_MAX);
+                if (gameMode === 'multi') socket.emit('wallMoved', { ownerIndex: myPlayerIndex, x });
+            }
+        }
         if (!isDragging) return;
         if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
         handleMove(e);
     });
     document.addEventListener('pointerup', (e) => {
+        isWallDragActive = false;
         if (!isDragging) return;
         if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
         dragPointerId = null;
         handleEnd(e);
     });
     document.addEventListener('pointercancel', (e) => {
+        isWallDragActive = false;
         if (!isDragging) return;
         if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
         dragPointerId = null;
@@ -1482,6 +1825,16 @@ if (window.PointerEvent) {
 } else {
     document.addEventListener('mousedown', handleStart);
     document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mousemove', (e) => {
+        if (isWallPlacementMode && isWallDragActive) {
+            const myWall = wallStates[myPlayerIndex];
+            if (myWall && myWall.active) {
+                const x = clampWallX(pointerToWorldX(e));
+                setWallState(myPlayerIndex, true, x, myWall.hp || WALL_HP_MAX);
+                if (gameMode === 'multi') socket.emit('wallMoved', { ownerIndex: myPlayerIndex, x });
+            }
+        }
+    });
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchstart', (e) => { 
         if(!isUiTarget(e.target) && e.touches && e.touches[0]) { 
@@ -1489,11 +1842,20 @@ if (window.PointerEvent) {
         } 
     }, {passive: false});
     document.addEventListener('touchmove', (e) => { 
+        if (isWallPlacementMode && isWallDragActive && e.touches && e.touches[0]) {
+            const myWall = wallStates[myPlayerIndex];
+            if (myWall && myWall.active) {
+                const x = clampWallX(pointerToWorldX(e.touches[0]));
+                setWallState(myPlayerIndex, true, x, myWall.hp || WALL_HP_MAX);
+                if (gameMode === 'multi') socket.emit('wallMoved', { ownerIndex: myPlayerIndex, x });
+            }
+        }
         if (isDragging && e.touches && e.touches[0]) {
             handleMove(e.touches[0]); 
         }
     }, {passive: false});
     document.addEventListener('touchend', (e) => { 
+        isWallDragActive = false;
         if (isDragging) {
             handleEnd(e); 
         }
@@ -1576,6 +1938,7 @@ if (duckButton) {
             e.stopPropagation();
         }
         setDuckActive(true);
+        triggerAbilityPulse(duckButton);
     };
     const releaseDuck = (e) => {
         if (e) {
@@ -1610,18 +1973,53 @@ if (doubleButton) {
         if (Number(myProfile.doubleSpears || 0) <= 0) return;
         isDoubleSpearActive = !isDoubleSpearActive;
         doubleButton.classList.toggle('active', isDoubleSpearActive);
+        if (isDoubleSpearActive) triggerAbilityPulse(doubleButton);
     };
     doubleButton.addEventListener('click', toggleDouble);
+}
+
+function deployOrRepositionWall() {
+    if (gameMode === 'menu' || myPlayerIndex < 0) return;
+    if (currentTurnIndex !== myPlayerIndex) return;
+    const existing = wallStates[myPlayerIndex];
+    if (existing && existing.active) {
+        isWallPlacementMode = !isWallPlacementMode;
+        isWallDragActive = false;
+        updateSuperUI();
+        return;
+    }
+    const stock = Math.max(0, Number(myProfile.walls || 0));
+    if (stock <= 0) return;
+    myProfile.walls = stock - 1;
+    saveProfile();
+    const myModel = modelForPlayer(myPlayerIndex);
+    const enemyModel = modelForPlayer(getPrimaryEnemyTurnIndex());
+    const myX = Number(myModel?.position.x || 0);
+    const enemyX = Number(enemyModel?.position.x || 0);
+    const towardEnemy = enemyX >= myX ? 1 : -1;
+    // Spawn wall close to player's fighter so it stays visible and easy to drag.
+    const nearPlayerX = myX + towardEnemy * 220;
+    const x = clampWallX(nearPlayerX);
+    setWallState(myPlayerIndex, true, x, WALL_HP_MAX);
+    isWallPlacementMode = true;
+    isWallDragActive = false;
+    updateSuperUI();
+    if (gameMode === 'multi') socket.emit('wallPlaced', { ownerIndex: myPlayerIndex, x, hp: WALL_HP_MAX });
+}
+
+if (wallButton) {
+    wallButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deployOrRepositionWall();
+    });
 }
 
 function showSuperUseWarning() {
     const now = performance.now();
     if (now < superWarningUntil) return;
-    superWarningUntil = now + 1200;
-    const myModel = modelForPlayer(myPlayerIndex);
-    const wx = myModel ? myModel.position.x : camera.position.x;
-    const wy = (myModel ? myModel.position.y : ground.position.y) + 260;
-    showDamageText(wx, wy, "Super kuch faqat raqib o'q otganda ishlaydi!", false, true);
+    superWarningUntil = now + 1400;
+    showCenterNotice("Super kuch faqat raqib o'q otganda ishlaydi!");
 }
 
 function getPointerPos(e) {
@@ -1637,6 +2035,8 @@ function startSinglePlayer(opts) {
     btnToggleChat.classList.add('hidden');
     isPaused = false;
     isDragging = false;
+    isWallPlacementMode = false;
+    isWallDragActive = false;
     singleShotLocked = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
@@ -1666,12 +2066,16 @@ function startSinglePlayer(opts) {
         scene.remove(p3Model);
         p3Model = null;
     }
-    p1Model = createSoldier(true, 2); p1Model.position.x = pos1X;
-    p2Model = createSoldier(false, 2); p2Model.position.x = pos2X;
-    if (campaignConfig.enemyCount === 2) {
-        p3Model = createSoldier(false, 2);
-    }
     const playerLeftSide = (level % 2 === 1);
+    const myChar = Number(myProfile.charType || 2) || 2;
+    const enemyChar = 2;
+    const p1Char = playerLeftSide ? myChar : enemyChar;
+    const p2Char = playerLeftSide ? enemyChar : myChar;
+    p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
+    p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
+    if (campaignConfig.enemyCount === 2) {
+        p3Model = createSoldier(false, enemyChar);
+    }
     if (playerLeftSide) {
         myPlayerIndex = 0;
         p1Model.position.x = -currentBattleDistance / 2;
@@ -1683,6 +2087,7 @@ function startSinglePlayer(opts) {
         p2Model.position.x = currentBattleDistance / 2;
         if (p3Model) p3Model.position.x = -currentBattleDistance / 2 - pos3Offset;
     }
+    applySoldierWeatherTone();
     
     myHealth = 100;
     enemyHealth = 100;
@@ -1697,6 +2102,18 @@ function startSinglePlayer(opts) {
     enemyDefenseActive = false;
     updateHealthUI();
     updateShieldUI();
+    removeWall(0);
+    removeWall(1);
+    if (campaignConfig && campaignConfig.enemyWallEnabled) {
+        const enemyIndex = getPrimaryEnemyTurnIndex();
+        const enemyModel = modelForPlayer(enemyIndex);
+        const myModel = modelForPlayer(myPlayerIndex);
+        if (enemyModel && myModel && (enemyIndex === 0 || enemyIndex === 1)) {
+            const towardPlayer = myModel.position.x >= enemyModel.position.x ? 1 : -1;
+            const enemyWallX = clampWallX(enemyModel.position.x + towardPlayer * 230);
+            setWallState(enemyIndex, true, enemyWallX, WALL_HP_MAX);
+        }
+    }
     updateSuperUI();
 
     if (myPlayerIndex === 0) {
@@ -1761,9 +2178,12 @@ function fireEnemyVolleyShot() {
     const dx = Math.abs(shooter.position.x - targetModel.position.x);
     const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
     let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
-    const jitter = shouldHit ? profile.powerJitter * 0.22 : profile.powerJitter;
+    const jitter = shouldHit ? profile.powerJitter * 0.09 : profile.powerJitter;
+    const desiredDir = shooterIndex === 0 ? 1 : -1;
+    const windComp = shouldHit ? (-currentWind * desiredDir * (dx / 280)) : 0;
+    power += windComp;
     power += (Math.random() - 0.5) * jitter;
-    let angle = (rad * 180) / Math.PI + (Math.random() - 0.5) * (shouldHit ? profile.angleJitter * 0.35 : profile.angleJitter);
+    let angle = (rad * 180) / Math.PI + (Math.random() - 0.5) * (shouldHit ? profile.angleJitter * 0.18 : profile.angleJitter);
     angle = Math.max(-20, Math.min(110, angle));
 
     setModelActionState(shooter, 'aim', 900);
@@ -1776,12 +2196,33 @@ function throwSpear(angle, power) {
     pendingDoubleShot = null;
     if (isDoubleSpearActive && Number(myProfile.doubleSpears || 0) > 0) {
         myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0) - 1);
-        pendingDoubleShot = {
-            shooterIndex: currentTurnIndex,
-            angle: Math.max(-20, Math.min(110, angle + (currentTurnIndex === 0 ? 5.5 : -5.5))),
-            power: Math.max(650, power * 0.94),
-            wind: currentWind
-        };
+        const shooterIndex = currentTurnIndex;
+        const targetIndex = getDoubleShotTargetIndex(shooterIndex);
+        const shouldAssistDouble = Math.random() < 0.8;
+        if (shouldAssistDouble) {
+            const primaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
+            const secondaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 4.8, 0.97);
+            if (primaryAssisted && secondaryAssisted) {
+                angle = primaryAssisted.angle;
+                power = primaryAssisted.power;
+                pendingDoubleShot = {
+                    shooterIndex,
+                    angle: secondaryAssisted.angle,
+                    power: secondaryAssisted.power,
+                    wind: currentWind,
+                    forceHit: true,
+                    targetIndex
+                };
+            }
+        }
+        if (!pendingDoubleShot) {
+            pendingDoubleShot = {
+                shooterIndex: currentTurnIndex,
+                angle: Math.max(-20, Math.min(110, angle + (currentTurnIndex === 0 ? 5.5 : -5.5))),
+                power: Math.max(650, power * 0.94),
+                wind: currentWind
+            };
+        }
         saveProfile();
         updateSuperUI();
     }
@@ -1825,6 +2266,7 @@ function tryUseSuperPower() {
     if (spear.playerIndex === myPlayerIndex) return false;
 
     if (gameMode === 'multi') {
+        triggerAbilityPulse(superButton);
         socket.emit('useSuperPower', { hitX: spear.x, hitY: spear.y });
         return true;
     }
@@ -1833,6 +2275,7 @@ function tryUseSuperPower() {
     myProfile.superPowers = mySuper;
     saveProfile();
     updateSuperUI();
+    triggerAbilityPulse(superButton);
     const hitX = spear.x;
     const hitY = spear.y;
     spear.active = false;
@@ -1980,6 +2423,61 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
     return { damage, msg, isCrit, hitZone, isShieldHit: false, shieldActiveBlock: false, shieldlessDefense: false };
 }
 
+function getScoreDeltaForHit(hitResult) {
+    if (!hitResult) return 0;
+    if (hitResult.duckDodged) return 0;
+    if (hitResult.isShieldHit) return 5;
+    if (hitResult.hitZone === 'head') return 20;
+    if (hitResult.hitZone === 'leg') return 5;
+    return 10; // body (with or without shield)
+}
+
+function addScore(delta) {
+    if (!Number.isFinite(delta) || delta === 0) return;
+    myStats.score = Number(myStats.score || 0) + delta;
+    saveStats();
+    updateCampaignUI();
+    updateShopUI();
+    if (authPhone) {
+        clearTimeout(addScore.syncTimer);
+        addScore.syncTimer = setTimeout(() => {
+            submitLeaderboard();
+        }, 250);
+    }
+}
+
+function applyDoubleDamageBoost(hitResult, multiplier = 1) {
+    if (!hitResult || multiplier <= 1) return hitResult;
+    if (hitResult.isShieldHit || hitResult.duckDodged) return hitResult;
+    const boostedDamage = Math.max(1, Math.round((Number(hitResult.damage) || 0) * multiplier));
+    const boostedMsg = String(hitResult.msg || '').replace(/-\d+/, `-${boostedDamage}`);
+    return { ...hitResult, damage: boostedDamage, msg: boostedMsg };
+}
+
+function getDoubleShotTargetIndex(shooterIndex) {
+    if (gameMode === 'single') {
+        return shooterIndex === myPlayerIndex ? getPrimaryEnemyTurnIndex() : myPlayerIndex;
+    }
+    return shooterIndex === 0 ? 1 : 0;
+}
+
+function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powerScale = 1) {
+    const shooter = modelForPlayer(shooterIndex);
+    const target = modelForPlayer(targetIndex);
+    if (!shooter || !target) return null;
+    const dx = Math.abs(shooter.position.x - target.position.x);
+    const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
+    let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
+    const desiredDir = shooterIndex === 0 ? 1 : -1;
+    const windComp = (-currentWind * desiredDir * (dx / 280));
+    power = (power + windComp) * powerScale;
+    let angle = (rad * 180) / Math.PI;
+    angle += (shooterIndex === 0 ? 1 : -1) * angleOffsetDeg;
+    angle = Math.max(-20, Math.min(110, angle));
+    power = Math.max(700, Math.min(2000, power));
+    return { angle, power };
+}
+
 function simulateDoubleSpearHit() {
     if (!pendingDoubleShot) return null;
     const shot = pendingDoubleShot;
@@ -1989,6 +2487,29 @@ function simulateDoubleSpearHit() {
 
     const startX = shot.shooterIndex === 0 ? shooter.position.x + 60 : shooter.position.x - 60;
     const startY = shooter.position.y + 270;
+    if (shot.forceHit && Number.isFinite(Number(shot.targetIndex))) {
+        const targetIndex = Number(shot.targetIndex);
+        const target = modelForPlayer(targetIndex);
+        if (target && !target.userData.isKnockedDown) {
+            const h = target.userData?.planeMesh?.geometry?.parameters?.height || 430;
+            const hitY = target.position.y + h * 0.62;
+            const hitX = target.position.x + (shot.shooterIndex === 0 ? -8 : 8);
+            const relY = hitY - target.position.y;
+            const hit = calculateHitResult(targetIndex, relY, false);
+            return {
+                targetIndex,
+                hitX,
+                hitY,
+                hitAngle: Math.atan2(hitY - startY, hitX - startX),
+                hitResult: hit,
+                path: [
+                    { x: startX, y: startY },
+                    { x: (startX + hitX) * 0.5, y: Math.max(startY, hitY) + 120 },
+                    { x: hitX, y: hitY }
+                ]
+            };
+        }
+    }
     const rad = shot.angle * (Math.PI / 180);
     let vx = shot.power * Math.cos(rad);
     if (shot.shooterIndex === 1) vx = -vx;
@@ -2048,6 +2569,7 @@ function spawnDoubleSpearVisual(doubleOutcome) {
 function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
     const finalAngle = spearGroup.rotation.z;
     const doubleOutcome = simulateDoubleSpearHit();
+    const doubleShotFired = !!doubleOutcome;
     const hasExtraHit = !!(doubleOutcome && doubleOutcome.hitResult);
     if (doubleOutcome) spawnDoubleSpearVisual(doubleOutcome);
     
@@ -2064,6 +2586,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         } else {
             const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
             hitResult = calculateHitResult(targetIndex, relativeY, false);
+            if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
 
             if (hitResult.isShieldHit) {
                 spawnParticles(hitX, hitY, 10, true);
@@ -2078,6 +2601,9 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
 
         playHitByResult(hitResult);
         showDamageText(hitX, hitY + 80, hitResult.msg, hitResult.isCrit, hitResult.isShieldHit || hitResult.shieldlessDefense);
+        if (!isSuicide && spear && spear.playerIndex === myPlayerIndex && targetIndex !== myPlayerIndex) {
+            addScore(getScoreDeltaForHit(hitResult));
+        }
 
         if (!hitResult.isShieldHit) {
             knockDownModel(targetModel);
@@ -2107,22 +2633,27 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 if (hasExtraHit) {
                     const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
                     const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
-                    playHitByResult(doubleOutcome.hitResult);
-                    showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${doubleOutcome.hitResult.msg}`, doubleOutcome.hitResult.isCrit, doubleOutcome.hitResult.isShieldHit);
-                    if (!doubleOutcome.hitResult.isShieldHit && extraTarget) knockDownModel(extraTarget);
-                    if (doubleOutcome.hitResult.isShieldHit) {
+                    const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
+                    playHitByResult(boostedExtraHit);
+                    showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
+                    if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
+                        addScore(getScoreDeltaForHit(boostedExtraHit));
+                    }
+                    if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
+                    if (boostedExtraHit.isShieldHit) {
                         setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
                         if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
                     }
-                    if (doubleOutcome.hitResult.damage > 0) {
-                        if (extraMyself) myHealth -= doubleOutcome.hitResult.damage;
-                        else enemyHealth -= doubleOutcome.hitResult.damage;
+                    if (boostedExtraHit.damage > 0) {
+                        if (extraMyself) myHealth -= boostedExtraHit.damage;
+                        else enemyHealth -= boostedExtraHit.damage;
                         updateHealthUI();
                     }
                 }
                 advanceSingleTurnAfterShot();
             }
         } else {
+            const extraNetHit = hasExtraHit ? applyDoubleDamageBoost(doubleOutcome.hitResult, 2) : null;
             socket.emit('throwComplete', {
                 hitOpponent: true,
                 targetIndex: targetIndex,
@@ -2136,13 +2667,13 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitAngle: finalAngle,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
-                    damage: doubleOutcome.hitResult.damage,
-                    hitZone: doubleOutcome.hitResult.hitZone,
-                    shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock,
-                    shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense,
+                    damage: extraNetHit.damage,
+                    hitZone: extraNetHit.hitZone,
+                    shieldActiveBlock: extraNetHit.shieldActiveBlock,
+                    shieldlessDefense: extraNetHit.shieldlessDefense,
                     hitX: doubleOutcome.hitX,
                     hitY: doubleOutcome.hitY,
-                    isShieldHit: doubleOutcome.hitResult.isShieldHit,
+                    isShieldHit: extraNetHit.isShieldHit,
                     hitAngle: doubleOutcome.hitAngle
                 } : null
             });
@@ -2157,21 +2688,26 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
             if (hasExtraHit) {
                 const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
                 const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
-                playHitByResult(doubleOutcome.hitResult);
-                showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${doubleOutcome.hitResult.msg}`, doubleOutcome.hitResult.isCrit, doubleOutcome.hitResult.isShieldHit);
-                if (!doubleOutcome.hitResult.isShieldHit && extraTarget) knockDownModel(extraTarget);
-                if (doubleOutcome.hitResult.isShieldHit) {
+                const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
+                playHitByResult(boostedExtraHit);
+                showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
+                if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
+                    addScore(getScoreDeltaForHit(boostedExtraHit));
+                }
+                if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
+                if (boostedExtraHit.isShieldHit) {
                     setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
                     if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
                 }
-                if (doubleOutcome.hitResult.damage > 0) {
-                    if (extraMyself) myHealth -= doubleOutcome.hitResult.damage;
-                    else enemyHealth -= doubleOutcome.hitResult.damage;
+                if (boostedExtraHit.damage > 0) {
+                    if (extraMyself) myHealth -= boostedExtraHit.damage;
+                    else enemyHealth -= boostedExtraHit.damage;
                     updateHealthUI();
                 }
             }
             advanceSingleTurnAfterShot();
         } else {
+            const extraNetHit = hasExtraHit ? applyDoubleDamageBoost(doubleOutcome.hitResult, 2) : null;
             socket.emit('throwComplete', {
                 hitOpponent: false,
                 hitX,
@@ -2179,13 +2715,13 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitAngle: finalAngle,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
-                    damage: doubleOutcome.hitResult.damage,
-                    hitZone: doubleOutcome.hitResult.hitZone,
-                    shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock,
-                    shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense,
+                    damage: extraNetHit.damage,
+                    hitZone: extraNetHit.hitZone,
+                    shieldActiveBlock: extraNetHit.shieldActiveBlock,
+                    shieldlessDefense: extraNetHit.shieldlessDefense,
                     hitX: doubleOutcome.hitX,
                     hitY: doubleOutcome.hitY,
-                    isShieldHit: doubleOutcome.hitResult.isShieldHit,
+                    isShieldHit: extraNetHit.isShieldHit,
                     hitAngle: doubleOutcome.hitAngle
                 } : null
             });
@@ -2204,6 +2740,7 @@ const chatContainer = document.getElementById('chat-container');
 const chatMessages = document.getElementById('chat-messages');
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
+const chatQuickEmojis = document.getElementById('chat-quick-emojis');
 
 inGameMenuBtn.addEventListener('click', () => {
     if (btnAddFriend) {
@@ -2255,6 +2792,38 @@ if (musicMuteInput) {
 if (sfxVolumeInput) {
     sfxVolumeInput.addEventListener('input', () => {
         sfxVolume = Math.max(0, Math.min(1, parseFloat(sfxVolumeInput.value)));
+        saveMusicSettings();
+    });
+}
+
+if (settingsMusicVolumeInput) {
+    settingsMusicVolumeInput.addEventListener('input', () => {
+        musicVolume = Math.max(0, Math.min(1, parseFloat(settingsMusicVolumeInput.value)));
+        applyMusicSettings();
+        saveMusicSettings();
+    });
+}
+
+if (settingsSfxVolumeInput) {
+    settingsSfxVolumeInput.addEventListener('input', () => {
+        sfxVolume = Math.max(0, Math.min(1, parseFloat(settingsSfxVolumeInput.value)));
+        applyMusicSettings();
+        saveMusicSettings();
+    });
+}
+
+if (settingsMusicTrackSelect) {
+    settingsMusicTrackSelect.addEventListener('change', () => {
+        selectedMusicTrack = String(settingsMusicTrackSelect.value || 'music.mp3');
+        applyMusicSettings();
+        saveMusicSettings();
+    });
+}
+
+if (inGameMusicTrackSelect) {
+    inGameMusicTrackSelect.addEventListener('change', () => {
+        selectedMusicTrack = String(inGameMusicTrackSelect.value || 'music.mp3');
+        applyMusicSettings();
         saveMusicSettings();
     });
 }
@@ -2346,6 +2915,8 @@ socket.on('gameStart', (data) => {
     gameScreen.classList.remove('hidden');
     isPaused = false;
     isDragging = false;
+    isWallPlacementMode = false;
+    isWallDragActive = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
     chatMessages.innerHTML = '';
@@ -2369,6 +2940,7 @@ socket.on('gameStart', (data) => {
     const p2Char = myPlayerIndex === 1 ? myChar : oppChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
+    applySoldierWeatherTone();
     
     if (myPlayerIndex === 0) {
         p1Name.innerText = myProfile.name;
@@ -2391,6 +2963,8 @@ socket.on('gameStart', (data) => {
     enemySuper = Array.isArray(data.super) ? (data.super[myPlayerIndex === 0 ? 1 : 0] || 0) : 5;
     updateHealthUI();
     updateShieldUI();
+    removeWall(0);
+    removeWall(1);
     updateSuperUI();
     prevTurnIndex = -2;
     updateTurn(data.turnIndex, data.wind);
@@ -2507,25 +3081,37 @@ socket.on('defenseStateChanged', (data) => {
 socket.on('duckStateChanged', (data) => {
     if (!data || data.playerIndex === myPlayerIndex) return;
     enemyDuckActive = !!data.active;
+    setSoldierVisual(modelForPlayer(data.playerIndex), enemyDefenseActive ? 'defend' : 'idle');
+});
+
+socket.on('wallStateChanged', (data) => {
+    if (!data) return;
+    const ownerIndex = Number(data.ownerIndex);
+    if (!Number.isFinite(ownerIndex) || !wallStates[ownerIndex]) return;
+    if (data.active) setWallState(ownerIndex, true, Number(data.x || 0), Number(data.hp || WALL_HP_MAX));
+    else removeWall(ownerIndex);
+});
+
+socket.on('wallHitFx', (data) => {
+    if (!data) return;
+    applyWallHit(Number(data.ownerIndex), Number(data.hitX || 0), Number(data.hitY || (ground.position.y + 90)));
 });
 
 socket.on('entityHit', (data) => {
-    if (spear && spear.playerIndex !== myPlayerIndex) {
-        const { entityIndex, hitX, hitY, hitAngle } = data;
-        const e = entities[entityIndex];
-        if (e) {
-            e.alive = false;
-            e.fallWithSpear = true;
-            e.mesh.position.set(hitX, hitY, 0);
-            e.mesh.rotation.z = hitAngle + Math.PI / 2;
-            if (spear) {
-                spear.hitEntity = e;
-                spear.vx *= 0.35;
-                spear.vy = Math.min(spear.vy, -120);
-            }
-            spawnParticles(hitX, hitY, 20);
-            showDamageText(hitX, hitY + 50, e.type === 'bird' ? "QUSH!" : "HAYVON!", true);
+    const { entityIndex, hitX, hitY, hitAngle } = data || {};
+    const e = entities[entityIndex];
+    if (e) {
+        e.alive = false;
+        e.fallWithSpear = true;
+        e.mesh.position.set(hitX, hitY, 0);
+        e.mesh.rotation.z = hitAngle + Math.PI / 2;
+        if (spear && spear.playerIndex !== myPlayerIndex) {
+            spear.hitEntity = e;
+            spear.vx *= 0.35;
+            spear.vy = Math.min(spear.vy, -120);
         }
+        spawnParticles(hitX, hitY, 20);
+            showDamageText(hitX, hitY + 50, "QUSH!", true);
     }
 });
 
@@ -2554,10 +3140,17 @@ function showGameOver(winnerIndex) {
     
     if (winnerIndex === myPlayerIndex) {
         myStats.wins++;
-        myStats.score += 100;
         if (gameMode === 'single') {
             singleCampaignLevel += 1;
             localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+            try {
+                const rawAuth = localStorage.getItem('nayza_auth_user');
+                const cachedAuth = rawAuth ? JSON.parse(rawAuth) : null;
+                if (cachedAuth) {
+                    cachedAuth.campaignLevel = Math.max(Number(cachedAuth.campaignLevel || 1), singleCampaignLevel);
+                    localStorage.setItem('nayza_auth_user', JSON.stringify(cachedAuth));
+                }
+            } catch {}
             updateCampaignUI();
         }
     }
@@ -2603,6 +3196,10 @@ function updateTurn(turnIndex, wind) {
     const turnChanged = turnIndex !== prevTurnIndex;
     prevTurnIndex = turnIndex;
     currentTurnIndex = turnIndex;
+    if (turnIndex !== myPlayerIndex && isWallPlacementMode) {
+        isWallPlacementMode = false;
+        isWallDragActive = false;
+    }
     if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
 
@@ -2671,6 +3268,7 @@ function updateTurn(turnIndex, wind) {
             camera.updateProjectionMatrix();
         }
     }
+    updateSuperUI();
 }
 
 function startSpearAnimation(playerIndex, angle, power) {
@@ -2680,7 +3278,10 @@ function startSpearAnimation(playerIndex, angle, power) {
     playThrowSound();
 
     const thrower = modelForPlayer(playerIndex);
-    setModelActionState(thrower, 'aim', 900);
+    const throwState = thrower?.userData?.isOttomanSpearman
+        ? 'afterShot'
+        : (thrower?.userData?.isOttomanArcher ? 'aim' : 'afterShot');
+    setModelActionState(thrower, throwState, 950);
 
     // Start trajectory directly from the bow's position
     const startX = playerIndex === 0 ? p1Model.position.x + 60 : thrower.position.x - 60;
@@ -2703,6 +3304,11 @@ function startSpearAnimation(playerIndex, angle, power) {
         aiSuperTried: false
     };
     
+    const isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
+    applySpearVisualStyle(isSpearmanThrow);
+    const spearScale = isSpearmanThrow ? 1.9 : 1;
+    spearGroup.scale.setScalar(spearScale);
+    secondarySpearGroup.scale.setScalar(spearScale);
     spearGroup.position.set(startX, startY, 0);
     spearGroup.visible = true;
     if (pendingDoubleShot) {
@@ -2732,8 +3338,56 @@ function startSpearAnimation(playerIndex, angle, power) {
     cameraZoomTarget = baseZoom * 1.2;
 }
 
+function getWallHitOwnerIndex() {
+    if (!spear || !spear.active) return -1;
+    const states = [wallStates[0], wallStates[1]];
+    for (const wall of states) {
+        if (!wall || !wall.active || !wall.mesh) continue;
+        // Owner's own projectile should pass through their wall.
+        if (Number(spear.playerIndex) === Number(wall.ownerIndex)) continue;
+        const halfW = Number(wall.mesh.userData.wallWidth || 180) / 2;
+        const halfH = Number(wall.mesh.userData.wallHeight || 170) / 2;
+        if (Math.abs(spear.x - wall.x) <= halfW && Math.abs(spear.y - wall.mesh.position.y) <= halfH) {
+            return wall.ownerIndex;
+        }
+    }
+    return -1;
+}
+
+function applyWallHit(ownerIndex, hitX, hitY) {
+    const wall = wallStates[ownerIndex];
+    if (!wall || !wall.active) return;
+    wall.hp = Math.max(0, Number(wall.hp || WALL_HP_MAX) - 1);
+    showDamageText(hitX, hitY + 40, `DEVOR -1 (${wall.hp}/5)`, false, true);
+    spawnParticles(hitX, hitY, 12, true);
+    if (wall.hp <= 0) {
+        removeWall(ownerIndex);
+    } else {
+        setWallState(ownerIndex, true, wall.x, wall.hp);
+    }
+}
+
 function checkCollision() {
     if (!spear || !spear.active) return;
+
+    const wallOwnerIndex = getWallHitOwnerIndex();
+    if (wallOwnerIndex >= 0) {
+        spear.active = false;
+        isAnimating = false;
+        const hitX = spear.x;
+        const hitY = spear.y;
+        resetCameraAfterImpact();
+        hideFlyingSpear();
+        if (gameMode === 'multi') {
+            if (spear.playerIndex === myPlayerIndex) {
+                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY });
+            }
+        } else {
+            applyWallHit(wallOwnerIndex, hitX, hitY);
+            advanceSingleTurnAfterShot();
+        }
+        return;
+    }
 
     let hitEntity = null;
     for(let e of entities) {
@@ -2763,7 +3417,7 @@ function checkCollision() {
         spear.vy = Math.min(spear.vy, -120);
         spear.vx *= 0.35;
         playCrowSound();
-        showDamageText(spear.x, spear.y + 50, hitEntity.type === 'bird' ? "QARG'A!" : "HAYVON!", true);
+        showDamageText(spear.x, spear.y + 50, "QARG'A!", true);
         if (gameMode === 'multi' && spear.playerIndex === myPlayerIndex && !spear.entityHitEmitted) {
             socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX: spear.x, hitY: spear.y, hitAngle: spearGroup.rotation.z });
             spear.entityHitEmitted = true;
@@ -2835,9 +3489,13 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
         hideFlyingSpear();
         spawnParticles(hitX, hitY, 20);
         
-        showDamageText(hitX, hitY + 50, hitEntity.type === 'bird' ? "QUSH!" : "HAYVON!", true);
+        showDamageText(hitX, hitY + 50, "QUSH!", true);
         
         if (spear.playerIndex === myPlayerIndex || gameMode === 'single') {
+            if (spear.playerIndex === myPlayerIndex) {
+                // Bird/crow kill penalty: can go below zero (debt mode).
+                addScore(-2);
+            }
             if (gameMode === 'multi') {
                 if (!spear.entityHitEmitted) {
                     socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z });
@@ -2879,12 +3537,18 @@ function gameLoop(now) {
     // Breathing Animation
     const breath = Math.sin(now * 0.004) * 0.02 + 1;
     const duckOffset = -62;
-    p1Model.userData.torso.scale.y = isDuckActiveForPlayer(0) ? Math.max(0.86, breath - 0.12) : breath;
-    p2Model.userData.torso.scale.y = isDuckActiveForPlayer(1) ? Math.max(0.86, breath - 0.12) : breath;
-    if (p3Model) p3Model.userData.torso.scale.y = isDuckActiveForPlayer(2) ? Math.max(0.86, breath - 0.12) : breath;
-    p1Model.userData.torso.position.y = isDuckActiveForPlayer(0) ? duckOffset : 0;
-    p2Model.userData.torso.position.y = isDuckActiveForPlayer(1) ? duckOffset : 0;
-    if (p3Model) p3Model.userData.torso.position.y = isDuckActiveForPlayer(2) ? duckOffset : 0;
+    const p1Duck = isDuckActiveForPlayer(0);
+    const p2Duck = isDuckActiveForPlayer(1);
+    const p3Duck = p3Model ? isDuckActiveForPlayer(2) : false;
+    const p1ArcherDuck = p1Model?.userData?.isOttomanArcher && p1Duck;
+    const p2ArcherDuck = p2Model?.userData?.isOttomanArcher && p2Duck;
+    const p3ArcherDuck = p3Model?.userData?.isOttomanArcher && p3Duck;
+    p1Model.userData.torso.scale.y = p1ArcherDuck ? Math.max(0.74, breath - 0.22) : (p1Duck ? Math.max(0.86, breath - 0.12) : breath);
+    p2Model.userData.torso.scale.y = p2ArcherDuck ? Math.max(0.74, breath - 0.22) : (p2Duck ? Math.max(0.86, breath - 0.12) : breath);
+    if (p3Model) p3Model.userData.torso.scale.y = p3ArcherDuck ? Math.max(0.74, breath - 0.22) : (p3Duck ? Math.max(0.86, breath - 0.12) : breath);
+    p1Model.userData.torso.position.y = p1ArcherDuck ? -34 : (p1Duck ? duckOffset : 0);
+    p2Model.userData.torso.position.y = p2ArcherDuck ? -34 : (p2Duck ? duckOffset : 0);
+    if (p3Model) p3Model.userData.torso.position.y = p3ArcherDuck ? -34 : (p3Duck ? duckOffset : 0);
     p1Model.userData.headGroup.position.y = (isDuckActiveForPlayer(0) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
     p2Model.userData.headGroup.position.y = (isDuckActiveForPlayer(1) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
     if (p3Model) p3Model.userData.headGroup.position.y = (isDuckActiveForPlayer(2) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
@@ -2897,8 +3561,16 @@ function gameLoop(now) {
     const positions = dustSystem.geometry.attributes.position.array;
     for(let i=0; i<dustCount*3; i+=3) {
         positions[i] += currentWind * 10 * dt; 
-        if (positions[i] > 2000) positions[i] = -2000;
-        if (positions[i] < -2000) positions[i] = 2000;
+        if (positions[i] > 2000) {
+            positions[i] = -2000 + Math.random() * 220;
+            positions[i + 1] = Math.random() * 800 - 300;
+            positions[i + 2] = (Math.random() - 0.5) * 180;
+        }
+        if (positions[i] < -2000) {
+            positions[i] = 2000 - Math.random() * 220;
+            positions[i + 1] = Math.random() * 800 - 300;
+            positions[i + 2] = (Math.random() - 0.5) * 180;
+        }
     }
     dustSystem.geometry.attributes.position.needsUpdate = true;
 
@@ -2925,8 +3597,8 @@ function gameLoop(now) {
             e.vy = (e.vy || 0) + Math.sin((now * 0.001) + idx) * 3 * dt;
             if (e.mesh.position.x > 1800) e.vx = -Math.abs(e.vx);
             if (e.mesh.position.x < -1800) e.vx = Math.abs(e.vx);
-            if (e.mesh.position.y > 760) e.vy = -Math.abs(e.vy || 30);
-            if (e.mesh.position.y < 160) e.vy = Math.abs(e.vy || 30);
+            if (e.mesh.position.y > 920) e.vy = -Math.abs(e.vy || 30);
+            if (e.mesh.position.y < 280) e.vy = Math.abs(e.vy || 30);
             
             if (e.mesh.userData.isCrowSprite && e.mesh.userData.tex) {
                 const planeMesh = e.mesh.children.find(child => child.isMesh);
@@ -3083,7 +3755,7 @@ function gameLoop(now) {
     // Update animation frames based on state
     const animModels = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     animModels.forEach((model, idx) => {
-        if (!model.userData.tex && !model.userData.isOttomanArcher) return;
+        if (!model.userData.tex && !model.userData.isOttomanUnit) return;
         if (model.userData.isKnockedDown) return;
         
         let targetState = 'idle';
@@ -3190,11 +3862,13 @@ let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
     flag: '🇺🇿',
     charType: 2,
     superPowers: 5,
-    doubleSpears: 0
+    doubleSpears: 0,
+    walls: 0
 };
-myProfile.charType = 2;
+myProfile.charType = Number.isFinite(Number(myProfile.charType)) ? Number(myProfile.charType) : 2;
 myProfile.superPowers = Math.max(0, Number(myProfile.superPowers || 5));
-myProfile.doubleSpears = Math.max(0, Math.min(5, Number(myProfile.doubleSpears || 0)));
+myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0));
+myProfile.walls = Math.max(0, Number(myProfile.walls || 0));
 if (!myProfile.playerId) {
     myProfile.playerId = String(Math.floor(10000 + Math.random() * 90000));
 }
@@ -3204,10 +3878,13 @@ let myFriends = JSON.parse(localStorage.getItem('nayza_friends') || '[]');
 if (!Array.isArray(myFriends)) myFriends = [];
 
 let myStats = JSON.parse(localStorage.getItem('nayza_stats')) || {
-    score: 0,
+    score: 500,
     games: 0,
     wins: 0
 };
+if (!Number.isFinite(Number(myStats.score))) myStats.score = 500;
+const LEGACY_BONUS_KEY = 'nayza_legacy_500_bonus_v1';
+let legacyBonusApplied = localStorage.getItem(LEGACY_BONUS_KEY) === '1';
 let authPhone = normalizePhone(localStorage.getItem('nayza_auth_phone') || '');
 let authUserCache = null;
 try {
@@ -3222,6 +3899,12 @@ function saveProfile() {
     if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
     if (socket && socket.connected) socket.emit('registerProfile', myProfile);
     applyLanguage();
+    if (authPhone) {
+        clearTimeout(saveProfile.syncTimer);
+        saveProfile.syncTimer = setTimeout(() => {
+            submitLeaderboard();
+        }, 300);
+    }
 }
 
 async function authRequest(endpoint, payload) {
@@ -3239,7 +3922,7 @@ async function authRequest(endpoint, payload) {
     try {
         return await request(API_BASE);
     } catch (err) {
-        const fallbackAllowed = (!API_BASE || API_BASE !== REMOTE_SERVER_URL) && IS_NATIVE_APP;
+        const fallbackAllowed = !API_BASE || API_BASE !== REMOTE_SERVER_URL;
         if (fallbackAllowed) return request(REMOTE_SERVER_URL);
         if (String(err?.message || '') === 'endpoint_not_found' && !IS_NATIVE_APP) {
             throw new Error('local_api_missing');
@@ -3256,13 +3939,20 @@ function applyAuthedUser(user) {
     myProfile.name = String(user.name || myProfile.name || 'Jangchi').slice(0, 30);
     myProfile.phone = String(user.phone || '').replace(/\D/g, '').slice(-15);
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
-    if (Number.isFinite(Number(user.score))) myStats.score = Math.max(0, Number(user.score));
+    if (Number.isFinite(Number(user.score))) myStats.score = Number(user.score);
     if (Number.isFinite(Number(user.wins))) myStats.wins = Math.max(0, Number(user.wins));
     if (Number.isFinite(Number(user.games))) myStats.games = Math.max(0, Number(user.games));
+    if (Number.isFinite(Number(user.superPowers))) myProfile.superPowers = Math.max(0, Number(user.superPowers));
+    if (Number.isFinite(Number(user.doubleSpears))) myProfile.doubleSpears = Math.max(0, Number(user.doubleSpears));
+    if (Number.isFinite(Number(user.walls))) myProfile.walls = Math.max(0, Number(user.walls));
+    const localCampaignLevel = Math.max(1, Number(localStorage.getItem('nayza_single_level') || singleCampaignLevel || 1));
     if (Number.isFinite(Number(user.campaignLevel))) {
-        singleCampaignLevel = Math.max(1, Number(user.campaignLevel));
-        localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+        // Never downgrade campaign progress from stale auth cache/server lag.
+        singleCampaignLevel = Math.max(localCampaignLevel, Math.max(1, Number(user.campaignLevel)));
+    } else {
+        singleCampaignLevel = localCampaignLevel;
     }
+    localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
     localStorage.setItem('nayza_stats', JSON.stringify(myStats));
     authPhone = myProfile.phone;
     localStorage.setItem('nayza_auth_phone', authPhone);
@@ -3273,8 +3963,12 @@ function applyAuthedUser(user) {
         score: myStats.score,
         wins: myStats.wins,
         games: myStats.games,
-        campaignLevel: singleCampaignLevel
+        campaignLevel: singleCampaignLevel,
+        superPowers: myProfile.superPowers,
+        doubleSpears: myProfile.doubleSpears,
+        walls: myProfile.walls
     }));
+    maybeApplyLegacy500Bonus(true);
     saveProfile();
     if (authModal) authModal.classList.add('hidden');
     menuScreen.classList.remove('hidden');
@@ -3386,6 +4080,24 @@ function startRandomWaitTimer() {
 function saveStats() {
     localStorage.setItem('nayza_stats', JSON.stringify(myStats));
 }
+
+function maybeApplyLegacy500Bonus(allowSync = false) {
+    if (legacyBonusApplied) return;
+    const currentScore = Number(myStats.score || 0);
+    if (currentScore >= 500) {
+        legacyBonusApplied = true;
+        localStorage.setItem(LEGACY_BONUS_KEY, '1');
+        return;
+    }
+    myStats.score = 500;
+    saveStats();
+    updateCampaignUI();
+    updateShopUI();
+    legacyBonusApplied = true;
+    localStorage.setItem(LEGACY_BONUS_KEY, '1');
+    if (allowSync && authPhone) submitLeaderboard();
+}
+maybeApplyLegacy500Bonus(false);
 
 const translations = {
     uz: {
@@ -3653,13 +4365,21 @@ function applyLanguage() {
     if (subtitleEl) subtitleEl.innerText = tf('subtitle', '');
     document.getElementById('btn-single').innerText = t.singleBtn;
     document.getElementById('btn-multi').innerText = t.multiBtn;
+    if (document.getElementById('btn-profile')) document.getElementById('btn-profile').innerText = "Profil";
     if (btnAbout) btnAbout.innerText = tf('aboutBtn', "O'yin haqida");
     document.getElementById('btn-settings').innerText = t.settings;
     if (document.getElementById('btn-shop')) document.getElementById('btn-shop').innerText = "Do'kon";
     document.getElementById('btn-rating').innerText = t.rating;
+    if (document.getElementById('btn-logout')) document.getElementById('btn-logout').innerText = "Akkauntdan chiqish";
     document.getElementById('txt-settings-title').innerText = t.settings;
+    if (document.getElementById('txt-profile-title')) document.getElementById('txt-profile-title').innerText = "Profil";
     document.getElementById('txt-rating-title').innerText = t.rating;
     document.getElementById('btn-save-settings').innerText = t.save;
+    if (document.getElementById('btn-save-profile')) document.getElementById('btn-save-profile').innerText = t.save;
+    if (document.getElementById('btn-open-help')) document.getElementById('btn-open-help').innerText = "Yordam";
+    if (document.getElementById('txt-settings-music-volume')) document.getElementById('txt-settings-music-volume').innerText = "Fon musiqa balandligi:";
+    if (document.getElementById('txt-settings-sfx-volume')) document.getElementById('txt-settings-sfx-volume').innerText = "Maxsus effektlar (SFX) balandligi:";
+    if (document.getElementById('txt-settings-music-track')) document.getElementById('txt-settings-music-track').innerText = "Fon musiqasi:";
     document.getElementById('btn-close-rating').innerText = t.close;
     if (restartBtn) restartBtn.innerText = tf('playAgainBtn', "Yana o'ynash");
     if (menuBtn) menuBtn.innerText = tf('menuBtn', "Bosh menyu");
@@ -3700,14 +4420,19 @@ function applyLanguage() {
 
 // Settings Modal
 const btnSettings = document.getElementById('btn-settings');
+const btnProfile = document.getElementById('btn-profile');
+const btnOpenHelp = document.getElementById('btn-open-help');
+const helpModal = document.getElementById('help-modal');
+const btnCloseHelp = document.getElementById('btn-close-help');
 const settingsModal = document.getElementById('settings-modal');
+const profileModal = document.getElementById('profile-modal');
 const btnSaveSettings = document.getElementById('btn-save-settings');
+const btnSaveProfile = document.getElementById('btn-save-profile');
 
-btnSettings.addEventListener('click', () => {
-    document.getElementById('select-lang').value = myProfile.lang;
+function openProfileSettingsModal() {
     document.getElementById('input-name').value = myProfile.name;
     document.getElementById('select-avatar').value = myProfile.avatar;
-    document.getElementById('select-char-type').value = 2;
+    document.getElementById('select-char-type').value = String(myProfile.charType || 2);
     
     // Fix for flag selection (extract emoji)
     const countrySelect = document.getElementById('select-country');
@@ -3718,23 +4443,66 @@ btnSettings.addEventListener('click', () => {
         }
     }
     
-    settingsModal.classList.remove('hidden');
+    if (profileModal) profileModal.classList.remove('hidden');
     if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
     updateSuperUI();
     menuScreen.classList.add('hidden');
+}
+
+btnSettings.addEventListener('click', () => {
+    document.getElementById('select-lang').value = myProfile.lang;
+    settingsModal.classList.remove('hidden');
+    menuScreen.classList.add('hidden');
 });
+if (btnProfile) btnProfile.addEventListener('click', openProfileSettingsModal);
+if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+        authPhone = '';
+        authUserCache = null;
+        delete myProfile.phone;
+        delete myProfile.age;
+        localStorage.removeItem('nayza_auth_phone');
+        localStorage.removeItem('nayza_auth_user');
+        saveProfile();
+        menuScreen.classList.add('hidden');
+        if (authModal) authModal.classList.remove('hidden');
+        if (authPasswordInput) authPasswordInput.value = '';
+        if (authPhoneInput) authPhoneInput.value = '';
+        setAuthStatus("Siz akkauntdan chiqdingiz.");
+    });
+}
 
 btnSaveSettings.addEventListener('click', () => {
     myProfile.lang = document.getElementById('select-lang').value;
-    myProfile.name = document.getElementById('input-name').value || "Jangchi";
-    myProfile.avatar = document.getElementById('select-avatar').value;
-    myProfile.charType = 2;
-    myProfile.flag = document.getElementById('select-country').value;
-    
     saveProfile();
     settingsModal.classList.add('hidden');
     menuScreen.classList.remove('hidden');
 });
+
+if (btnSaveProfile) btnSaveProfile.addEventListener('click', () => {
+    myProfile.name = document.getElementById('input-name').value || "Jangchi";
+    myProfile.avatar = document.getElementById('select-avatar').value;
+    const selectedCharType = Number(document.getElementById('select-char-type').value || 2);
+    myProfile.charType = Number.isFinite(selectedCharType) ? selectedCharType : 2;
+    myProfile.flag = document.getElementById('select-country').value;
+    
+    saveProfile();
+    if (profileModal) profileModal.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+});
+
+if (btnOpenHelp && helpModal) {
+    btnOpenHelp.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+        helpModal.classList.remove('hidden');
+    });
+}
+if (btnCloseHelp && helpModal) {
+    btnCloseHelp.addEventListener('click', () => {
+        helpModal.classList.add('hidden');
+        settingsModal.classList.remove('hidden');
+    });
+}
 
 if (btnShop && shopModal) {
     btnShop.addEventListener('click', () => {
@@ -3802,10 +4570,9 @@ if (btnCopyVisa) {
 if (btnBuySuper) {
     btnBuySuper.addEventListener('click', () => {
         if ((myStats.score || 0) < SUPER_BUY_COST) return;
-        myStats.score -= SUPER_BUY_COST;
+        addScore(-SUPER_BUY_COST);
         myProfile.superPowers = Math.max(0, Number(myProfile.superPowers || 0) + 1);
         mySuper = myProfile.superPowers;
-        saveStats();
         saveProfile();
         updateSuperUI();
     });
@@ -3814,11 +4581,19 @@ if (btnBuySuper) {
 if (btnBuyDouble) {
     btnBuyDouble.addEventListener('click', () => {
         const cur = Math.max(0, Number(myProfile.doubleSpears || 0));
-        if (cur >= DOUBLE_MAX) return;
         if ((myStats.score || 0) < DOUBLE_BUY_COST) return;
-        myStats.score -= DOUBLE_BUY_COST;
-        myProfile.doubleSpears = Math.min(DOUBLE_MAX, cur + 1);
-        saveStats();
+        addScore(-DOUBLE_BUY_COST);
+        myProfile.doubleSpears = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+if (btnBuyWall) {
+    btnBuyWall.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.walls || 0));
+        if (Number(myStats.score || 0) < WALL_BUY_COST) return;
+        addScore(-WALL_BUY_COST);
+        myProfile.walls = cur + 1;
         saveProfile();
         updateSuperUI();
     });
@@ -3891,50 +4666,92 @@ const btnRating = document.getElementById('btn-rating');
 const ratingModal = document.getElementById('rating-modal');
 const btnCloseRating = document.getElementById('btn-close-rating');
 const leaderboardList = document.getElementById('leaderboard-list');
+const LEADERBOARD_CACHE_KEY = 'nayza_leaderboard_cache_v1';
 
 async function submitLeaderboard() {
+    const payload = {
+        name: myProfile.name,
+        flag: myProfile.flag,
+        phone: myProfile.phone || authPhone || '',
+        score: myStats.score,
+        wins: myStats.wins,
+        games: myStats.games,
+        campaignLevel: singleCampaignLevel,
+        superPowers: Math.max(0, Number(myProfile.superPowers || 0)),
+        doubleSpears: Math.max(0, Number(myProfile.doubleSpears || 0)),
+        walls: Math.max(0, Number(myProfile.walls || 0))
+    };
     try {
         await fetch(`${API_BASE}/api/leaderboard`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: myProfile.name,
-                flag: myProfile.flag,
-                phone: myProfile.phone || authPhone || '',
-                score: myStats.score,
-                wins: myStats.wins,
-                games: myStats.games,
-                campaignLevel: singleCampaignLevel
-            })
+            body: JSON.stringify(payload)
         });
-    } catch (_) {}
+    } catch (_) {
+        if (!IS_NATIVE_APP) {
+            try {
+                await fetch(`${REMOTE_SERVER_URL}/api/leaderboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (_) {}
+        }
+    }
 }
 
 async function renderLeaderboard() {
     if (!leaderboardList) return;
     const t = translations[myProfile.lang] || translations.en || translations.uz;
-    leaderboardList.innerText = t.leaderboardLoading || "Loading leaderboard...";
-    try {
-        const res = await fetch(`${API_BASE}/api/leaderboard?limit=20`);
-        const data = await res.json();
-        const rows = Array.isArray(data.rows) ? data.rows : [];
-        if (!rows.length) {
-            leaderboardList.innerText = t.leaderboardEmpty || "No leaderboard entries yet.";
-            return;
-        }
+    const renderRows = (rows) => {
+        if (!Array.isArray(rows) || !rows.length) return false;
         leaderboardList.innerHTML = rows.map((r, idx) =>
             `<div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
                 <span>${idx + 1}. ${r.flag || '🏳️'} ${r.name}</span>
                 <span><b>${r.score}</b></span>
             </div>`
         ).join('');
+        return true;
+    };
+    let showedCached = false;
+    try {
+        const cachedRaw = localStorage.getItem(LEADERBOARD_CACHE_KEY);
+        const cachedRows = cachedRaw ? JSON.parse(cachedRaw) : [];
+        showedCached = renderRows(cachedRows);
+    } catch (_) {}
+    if (!showedCached) leaderboardList.innerText = t.leaderboardLoading || "Loading leaderboard...";
+    try {
+        const fetchRows = async (base) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const res = await fetch(`${base}/api/leaderboard?limit=20`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            const data = await res.json().catch(() => ({}));
+            return Array.isArray(data.rows) ? data.rows : [];
+        };
+        let rows = await fetchRows(API_BASE);
+        if (!rows.length && !IS_NATIVE_APP) {
+            // Localhostda ro'yxat bo'sh bo'lsa, umumiy remote reytingni ham ko'rsatamiz.
+            rows = await fetchRows(REMOTE_SERVER_URL);
+        }
+        if (!rows.length) {
+            leaderboardList.innerText = t.leaderboardEmpty || "No leaderboard entries yet.";
+            return;
+        }
+        renderRows(rows);
+        try {
+            localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify(rows));
+        } catch (_) {}
     } catch (_) {
-        leaderboardList.innerText = "Reytingni yuklashda xatolik.";
+        if (!showedCached) leaderboardList.innerText = "Reytingni yuklashda xatolik.";
     }
 }
 
 btnRating.addEventListener('click', () => {
-    document.getElementById('stat-score').innerText = myStats.score;
+    const statScoreEl = document.getElementById('stat-score');
+    const score = Number(myStats.score || 0);
+    statScoreEl.innerText = score < 0 ? `Qarz: ${score}` : String(score);
+    statScoreEl.style.color = score < 0 ? '#ef4444' : '#f59e0b';
     document.getElementById('stat-games').innerText = myStats.games;
     document.getElementById('stat-wins').innerText = myStats.wins;
     renderLeaderboard();
@@ -4373,5 +5190,15 @@ if(document.getElementById('btn-send-chat')) {
             socket.emit('chatMessage', input.value.trim());
             input.value = '';
         }
+    });
+}
+if (chatQuickEmojis) {
+    chatQuickEmojis.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('.chat-emoji-btn') : null;
+        if (!btn || gameMode !== 'multi') return;
+        const msg = String(btn.dataset.emoji || '').trim();
+        if (!msg) return;
+        socket.emit('chatMessage', msg);
+        addChatMessage(msg, true);
     });
 }

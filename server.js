@@ -49,7 +49,7 @@ function normalizeEntry(body) {
         name: String(body?.name || 'Jangchi').slice(0, 30),
         flag: String(body?.flag || '🏳️').slice(0, 8),
         phone: String(body?.phone || '').replace(/\D/g, '').slice(-15),
-        score: Math.max(0, Number(body?.score) || 0),
+        score: Number(body?.score) || 0,
         wins: Math.max(0, Number(body?.wins) || 0),
         games: Math.max(0, Number(body?.games) || 0),
         updatedAt: Date.now()
@@ -71,6 +71,35 @@ function saveUsers(users) {
     fs.writeFileSync(usersDbPath, JSON.stringify(users, null, 2), 'utf8');
 }
 
+function ensureLegacyBonus(users) {
+    let changed = false;
+    const migrated = (users || []).map((u) => {
+        const normalizedStoredPhone = normalizePhone(u?.phone || '');
+        const score = Number(u?.score || 0);
+        const needsScore = score < 500;
+        const needsPhone = normalizedStoredPhone && normalizedStoredPhone !== String(u?.phone || '');
+        const needsInventoryDefaults =
+            !Number.isFinite(Number(u?.superPowers)) ||
+            !Number.isFinite(Number(u?.doubleSpears)) ||
+            !Number.isFinite(Number(u?.walls));
+        if (!needsScore && !needsPhone && !needsInventoryDefaults) return u;
+        changed = true;
+        return {
+            ...u,
+            phone: normalizedStoredPhone || String(u?.phone || ''),
+            score: needsScore ? 500 : score,
+            superPowers: Math.max(0, Number(u?.superPowers || 0)),
+            doubleSpears: Math.max(0, Number(u?.doubleSpears || 0)),
+            walls: Math.max(0, Number(u?.walls || 0))
+        };
+    });
+    if (changed) saveUsers(migrated);
+    return migrated;
+}
+
+// One-time migration at startup: legacy accounts get minimum 500 score.
+ensureLegacyBonus(loadUsers());
+
 function hashPassword(password) {
     return crypto.createHash('sha256').update(String(password || '')).digest('hex');
 }
@@ -89,25 +118,43 @@ function toPublicUser(user) {
         name: user.name,
         phone: user.phone,
         age: user.age,
-        score: Math.max(0, Number(user.score) || 0),
+        score: Number(user.score) || 0,
         wins: Math.max(0, Number(user.wins) || 0),
         games: Math.max(0, Number(user.games) || 0),
-        campaignLevel: Math.max(1, Number(user.campaignLevel) || 1)
+        campaignLevel: Math.max(1, Number(user.campaignLevel) || 1),
+        superPowers: Math.max(0, Number(user.superPowers || 0)),
+        doubleSpears: Math.max(0, Number(user.doubleSpears || 0)),
+        walls: Math.max(0, Number(user.walls || 0))
     };
+}
+
+function findUserIndexByPhone(users, phone) {
+    const phoneNorm = normalizePhone(phone || '');
+    if (!phoneNorm) return -1;
+    const phoneTail = phoneNorm.slice(-9);
+    return (users || []).findIndex((u) => {
+        const storedNorm = normalizePhone(u?.phone || '');
+        if (storedNorm) return storedNorm === phoneNorm;
+        const rawTail = String(u?.phone || '').replace(/\D/g, '').slice(-9);
+        return rawTail && rawTail === phoneTail;
+    });
 }
 
 function upsertUserProgress(phone, progress = {}) {
     if (!phone) return;
     const users = loadUsers();
-    const idx = users.findIndex((u) => u.phone === phone);
+    const idx = findUserIndexByPhone(users, phone);
     if (idx === -1) return;
     const prev = users[idx];
     users[idx] = {
         ...prev,
-        score: Math.max(Number(prev.score || 0), Number(progress.score || 0)),
+        score: Number.isFinite(Number(progress.score)) ? Number(progress.score) : Number(prev.score || 0),
         wins: Math.max(Number(prev.wins || 0), Number(progress.wins || 0)),
         games: Math.max(Number(prev.games || 0), Number(progress.games || 0)),
         campaignLevel: Math.max(Number(prev.campaignLevel || 1), Number(progress.campaignLevel || 1)),
+        superPowers: Number.isFinite(Number(progress.superPowers)) ? Math.max(0, Number(progress.superPowers)) : Math.max(0, Number(prev.superPowers || 0)),
+        doubleSpears: Number.isFinite(Number(progress.doubleSpears)) ? Math.max(0, Number(progress.doubleSpears)) : Math.max(0, Number(prev.doubleSpears || 0)),
+        walls: Number.isFinite(Number(progress.walls)) ? Math.max(0, Number(progress.walls)) : Math.max(0, Number(prev.walls || 0)),
         updatedAt: Date.now()
     };
     saveUsers(users);
@@ -202,6 +249,9 @@ app.get('/api/leaderboard', async (req, res) => {
 app.post('/api/leaderboard', async (req, res) => {
     const entry = normalizeEntry(req.body || {});
     const campaignLevel = Math.max(1, Number(req.body?.campaignLevel) || 1);
+    const superPowers = Math.max(0, Number(req.body?.superPowers || 0));
+    const doubleSpears = Math.max(0, Number(req.body?.doubleSpears || 0));
+    const walls = Math.max(0, Number(req.body?.walls || 0));
     try {
         await upsertLeaderboardEntry(entry);
         if (entry.phone) {
@@ -209,7 +259,10 @@ app.post('/api/leaderboard', async (req, res) => {
                 score: entry.score,
                 wins: entry.wins,
                 games: entry.games,
-                campaignLevel
+                campaignLevel,
+                superPowers,
+                doubleSpears,
+                walls
             });
         }
         res.json({ ok: true, source: supabaseEnabled ? 'supabase' : 'file' });
@@ -239,7 +292,10 @@ app.post('/api/leaderboard', async (req, res) => {
                     score: entry.score,
                     wins: entry.wins,
                     games: entry.games,
-                    campaignLevel
+                    campaignLevel,
+                    superPowers,
+                    doubleSpears,
+                    walls
                 });
             }
             res.json({ ok: true, source: 'file-fallback' });
@@ -258,7 +314,7 @@ app.post('/api/auth/register', (req, res) => {
         res.status(400).json({ ok: false, error: 'invalid_payload' });
         return;
     }
-    const users = loadUsers();
+    const users = ensureLegacyBonus(loadUsers());
     if (users.some((u) => u.phone === phone)) {
         res.status(409).json({ ok: false, error: 'phone_exists' });
         return;
@@ -268,10 +324,13 @@ app.post('/api/auth/register', (req, res) => {
         name,
         phone,
         age,
-        score: 0,
+        score: 500,
         wins: 0,
         games: 0,
         campaignLevel: 1,
+        superPowers: 5,
+        doubleSpears: 0,
+        walls: 0,
         passwordHash: hashPassword(password),
         createdAt: Date.now()
     };
@@ -287,8 +346,9 @@ app.post('/api/auth/login', (req, res) => {
         res.status(401).json({ ok: false, error: 'invalid_credentials' });
         return;
     }
-    const users = loadUsers();
-    const user = users.find((u) => u.phone === phone);
+    const users = ensureLegacyBonus(loadUsers());
+    const userIdx = findUserIndexByPhone(users, phone);
+    const user = userIdx >= 0 ? users[userIdx] : null;
     if (!user || user.passwordHash !== hashPassword(password)) {
         res.status(401).json({ ok: false, error: 'invalid_credentials' });
         return;
@@ -303,8 +363,8 @@ app.post('/api/auth/reset-password', (req, res) => {
         res.status(400).json({ ok: false, error: 'invalid_payload' });
         return;
     }
-    const users = loadUsers();
-    const idx = users.findIndex((u) => u.phone === phone);
+    const users = ensureLegacyBonus(loadUsers());
+    const idx = findUserIndexByPhone(users, phone);
     if (idx === -1) {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
@@ -320,8 +380,9 @@ app.get('/api/auth/user', (req, res) => {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
     }
-    const users = loadUsers();
-    const user = users.find((u) => u.phone === phone);
+    const users = ensureLegacyBonus(loadUsers());
+    const idx = findUserIndexByPhone(users, phone);
+    const user = idx >= 0 ? users[idx] : null;
     if (!user) {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
@@ -363,6 +424,10 @@ io.on('connection', (socket) => {
                 Math.max(0, Number(player1.profile?.superPowers ?? 5)),
                 Math.max(0, Number(player2.profile?.superPowers ?? 5))
             ],
+            walls: [
+                { active: false, x: 0, hp: 0 },
+                { active: false, x: 0, hp: 0 }
+            ],
             defending: [false, false],
             ducking: [false, false],
             inFlight: false,
@@ -381,6 +446,7 @@ io.on('connection', (socket) => {
             health: rooms[roomName].health,
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
+            walls: rooms[roomName].walls,
             options: rooms[roomName].options
         });
         player2.emit('gameStart', { 
@@ -392,6 +458,7 @@ io.on('connection', (socket) => {
             health: rooms[roomName].health,
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
+            walls: rooms[roomName].walls,
             options: rooms[roomName].options
         });
     }
@@ -680,6 +747,71 @@ io.on('connection', (socket) => {
         socket.to(roomName).emit('duckStateChanged', {
             playerIndex,
             active: room.ducking[playerIndex]
+        });
+    });
+
+    socket.on('wallPlaced', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const ownerIndex = Number(data?.ownerIndex);
+        const x = Number(data?.x || 0);
+        const hp = Math.max(1, Math.min(5, Number(data?.hp || 5)));
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1 || playerIndex !== ownerIndex) return;
+        room.walls[ownerIndex] = { active: true, x, hp };
+        io.to(roomName).emit('wallStateChanged', { ownerIndex, active: true, x, hp });
+    });
+
+    socket.on('wallMoved', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const ownerIndex = Number(data?.ownerIndex);
+        const x = Number(data?.x || 0);
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1 || playerIndex !== ownerIndex) return;
+        if (!room.walls[ownerIndex] || !room.walls[ownerIndex].active) return;
+        room.walls[ownerIndex].x = x;
+        io.to(roomName).emit('wallStateChanged', {
+            ownerIndex,
+            active: true,
+            x,
+            hp: room.walls[ownerIndex].hp
+        });
+    });
+
+    socket.on('wallHit', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        if (socket.id !== room.players[room.turnIndex]) return;
+        if (!room.inFlight) return;
+        const ownerIndex = Number(data?.ownerIndex);
+        if (!Number.isFinite(ownerIndex) || !room.walls[ownerIndex] || !room.walls[ownerIndex].active) return;
+        room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
+        io.to(roomName).emit('wallHitFx', {
+            ownerIndex,
+            hitX: Number(data?.hitX || 0),
+            hitY: Number(data?.hitY || 0)
+        });
+        if (room.walls[ownerIndex].hp <= 0) {
+            room.walls[ownerIndex] = { active: false, x: 0, hp: 0 };
+            io.to(roomName).emit('wallStateChanged', { ownerIndex, active: false, x: 0, hp: 0 });
+        } else {
+            io.to(roomName).emit('wallStateChanged', {
+                ownerIndex,
+                active: true,
+                x: room.walls[ownerIndex].x,
+                hp: room.walls[ownerIndex].hp
+            });
+        }
+        room.inFlight = false;
+        room.turnIndex = room.turnIndex === 0 ? 1 : 0;
+        room.wind = generateWind();
+        io.to(roomName).emit('nextTurn', {
+            turnIndex: room.turnIndex,
+            wind: room.wind
         });
     });
 

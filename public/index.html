@@ -104,10 +104,12 @@
             </div>
 <button id="btn-single" class="primary-btn">Yakkalik o'yin (Kompyuterga qarshi)</button>
             <button id="btn-multi" class="primary-btn">Onlayn (Haqiqiy raqibga qarshi)</button>
+            <button id="btn-profile" class="primary-btn" style="background:#0f766e;">Profil</button>
             <button id="btn-about" class="primary-btn" style="background:#0ea5e9;">O'yin haqida</button>
             <button id="btn-settings" class="primary-btn" style="background: #4b5563;">Sozlamalar</button>
             <button id="btn-shop" class="primary-btn" style="background: #7c3aed;">Do'kon</button>
             <button id="btn-rating" class="primary-btn" style="background: #f59e0b; color: #fff;">Reyting</button>
+            <button id="btn-logout" class="primary-btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Akkauntdan chiqish</button>
         </div>
 
         <!-- Multi Menu Modal -->
@@ -182,7 +184,7 @@
         <div id="settings-modal" class="screen hidden panel center-panel">
             <h2 id="txt-settings-title">Sozlamalar</h2>
             <div style="margin: 15px 0; text-align: left;">
-                <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Til:</label>
+                <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
                 <select id="select-lang" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
                     <option value="uz">O'zbekcha</option>
                     <option value="ru">Русский</option>
@@ -193,7 +195,26 @@
                     <option value="tr">Türkçe</option>
                     <option value="az">Azərbaycanca</option>
                 </select>
+                <label id="txt-settings-music-volume" for="settings-music-volume" style="display:block; margin-bottom:5px;">Fon musiqa balandligi:</label>
+                <input id="settings-music-volume" type="range" min="0" max="1" step="0.01" value="0.4" style="width:100%; margin-bottom:12px;">
 
+                <label id="txt-settings-sfx-volume" for="settings-sfx-volume" style="display:block; margin-bottom:5px;">Maxsus effektlar (SFX) balandligi:</label>
+                <input id="settings-sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8" style="width:100%; margin-bottom:12px;">
+
+                <label id="txt-settings-music-track" for="settings-music-track" style="display:block; margin-bottom:5px;">Fon musiqasi:</label>
+                <select id="settings-music-track" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
+                    <option value="music.mp3">Arabian</option>
+                    <option value="jumongsound.mp3">Jumong</option>
+                </select>
+                <button id="btn-open-help" class="primary-btn" style="background:#2563eb;">Yordam</button>
+            </div>
+            <button id="btn-save-settings" class="primary-btn">Saqlash</button>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="screen hidden panel center-panel">
+            <h2 id="txt-profile-title">Profil</h2>
+            <div style="margin: 15px 0; text-align: left;">
                 <label id="txt-name-lbl" style="display:block; margin-bottom:5px;">Ism:</label>
                 <input type="text" id="input-name" placeholder="Ismingiz..." style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;" maxlength="15">
 
@@ -209,13 +230,13 @@
                     <option value="🦁">🦁</option>
                 </select>
 
-<label id="txt-spear-lbl" style="display:block; margin-bottom:5px;">Nayza modeli:</label>
-<select id="select-spear-model" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
-    
-    <option value="0">Yog'och nayza</option>
-    <option value="1">Nayza 3</option>
-</select>
-<label id="txt-country-lbl" style="display:block; margin-bottom:5px;">Davlat:</label>
+                <label id="txt-spear-lbl" style="display:block; margin-bottom:5px;">Nayza modeli:</label>
+                <select id="select-spear-model" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
+                    <option value="0">Yog'och nayza</option>
+                    <option value="1">Nayza 3</option>
+                </select>
+
+                <label id="txt-country-lbl" style="display:block; margin-bottom:5px;">Davlat:</label>
                 <select id="select-country" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.5rem;">
                     <option value="🇺🇿">🇺🇿 O'zbekiston</option>
                     <option value="🇷🇺">🇷🇺 Rossiya</option>
@@ -228,6 +249,7 @@
                 <label id="txt-char-lbl" style="display:block; margin-bottom:5px;">Jangchi Modeli:</label>
                 <select id="select-char-type" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.1rem;">
                     <option value="2">Usmonli jangchisi - kamonlik</option>
+                    <option value="3">Usmonli jangchisi - nayzalik</option>
                 </select>
                 <label style="display:block; margin-bottom:5px;">Sizning ID:</label>
                 <input id="player-id-readonly" type="text" readonly style="width:100%; padding:8px; border-radius:5px; background:#1e293b; color:#86efac; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px; font-weight:700; letter-spacing:2px;">
@@ -238,7 +260,24 @@
                 </div>
                 <div id="friend-id-status" style="min-height:18px; margin:-8px 0 10px; font-size:0.8rem; color:#94a3b8;"></div>
             </div>
-            <button id="btn-save-settings" class="primary-btn">Saqlash</button>
+            <button id="btn-save-profile" class="primary-btn">Saqlash</button>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="screen hidden panel center-panel">
+            <h2>Yordam va yo'riqnoma</h2>
+            <div style="margin: 12px 0; text-align: left; line-height: 1.6; color:#dbeafe; font-size:0.95rem;">
+                <p><b>O'yin haqida:</b> Nayza Jangi - navbat asosida o'ynaladigan duel o'yini. Har navbatda mo'ljal va kuchni tanlab nayza otasiz.</p>
+                <p><b>Qanday o'ynaladi:</b> Ekranda tortib mo'ljalga oling, kuchni belgilang va qo'yib yuboring. Shamol yo'nalishi o'q trayektoriyasiga ta'sir qiladi.</p>
+                <p><b>Tugmalar vazifasi:</b></p>
+                <p>🛡️ <b>Qalqon</b> - himoya holatini yoqadi, qalqon zarbani kamaytiradi.</p>
+                <p>🗡️ <b>Super</b> - raqib nayzasi uchayotganda maxsus himoya ishlatadi.</p>
+                <p>🧎 <b>Boshni egish</b> - bosib turganda askar o'tiradi va boshga kelgan zarbadan qochadi.</p>
+                <p>⚔️ <b>Qo'sh nayza</b> - aktiv holatda bir otishda 2 ta nayza uchadi.</p>
+                <p><b>Profil:</b> Ism, avatar, davlat va jangchi modelini Profil bo'limida o'zgartirasiz.</p>
+                <p><b>Reyting:</b> Ball, o'yinlar va g'alabalar serverda saqlanadi.</p>
+            </div>
+            <button id="btn-close-help" class="primary-btn" style="background:#475569;">Yopish</button>
         </div>
 
         <div id="shop-modal" class="screen hidden panel center-panel">
@@ -268,8 +307,21 @@
                         <span>Narx (1 dona):</span>
                         <b id="double-buy-cost">220</b>
                     </div>
-                    <div class="shop-meta"><span id="shop-double-max">max 5</span></div>
+                    <div class="shop-meta"><span id="shop-double-max">Soni: 0</span></div>
                     <button id="btn-buy-double" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qo'sh nayza sotib olish</button>
+                </div>
+                <div class="shop-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span class="shop-item-title">🧱 Tahta devor</span>
+                        <b id="wall-count-settings">0</b>
+                    </div>
+                    <div class="shop-item-desc">5 ta nayzani to'sadi. O'yinda joyini surib o'zgartirsa bo'ladi.</div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                        <span>Narx (1 dona):</span>
+                        <b id="wall-buy-cost">500</b>
+                    </div>
+                    <div class="shop-meta"><span id="shop-wall-max">Soni: 0</span></div>
+                    <button id="btn-buy-wall" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0f766e;">+1 Tahta devor sotib olish</button>
                 </div>
             </div>
             <button id="btn-close-shop" class="primary-btn" style="background:#475569;">Yopish</button>
@@ -336,6 +388,7 @@
                 <label id="txt-char-opt-lbl" style="display:block; margin-bottom:5px;">Jangchi modeli:</label>
                 <select id="select-char-type-options" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
                     <option value="2">Usmonli jangchisi - kamonlik</option>
+                    <option value="3">Usmonli jangchisi - nayzalik</option>
                 </select>
 
             </div>
@@ -366,12 +419,24 @@
                 ⚔️
                 <span id="double-count" class="shield-count">0</span>
             </button>
+            <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;" aria-label="Tahta devor qo'yish yoki surish">
+                🧱
+                <span id="wall-count" class="shield-count">0</span>
+            </button>
             <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>
             <button id="music-toggle-btn" class="icon-btn" style="pointer-events: auto;" aria-label="Musiqani yoqish yoki o'chirish">🔊</button>
 
             <!-- Chat Box -->
             <div id="chat-container" class="chat-container hidden" style="pointer-events: auto; bottom: 80px;">
                 <div id="chat-messages" class="chat-messages"></div>
+                <div id="chat-quick-emojis" class="chat-quick-emojis">
+                    <button type="button" class="chat-emoji-btn" data-emoji="👍">👍</button>
+                    <button type="button" class="chat-emoji-btn" data-emoji="🔥 Zo'r!">🔥 Zo'r!</button>
+                    <button type="button" class="chat-emoji-btn" data-emoji="👏">👏</button>
+                    <button type="button" class="chat-emoji-btn" data-emoji="🤝">🤝</button>
+                    <button type="button" class="chat-emoji-btn" data-emoji="💪">💪</button>
+                    <button type="button" class="chat-emoji-btn" data-emoji="😅">😅</button>
+                </div>
                 <form id="chat-form" class="chat-form">
                     <input type="text" id="chat-input" placeholder="Xabar yozing..." autocomplete="off">
                     <button type="submit">↗</button>
@@ -399,6 +464,11 @@
                             <input id="sfx-mute" type="checkbox">
                             SFX o'chirish
                         </label>
+                        <label for="in-game-music-track" style="display:block; font-size:0.85rem; margin:10px 0 6px;">Fon musiqasi</label>
+                        <select id="in-game-music-track" style="width:100%; padding:8px; border-radius:8px; background:#334155; color:white; border:none;">
+                            <option value="music.mp3">Arabian</option>
+                            <option value="jumongsound.mp3">Jumong</option>
+                        </select>
                     </div>
                     <button id="btn-exit-menu" class="primary-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);">Asosiy Menyu</button>
                 </div>
@@ -416,6 +486,7 @@
                 <div class="wind-indicator panel">
                     <span id="txt-wind">SHAMOL</span>
                     <h3 id="wind-text">0</h3>
+                    <div id="hud-score" class="hud-score">Ball: 0</div>
                     <div class="wind-arrow-container">
                         <div id="wind-arrow">➔</div>
                     </div>
@@ -455,6 +526,6 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=17"></script>
+    <script src="client.js?v=19"></script>
 </body>
 </html>

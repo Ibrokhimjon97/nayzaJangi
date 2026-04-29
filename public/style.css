@@ -202,6 +202,17 @@ body, html {
     line-height: 1.05;
 }
 
+.hud-score {
+    font-size: clamp(0.62rem, 1.2vw, 0.84rem);
+    font-weight: 700;
+    color: #fbbf24;
+    letter-spacing: 0.4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(251, 191, 36, 0.32);
+}
+
 .wind-arrow-container {
     font-size: clamp(0.9rem, 2.1vw, 1.5rem);
     color: #38bdf8;
@@ -421,9 +432,27 @@ body, html {
     background: radial-gradient(circle at 30% 30%, rgba(233,213,255,0.24), rgba(46,16,101,0.92));
 }
 
+.wall-btn {
+    position: absolute;
+    bottom: clamp(8px, 2vh, 20px);
+    right: clamp(236px, 36vw, 314px);
+    z-index: 100;
+    width: clamp(48px, 9vw, 66px);
+    height: clamp(48px, 9vw, 66px);
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    border-color: rgba(16, 185, 129, 0.75);
+    background: radial-gradient(circle at 30% 30%, rgba(209, 250, 229, 0.24), rgba(6, 78, 59, 0.92));
+}
+
 .double-btn.active {
     background: radial-gradient(circle at 30% 30%, rgba(233,213,255,0.4), rgba(76,29,149,0.98));
     box-shadow: 0 0 24px rgba(168, 85, 247, 0.65);
+    transform: scale(0.96);
+}
+
+.wall-btn.active {
+    background: radial-gradient(circle at 30% 30%, rgba(209, 250, 229, 0.45), rgba(5, 150, 105, 0.95));
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.65);
     transform: scale(0.96);
 }
 
@@ -730,6 +759,30 @@ body, html {
     transform: scale(1.1);
 }
 
+.chat-quick-emojis {
+    display: flex;
+    gap: 6px;
+    padding: 6px 8px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.chat-quick-emojis::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-emoji-btn {
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(15, 23, 42, 0.65);
+    color: #e2e8f0;
+    border-radius: 14px;
+    padding: 4px 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
 .chat-badge {
     position: absolute;
     top: -5px;
@@ -857,6 +910,15 @@ body, html {
         bottom: 8px;
         right: 186px;
     }
+
+    .wall-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 1.1rem;
+        bottom: 8px;
+        right: 238px;
+    }
+
 
     .shield-count {
         min-width: 18px;
@@ -1152,7 +1214,7 @@ body, html {
     .super-btn {
         min-width: 42px;
         min-height: 42px;
-        right: 58px;
+        right: 50px;
         bottom: 5px;
         font-size: 1.1rem;
     }
@@ -1160,7 +1222,7 @@ body, html {
     .duck-btn {
         min-width: 42px;
         min-height: 42px;
-        right: 108px;
+        right: 98px;
         bottom: 5px;
         font-size: 0.95rem;
     }
@@ -1168,12 +1230,332 @@ body, html {
     .double-btn {
         min-width: 42px;
         min-height: 42px;
-        right: 150px;
+        right: 146px;
         bottom: 5px;
         font-size: 0.86rem;
     }
 
+    .wall-btn {
+        min-width: 42px;
+        min-height: 42px;
+        right: 194px;
+        bottom: 5px;
+        font-size: 0.92rem;
+    }
+
+
     .chat-container {
         left: clamp(58px, 18vw, 92px);
     }
+}
+
+/* --- Modern UI pass (global overrides) --- */
+:root {
+    --ui-bg-1: #070b1f;
+    --ui-bg-2: #101b3d;
+    --ui-accent-1: #22d3ee;
+    --ui-accent-2: #6366f1;
+    --ui-text-main: #e6f1ff;
+    --ui-text-muted: #9fb2ce;
+    --ui-panel-border: rgba(148, 163, 184, 0.26);
+}
+
+body, html {
+    background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
+        radial-gradient(1000px 520px at 90% 110%, rgba(99, 102, 241, 0.16), transparent 60%),
+        linear-gradient(180deg, var(--ui-bg-1), #050813 58%, #04060d);
+    color: var(--ui-text-main);
+}
+
+.panel {
+    background: linear-gradient(155deg, rgba(10, 16, 36, 0.84), rgba(15, 26, 54, 0.74));
+    border: 1px solid var(--ui-panel-border);
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 0 40px rgba(34, 211, 238, 0.04);
+}
+
+.center-panel {
+    width: min(94vw, 620px);
+    border-radius: 22px;
+}
+
+.center-panel h1, .center-panel h2 {
+    letter-spacing: 0.4px;
+}
+
+.primary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 46px;
+    width: 100%;
+    border-radius: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border: 1px solid rgba(147, 197, 253, 0.34);
+    background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.34), inset 0 1px 0 rgba(255,255,255,0.28);
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px) scale(1.01);
+}
+
+.primary-btn:active {
+    transform: translateY(1px) scale(0.995);
+}
+
+input, select {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.88)) !important;
+    color: var(--ui-text-main) !important;
+    border: 1px solid rgba(148, 163, 184, 0.45) !important;
+    border-radius: 12px !important;
+}
+
+select option {
+    color: #e6f1ff;
+    background: #1e293b;
+}
+
+label, .shop-item-desc, .player-info .status, #menu-screen p {
+    color: var(--ui-text-muted) !important;
+}
+
+#menu-screen .primary-btn,
+#multi-menu .primary-btn,
+#settings-modal .primary-btn,
+#rating-modal .primary-btn,
+#game-options-modal .primary-btn,
+#game-over-screen .primary-btn,
+#disconnect-screen .primary-btn {
+    margin-bottom: 10px;
+}
+
+@media screen and (min-width: 1024px) {
+    .center-panel {
+        width: min(82vw, 680px);
+    }
+    .primary-btn {
+        min-height: 50px;
+        font-size: 1.02rem;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .center-panel {
+        width: min(96vw, 520px);
+        padding: 16px;
+    }
+    .primary-btn {
+        min-height: 42px;
+        font-size: 0.9rem;
+    }
+    .controls {
+        width: min(74vw, 320px);
+    }
+}
+
+/* --- Steam-grade visual polish pass --- */
+#menu-screen {
+    position: relative;
+    isolation: isolate;
+}
+
+#menu-screen::before {
+    content: "";
+    position: absolute;
+    inset: -20% -15% auto -15%;
+    height: 52%;
+    background:
+        radial-gradient(circle at 22% 45%, rgba(34, 211, 238, 0.22), transparent 46%),
+        radial-gradient(circle at 78% 35%, rgba(99, 102, 241, 0.26), transparent 44%);
+    filter: blur(8px);
+    animation: menuAuraShift 7.5s ease-in-out infinite alternate;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes menuAuraShift {
+    0% { transform: translateY(-4px) scale(1); opacity: 0.85; }
+    100% { transform: translateY(6px) scale(1.04); opacity: 1; }
+}
+
+#menu-screen h1 {
+    position: relative;
+    letter-spacing: 0.6px;
+    text-shadow: 0 10px 28px rgba(56, 189, 248, 0.22), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+#menu-screen h1::after {
+    content: "";
+    display: block;
+    width: min(62%, 260px);
+    height: 2px;
+    margin: 10px auto 2px auto;
+    background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.9), transparent);
+    box-shadow: 0 0 16px rgba(125, 211, 252, 0.45);
+}
+
+/* Icon + label treatment for major CTA buttons */
+#btn-single::before { content: "⚔ "; }
+#btn-multi::before { content: "🌐 "; }
+#btn-about::before { content: "ℹ️ "; }
+#btn-settings::before { content: "⚙️ "; }
+#btn-profile::before { content: "👤 "; }
+#btn-shop::before { content: "🛒 "; }
+#btn-rating::before { content: "🏆 "; }
+#btn-logout::before { content: "🚪 "; }
+#btn-single-continue::before { content: "▶ "; }
+#btn-single-new::before { content: "✨ "; }
+#btn-multi-create::before { content: "➕ "; }
+#btn-multi-random::before { content: "🎯 "; }
+
+#menu-screen .primary-btn,
+#multi-menu .primary-btn,
+#single-mode-modal .primary-btn {
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Modal motion and depth consistency */
+.modal-overlay {
+    animation: overlayFadeIn 220ms ease-out;
+}
+
+.modal-panel,
+.center-panel {
+    animation: modalRiseIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalRiseIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -46%) scale(0.97);
+        filter: saturate(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: saturate(1);
+    }
+}
+
+/* --- Competitive HUD polish --- */
+.player-info {
+    border: 1px solid rgba(125, 211, 252, 0.24);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.34), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.player-info h2 {
+    font-weight: 700;
+}
+
+.wind-indicator {
+    border: 1px solid rgba(125, 211, 252, 0.26);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.66), rgba(30, 41, 59, 0.48));
+}
+
+/* Ability cluster feels like single action bar */
+.shield-btn, .super-btn, .duck-btn, .double-btn {
+    bottom: clamp(10px, 2.2vh, 22px);
+}
+
+.wall-btn {
+    bottom: clamp(10px, 2.2vh, 22px);
+}
+
+.double-btn {
+    right: clamp(184px, 27vw, 246px);
+}
+
+.wall-btn {
+    right: clamp(242px, 35vw, 320px);
+}
+
+.duck-btn {
+    right: clamp(126px, 19vw, 176px);
+}
+
+.super-btn {
+    right: clamp(68px, 11vw, 102px);
+}
+
+.shield-btn {
+    right: clamp(10px, 2vw, 24px);
+}
+
+.shield-btn::before,
+.super-btn::before,
+.duck-btn::before,
+.double-btn::before {
+    content: "";
+    position: absolute;
+    inset: -8px -8px -8px -8px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    pointer-events: none;
+}
+
+/* Chat dock cleanup */
+.chat-container {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.45);
+}
+
+.chat-form {
+    background: rgba(2, 6, 23, 0.42);
+}
+
+.chat-form button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+}
+
+.ability-legend {
+    position: absolute;
+    right: clamp(12px, 2vw, 24px);
+    bottom: clamp(82px, 11vh, 118px);
+    z-index: 98;
+    display: grid;
+    gap: 3px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.66), rgba(30, 41, 59, 0.48));
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 10px 22px rgba(2, 6, 23, 0.36);
+}
+
+.ability-legend span {
+    font-size: 0.66rem;
+    color: #dbeafe;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+
+.icon-btn.cooldown-pulse::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(125, 211, 252, 0.9);
+    animation: abilityPulse 320ms ease-out;
+    pointer-events: none;
+}
+
+@keyframes abilityPulse {
+    0% { transform: scale(0.82); opacity: 0.95; }
+    100% { transform: scale(1.18); opacity: 0; }
 }
