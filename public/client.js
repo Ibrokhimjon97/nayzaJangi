@@ -207,6 +207,8 @@ const btnAuthLogin = document.getElementById('btn-auth-login');
 const resetPhoneInput = document.getElementById('reset-phone');
 const resetPasswordInput = document.getElementById('reset-password');
 const btnAuthReset = document.getElementById('btn-auth-reset');
+const btnForgotToggle = document.getElementById('btn-forgot-toggle');
+const forgotSection = document.getElementById('forgot-section');
 const authStatus = document.getElementById('auth-status');
 const authTabLogin = document.getElementById('auth-tab-login');
 const authTabRegister = document.getElementById('auth-tab-register');
@@ -3176,6 +3178,13 @@ let myStats = JSON.parse(localStorage.getItem('nayza_stats')) || {
     wins: 0
 };
 let authPhone = String(localStorage.getItem('nayza_auth_phone') || '').replace(/\D/g, '').slice(-15);
+let authUserCache = null;
+try {
+    const rawAuthUser = localStorage.getItem('nayza_auth_user');
+    authUserCache = rawAuthUser ? JSON.parse(rawAuthUser) : null;
+} catch {
+    authUserCache = null;
+}
 
 function saveProfile() {
     localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
@@ -3192,6 +3201,7 @@ async function authRequest(endpoint, payload) {
             body: JSON.stringify(payload || {})
         });
         const data = await res.json().catch(() => ({}));
+        if (!res.ok && res.status === 404) throw new Error('endpoint_not_found');
         if (!res.ok || !data.ok) throw new Error(data.error || 'auth_failed');
         return data;
     };
@@ -3200,6 +3210,9 @@ async function authRequest(endpoint, payload) {
     } catch (err) {
         const fallbackAllowed = (!API_BASE || API_BASE !== REMOTE_SERVER_URL) && IS_NATIVE_APP;
         if (fallbackAllowed) return request(REMOTE_SERVER_URL);
+        if (String(err?.message || '') === 'endpoint_not_found' && !IS_NATIVE_APP) {
+            throw new Error('local_api_missing');
+        }
         if (String(err?.message || '').toLowerCase().includes('failed to fetch')) {
             throw new Error('server_unreachable');
         }
@@ -3214,6 +3227,11 @@ function applyAuthedUser(user) {
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
     authPhone = myProfile.phone;
     localStorage.setItem('nayza_auth_phone', authPhone);
+    localStorage.setItem('nayza_auth_user', JSON.stringify({
+        name: myProfile.name,
+        phone: myProfile.phone,
+        age: myProfile.age
+    }));
     saveProfile();
     if (authModal) authModal.classList.add('hidden');
     menuScreen.classList.remove('hidden');
@@ -3232,6 +3250,7 @@ function setAuthStatus(msg, isError = false) {
 
 function formatAuthError(err) {
     const code = String(err?.message || 'auth_failed');
+    if (code === 'local_api_missing') return "Lokal server yangilanmagan. `npm run dev` ni qayta ishga tushiring.";
     if (code === 'server_unreachable') return "Server bilan aloqa yo'q. Internetni tekshirib qayta urinib ko'ring.";
     if (code === 'phone_exists') return "Bu telefon raqam allaqachon ro'yxatdan o'tgan.";
     if (code === 'invalid_credentials') return "Telefon raqam yoki parol noto'g'ri.";
@@ -3912,21 +3931,32 @@ if (socket && socket.connected) socket.emit('registerProfile', myProfile);
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
 });
+if (authUserCache && authUserCache.phone) {
+    applyAuthedUser(authUserCache);
+}
 if (authPhone) {
-    fetch(`${API_BASE}/api/auth/user?phone=${encodeURIComponent(authPhone)}`)
+    const authBase = API_BASE || '';
+    fetch(`${authBase}/api/auth/user?phone=${encodeURIComponent(authPhone)}`)
         .then((r) => r.json())
         .then((data) => {
             if (data && data.ok && data.user) applyAuthedUser(data.user);
-            else setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            else if (!authUserCache || !authUserCache.phone) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
         })
         .catch(() => {
-            setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            if (!authUserCache || !authUserCache.phone) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
         });
-} else {
+} else if (!authUserCache || !authUserCache.phone) {
     setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
 }
 if (authTabLogin) authTabLogin.addEventListener('click', () => switchAuthTab('login'));
 if (authTabRegister) authTabRegister.addEventListener('click', () => switchAuthTab('register'));
+if (btnForgotToggle && forgotSection) {
+    btnForgotToggle.addEventListener('click', () => {
+        const hidden = forgotSection.classList.contains('hidden');
+        forgotSection.classList.toggle('hidden', !hidden);
+        btnForgotToggle.innerText = hidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
+    });
+}
 switchAuthTab('login');
 
 document.addEventListener('click', (e) => {

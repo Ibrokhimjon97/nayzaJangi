@@ -79,12 +79,14 @@
                     <button id="btn-auth-register" class="primary-btn" style="background:#10b981;">Ro'yxatdan o'tish</button>
                 </div>
                 <hr style="border-color:rgba(148,163,184,0.3); margin:10px 0;">
-                <label style="display:block; margin-bottom:5px;">Parolni unutdingizmi?</label>
-                <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
-                <input id="reset-phone" type="tel" placeholder="998901234567" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:8px;">
-                <label style="display:block; margin-bottom:5px;">Yangi parol</label>
-                <input id="reset-password" type="password" placeholder="Yangi parol" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                <button id="btn-auth-reset" class="primary-btn" style="background:#f59e0b;">Yangi parol saqlash</button>
+                <button id="btn-forgot-toggle" class="auth-link-btn">Parolni unutdingizmi?</button>
+                <div id="forgot-section" class="hidden" style="margin-top:8px;">
+                    <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
+                    <input id="reset-phone" type="tel" placeholder="998901234567" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:8px;">
+                    <label style="display:block; margin-bottom:5px;">Yangi parol</label>
+                    <input id="reset-password" type="password" placeholder="Yangi parol" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                    <button id="btn-auth-reset" class="primary-btn" style="background:#f59e0b;">Yangi parol saqlash</button>
+                </div>
                 <div id="auth-status" style="min-height:18px; margin-top:8px; font-size:0.82rem; color:#94a3b8;"></div>
             </div>
         </div>
