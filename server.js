@@ -75,6 +75,15 @@ function hashPassword(password) {
     return crypto.createHash('sha256').update(String(password || '')).digest('hex');
 }
 
+function normalizePhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 9) return `998${digits}`;
+    if (digits.length === 12 && digits.startsWith('998')) return digits;
+    if (digits.length > 9) return `998${digits.slice(-9)}`;
+    return '';
+}
+
 async function fetchLeaderboardRows(limit) {
     if (!supabaseEnabled) {
         return loadLeaderboard()
@@ -196,10 +205,10 @@ app.post('/api/leaderboard', async (req, res) => {
 
 app.post('/api/auth/register', (req, res) => {
     const name = String(req.body?.name || '').trim().slice(0, 30);
-    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const phone = normalizePhone(req.body?.phone || '');
     const age = Math.max(7, Math.min(99, Number(req.body?.age) || 0));
     const password = String(req.body?.password || '');
-    if (!name || phone.length < 7 || !age || password.length < 4) {
+    if (!name || phone.length !== 12 || !age || password.length < 4) {
         res.status(400).json({ ok: false, error: 'invalid_payload' });
         return;
     }
@@ -222,8 +231,12 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const phone = normalizePhone(req.body?.phone || '');
     const password = String(req.body?.password || '');
+    if (phone.length !== 12 || password.length < 4) {
+        res.status(401).json({ ok: false, error: 'invalid_credentials' });
+        return;
+    }
     const users = loadUsers();
     const user = users.find((u) => u.phone === phone);
     if (!user || user.passwordHash !== hashPassword(password)) {
@@ -234,9 +247,9 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.post('/api/auth/reset-password', (req, res) => {
-    const phone = String(req.body?.phone || '').replace(/\D/g, '').slice(-15);
+    const phone = normalizePhone(req.body?.phone || '');
     const newPassword = String(req.body?.newPassword || '');
-    if (phone.length < 7 || newPassword.length < 4) {
+    if (phone.length !== 12 || newPassword.length < 4) {
         res.status(400).json({ ok: false, error: 'invalid_payload' });
         return;
     }
@@ -252,7 +265,11 @@ app.post('/api/auth/reset-password', (req, res) => {
 });
 
 app.get('/api/auth/user', (req, res) => {
-    const phone = String(req.query.phone || '').replace(/\D/g, '').slice(-15);
+    const phone = normalizePhone(req.query.phone || '');
+    if (phone.length !== 12) {
+        res.status(404).json({ ok: false, error: 'user_not_found' });
+        return;
+    }
     const users = loadUsers();
     const user = users.find((u) => u.phone === phone);
     if (!user) {
