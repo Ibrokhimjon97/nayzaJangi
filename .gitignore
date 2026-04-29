@@ -6,6 +6,4 @@ node_modules/
 android/.gradle/
 android/build/
 android/app/build/
-
-users.json
 ratings.json

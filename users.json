@@ -1,0 +1,85 @@
+[
+  {
+    "id": "1777437037133",
+    "name": "LocalTest",
+    "phone": "998909078605",
+    "age": 22,
+    "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
+    "createdAt": 1777437037133,
+    "score": 500
+  },
+  {
+    "id": "1777437070816",
+    "name": "Ibrohim",
+    "phone": "998912929262",
+    "age": 28,
+    "passwordHash": "ef06a3e3dbe5cf048f28865d32b7a25699d4127ba0ba1997781d703c7fbbff84",
+    "createdAt": 1777437070817,
+    "score": 683,
+    "wins": 3,
+    "games": 3,
+    "campaignLevel": 10,
+    "updatedAt": 1777471055538
+  },
+  {
+    "id": "1777437696535",
+    "name": "DupTestA",
+    "phone": "901234567",
+    "age": 22,
+    "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
+    "createdAt": 1777437696535,
+    "score": 500
+  },
+  {
+    "id": "1777437696544",
+    "name": "DupTestB",
+    "phone": "998901234567",
+    "age": 22,
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "createdAt": 1777437696544,
+    "score": 500
+  },
+  {
+    "id": "1777437737043",
+    "name": "DupTestA",
+    "phone": "998908898907",
+    "age": 22,
+    "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
+    "createdAt": 1777437737043,
+    "score": 500
+  },
+  {
+    "id": "1777438865020",
+    "name": "SyncUser",
+    "phone": "998901479460",
+    "age": 20,
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "createdAt": 1777438865020,
+    "score": 500
+  },
+  {
+    "id": "1777438897366",
+    "name": "SyncUser",
+    "phone": "998905817211",
+    "age": 20,
+    "score": 777,
+    "wins": 12,
+    "games": 15,
+    "campaignLevel": 5,
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "createdAt": 1777438897366,
+    "updatedAt": 1777438897385
+  },
+  {
+    "id": "1777456854542",
+    "name": "Test",
+    "phone": "998902929262",
+    "age": 28,
+    "score": 500,
+    "wins": 0,
+    "games": 0,
+    "campaignLevel": 1,
+    "passwordHash": "c1f330d0aff31c1c87403f1e4347bcc21aff7c179908723535f2b31723702525",
+    "createdAt": 1777456854542
+  }
+]
