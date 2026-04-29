@@ -357,43 +357,44 @@ const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a0b2e);
 scene.fog = new THREE.FogExp2(0x1a0b2e, 0.0008);
+const MOBILE_PERF_MODE = IS_NATIVE_APP;
 
 let frustumSize = 800;
 let aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 3000);
 camera.position.set(0, 0, 1000);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({ antialias: !MOBILE_PERF_MODE, powerPreference: "high-performance" });
 
 function getPreferredPixelRatio() {
     const dpr = window.devicePixelRatio || 1;
-    return Math.min(dpr, IS_NATIVE_APP ? 3 : 2.5);
+    return Math.min(dpr, MOBILE_PERF_MODE ? 1.6 : 2.5);
 }
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(getPreferredPixelRatio());
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !MOBILE_PERF_MODE;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.0;
 if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
 else renderer.outputEncoding = THREE.sRGBEncoding;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
 dirLight.position.set(200, 1000, 500);
-dirLight.castShadow = true;
-dirLight.shadow.mapSize.width = 2048;
-dirLight.shadow.mapSize.height = 2048;
+dirLight.castShadow = !MOBILE_PERF_MODE;
+dirLight.shadow.mapSize.width = MOBILE_PERF_MODE ? 1024 : 2048;
+dirLight.shadow.mapSize.height = MOBILE_PERF_MODE ? 1024 : 2048;
 dirLight.shadow.camera.near = 0.5;
 dirLight.shadow.camera.far = 1500;
 const d = 1000;
 dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d; dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
 scene.add(dirLight);
 
-const rimLight = new THREE.DirectionalLight(0x4444ff, 1);
+const rimLight = new THREE.DirectionalLight(0x4444ff, 0.55);
 rimLight.position.set(-200, 100, -300);
 scene.add(rimLight);
 
@@ -415,7 +416,7 @@ for(let i=0; i<60; i++) {
 }
 
 const dustGeo = new THREE.BufferGeometry();
-const dustCount = 500;
+const dustCount = MOBILE_PERF_MODE ? 220 : 500;
 const dustPos = new Float32Array(dustCount * 3);
 for(let i=0; i<dustCount*3; i++) {
     dustPos[i] = (Math.random() - 0.5) * 4000;
@@ -442,7 +443,7 @@ function createWeatherSystem(type) {
     clearWeatherSystem();
     if (type !== 'rain' && type !== 'storm' && type !== 'snow') return;
 
-    const count = type === 'storm' ? 1200 : 800;
+    const count = MOBILE_PERF_MODE ? (type === 'storm' ? 550 : 380) : (type === 'storm' ? 1200 : 800);
     const pos = new Float32Array(count * 3);
     const vel = new Float32Array(count);
     for (let i = 0; i < count; i++) {
@@ -764,8 +765,8 @@ function createSoldier(isP1, charType = 0) {
     group.userData.torso.add(planeMesh); // attach to torso so breath animation works
     group.add(group.userData.torso);
     
-    // Feet sit on the visible top of the ground.
-    group.position.y = ground.position.y + (group.userData.isOttomanArcher ? 92 : 100);
+    // Keep feet on the visible top of the ground.
+    group.position.y = ground.position.y + (group.userData.isOttomanArcher ? 78 : 86);
     
     scene.add(group);
     return group;
@@ -879,6 +880,7 @@ let myPlayerIndex = -1;
 let currentTurnIndex = 0;
 let currentWind = 0;
 let isAnimating = false;
+let singleShotLocked = false;
 let myHealth = 100;
 let enemyHealth = 100;
 let myShield = 5;
@@ -1345,12 +1347,12 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
     if(isCrit) {
         el.style.fontSize = '3.5rem';
         el.style.color = '#fbbf24';
-        screenShake = 30; 
+        screenShake = MOBILE_PERF_MODE ? 16 : 30; 
     } else if(isShield) {
         el.style.color = '#38bdf8';
-        screenShake = 15;
+        screenShake = MOBILE_PERF_MODE ? 9 : 15;
     } else {
-        screenShake = 10; 
+        screenShake = MOBILE_PERF_MODE ? 7 : 10; 
     }
     damageContainer.appendChild(el);
     setTimeout(() => el.remove(), 1500);
@@ -1415,6 +1417,7 @@ function handleStart(e) {
     const hasClosest = target && typeof target.closest === 'function';
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
     if (isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) return;
+    if (gameMode === 'single' && singleShotLocked) return;
     isDragging = true;
     aimSfxPlayed = false;
     dragStart = getPointerPos(e);
@@ -1634,6 +1637,7 @@ function startSinglePlayer(opts) {
     btnToggleChat.classList.add('hidden');
     isPaused = false;
     isDragging = false;
+    singleShotLocked = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
     enemyDuckActive = false;
@@ -1767,6 +1771,8 @@ function fireEnemyVolleyShot() {
 }
 
 function throwSpear(angle, power) {
+    if (gameMode === 'single' && singleShotLocked) return;
+    if (gameMode === 'single') singleShotLocked = true;
     pendingDoubleShot = null;
     if (isDoubleSpearActive && Number(myProfile.doubleSpears || 0) > 0) {
         myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0) - 1);
@@ -2597,6 +2603,7 @@ function updateTurn(turnIndex, wind) {
     const turnChanged = turnIndex !== prevTurnIndex;
     prevTurnIndex = turnIndex;
     currentTurnIndex = turnIndex;
+    if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
 
     p1Info.classList.toggle('active', turnIndex === 0);
@@ -2816,7 +2823,7 @@ function checkCollision() {
 function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null, isSuicide = false) {
     isAnimating = false;
     resetCameraAfterImpact();
-    screenShake = Math.max(screenShake, 12);
+    screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 7 : 12);
     
     p1Model.userData.armR.rotation.z = Math.PI / 4;
     p2Model.userData.armR.rotation.z = Math.PI / 4;
@@ -3249,12 +3256,24 @@ function applyAuthedUser(user) {
     myProfile.name = String(user.name || myProfile.name || 'Jangchi').slice(0, 30);
     myProfile.phone = String(user.phone || '').replace(/\D/g, '').slice(-15);
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
+    if (Number.isFinite(Number(user.score))) myStats.score = Math.max(0, Number(user.score));
+    if (Number.isFinite(Number(user.wins))) myStats.wins = Math.max(0, Number(user.wins));
+    if (Number.isFinite(Number(user.games))) myStats.games = Math.max(0, Number(user.games));
+    if (Number.isFinite(Number(user.campaignLevel))) {
+        singleCampaignLevel = Math.max(1, Number(user.campaignLevel));
+        localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+    }
+    localStorage.setItem('nayza_stats', JSON.stringify(myStats));
     authPhone = myProfile.phone;
     localStorage.setItem('nayza_auth_phone', authPhone);
     localStorage.setItem('nayza_auth_user', JSON.stringify({
         name: myProfile.name,
         phone: myProfile.phone,
-        age: myProfile.age
+        age: myProfile.age,
+        score: myStats.score,
+        wins: myStats.wins,
+        games: myStats.games,
+        campaignLevel: singleCampaignLevel
     }));
     saveProfile();
     if (authModal) authModal.classList.add('hidden');
@@ -3884,7 +3903,8 @@ async function submitLeaderboard() {
                 phone: myProfile.phone || authPhone || '',
                 score: myStats.score,
                 wins: myStats.wins,
-                games: myStats.games
+                games: myStats.games,
+                campaignLevel: singleCampaignLevel
             })
         });
     } catch (_) {}

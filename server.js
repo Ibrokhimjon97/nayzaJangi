@@ -84,6 +84,35 @@ function normalizePhone(phone) {
     return '';
 }
 
+function toPublicUser(user) {
+    return {
+        name: user.name,
+        phone: user.phone,
+        age: user.age,
+        score: Math.max(0, Number(user.score) || 0),
+        wins: Math.max(0, Number(user.wins) || 0),
+        games: Math.max(0, Number(user.games) || 0),
+        campaignLevel: Math.max(1, Number(user.campaignLevel) || 1)
+    };
+}
+
+function upsertUserProgress(phone, progress = {}) {
+    if (!phone) return;
+    const users = loadUsers();
+    const idx = users.findIndex((u) => u.phone === phone);
+    if (idx === -1) return;
+    const prev = users[idx];
+    users[idx] = {
+        ...prev,
+        score: Math.max(Number(prev.score || 0), Number(progress.score || 0)),
+        wins: Math.max(Number(prev.wins || 0), Number(progress.wins || 0)),
+        games: Math.max(Number(prev.games || 0), Number(progress.games || 0)),
+        campaignLevel: Math.max(Number(prev.campaignLevel || 1), Number(progress.campaignLevel || 1)),
+        updatedAt: Date.now()
+    };
+    saveUsers(users);
+}
+
 async function fetchLeaderboardRows(limit) {
     if (!supabaseEnabled) {
         return loadLeaderboard()
@@ -172,8 +201,17 @@ app.get('/api/leaderboard', async (req, res) => {
 
 app.post('/api/leaderboard', async (req, res) => {
     const entry = normalizeEntry(req.body || {});
+    const campaignLevel = Math.max(1, Number(req.body?.campaignLevel) || 1);
     try {
         await upsertLeaderboardEntry(entry);
+        if (entry.phone) {
+            upsertUserProgress(entry.phone, {
+                score: entry.score,
+                wins: entry.wins,
+                games: entry.games,
+                campaignLevel
+            });
+        }
         res.json({ ok: true, source: supabaseEnabled ? 'supabase' : 'file' });
     } catch {
         // Emergency fallback so gameplay never breaks if DB is down.
@@ -196,6 +234,14 @@ app.post('/api/leaderboard', async (req, res) => {
                 };
             }
             saveLeaderboard(rows);
+            if (entry.phone) {
+                upsertUserProgress(entry.phone, {
+                    score: entry.score,
+                    wins: entry.wins,
+                    games: entry.games,
+                    campaignLevel
+                });
+            }
             res.json({ ok: true, source: 'file-fallback' });
         } catch {
             res.status(500).json({ ok: false, error: 'leaderboard_write_failed' });
@@ -222,12 +268,16 @@ app.post('/api/auth/register', (req, res) => {
         name,
         phone,
         age,
+        score: 0,
+        wins: 0,
+        games: 0,
+        campaignLevel: 1,
         passwordHash: hashPassword(password),
         createdAt: Date.now()
     };
     users.push(user);
     saveUsers(users);
-    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
+    res.json({ ok: true, user: toPublicUser(user) });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -243,7 +293,7 @@ app.post('/api/auth/login', (req, res) => {
         res.status(401).json({ ok: false, error: 'invalid_credentials' });
         return;
     }
-    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
+    res.json({ ok: true, user: toPublicUser(user) });
 });
 
 app.post('/api/auth/reset-password', (req, res) => {
@@ -276,7 +326,7 @@ app.get('/api/auth/user', (req, res) => {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
     }
-    res.json({ ok: true, user: { name: user.name, phone: user.phone, age: user.age } });
+    res.json({ ok: true, user: toPublicUser(user) });
 });
 
 const waitingQueue = [];
