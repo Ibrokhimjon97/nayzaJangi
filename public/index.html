@@ -146,8 +146,16 @@
             <h2>Yakkalik o'yin</h2>
             <div style="margin-top:10px; color:#94a3b8; font-size:0.95rem;">Tanlang:</div>
             <button id="btn-single-continue" class="primary-btn" style="margin-top:12px;">Avvalgi levelni davom etish</button>
+            <button id="btn-single-select-level" class="primary-btn" style="background:#8b5cf6; margin-top:8px;">Level tanlash</button>
             <button id="btn-single-new" class="primary-btn" style="background:#0ea5e9; margin-top:8px;">Yangi o'yin boshlash</button>
             <button id="btn-single-cancel" class="primary-btn" style="background:#475569; margin-top:8px;">Bekor qilish</button>
+        </div>
+
+        <div id="level-select-modal" class="screen hidden panel center-panel">
+            <h2>Level tanlash</h2>
+            <div id="level-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-top:15px; max-height:300px; overflow-y:auto;">
+            </div>
+            <button id="btn-level-select-cancel" class="primary-btn" style="background:#475569; margin-top:15px;">Bekor qilish</button>
         </div>
 
         <div id="friend-invite-modal" class="screen hidden panel center-panel">
@@ -511,7 +519,15 @@
         <div id="game-over-screen" class="screen hidden panel center-panel">
             <h1 id="winner-text">O'yinchi Yutdi!</h1>
             <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
+            <button id="rematch-btn" class="primary-btn hidden" style="background: #8b5cf6; margin-top: 8px;">Revansh</button>
             <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">Bosh menyu</button>
+        </div>
+
+        <div id="rematch-modal" class="screen hidden panel center-panel">
+            <h2 id="rematch-title">Revansh</h2>
+            <p id="rematch-text" style="margin:10px 0 14px; color:#cbd5e1;">Raqibingiz revansh taklif qilmoqda, qayta o'ynaysizmi?</p>
+            <button id="btn-rematch-accept" class="primary-btn" style="background:#10b981;">Ha, o'ynayman</button>
+            <button id="btn-rematch-decline" class="primary-btn" style="background:#475569; margin-top:8px;">Yo'q</button>
         </div>
         
         <div id="disconnect-screen" class="screen hidden panel center-panel">
@@ -526,6 +542,6 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=19"></script>
+    <script src="client.js?v=32"></script>
 </body>
 </html>

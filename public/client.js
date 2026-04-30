@@ -110,6 +110,7 @@ const daraxtKattaTexture = loadTexture('daraxtkatta.png');
 const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
 const qalaTexture = loadTexture('Qala.png');
 const devorTusiqTexture = loadTexture('devortusiq.png');
+const bulutTexture = loadTexture('bulut-Photoroom.png');
 const ottomanArcherTextures = {
     shieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
     shieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20monjal.png'),
@@ -154,6 +155,12 @@ const disconnectScreen = document.getElementById('disconnect-screen');
 const winnerText = document.getElementById('winner-text');
 const restartBtn = document.getElementById('restart-btn');
 const menuBtn = document.getElementById('menu-btn');
+const rematchBtn = document.getElementById('rematch-btn');
+const rematchModal = document.getElementById('rematch-modal');
+const rematchTitle = document.getElementById('rematch-title');
+const rematchText = document.getElementById('rematch-text');
+const btnRematchAccept = document.getElementById('btn-rematch-accept');
+const btnRematchDecline = document.getElementById('btn-rematch-decline');
 
 const p1Info = document.getElementById('p1-info');
 const p2Info = document.getElementById('p2-info');
@@ -218,6 +225,10 @@ const singleModeModal = document.getElementById('single-mode-modal');
 const btnSingleContinue = document.getElementById('btn-single-continue');
 const btnSingleNew = document.getElementById('btn-single-new');
 const btnSingleCancel = document.getElementById('btn-single-cancel');
+const btnSingleSelectLevel = document.getElementById('btn-single-select-level');
+const levelSelectModal = document.getElementById('level-select-modal');
+const levelGrid = document.getElementById('level-grid');
+const btnLevelSelectCancel = document.getElementById('btn-level-select-cancel');
 const btnAddFriend = document.getElementById('btn-add-friend');
 const friendsListEl = document.getElementById('friends-list');
 const btnRefreshFriends = document.getElementById('btn-refresh-friends');
@@ -668,16 +679,23 @@ function spawnEntities(options) {
     
     // Spawn Clouds
     for(let i=0; i<8; i++) {
-        const cloudGeo = new THREE.SphereGeometry(Math.random() * 20 + 20, 7, 7);
-        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+        const cloudWidth = 200 + Math.random() * 150;
+        const cloudHeight = 100 + Math.random() * 80;
+        const cloudGeo = new THREE.PlaneGeometry(cloudWidth, cloudHeight);
+        const cloudMat = new THREE.MeshBasicMaterial({
+            map: bulutTexture,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.position.set(
-            (Math.random() - 0.5) * 4000, 
-            300 + Math.random() * 300, 
-            -100 - Math.random() * 200
+            (Math.random() - 0.5) * 4000,
+            400 + Math.random() * 300,
+            -200 - Math.random() * 300
         );
-        cloud.scale.set(1.5, 0.6, 1);
-        cloud.userData = { vx: (Math.random() - 0.5) * 20 };
+        cloud.userData = { vx: (Math.random() - 0.5) * 15 };
         scene.add(cloud);
         clouds.push(cloud);
     }
@@ -689,7 +707,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            bird.position.set((seededRandom() - 0.5) * 3200, 320 + seededRandom() * 560, -30 + seededRandom() * 60);
+            // Qushlar balandroqda uchadi - 1200-1600 balandlik
+            bird.position.set((seededRandom() - 0.5) * 3200, 1200 + seededRandom() * 400, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -1013,7 +1032,8 @@ window.addEventListener('resize', updateCameraBounds);
 
 // Game State
 let gameMode = 'menu';
-let myPlayerIndex = -1; 
+let myPlayerIndex = -1;
+let currentRoomName = null;
 let currentTurnIndex = 0;
 let currentWind = 0;
 let isAnimating = false;
@@ -1086,8 +1106,10 @@ function updateCampaignUI() {
 function getCampaignConfig(level) {
     const lvl = Math.max(1, level || 1);
     const distance = Math.min(3600, 2500 + (lvl - 1) * 60);
-    const birds = 5 + (lvl - 1) * 2;
-    let hitRate = 0.4;
+    const birds = Math.floor((5 + (lvl - 1) * 2) / 6);
+    let hitRate = 0.9;
+    let aiPrecision = 0.9;
+    let birdTargetChance = 0.1;
     let enemySuperCharges = 1;
     let enemySuperUseChance = 0.08;
     let enemyCount = 1;
@@ -1095,36 +1117,46 @@ function getCampaignConfig(level) {
     let enemyShieldAutoUses = 2;
     let enemySuperAutoUses = 2;
     if (lvl >= 11 && lvl <= 20) {
-        hitRate = 0.6;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 2;
         enemySuperUseChance = 0.24;
         enemyShieldAutoUses = 3;
         enemySuperAutoUses = 3;
     } else if (lvl >= 21 && lvl <= 30) {
-        hitRate = 0.8;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 3;
         enemySuperUseChance = 0.35;
         enemyWallEnabled = true;
         enemyShieldAutoUses = 5;
         enemySuperAutoUses = 5;
     } else if (lvl >= 31 && lvl <= 40) {
-        hitRate = 0.84;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 3;
         enemySuperUseChance = 0.4;
         enemyCount = 2;
         enemyShieldAutoUses = 5;
         enemySuperAutoUses = 5;
-    } else if (lvl >= 41 && lvl <= 60) {
+    } else if (lvl >= 41 && lvl <= 66) {
         // Hardcore campaign band: two enemies + higher AI precision/ability pressure.
-        hitRate = 0.92;
+        hitRate = 0.95;
+        aiPrecision = 1.0;
+        birdTargetChance = 0.1;
         enemySuperCharges = 4;
         enemySuperUseChance = 0.55;
         enemyCount = 2;
         enemyWallEnabled = true;
         enemyShieldAutoUses = 7;
         enemySuperAutoUses = 7;
-    } else if (lvl > 60) {
-        hitRate = 0.95;
+    } else if (lvl > 66) {
+        hitRate = 0.98;
+        aiPrecision = 1.0;
+        birdTargetChance = 0.1;
         enemySuperCharges = 5;
         enemySuperUseChance = 0.62;
         enemyCount = 2;
@@ -1139,6 +1171,8 @@ function getCampaignConfig(level) {
         enemyCount,
         enemyWallEnabled,
         hitRate,
+        aiPrecision,
+        birdTargetChance,
         enemySuperCharges,
         enemySuperUseChance,
         enemyShieldAutoUses,
@@ -2173,21 +2207,97 @@ function fireEnemyVolleyShot() {
     if (!shooter) return;
 
     const profile = aiProfiles[aiDifficulty] || aiProfiles.normal;
+    const cfg = campaignConfig || getCampaignConfig(singleCampaignLevel);
     const shouldHit = shouldAiHit();
-    const targetModel = modelForPlayer(myPlayerIndex);
-    const dx = Math.abs(shooter.position.x - targetModel.position.x);
-    const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
-    let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
-    const jitter = shouldHit ? profile.powerJitter * 0.09 : profile.powerJitter;
-    const desiredDir = shooterIndex === 0 ? 1 : -1;
-    const windComp = shouldHit ? (-currentWind * desiredDir * (dx / 280)) : 0;
-    power += windComp;
-    power += (Math.random() - 0.5) * jitter;
-    let angle = (rad * 180) / Math.PI + (Math.random() - 0.5) * (shouldHit ? profile.angleJitter * 0.18 : profile.angleJitter);
+    
+    // AI asosan o'yinchiga nishonlaydi (90%), tasodifan qushlarni o'ldiradi (10%)
+    const targetBird = cfg.birdTargetChance > 0 && Math.random() < cfg.birdTargetChance;
+    let targetIndex, targetX, targetY;
+    
+    if (targetBird && entities.length > 0) {
+        // Qushni nishonlash
+        const birds = entities.filter(e => e.type === 'bird' && e.alive);
+        if (birds.length > 0) {
+            const targetBirdEntity = birds[Math.floor(Math.random() * birds.length)];
+            targetX = targetBirdEntity.mesh.position.x;
+            targetY = targetBirdEntity.mesh.position.y;
+            // Qush uchun maxsus hisoblash
+            const dx = Math.abs(shooter.position.x - targetX);
+            const dy = targetY - shooter.position.y;
+            const baseAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const rad = ((Math.abs(baseAngle) + Math.min(10, dx / 300)) * Math.PI) / 180;
+            let power = Math.sqrt((dx * dx + dy * dy) * GRAVITY / Math.max(0.2, Math.sin(2 * rad)));
+            const desiredDir = shooterIndex === 0 ? 1 : -1;
+            const windComp = (-currentWind * desiredDir * (dx / 280));
+            power += windComp;
+            let angle = baseAngle + (Math.random() - 0.5) * 5;
+            angle = Math.max(-20, Math.min(110, angle));
+            power = Math.max(700, Math.min(2000, power));
+            
+            setModelActionState(shooter, 'aim', 900);
+            startSpearAnimation(shooterIndex, angle, power);
+            return;
+        }
+    }
+    
+    // O'yinchiga aniq nishonlash
+    targetIndex = myPlayerIndex;
+    const targetModel = modelForPlayer(targetIndex);
+    
+    // computeAccurateShot dan foydalanib aniq trajektoriya hisoblash
+    const accurateShot = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
+    if (!accurateShot) return;
+    
+    let angle = accurateShot.angle;
+    let power = accurateShot.power;
+    
+    // aiPrecision ga qarab aniqlikni belgilash
+    const precision = cfg.aiPrecision || 0.5;
+    
+    // Tasodifiy xato - aniqlik qancha yuqori bo'lsa, xato shunchalik kam
+    const missChance = 1 - precision;
+    const willMiss = Math.random() < missChance;
+    
+    if (willMiss) {
+        // O'tkazib yuborish - kichik offset
+        angle += (Math.random() - 0.5) * 8;
+        power *= 0.9 + Math.random() * 0.2;
+    } else {
+        // Aniq tegish - 100% aniqlikda offsetlarsiz, boshqalarda kichik offset
+        if (precision >= 1.0) {
+            // 100% aniqlik - hech qanday offset, to'g'ridan-to'g'ri markazga
+            // angle va power o'zgarishsiz qoladi
+        } else {
+            // Bosh, tana, oyoq qismlariga tasodifiy offset
+            const hitZone = Math.random();
+            let yOffset = 0;
+            let xOffset = 0;
+            
+            if (hitZone < 0.3) {
+                // Boshga tegish (30%)
+                yOffset = 80 + Math.random() * 20;
+                xOffset = (Math.random() - 0.5) * 15;
+            } else if (hitZone < 0.7) {
+                // Tanaga tegish (40%)
+                yOffset = 20 + Math.random() * 40;
+                xOffset = (Math.random() - 0.5) * 20;
+            } else {
+                // Oyoqqa tegish (30%)
+                yOffset = -30 + Math.random() * 20;
+                xOffset = (Math.random() - 0.5) * 25;
+            }
+            
+            // Offsetga qarab kichik tuzatish
+            angle += (shooterIndex === 0 ? 1 : -1) * (xOffset / 50);
+            power *= 1 + (yOffset / 500);
+        }
+    }
+    
     angle = Math.max(-20, Math.min(110, angle));
+    power = Math.max(700, Math.min(2000, power));
 
     setModelActionState(shooter, 'aim', 900);
-    startSpearAnimation(shooterIndex, angle, Math.max(700, Math.min(2000, power)));
+    startSpearAnimation(shooterIndex, angle, power);
 }
 
 function throwSpear(angle, power) {
@@ -2466,7 +2576,9 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
     const target = modelForPlayer(targetIndex);
     if (!shooter || !target) return null;
     const dx = Math.abs(shooter.position.x - target.position.x);
-    const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
+    // Burchakni kamaytirish - 25-35 gradus (oldingi 38-52 o'rniga)
+    // Bu trayektoriyani pastroq qiladi, qarg'alarga tegmaydi
+    const rad = ((25 + Math.min(10, dx / 300)) * Math.PI) / 180;
     let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
     const desiredDir = shooterIndex === 0 ? 1 : -1;
     const windComp = (-currentWind * desiredDir * (dx / 280));
@@ -2908,10 +3020,14 @@ socket.on('chatMessage', (data) => {
 });
 
 socket.on('gameStart', (data) => {
+    console.log('gameStart data:', JSON.stringify(data));
+    console.log('data.roomName:', data.roomName);
+    console.log('typeof data:', typeof data);
     clearRandomWaitTimer();
     gameMode = 'multi';
     waitingScreen.classList.add('hidden');
     multiMenu.classList.add('hidden');
+    menuScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     isPaused = false;
     isDragging = false;
@@ -2922,10 +3038,21 @@ socket.on('gameStart', (data) => {
     chatMessages.innerHTML = '';
     unreadMessages = 0; chatBadge.classList.add('hidden');
     btnToggleChat.classList.remove('hidden');
-    
+
+    // Room name ni saqlash (revansh uchun)
+    if (data.roomName) {
+        currentRoomName = data.roomName;
+        console.log('currentRoomName o\'rnatildi:', currentRoomName);
+    } else {
+        console.log('roomName kelmadi');
+    }
+
     const opts = data.options || { map: 'field', birds: false, animals: false, weather: 'sunny' };
     buildMap(opts.map, opts.weather || 'sunny');
     spawnEntities(opts);
+    
+    // Multiplayer rejimida jangchilar orasidagi masofani o'rnatish
+    currentBattleDistance = 3600; // Onlayn rejim uchun uzoq masofa
     
     myPlayerIndex = data.playerIndex;
     myDefenseActive = false;
@@ -3126,6 +3253,58 @@ socket.on('opponentDisconnected', () => {
     }
 });
 
+// Revansh so'rovi keldi
+socket.on('rematchRequest', () => {
+    console.log('Revansh so\'rovi keldi');
+    if (rematchModal) {
+        rematchModal.classList.remove('hidden');
+        console.log('Modal ochildi');
+    } else {
+        console.log('Modal topilmadi');
+    }
+});
+
+// Revansh qabul qilindi - yangi o'yin boshlash
+socket.on('rematchStart', () => {
+    // O'yinni qayta boshlash
+    gameOverScreen.classList.add('hidden');
+    if (rematchModal) rematchModal.classList.add('hidden');
+    if (rematchBtn) {
+        rematchBtn.innerText = "Revansh";
+        rematchBtn.disabled = false;
+    }
+    // O'yin holatini qayta boshlash
+    myHealth = 100;
+    enemyHealth = 100;
+    mySuper = myProfile.superPowers || 5;
+    updateHealthUI();
+    myDefenseActive = false;
+    enemyDefenseActive = false;
+    myDuckActive = false;
+    enemyDuckActive = false;
+    setDefenseActive(false, false);
+    setDuckActive(false, false);
+    currentTurnIndex = 0;
+    prevTurnIndex = -2;
+    isWallPlacementMode = false;
+    isWallDragActive = false;
+    singleShotLocked = false;
+    resetWeapon();
+});
+
+// Revansh rad etildi
+socket.on('rematchDeclined', () => {
+    if (rematchBtn) {
+        rematchBtn.innerText = "Rad etildi";
+        rematchBtn.disabled = true;
+    }
+    setTimeout(() => {
+        gameOverScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        gameMode = 'menu';
+    }, 2000);
+});
+
 function showGameOver(winnerIndex) {
     gameOverScreen.classList.remove('hidden');
     controlsPanel.classList.add('disabled');
@@ -3136,6 +3315,15 @@ function showGameOver(winnerIndex) {
         const nextLabel = t.nextLevelBtn || "Keyingi bosqich";
         const replayLabel = t.playAgainBtn || "Yana o'ynash";
         restartBtn.innerText = (gameMode === 'single' && winnerIndex === myPlayerIndex) ? nextLabel : replayLabel;
+    }
+    
+    // Online rejimda revansh tugmasini ko'rsatish
+    if (rematchBtn) {
+        if (gameMode === 'multi') {
+            rematchBtn.classList.remove('hidden');
+        } else {
+            rematchBtn.classList.add('hidden');
+        }
     }
     
     if (winnerIndex === myPlayerIndex) {
@@ -3189,6 +3377,44 @@ if (menuBtn) {
         menuScreen.classList.remove('hidden');
         gameMode = 'menu';
         updateCampaignUI();
+    });
+}
+
+// Revansh tugmasi - so'rov yuborish
+if (rematchBtn) {
+    rematchBtn.addEventListener('click', () => {
+        console.log('Revansh tugmasi bosildi, roomName:', currentRoomName);
+        if (socket && socket.connected) {
+            socket.emit('rematchRequest', { roomName: currentRoomName });
+            rematchBtn.innerText = "Kutilmoqda...";
+            rematchBtn.disabled = true;
+        } else {
+            console.log('Socket ulanmagan');
+            rematchBtn.innerText = "Xatolik";
+        }
+    });
+}
+
+// Revansh so'rovini qabul qilish
+if (btnRematchAccept) {
+    btnRematchAccept.addEventListener('click', () => {
+        if (socket && socket.connected) {
+            socket.emit('rematchAccept', { roomName: currentRoomName });
+        }
+        if (rematchModal) rematchModal.classList.add('hidden');
+    });
+}
+
+// Revansh so'rovini rad etish
+if (btnRematchDecline) {
+    btnRematchDecline.addEventListener('click', () => {
+        if (socket && socket.connected) {
+            socket.emit('rematchDecline', { roomName: currentRoomName });
+        }
+        if (rematchModal) rematchModal.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        gameMode = 'menu';
     });
 }
 
@@ -4029,8 +4255,10 @@ function upsertFriend(friend) {
 }
 
 function renderFriendsList() {
+    console.log('renderFriendsList called, myFriends:', myFriends);
     if (!friendsListEl) return;
     if (!myFriends.length) {
+        console.log('No friends found');
         friendsListEl.innerText = "Do'stlar yo'q.";
         return;
     }
@@ -4047,8 +4275,9 @@ function renderFriendsList() {
             const options = {
                 map: document.getElementById('select-map') ? document.getElementById('select-map').value : 'field',
                 weather: selectWeather ? selectWeather.value : 'sunny',
-                birds: document.getElementById('check-birds') ? document.getElementById('check-birds').checked : false,
-                animals: document.getElementById('check-animals') ? document.getElementById('check-animals').checked : false,
+                birds: true, // Do'st chaqirishda qushlarni doim yoqish
+                birdCount: 20, // 20 ta qush
+                animals: false,
                 charType: myProfile.charType
             };
             socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
@@ -4701,16 +4930,58 @@ async function submitLeaderboard() {
 }
 
 async function renderLeaderboard() {
+    console.log('renderLeaderboard called, leaderboardList:', !!leaderboardList);
     if (!leaderboardList) return;
     const t = translations[myProfile.lang] || translations.en || translations.uz;
     const renderRows = (rows) => {
+        console.log('renderRows called with:', rows);
         if (!Array.isArray(rows) || !rows.length) return false;
-        leaderboardList.innerHTML = rows.map((r, idx) =>
-            `<div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
+        console.log('Leaderboard rows:', rows);
+        leaderboardList.innerHTML = rows.map((r, idx) => {
+            console.log('Row:', idx, r);
+            // playerId bo'lmasa, phone dan foydalanamiz
+            const playerId = r.playerId || r.phone;
+            const isMe = playerId && myProfile.playerId && playerId === myProfile.playerId;
+            // Agar o'zimiz bo'lsak tugma ko'rsatmaslik, aks holda ko'rsatish (phone bo'lmasa ham)
+            const showButton = !isMe && r.name !== myProfile.name;
+            console.log('playerId:', playerId, 'isMe:', isMe, 'showButton:', showButton);
+            const buttonHtml = showButton ? `<button class="primary-btn btn-invite-leaderboard" data-fid="${playerId}" data-fname="${r.name}" style="padding:4px 8px; font-size:0.7rem; background:#10b981;">Chaqirish</button>` : '';
+            console.log('Button HTML for', r.name, ':', buttonHtml);
+            return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
                 <span>${idx + 1}. ${r.flag || '🏳️'} ${r.name}</span>
-                <span><b>${r.score}</b></span>
-            </div>`
-        ).join('');
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span><b>${r.score}</b></span>
+                    ${buttonHtml}
+                </div>
+            </div>`;
+        }).join('');
+        
+        // Chaqirish tugmalariga event listener qo'shish
+        leaderboardList.querySelectorAll('.btn-invite-leaderboard').forEach((el) => {
+            el.addEventListener('click', () => {
+                const toPlayerId = el.getAttribute('data-fid');
+                const toPlayerName = el.getAttribute('data-fname');
+                if (!toPlayerId) return;
+                
+                const options = {
+                    map: 'field',
+                    weather: 'sunny',
+                    birds: true,
+                    birdCount: 20,
+                    animals: false,
+                    charType: myProfile.charType
+                };
+                
+                socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
+                
+                // Taklif yuborilgani haqida xabar
+                if (friendIdStatus) {
+                    friendIdStatus.style.color = '#3b82f6';
+                    friendIdStatus.innerText = `${toPlayerName} ga o'yin taklifi yuborildi.`;
+                }
+            });
+        });
+        
         return true;
     };
     let showedCached = false;
@@ -4886,6 +5157,59 @@ if (btnSingleCancel) {
         if (singleModeModal) singleModeModal.classList.add('hidden');
         menuScreen.classList.remove('hidden');
     });
+}
+
+if (btnSingleSelectLevel) {
+    btnSingleSelectLevel.addEventListener('click', () => {
+        if (singleModeModal) singleModeModal.classList.add('hidden');
+        if (levelSelectModal) {
+            levelSelectModal.classList.remove('hidden');
+            renderLevelGrid();
+        }
+    });
+}
+
+if (btnLevelSelectCancel) {
+    btnLevelSelectCancel.addEventListener('click', () => {
+        if (levelSelectModal) levelSelectModal.classList.add('hidden');
+        if (singleModeModal) singleModeModal.classList.remove('hidden');
+    });
+}
+
+function renderLevelGrid() {
+    if (!levelGrid) return;
+    levelGrid.innerHTML = '';
+    
+    // singleCampaignLevel saqlangan eng yuqori level
+    const maxLevel = Math.max(1, singleCampaignLevel || 1);
+    for (let i = 1; i <= 100; i++) {
+        const levelBtn = document.createElement('button');
+        levelBtn.className = 'primary-btn';
+        levelBtn.style.padding = '8px 4px';
+        levelBtn.style.fontSize = '0.9rem';
+        levelBtn.style.minHeight = '40px';
+        
+        if (i <= maxLevel) {
+            levelBtn.style.background = '#10b981';
+            levelBtn.innerText = i;
+            levelBtn.addEventListener('click', () => {
+                singleCampaignLevel = i;
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                if (singleModeModal) singleModeModal.classList.add('hidden');
+                menuScreen.classList.add('hidden');
+                aiDifficulty = 'easy';
+                gameMode = 'single';
+                startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+            });
+        } else {
+            levelBtn.style.background = '#475569';
+            levelBtn.style.opacity = '0.5';
+            levelBtn.style.cursor = 'not-allowed';
+            levelBtn.innerText = '🔒';
+        }
+        
+        levelGrid.appendChild(levelBtn);
+    }
 }
 
 if(document.getElementById('btn-multi')) {
