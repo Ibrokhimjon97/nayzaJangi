@@ -407,12 +407,23 @@ function generateWind() {
     return parseFloat(strength);
 }
 
+function getRandomMap() {
+    const maps = ['field', 'castle', 'desert', 'winter'];
+    return maps[Math.floor(Math.random() * maps.length)];
+}
+
+function getRandomWeather() {
+    const weathers = ['sunny', 'night', 'rain', 'storm', 'snow'];
+    return weathers[Math.floor(Math.random() * weathers.length)];
+}
+
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
     function startGame(player1, player2, roomName) {
-        const existingOptions = rooms[roomName] && rooms[roomName].options ? rooms[roomName].options : { map: 'field', birds: false, animals: false };
-        
+        console.log('startGame called, roomName:', roomName);
+        const existingOptions = rooms[roomName] && rooms[roomName].options ? rooms[roomName].options : { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false };
+
         rooms[roomName] = {
             players: [player1.id, player2.id],
             turnIndex: 0,
@@ -437,9 +448,9 @@ io.on('connection', (socket) => {
         player1.roomId = roomName;
         player2.roomId = roomName;
 
-        player1.emit('gameStart', { 
-            playerIndex: 0, 
-            turnIndex: 0, 
+        const gameStartData1 = {
+            playerIndex: 0,
+            turnIndex: 0,
             wind: rooms[roomName].wind,
             opponentId: player2.id,
             opponentProfile: player2.profile,
@@ -447,11 +458,15 @@ io.on('connection', (socket) => {
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
             walls: rooms[roomName].walls,
-            options: rooms[roomName].options
-        });
-        player2.emit('gameStart', { 
-            playerIndex: 1, 
-            turnIndex: 0, 
+            options: rooms[roomName].options,
+            roomName: roomName
+        };
+        console.log('Sending gameStart to player1, roomName:', roomName);
+        player1.emit('gameStart', gameStartData1);
+
+        const gameStartData2 = {
+            playerIndex: 1,
+            turnIndex: 0,
             wind: rooms[roomName].wind,
             opponentId: player1.id,
             opponentProfile: player1.profile,
@@ -459,8 +474,11 @@ io.on('connection', (socket) => {
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
             walls: rooms[roomName].walls,
-            options: rooms[roomName].options
-        });
+            options: rooms[roomName].options,
+            roomName: roomName
+        };
+        console.log('Sending gameStart to player2, roomName:', roomName);
+        player2.emit('gameStart', gameStartData2);
     }
 
     function bindOnlineProfile(profile) {
@@ -488,7 +506,7 @@ io.on('connection', (socket) => {
         roomsByCode[code] = {
             player1: socket,
             roomName: roomName,
-            options: data.options || { map: 'field', birds: false, animals: false }
+            options: data.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false }
         };
         socket.emit('gameCreated', code);
     });
@@ -520,7 +538,7 @@ io.on('connection', (socket) => {
         const options = payload && payload.options ? payload.options : null;
         socket.profile = profile || { name: "Raqib", flag: "🏳️", avatar: "👤" };
         bindOnlineProfile(socket.profile);
-        socket.pendingOptions = options || { map: 'field', weather: 'sunny', birds: false, animals: false };
+        socket.pendingOptions = options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false };
         removeFromWaitingQueue(socket.id);
 
         if (waitingQueue.length > 0) {
@@ -535,7 +553,7 @@ io.on('connection', (socket) => {
             const player2 = socket;
             player1.join(roomName);
             player2.join(roomName);
-            const mergedOptions = player1.pendingOptions || socket.pendingOptions || { map: 'field', weather: 'sunny', birds: false, animals: false };
+            const mergedOptions = player1.pendingOptions || socket.pendingOptions || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false };
             rooms[roomName] = { options: mergedOptions };
             startGame(player1, player2, roomName);
             return;
@@ -641,7 +659,7 @@ io.on('connection', (socket) => {
         pendingFriendInvites.set(toPlayerId, {
             fromPlayerId: socket.profile.playerId,
             fromSocketId: socket.id,
-            options: payload?.options || { map: 'field', weather: 'sunny', birds: false, animals: false }
+            options: payload?.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false }
         });
         target.emit('friendInvite', {
             fromProfile: socket.profile,
@@ -666,7 +684,7 @@ io.on('connection', (socket) => {
         const roomName = `room_friend_${inviter.id}_${socket.id}`;
         inviter.join(roomName);
         socket.join(roomName);
-        rooms[roomName] = { options: pending.options || { map: 'field', weather: 'sunny', birds: false, animals: false } };
+        rooms[roomName] = { options: pending.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false } };
         startGame(inviter, socket, roomName);
     });
 
@@ -925,6 +943,64 @@ io.on('connection', (socket) => {
         if(roomName) {
             io.to(roomName).emit('chatMessage', { senderId: socket.id, msg: msg });
         }
+    });
+
+    // Revansh so'rovi
+    socket.on('rematchRequest', (data) => {
+        const roomName = data?.roomName || socket.roomId;
+        const room = rooms[roomName];
+        if (!room || !room.players) return;
+        // Raqibga revansh so'rovini yuborish
+        const opponentId = room.players.find(id => id !== socket.id);
+        if (opponentId) {
+            io.to(opponentId).emit('rematchRequest');
+        }
+    });
+
+    // Revansh qabul qilindi
+    socket.on('rematchAccept', (data) => {
+        console.log('rematchAccept received, data:', data);
+        const roomName = data?.roomName || socket.roomId;
+        console.log('roomName from data or socket.roomId:', roomName);
+        const room = rooms[roomName];
+        if (!room || !room.players) {
+            console.log('Room not found or no players');
+            return;
+        }
+
+        // Xonani qayta ishga tushirish
+        room.gameOver = false;
+        room.turnIndex = 0;
+        room.wind = generateWind();
+        room.inFlight = false;
+        room.health = [100, 100];
+        room.shield = [5, 5];
+        room.super = [room.super[0], room.super[1]];
+        room.walls = [{ active: false, x: 0, hp: 0 }, { active: false, x: 0, hp: 0 }];
+
+        // Ikkala o'yinchiga yangi o'yin boshlandi xabari
+        io.to(roomName).emit('rematchStart');
+
+        // O'yin ma'lumotlarini yuborish - startGame funksiyasidan foydalanish
+        const player1 = io.sockets.sockets.get(room.players[0]);
+        const player2 = io.sockets.sockets.get(room.players[1]);
+        console.log('player1:', player1 ? 'found' : 'not found', 'player2:', player2 ? 'found' : 'not found');
+        if (player1 && player2) {
+            startGame(player1, player2, roomName);
+        }
+    });
+
+    // Revansh rad etildi
+    socket.on('rematchDecline', (data) => {
+        const roomName = data?.roomName || socket.roomId;
+        const room = rooms[roomName];
+        if (!room || !room.players) return;
+        // Raqibga rad etildi xabari
+        const opponentId = room.players.find(id => id !== socket.id);
+        if (opponentId) {
+            io.to(opponentId).emit('rematchDeclined');
+        }
+        delete rooms[roomName];
     });
 
     socket.on('disconnect', () => {

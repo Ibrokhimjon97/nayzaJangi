@@ -6,7 +6,10 @@
     "age": 22,
     "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
     "createdAt": 1777437037133,
-    "score": 500
+    "score": 500,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777437070816",
@@ -15,20 +18,26 @@
     "age": 28,
     "passwordHash": "ef06a3e3dbe5cf048f28865d32b7a25699d4127ba0ba1997781d703c7fbbff84",
     "createdAt": 1777437070817,
-    "score": 683,
-    "wins": 3,
-    "games": 3,
-    "campaignLevel": 10,
-    "updatedAt": 1777471055538
+    "score": 2205,
+    "wins": 22,
+    "games": 26,
+    "campaignLevel": 24,
+    "updatedAt": 1777604073225,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777437696535",
     "name": "DupTestA",
-    "phone": "901234567",
+    "phone": "998901234567",
     "age": 22,
     "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
     "createdAt": 1777437696535,
-    "score": 500
+    "score": 500,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777437696544",
@@ -37,7 +46,10 @@
     "age": 22,
     "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     "createdAt": 1777437696544,
-    "score": 500
+    "score": 500,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777437737043",
@@ -46,7 +58,10 @@
     "age": 22,
     "passwordHash": "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244",
     "createdAt": 1777437737043,
-    "score": 500
+    "score": 500,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777438865020",
@@ -55,7 +70,10 @@
     "age": 20,
     "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     "createdAt": 1777438865020,
-    "score": 500
+    "score": 500,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777438897366",
@@ -68,18 +86,25 @@
     "campaignLevel": 5,
     "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     "createdAt": 1777438897366,
-    "updatedAt": 1777438897385
+    "updatedAt": 1777438897385,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0
   },
   {
     "id": "1777456854542",
     "name": "Test",
     "phone": "998902929262",
     "age": 28,
-    "score": 500,
-    "wins": 0,
-    "games": 0,
-    "campaignLevel": 1,
+    "score": 1024,
+    "wins": 4,
+    "games": 10,
+    "campaignLevel": 2,
     "passwordHash": "c1f330d0aff31c1c87403f1e4347bcc21aff7c179908723535f2b31723702525",
-    "createdAt": 1777456854542
+    "createdAt": 1777456854542,
+    "superPowers": 0,
+    "doubleSpears": 0,
+    "walls": 0,
+    "updatedAt": 1777580239231
   }
 ]
