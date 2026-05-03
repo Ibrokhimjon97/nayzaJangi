@@ -48,6 +48,17 @@ function loadTextureWithBgRemoval(url) {
         
         if (data[3] > 200) {
             const bgR = data[0], bgG = data[1], bgB = data[2];
+
+let artilleryCount = 0;
+let isArtilleryAiming = false;
+let myArtilleryCannon = null;
+let btnArtillery = document.getElementById('artillery-button');
+let artilleryCountText = document.getElementById('artillery-count');
+window.artilleryCount = 0;
+window.isArtilleryAiming = false;
+window.myArtilleryCannon = null;
+window.btnArtillery = document.getElementById('artillery-button');
+window.artilleryCountText = document.getElementById('artillery-count');
             for (let i = 0; i < data.length; i += 4) {
                 if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
                     data[i+3] = 0;
@@ -1771,6 +1782,12 @@ function resetCameraAfterImpact() {
 
 updateCameraBounds();
 
+
+let artilleryCount = 0;
+let isArtilleryAiming = false;
+let myArtilleryCannon = null;
+let btnArtillery = document.getElementById('artillery-button');
+let artilleryCountText = document.getElementById('artillery-count');
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
 let dragCurrent = { x: 0, y: 0 };
@@ -5992,3 +6009,44 @@ if (chatQuickEmojis) {
         addChatMessage(msg, true);
     });
 }
+
+// Artillery functionality initialization
+document.addEventListener('DOMContentLoaded', () => {
+    btnArtillery = document.getElementById('artillery-button');
+    artilleryCountText = document.getElementById('artillery-count');
+    
+    if (btnArtillery) {
+        // Pointer events for artillery button
+        const handleArtilleryClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (gameOver || isMyTurn === false || artilleryCount <= 0) return;
+            isArtilleryAiming = !isArtilleryAiming;
+            
+            if (isArtilleryAiming) {
+                btnArtillery.classList.add('active');
+                if (!myArtilleryCannon) {
+                    const tex = loadTexture('artileriya.png');
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat);
+                    scene.add(myArtilleryCannon);
+                }
+                const playerGrp = getMyGroup();
+                if (playerGrp) {
+                    myArtilleryCannon.position.set(playerGrp.position.x + (myPlayerIndex === 0 ? 80 : -80), playerGrp.position.y - 40, playerGrp.position.z + 10);
+                    myArtilleryCannon.visible = true;
+                }
+            } else {
+                btnArtillery.classList.remove('active');
+                if (myArtilleryCannon) myArtilleryCannon.visible = false;
+            }
+        };
+
+        if (window.PointerEvent) {
+            btnArtillery.addEventListener('pointerdown', handleArtilleryClick);
+        } else {
+            btnArtillery.addEventListener('mousedown', handleArtilleryClick);
+            btnArtillery.addEventListener('touchstart', handleArtilleryClick, { passive: false });
+        }
+    }
+});
