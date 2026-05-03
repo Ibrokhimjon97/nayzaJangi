@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Yaratgich</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { padding: 20px; overflow-y: auto; display: block; }
+        .creator-panel { max-width: 600px; margin: 0 auto; background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 12px; position: relative; transform: none; left: auto; top: auto; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 0.9rem; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border-radius: 8px; background: #334155; border: none; color: white; }
+        .preview-img { max-width: 100px; max-height: 100px; display: none; margin-top: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="creator-panel panel">
+        <h2 style="margin-bottom: 15px;">Yangi Jangchi Modelini Yaratish</h2>
+        <form id="modelForm">
+            <div class="form-group">
+                <label>Model nomi:</label>
+                <input type="text" id="modelName" name="name" placeholder="Masalan: Qahramon" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Tik turgan holati (Idle):</label>
+                <input type="file" name="idle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-idle')">
+                <img id="prev-idle" class="preview-img">
+            </div>
+
+            <div class="form-group">
+                <label>O'q uzayotgan holati (Aim):</label>
+                <input type="file" name="aim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-aim')">
+                <img id="prev-aim" class="preview-img">
+            </div>
+
+            <div class="form-group">
+                <label>O'tirgan holati (Duck):</label>
+                <input type="file" name="duck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-duck')">
+                <img id="prev-duck" class="preview-img">
+            </div>
+
+            <div class="form-group">
+                <label>Himoyalanayotgan holati (Defend):</label>
+                <input type="file" name="defend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-defend')">
+                <img id="prev-defend" class="preview-img">
+            </div>
+
+            <div class="form-group">
+                <label>G'alaba nishonlash (Celebrate - ixtiyoriy):</label>
+                <input type="file" name="celebrate" accept="image/png, image/jpeg" onchange="preview(this, 'prev-celebrate')">
+                <img id="prev-celebrate" class="preview-img">
+            </div>
+
+            <button type="submit" class="primary-btn" style="background:#10b981; margin-top:10px;">Saqlash</button>
+            <button type="button" class="primary-btn" style="background:#475569; margin-top:10px;" onclick="window.location.href='/'">Orqaga</button>
+        </form>
+        <div id="status" style="margin-top:15px; color:#10b981;"></div>
+    </div>
+
+    <script>
+        function preview(input, imgId) {
+            const img = document.getElementById(imgId);
+            if (input.files && input.files[0]) {
+                img.style.display = 'block';
+                img.src = URL.createObjectURL(input.files[0]);
+            } else {
+                img.style.display = 'none';
+            }
+        }
+
+        document.getElementById('modelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const status = document.getElementById('status');
+            status.innerText = "Yuklanmoqda...";
+            status.style.color = "#f59e0b";
+            try {
+                const res = await fetch('/api/models/create', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    status.innerText = "Model muvaffaqiyatli saqlandi!";
+                    status.style.color = "#10b981";
+                    setTimeout(() => window.location.href='/', 2000);
+                } else {
+                    status.innerText = "Xatolik: " + (data.error || 'Noma\'lum xato');
+                    status.style.color = "#ef4444";
+                }
+            } catch (err) {
+                status.innerText = "Internet xatosi.";
+                status.style.color = "#ef4444";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -140,6 +140,49 @@ const ottomanSpearmanTextures = {
     celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
 };
 
+window.customModelsInfo = [];
+window.customModelTextures = {};
+
+async function fetchCustomModels() {
+    try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        window.customModelsInfo = data;
+        
+        const s1 = document.getElementById('select-char-type');
+        const s2 = document.getElementById('select-char-type-options');
+        data.forEach(m => {
+            if (s1) s1.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+            if (s2) s2.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+        });
+        
+        // Ensure values match profile if any
+        if (typeof myProfile !== 'undefined' && myProfile && myProfile.charType) {
+            if (s1) s1.value = String(myProfile.charType);
+            if (s2) s2.value = String(myProfile.charType);
+        }
+        
+        data.forEach(m => {
+            window.customModelTextures[m.id] = {
+                shieldIdle: loadTexture(m.textures.idle),
+                shieldAim: loadTexture(m.textures.aim),
+                shieldDuck: loadTexture(m.textures.duck),
+                shieldDefend: loadTexture(m.textures.defend),
+                shieldHurt: loadTexture(m.textures.idle),
+                shieldBreak: loadTexture(m.textures.idle),
+                noShieldIdle: loadTexture(m.textures.idle),
+                noShieldAim: loadTexture(m.textures.aim),
+                noShieldDuck: loadTexture(m.textures.duck),
+                noShieldDefend: loadTexture(m.textures.defend),
+                noShieldHurt: loadTexture(m.textures.idle),
+                celebrate: loadTexture(m.textures.celebrate)
+            };
+        });
+    } catch(e) { console.error('Error loading custom models:', e); }
+}
+fetchCustomModels();
+
+
 // Procedural Generation Mode Enabled - No external 3D models loaded.
 
 // UI Elements
@@ -784,11 +827,12 @@ const pHeight = 160;
 function createSoldier(isP1, charType = 0) {
     const group = new THREE.Group();
     
-    const normalizedCharType = Number(charType || 0);
+    const normalizedCharType = (typeof charType === 'string' && charType.startsWith('custom_')) ? charType : Number(charType || 0);
     group.userData.charType = normalizedCharType;
+    group.userData.isCustomModel = typeof normalizedCharType === 'string' && normalizedCharType.startsWith('custom_');
     group.userData.isOttomanArcher = normalizedCharType === 2;
     group.userData.isOttomanSpearman = normalizedCharType === 3;
-    group.userData.isOttomanUnit = group.userData.isOttomanArcher || group.userData.isOttomanSpearman;
+    group.userData.isOttomanUnit = group.userData.isOttomanArcher || group.userData.isOttomanSpearman || group.userData.isCustomModel;
     group.userData.shieldBroken = false;
     group.userData.visualState = 'idle';
     group.userData.forceState = null;
@@ -810,6 +854,9 @@ function createSoldier(isP1, charType = 0) {
     if (normalizedCharType === 1) selectedTexture = nayzabozTexture;
     if (normalizedCharType === 2) selectedTexture = ottomanArcherTextures.shieldIdle;
     if (normalizedCharType === 3) selectedTexture = ottomanSpearmanTextures.shieldIdle;
+    if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
+        selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
+    }
     const tex = selectedTexture.clone();
     tex.needsUpdate = true;
     if (group.userData.isOttomanUnit) {
@@ -890,6 +937,27 @@ function getOttomanSpearmanTexture(model, state) {
 }
 
 function getOttomanTexture(model, state) {
+    const charType = String(model.userData.charType);
+    if (charType.startsWith('custom_') && window.customModelTextures[charType]) {
+        const t = window.customModelTextures[charType];
+        const shieldBroken = model.userData.shieldBroken;
+        if (shieldBroken) {
+            if (state === 'duck') return t.noShieldDuck;
+            if (state === 'aim') return t.noShieldAim;
+            if (state === 'defend') return t.noShieldDefend;
+            if (state === 'hurt') return t.noShieldHurt;
+            if (state === 'celebrate') return t.celebrate;
+            return t.noShieldIdle;
+        } else {
+            if (state === 'duck') return t.shieldDuck;
+            if (state === 'aim') return t.shieldAim;
+            if (state === 'defend') return t.shieldDefend;
+            if (state === 'break') return t.shieldBreak;
+            if (state === 'hurt') return t.shieldHurt;
+            if (state === 'celebrate') return t.celebrate;
+            return t.shieldIdle;
+        }
+    }
     if (model.userData.isOttomanSpearman) return getOttomanSpearmanTexture(model, state);
     return getOttomanArcherTexture(model, state);
 }
@@ -2144,7 +2212,7 @@ function startSinglePlayer(opts) {
         p3Model = null;
     }
     const playerLeftSide = (level % 2 === 1);
-    const myChar = Number(myProfile.charType || 2) || 2;
+    const myChar = myProfile.charType || 2;
     const enemyChar = 2;
     const p1Char = playerLeftSide ? myChar : enemyChar;
     const p2Char = playerLeftSide ? enemyChar : myChar;
@@ -3289,8 +3357,8 @@ socket.on('gameStart', (data) => {
     enemyDuckActive = false;
     
     scene.remove(p1Model); scene.remove(p2Model);
-    const myChar = Number(myProfile.charType || 2) || 2;
-    const oppChar = Number((data.opponentProfile && data.opponentProfile.charType) || 2) || 2;
+    const myChar = myProfile.charType || 2;
+    const oppChar = (data.opponentProfile && data.opponentProfile.charType) || 2;
     const p1Char = myPlayerIndex === 0 ? myChar : oppChar;
     const p2Char = myPlayerIndex === 1 ? myChar : oppChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
@@ -4323,7 +4391,7 @@ let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
     doubleSpears: 0,
     walls: 0
 };
-myProfile.charType = Number.isFinite(Number(myProfile.charType)) ? Number(myProfile.charType) : 2;
+myProfile.charType = myProfile.charType || 2;
 myProfile.superPowers = Math.max(0, Number(myProfile.superPowers || 5));
 myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0));
 myProfile.walls = Math.max(0, Number(myProfile.walls || 0));
@@ -4943,8 +5011,8 @@ btnSaveSettings.addEventListener('click', () => {
 if (btnSaveProfile) btnSaveProfile.addEventListener('click', () => {
     myProfile.name = document.getElementById('input-name').value || "Jangchi";
     myProfile.avatar = document.getElementById('select-avatar').value;
-    const selectedCharType = Number(document.getElementById('select-char-type').value || 2);
-    myProfile.charType = Number.isFinite(selectedCharType) ? selectedCharType : 2;
+    const selectedCharType = document.getElementById('select-char-type').value || 2;
+    myProfile.charType = selectedCharType;
     myProfile.flag = document.getElementById('select-country').value;
     
     saveProfile();
@@ -5542,8 +5610,8 @@ if (btnConfirmCreate) {
         const birds = document.getElementById('check-birds') ? document.getElementById('check-birds').checked : false;
         const animals = document.getElementById('check-animals') ? document.getElementById('check-animals').checked : false;
         const difficulty = selectDifficulty ? selectDifficulty.value : 'normal';
-        const charTypeOpt = selectCharTypeOptions ? Number(selectCharTypeOptions.value || 2) : 2;
-        myProfile.charType = Number.isFinite(charTypeOpt) ? charTypeOpt : 2;
+        const charTypeOpt = selectCharTypeOptions ? selectCharTypeOptions.value || 2 : 2;
+        myProfile.charType = charTypeOpt;
         gameOptionsModal.classList.add('hidden');
         if (difficultyWrap) difficultyWrap.style.display = 'block';
         if (selectDifficulty) selectDifficulty.style.display = 'block';

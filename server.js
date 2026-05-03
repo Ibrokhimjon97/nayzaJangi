@@ -20,6 +20,71 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const multer = require('multer');
+const customModelsPath = path.join(__dirname, 'custom_models.json');
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const dir = path.join(__dirname, 'public', 'custom_models');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+function loadCustomModels() {
+    try {
+        if (!fs.existsSync(customModelsPath)) return [];
+        return JSON.parse(fs.readFileSync(customModelsPath, 'utf8'));
+    } catch {
+        return [];
+    }
+}
+
+function saveCustomModels(models) {
+    fs.writeFileSync(customModelsPath, JSON.stringify(models, null, 2), 'utf8');
+}
+
+app.get('/api/models', (req, res) => {
+    res.json(loadCustomModels());
+});
+
+app.post('/api/models/create', upload.fields([
+    { name: 'idle', maxCount: 1 },
+    { name: 'aim', maxCount: 1 },
+    { name: 'duck', maxCount: 1 },
+    { name: 'defend', maxCount: 1 },
+    { name: 'celebrate', maxCount: 1 }
+]), (req, res) => {
+    try {
+        const name = req.body.name || 'Yangi Model';
+        const files = req.files || {};
+        if (!files.idle || !files.aim || !files.duck || !files.defend) {
+            return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart.' });
+        }
+        const models = loadCustomModels();
+        const newModel = {
+            id: 'custom_' + Date.now(),
+            name: name,
+            textures: {
+                idle: 'custom_models/' + files.idle[0].filename,
+                aim: 'custom_models/' + files.aim[0].filename,
+                duck: 'custom_models/' + files.duck[0].filename,
+                defend: 'custom_models/' + files.defend[0].filename,
+                celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.idle[0].filename
+            }
+        };
+        models.push(newModel);
+        saveCustomModels(models);
+        res.json({ ok: true, model: newModel });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 const leaderboardDbPath = path.join(__dirname, 'ratings.json');
 const usersDbPath = path.join(__dirname, 'users.json');
 const supabaseUrl = process.env.SUPABASE_URL;
