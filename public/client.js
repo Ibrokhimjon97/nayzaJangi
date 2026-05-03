@@ -2487,51 +2487,9 @@ function fireEnemyVolleyShot() {
     let angle = accurateShot.angle;
     let power = accurateShot.power;
     
-    // aiPrecision ga qarab aniqlikni belgilash
-    const precision = cfg.aiPrecision || 0.5;
-    
-    // Tasodifiy xato - aniqlik qancha yuqori bo'lsa, xato shunchalik kam
-    const missChance = 1 - precision;
-    const willMiss = Math.random() < missChance;
-    
-    if (willMiss) {
-        // O'tkazib yuborish - kichik offset
-        angle += (Math.random() - 0.5) * 8;
-        power *= 0.9 + Math.random() * 0.2;
-    } else {
-        // Aniq tegish - 100% aniqlikda offsetlarsiz, boshqalarda kichik offset
-        if (precision >= 1.0) {
-            // 100% aniqlik - hech qanday offset, to'g'ridan-to'g'ri markazga
-            // angle va power o'zgarishsiz qoladi
-        } else {
-            // Bosh, tana, oyoq qismlariga tasodifiy offset
-            const hitZone = Math.random();
-            let yOffset = 0;
-            let xOffset = 0;
-            
-            if (hitZone < 0.3) {
-                // Boshga tegish (30%)
-                yOffset = 80 + Math.random() * 20;
-                xOffset = (Math.random() - 0.5) * 15;
-            } else if (hitZone < 0.7) {
-                // Tanaga tegish (40%)
-                yOffset = 20 + Math.random() * 40;
-                xOffset = (Math.random() - 0.5) * 20;
-            } else {
-                // Oyoqqa tegish (30%)
-                yOffset = -30 + Math.random() * 20;
-                xOffset = (Math.random() - 0.5) * 25;
-            }
-            
-            // Offsetga qarab kichik tuzatish
-            angle += (shooterIndex === 0 ? 1 : -1) * (xOffset / 50);
-            power *= 1 + (yOffset / 500);
-        }
-    }
-    
+    // 100% aniqlik
     angle = Math.max(-20, Math.min(110, angle));
     power = Math.max(700, Math.min(2000, power));
-
     setModelActionState(shooter, 'aim', 900);
     startSpearAnimation(shooterIndex, angle, power);
 }
@@ -2605,15 +2563,18 @@ let crowKillerCinematicUntil = 0;
 function shootCrowKillerArrow() {
     if (myCrow <= 0) return;
     myCrow--;
+    myProfile.crowhunt = myCrow;
+    saveProfile();
     updateCrowUI();
+    updateSuperUI();
     
     // Qarg'alarni aniqlash
     const birds = entities.filter(e => e.type === 'bird' && e.alive);
     if (birds.length === 0) return;
     
-    // 2/3 qismini urish
-    const targetCount = Math.floor(birds.length * 2 / 3);
-    const targets = birds.slice(0, targetCount);
+    // Barcha qushlarni urish
+    const targetCount = birds.length;
+    const targets = birds;
     
     // Cinematic effektni yoqish
     crowKillerCinematicActive = true;
