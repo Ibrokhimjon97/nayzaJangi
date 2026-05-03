@@ -55,6 +55,26 @@ app.post('/api/models/delete', express.json(), (req, res) => {
     try {
         const id = req.body.id;
         let models = loadCustomModels();
+        const modelToDelete = models.find(m => m.id === id);
+        if (modelToDelete) {
+            // Delete texture files
+            if (modelToDelete.textures) {
+                const uniqueFiles = new Set(Object.values(modelToDelete.textures));
+                uniqueFiles.forEach(filePath => {
+                    const absolutePath = path.join(__dirname, 'public', filePath);
+                    if (fs.existsSync(absolutePath)) {
+                        try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting texture file:', err); }
+                    }
+                });
+            }
+            // Delete background music
+            if (modelToDelete.bgMusic) {
+                const absolutePath = path.join(__dirname, 'public', modelToDelete.bgMusic);
+                if (fs.existsSync(absolutePath)) {
+                    try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting music file:', err); }
+                }
+            }
+        }
         models = models.filter(m => m.id !== id);
         saveCustomModels(models);
         res.json({ ok: true });

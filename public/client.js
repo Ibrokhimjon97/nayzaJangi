@@ -6073,7 +6073,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleArtilleryClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (gameOver || isMyTurn === false || artilleryCount <= 0) return;
+            if (myHealth <= 0 || enemyHealth <= 0 || isMyTurn === false || artilleryCount <= 0) return;
             isArtilleryAiming = !isArtilleryAiming;
             
             if (isArtilleryAiming) {
