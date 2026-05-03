@@ -2587,12 +2587,14 @@ function throwSpear(angle, power) {
     if (gameMode === 'multi') {
         socket.emit('throwSpear', { angle, power, isArtillery: artill });
     } else if (gameMode === 'single') {
-        if (currentTurnIndex === 0) {
-            setModelActionState(p1Model, isDefenseActiveForPlayer(0) ? 'defend' : 'aim', 800);
-        } else {
-            setModelActionState(p2Model, isDefenseActiveForPlayer(1) ? 'defend' : 'aim', 800);
+        if (!artill) {
+            if (currentTurnIndex === 0) {
+                setModelActionState(p1Model, isDefenseActiveForPlayer(0) ? 'defend' : 'aim', 800);
+            } else {
+                setModelActionState(p2Model, isDefenseActiveForPlayer(1) ? 'defend' : 'aim', 800);
+            }
         }
-        startSpearAnimation(currentTurnIndex, angle, power);
+        startSpearAnimation(currentTurnIndex, angle, power, artill);
     }
 }
 
@@ -3131,16 +3133,30 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         } else {
             const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
             hitResult = calculateHitResult(targetIndex, relativeY, false);
-            if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
-
-            if (hitResult.isShieldHit) {
-                spawnParticles(hitX, hitY, 10, true);
-            } else if (hitResult.hitZone === 'head') {
-                spawnParticles(hitX, hitY, 40);
-            } else if (hitResult.hitZone === 'leg') {
-                spawnParticles(hitX, hitY, 15);
+            
+            if (spear && spear.isArtillery) {
+                if (hitResult.isShieldHit) {
+                    hitResult.damage = 0;
+                    hitResult.msg = 'ARTILERIYA QAYTARILDI!';
+                    spawnParticles(hitX, hitY, 10, true);
+                } else {
+                    hitResult.damage = 50;
+                    hitResult.msg = 'ARTILERIYA ZARBASH! -50';
+                    hitResult.isCrit = true;
+                    triggerCinematicExplosion(hitX, hitY);
+                }
             } else {
-                spawnParticles(hitX, hitY, 25);
+                if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
+
+                if (hitResult.isShieldHit) {
+                    spawnParticles(hitX, hitY, 10, true);
+                } else if (hitResult.hitZone === 'head') {
+                    spawnParticles(hitX, hitY, 40);
+                } else if (hitResult.hitZone === 'leg') {
+                    spawnParticles(hitX, hitY, 15);
+                } else {
+                    spawnParticles(hitX, hitY, 25);
+                }
             }
         }
 
