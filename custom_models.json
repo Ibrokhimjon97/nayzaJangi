@@ -1,0 +1,21 @@
+[
+  {
+    "id": "custom_1777837884858",
+    "name": "Jumong",
+    "textures": {
+      "shieldIdle": "custom_models/1777837884778-387779637.png",
+      "shieldAim": "custom_models/1777837884789-206007824.png",
+      "shieldDuck": "custom_models/1777837884793-558261496.png",
+      "shieldDefend": "custom_models/1777837884796-794817024.png",
+      "shieldHurt": "custom_models/1777837884799-657011381.png",
+      "shieldBreak": "custom_models/1777837884802-485936299.png",
+      "noShieldIdle": "custom_models/1777837884804-367482846.png",
+      "noShieldAim": "custom_models/1777837884819-302411250.png",
+      "noShieldDuck": "custom_models/1777837884822-655476535.png",
+      "noShieldDefend": "custom_models/1777837884823-228232839.png",
+      "noShieldHurt": "custom_models/1777837884834-90962236.png",
+      "celebrate": "custom_models/1777837884836-665964666.png"
+    },
+    "bgMusic": "custom_models/1777837884838-43704714.mp3"
+  }
+]

@@ -71,7 +71,8 @@ app.post('/api/models/create', upload.fields([
         const name = req.body.name || 'Yangi Model';
         const files = req.files || {};
         if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt) {
-            return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart.' });
+            console.error('Kemtik fayllar:', Object.keys(files));
+            return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart. Yuborilgan fayllar: ' + Object.keys(files).join(', ') });
         }
         const models = loadCustomModels();
         const newModel = {
@@ -97,6 +98,7 @@ app.post('/api/models/create', upload.fields([
         saveCustomModels(models);
         res.json({ ok: true, model: newModel });
     } catch (e) {
+        console.error('Model saqlashda xatolik:', e);
         res.status(500).json({ ok: false, error: e.message });
     }
 });
