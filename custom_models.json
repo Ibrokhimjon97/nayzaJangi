@@ -23,5 +23,30 @@
       "offsetY": 0,
       "offsetX": 0
     }
+  },
+  {
+    "id": "custom_1777843676373",
+    "name": "Xitoy Xan imperiyasi askari",
+    "textures": {
+      "shieldIdle": "custom_models/1777843676306-242349779.png",
+      "shieldAim": "custom_models/1777843676311-597230234.png",
+      "shieldDuck": "custom_models/1777843676315-574566747.png",
+      "shieldDefend": "custom_models/1777843676318-597478816.png",
+      "shieldHurt": "custom_models/1777843676331-486893829.png",
+      "shieldBreak": "custom_models/1777843676332-952554952.png",
+      "noShieldIdle": "custom_models/1777843676336-922129201.png",
+      "noShieldAim": "custom_models/1777843676347-859174343.png",
+      "noShieldDuck": "custom_models/1777843676349-355256131.png",
+      "noShieldDefend": "custom_models/1777843676351-553453094.png",
+      "noShieldHurt": "custom_models/1777843676353-759105215.png",
+      "celebrate": "custom_models/1777843676306-242349779.png"
+    },
+    "bgMusic": "custom_models/1777843676355-678209768.mp3",
+    "settings": {
+      "width": 480,
+      "height": 450,
+      "offsetY": 5,
+      "offsetX": 0
+    }
   }
 ]

@@ -967,7 +967,12 @@ function createSoldier(isP1, charType = 0) {
     const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
     const planeMesh = new THREE.Mesh(planeGeo, soldierMat);
     planeMesh.position.y = planeHeight / 2 + cOffsetY;
-    planeMesh.position.x = cOffsetX;
+    planeMesh.position.x = isP1 ? cOffsetX : -cOffsetX;
+    
+    // Raqib doim yuzma-yuz turishi uchun P2 modelini X o'qi bo'ylab o'girish
+    if (!isP1) {
+        planeMesh.scale.x = -1;
+    }
     if (group.userData.isOttomanUnit && !cOffsetX) planeMesh.position.x = 0;
     group.userData.planeMesh = planeMesh;
     group.userData.basePlaneY = planeHeight / 2;
@@ -2337,14 +2342,28 @@ function startSinglePlayer(opts) {
         p3Model = null;
     }
     const playerLeftSide = (level % 2 === 1);
+    function getRandomEnemyChar() {
+        const defaultChars = [1, 2, 3];
+        const customChars = (window.customModelsInfo || []).map(m => m.id);
+        const allChars = defaultChars.concat(customChars);
+        return allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
     const myChar = myProfile.charType || 2;
-    const enemyChar = 2;
+    const enemyChar = getRandomEnemyChar();
     const p1Char = playerLeftSide ? myChar : enemyChar;
     const p2Char = playerLeftSide ? enemyChar : myChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
     if (campaignConfig.enemyCount === 2) {
-        p3Model = createSoldier(false, enemyChar);
+        let enemyChar2 = getRandomEnemyChar();
+        let tries = 10;
+        while (enemyChar2 === enemyChar && tries > 0) {
+            enemyChar2 = getRandomEnemyChar();
+            tries--;
+        }
+        // Agar dushmanlar chap tomonda bo'lsa p3Model true (isLeftSide) bo'ladi
+        p3Model = createSoldier(!playerLeftSide, enemyChar2);
     }
     if (playerLeftSide) {
         myPlayerIndex = 0;
