@@ -1421,6 +1421,37 @@ function updateSuperUI() {
             doubleButton.classList.remove('active');
         }
     }
+    
+    // Artillery and Crow buttons logic
+    const aCount = Number(myProfile.artillery || 0);
+    const cCount = Number(myProfile.crowhunt || 0);
+    
+    const artCountText = document.getElementById('artillery-count');
+    const bArtillery = document.getElementById('artillery-button');
+    if (artCountText) artCountText.innerText = String(Math.max(0, aCount));
+    if (bArtillery) {
+        if (aCount > 0) {
+            bArtillery.style.display = 'inline-flex';
+            bArtillery.classList.remove('hidden');
+        } else {
+            bArtillery.style.display = 'none';
+            bArtillery.classList.add('hidden');
+        }
+    }
+    
+    const cBtn = document.getElementById('crow-button');
+    const cCountText = document.getElementById('crow-count');
+    if (cCountText) cCountText.innerText = String(Math.max(0, cCount));
+    if (cBtn) {
+        if (cCount > 0) {
+            cBtn.style.display = 'inline-flex';
+            cBtn.classList.remove('hidden');
+        } else {
+            cBtn.style.display = 'none';
+            cBtn.classList.add('hidden');
+        }
+    }
+    
     updateShopUI();
 }
 
