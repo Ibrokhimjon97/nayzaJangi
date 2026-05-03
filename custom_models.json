@@ -16,6 +16,12 @@
       "noShieldHurt": "custom_models/1777838541776-792085097.png",
       "celebrate": "custom_models/1777838541778-161536922.png"
     },
-    "bgMusic": "custom_models/1777838541779-325644575.mp3"
+    "bgMusic": "custom_models/1777838541779-325644575.mp3",
+    "settings": {
+      "width": 650,
+      "height": 430,
+      "offsetY": 0,
+      "offsetX": 0
+    }
   }
 ]

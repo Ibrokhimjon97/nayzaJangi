@@ -280,6 +280,10 @@ const btnBuyDouble = document.getElementById('btn-buy-double');
 const doubleCountSettings = document.getElementById('double-count-settings');
 const btnBuyWall = document.getElementById('btn-buy-wall');
 const wallCountSettings = document.getElementById('wall-count-settings');
+const btnBuyArtillery = document.getElementById('btn-buy-artillery');
+const btnBuyCrowhunt = document.getElementById('btn-buy-crowhunt');
+const ARTILLERY_BUY_COST = 500;
+const CROWHUNT_BUY_COST = 300;
 const shopScoreText = document.getElementById('shop-score-text');
 const shopSuperMaxText = document.getElementById('shop-super-max');
 const shopDoubleMaxText = document.getElementById('shop-double-max');
@@ -5325,6 +5329,29 @@ if (btnBuyWall) {
         updateSuperUI();
     });
 }
+
+if (btnBuyArtillery) {
+    btnBuyArtillery.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.artillery || 0));
+        if (Number(myStats.score || 0) < ARTILLERY_BUY_COST) return;
+        addScore(-ARTILLERY_BUY_COST);
+        myProfile.artillery = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+
+if (btnBuyCrowhunt) {
+    btnBuyCrowhunt.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.crowhunt || 0));
+        if (Number(myStats.score || 0) < CROWHUNT_BUY_COST) return;
+        addScore(-CROWHUNT_BUY_COST);
+        myProfile.crowhunt = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+
 
 if (btnAuthRegister) {
     btnAuthRegister.addEventListener('click', async () => {
