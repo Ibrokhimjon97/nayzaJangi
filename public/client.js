@@ -114,8 +114,8 @@ function loadTexture(url, options = {}) {
     return tex;
 }
 
-const soldierTexture = loadTextureWithBgRemoval('askar.png');
-const nayzabozTexture = loadTextureWithBgRemoval('Nayzaboz.png');
+const soldierTexture = loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png');
+const nayzabozTexture = loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png');
 const qargaTexture = loadTextureWithBgRemoval('qarga.png');
 const daraxtKattaTexture = loadTexture('daraxtkatta.png');
 const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
