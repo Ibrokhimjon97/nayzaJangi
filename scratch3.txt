@@ -1,0 +1,40 @@
+441:             <!-- Chat Toggle Button -->
+442:             <button id="btn-toggle-chat" class="icon-btn hidden" style="pointer-events: auto; position: absolute; bottom: 20px; left: 20px; z-index: 100; font-size: 1.2rem;">
+443:                 
+444:                 <span id="chat-badge" class="chat-badge hidden">0</span>
+445:             </button>
+446: 
+447:             <button id="shield-button" class="icon-btn shield-btn" style="pointer-events: auto;" aria-label="Qalqon bilan himoyalanish">
+448:                 
+449:                 <span id="shield-count" class="shield-count">5</span>
+450:             </button>
+451:             <button id="super-button" class="icon-btn super-btn" style="pointer-events: auto;" aria-label="Super kuch nayzasi">
+452:                 
+453:                 <span id="super-count" class="shield-count">5</span>
+454:             </button>
+455:             <button id="duck-button" class="icon-btn duck-btn" style="pointer-events: auto;" aria-label="Boshni egib himoyalanish">
+456:                 
+457:             </button>
+458:             <button id="double-button" class="icon-btn double-btn" style="pointer-events: auto;" aria-label="Qo'sh nayzani yoqish">
+459:                 
+460:                 <span id="double-count" class="shield-count">0</span>
+461:             </button>
+462:             <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;" aria-label="Tahta devor qo'yish yoki surish">
+463:                 
+464:                 <span id="wall-count" class="shield-count">0</span>
+465:             </button>
+466:             <button id="crow-button" class="icon-btn crow-btn" style="pointer-events: auto;" aria-label="Qarg'alarni otish">
+467:                 
+468:                 <span id="crow-count" class="shield-count">3</span>
+469:             </button>
+470:             <button id="artillery-button" class="icon-btn artillery-btn hidden" style="pointer-events: auto; display:none;" aria-label="Artileriya otish">
+471:                 
+472:                 <span id="artillery-count" class="shield-count">0</span>
+473:             </button>
+474:             <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>
+475:             <button id="music-toggle-btn" class="icon-btn" style="pointer-events: auto;" aria-label="Musiqani yoqish yoki o'chirish"></button>
+476: 
+477:             <!-- Chat Box -->
+478:             <div id="chat-container" class="chat-container hidden" style="pointer-events: auto; bottom: 80px;">
+479:                 <div id="chat-messages" class="chat-messages"></div>
+480:                 <div id="chat-quick-emojis" class="chat-quick-emojis">
