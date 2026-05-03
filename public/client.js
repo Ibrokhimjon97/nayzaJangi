@@ -164,19 +164,28 @@ async function fetchCustomModels() {
         
         data.forEach(m => {
             window.customModelTextures[m.id] = {
-                shieldIdle: loadTexture(m.textures.idle),
-                shieldAim: loadTexture(m.textures.aim),
-                shieldDuck: loadTexture(m.textures.duck),
-                shieldDefend: loadTexture(m.textures.defend),
-                shieldHurt: loadTexture(m.textures.idle),
-                shieldBreak: loadTexture(m.textures.idle),
-                noShieldIdle: loadTexture(m.textures.idle),
-                noShieldAim: loadTexture(m.textures.aim),
-                noShieldDuck: loadTexture(m.textures.duck),
-                noShieldDefend: loadTexture(m.textures.defend),
-                noShieldHurt: loadTexture(m.textures.idle),
-                celebrate: loadTexture(m.textures.celebrate)
+                shieldIdle: loadTexture(m.textures.shieldIdle),
+                shieldAim: loadTexture(m.textures.shieldAim),
+                shieldDuck: loadTexture(m.textures.shieldDuck),
+                shieldDefend: loadTexture(m.textures.shieldDefend),
+                shieldHurt: loadTexture(m.textures.shieldIdle),
+                shieldBreak: loadTexture(m.textures.noShieldIdle),
+                noShieldIdle: loadTexture(m.textures.noShieldIdle),
+                noShieldAim: loadTexture(m.textures.noShieldAim),
+                noShieldDuck: loadTexture(m.textures.noShieldDuck),
+                noShieldDefend: loadTexture(m.textures.noShieldDefend),
+                noShieldHurt: loadTexture(m.textures.noShieldIdle),
+                celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
+                bgMusic: m.bgMusic
             };
+            
+            // Auto-play music if this is the currently selected profile character
+            if (typeof myProfile !== 'undefined' && myProfile && String(myProfile.charType) === m.id && m.bgMusic) {
+                if (typeof selectedMusicTrack !== 'undefined') {
+                    selectedMusicTrack = m.bgMusic;
+                    if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
+                }
+            }
         });
     } catch(e) { console.error('Error loading custom models:', e); }
 }
@@ -5016,6 +5025,17 @@ if (btnSaveProfile) btnSaveProfile.addEventListener('click', () => {
     myProfile.flag = document.getElementById('select-country').value;
     
     saveProfile();
+    
+    if (window.customModelsInfo) {
+        const custom = window.customModelsInfo.find(m => m.id === String(selectedCharType));
+        if (custom && custom.bgMusic) {
+            selectedMusicTrack = custom.bgMusic;
+        } else {
+            selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
+        }
+        if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
+    }
+    
     if (profileModal) profileModal.classList.add('hidden');
     menuScreen.classList.remove('hidden');
 });

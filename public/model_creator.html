@@ -7,11 +7,15 @@
     <link rel="stylesheet" href="style.css">
     <style>
         body { padding: 20px; overflow-y: auto; display: block; }
-        .creator-panel { max-width: 600px; margin: 0 auto; background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 12px; position: relative; transform: none; left: auto; top: auto; }
+        .creator-panel { max-width: 700px; margin: 0 auto; background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 12px; position: relative; transform: none; left: auto; top: auto; }
         .form-group { margin-bottom: 15px; text-align: left; }
+        .section-title { font-size: 1.1rem; color: #38bdf8; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(56, 189, 248, 0.3); padding-bottom: 5px; }
         label { display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 0.9rem; }
         input[type="text"], input[type="file"] { width: 100%; padding: 10px; border-radius: 8px; background: #334155; border: none; color: white; }
         .preview-img { max-width: 100px; max-height: 100px; display: none; margin-top: 10px; border-radius: 5px; }
+        .audio-preview { display: none; margin-top: 10px; width: 100%; }
+        .flex-row { display: flex; gap: 15px; }
+        .flex-row > div { flex: 1; }
     </style>
 </head>
 <body>
@@ -23,40 +27,75 @@
                 <input type="text" id="modelName" name="name" placeholder="Masalan: Qahramon" required>
             </div>
             
-            <div class="form-group">
-                <label>Tik turgan holati (Idle):</label>
-                <input type="file" name="idle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-idle')">
-                <img id="prev-idle" class="preview-img">
+            <div class="section-title">Qalqonli holatlar (Shielded)</div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>Tik turgan (Idle):</label>
+                    <input type="file" name="shieldIdle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-idle')">
+                    <img id="prev-s-idle" class="preview-img">
+                </div>
+                <div class="form-group">
+                    <label>O'q uzayotgan (Aim):</label>
+                    <input type="file" name="shieldAim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-aim')">
+                    <img id="prev-s-aim" class="preview-img">
+                </div>
+            </div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>O'tirgan (Duck):</label>
+                    <input type="file" name="shieldDuck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-duck')">
+                    <img id="prev-s-duck" class="preview-img">
+                </div>
+                <div class="form-group">
+                    <label>Himoya (Defend):</label>
+                    <input type="file" name="shieldDefend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-defend')">
+                    <img id="prev-s-defend" class="preview-img">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>O'q uzayotgan holati (Aim):</label>
-                <input type="file" name="aim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-aim')">
-                <img id="prev-aim" class="preview-img">
+            <div class="section-title">Qalqonsiz holatlar (No Shield)</div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>Tik turgan (Idle):</label>
+                    <input type="file" name="noShieldIdle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-idle')">
+                    <img id="prev-ns-idle" class="preview-img">
+                </div>
+                <div class="form-group">
+                    <label>O'q uzayotgan (Aim):</label>
+                    <input type="file" name="noShieldAim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-aim')">
+                    <img id="prev-ns-aim" class="preview-img">
+                </div>
+            </div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>O'tirgan (Duck):</label>
+                    <input type="file" name="noShieldDuck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-duck')">
+                    <img id="prev-ns-duck" class="preview-img">
+                </div>
+                <div class="form-group">
+                    <label>Himoya (Defend):</label>
+                    <input type="file" name="noShieldDefend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-defend')">
+                    <img id="prev-ns-defend" class="preview-img">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>O'tirgan holati (Duck):</label>
-                <input type="file" name="duck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-duck')">
-                <img id="prev-duck" class="preview-img">
-            </div>
-
-            <div class="form-group">
-                <label>Himoyalanayotgan holati (Defend):</label>
-                <input type="file" name="defend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-defend')">
-                <img id="prev-defend" class="preview-img">
-            </div>
-
+            <div class="section-title">Qo'shimcha</div>
             <div class="form-group">
                 <label>G'alaba nishonlash (Celebrate - ixtiyoriy):</label>
                 <input type="file" name="celebrate" accept="image/png, image/jpeg" onchange="preview(this, 'prev-celebrate')">
                 <img id="prev-celebrate" class="preview-img">
             </div>
+            
+            <div class="form-group">
+                <label>Fon musiqasi (bgMusic - .mp3, ixtiyoriy):</label>
+                <input type="file" name="bgMusic" accept="audio/mpeg, audio/mp3, audio/ogg" onchange="previewAudio(this, 'prev-audio')">
+                <audio id="prev-audio" class="audio-preview" controls></audio>
+            </div>
 
-            <button type="submit" class="primary-btn" style="background:#10b981; margin-top:10px;">Saqlash</button>
-            <button type="button" class="primary-btn" style="background:#475569; margin-top:10px;" onclick="window.location.href='/'">Orqaga</button>
+            <button type="submit" class="primary-btn" style="background:#10b981; margin-top:10px; width:100%;">Saqlash</button>
+            <button type="button" class="primary-btn" style="background:#475569; margin-top:10px; width:100%;" onclick="window.location.href='/'">Orqaga</button>
         </form>
-        <div id="status" style="margin-top:15px; color:#10b981;"></div>
+        <div id="status" style="margin-top:15px; color:#10b981; text-align:center;"></div>
     </div>
 
     <script>
@@ -67,6 +106,16 @@
                 img.src = URL.createObjectURL(input.files[0]);
             } else {
                 img.style.display = 'none';
+            }
+        }
+        
+        function previewAudio(input, audioId) {
+            const audio = document.getElementById(audioId);
+            if (input.files && input.files[0]) {
+                audio.style.display = 'block';
+                audio.src = URL.createObjectURL(input.files[0]);
+            } else {
+                audio.style.display = 'none';
             }
         }
 
