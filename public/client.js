@@ -131,10 +131,12 @@ const ottomanSpearmanTextures = {
     shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
     shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
     shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
+    shieldDuck: loadTexture('Nayzalik%20Usmoniy/qalqonnayzautirgan.png'),
     noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
     noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
     noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
     noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    noShieldDuck: loadTexture('Nayzalik%20Usmoniy/nayzaqalqonsizutirgan.png'),
     celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
 };
 
@@ -178,6 +180,8 @@ const shieldButton = document.getElementById('shield-button');
 const shieldCountText = document.getElementById('shield-count');
 const superButton = document.getElementById('super-button');
 const superCountText = document.getElementById('super-count');
+const crowButton = document.getElementById('crow-button');
+const crowCountText = document.getElementById('crow-count');
 const duckButton = document.getElementById('duck-button');
 const doubleButton = document.getElementById('double-button');
 const doubleCountText = document.getElementById('double-count');
@@ -836,6 +840,7 @@ function createSoldier(isP1, charType = 0) {
     planeMesh.position.y = planeHeight / 2;
     if (group.userData.isOttomanUnit) planeMesh.position.x = 0;
     group.userData.planeMesh = planeMesh;
+    group.userData.basePlaneY = planeHeight / 2;
     
     // Proper shadow casting requires a material that responds to light + castShadow flag
     planeMesh.castShadow = true;
@@ -871,11 +876,13 @@ function getOttomanSpearmanTexture(model, state) {
     if (state === 'break') return ottomanSpearmanTextures.shieldBreak;
     if (state === 'celebrate') return ottomanSpearmanTextures.celebrate;
     if (!broken) {
+        if (state === 'duck') return ottomanSpearmanTextures.shieldDuck;
         if (state === 'defend') return ottomanSpearmanTextures.shieldDefend;
         if (state === 'aim') return ottomanSpearmanTextures.shieldAim;
         if (state === 'afterShot') return ottomanSpearmanTextures.shieldAfterShot;
         return ottomanSpearmanTextures.shieldIdle;
     }
+    if (state === 'duck') return ottomanSpearmanTextures.noShieldDuck;
     if (state === 'defend') return ottomanSpearmanTextures.noShieldDefend;
     if (state === 'aim') return ottomanSpearmanTextures.noShieldAim;
     if (state === 'afterShot') return ottomanSpearmanTextures.noShieldAfterShot;
@@ -891,10 +898,18 @@ function setSoldierVisual(model, state) {
     if (!model || !model.userData) return;
     let targetState = state;
     const modelIndex = getPlayerIndexByModel(model);
-    if (model.userData.isOttomanArcher && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
+    if (model.userData.isOttomanUnit && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
         targetState = 'duck';
     }
     model.userData.visualState = targetState;
+
+    if (model.userData.planeMesh && model.userData.basePlaneY) {
+        if (model.userData.isOttomanSpearman && targetState === 'duck') {
+            model.userData.planeMesh.position.y = model.userData.basePlaneY + 45;
+        } else {
+            model.userData.planeMesh.position.y = model.userData.basePlaneY;
+        }
+    }
 
     if (!model.userData.isOttomanUnit) {
         const frameMap = { idle: 0, load: 0.25, aim: 0.5, afterShot: 0.75 };
@@ -1044,6 +1059,8 @@ let myShield = 5;
 let enemyShield = 5;
 let mySuper = 5;
 let enemySuper = 5;
+let myCrow = 3;
+let enemyCrow = 3;
 let myDefenseActive = false;
 let enemyDefenseActive = false;
 let myDuckActive = false;
@@ -1933,13 +1950,10 @@ if (superButton) {
             e.preventDefault();
             e.stopPropagation();
         }
+        if (mySuper <= 0) return;
         superButton.classList.add('active');
         const used = tryUseSuperPower();
-        if (!used && mySuper > 0 && gameMode !== 'menu') {
-            showSuperUseWarning();
-        } else if (used) {
-            playSfx('superPress');
-        }
+        if (!used) showSuperUseWarning();
     };
     const releaseSuper = (e) => {
         if (e) {
@@ -1955,9 +1969,38 @@ if (superButton) {
         superButton.addEventListener('pointerleave', releaseSuper);
     } else {
         superButton.addEventListener('mousedown', pressSuper);
-        superButton.addEventListener('mouseup', releaseSuper);
         superButton.addEventListener('touchstart', pressSuper, { passive: false });
         superButton.addEventListener('touchend', releaseSuper, { passive: false });
+    }
+}
+
+if (crowButton) {
+    const pressCrow = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (myCrow <= 0) return;
+        crowButton.classList.add('active');
+        shootCrowKillerArrow();
+    };
+    const releaseCrow = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        crowButton.classList.remove('active');
+    };
+    if (window.PointerEvent) {
+        crowButton.addEventListener('pointerdown', pressCrow);
+        crowButton.addEventListener('pointerup', releaseCrow);
+        crowButton.addEventListener('pointercancel', releaseCrow);
+        crowButton.addEventListener('pointerleave', releaseCrow);
+    } else {
+        crowButton.addEventListener('mousedown', pressCrow);
+        crowButton.addEventListener('mouseup', releaseCrow);
+        crowButton.addEventListener('touchstart', pressCrow, { passive: false });
+        crowButton.addEventListener('touchend', releaseCrow, { passive: false });
     }
 }
 
@@ -2345,6 +2388,191 @@ function throwSpear(angle, power) {
             setModelActionState(p2Model, isDefenseActiveForPlayer(1) ? 'defend' : 'aim', 800);
         }
         startSpearAnimation(currentTurnIndex, angle, power);
+    }
+}
+
+const CROW_KILLER_CINEMATIC_MS = 4000;
+let crowKillerCinematicActive = false;
+let crowKillerCinematicUntil = 0;
+
+function shootCrowKillerArrow() {
+    if (myCrow <= 0) return;
+    myCrow--;
+    updateCrowUI();
+    
+    // Qarg'alarni aniqlash
+    const birds = entities.filter(e => e.type === 'bird' && e.alive);
+    if (birds.length === 0) return;
+    
+    // 2/3 qismini urish
+    const targetCount = Math.floor(birds.length * 2 / 3);
+    const targets = birds.slice(0, targetCount);
+    
+    // Cinematic effektni yoqish
+    crowKillerCinematicActive = true;
+    crowKillerCinematicUntil = performance.now() + CROW_KILLER_CINEMATIC_MS;
+    cameraState = 'crowKiller';
+    cameraZoomTarget = baseZoom * 1.8;
+    
+    // Har bir qarg'a uchun o'q otish
+    const shooterModel = modelForPlayer(myPlayerIndex);
+    if (!shooterModel) return;
+    
+    const startX = shooterModel.position.x;
+    const startY = shooterModel.position.y + 50;
+    
+    targets.forEach((bird, index) => {
+        setTimeout(() => {
+            const birdMesh = bird.mesh;
+            const targetX = birdMesh.position.x;
+            const targetY = birdMesh.position.y;
+            
+            // O'q trayektoriyasini hisoblash
+            const dx = targetX - startX;
+            const dy = targetY - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            const power = Math.min(distance * 2.5, 1800);
+            
+            // Maxsus o'q otish (dushmanga zarar bermaydi)
+            startCrowKillerArrowAnimation(startX, startY, angle, power, bird);
+            
+            // Camera target ni qarg'aga qaratish
+            cameraTargetX = targetX;
+            cameraTargetY = targetY;
+        }, index * 200); // Har bir o'q 200ms orqali (sekinroq)
+    });
+    
+    if (gameMode === 'multi') {
+        socket.emit('crowKillerShot', { count: targetCount });
+    }
+    
+    // Cinematic tugagandan keyin camera ni qaytarish
+    setTimeout(() => {
+        crowKillerCinematicActive = false;
+        cameraState = 'normal';
+        cameraZoomTarget = baseZoom;
+    }, CROW_KILLER_CINEMATIC_MS);
+}
+
+function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird) {
+    const rad = angle * Math.PI / 180;
+    const vx = power * Math.cos(rad);
+    const vy = power * Math.sin(rad);
+    
+    // Maxsus o'q yaratish
+    const arrow = createCrowKillerArrow();
+    arrow.position.set(startX, startY, 0);
+    scene.add(arrow);
+    
+    const arrowData = {
+        mesh: arrow,
+        x: startX,
+        y: startY,
+        vx: vx,
+        vy: vy,
+        targetBird: targetBird,
+        isCrowKiller: true,
+        active: true
+    };
+    
+    crowKillerArrows.push(arrowData);
+}
+
+function createCrowKillerArrow() {
+    const group = new THREE.Group();
+    
+    // O'q tanasi
+    const shaftGeo = new THREE.CylinderGeometry(2, 2, 60);
+    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+    shaft.rotation.z = -Math.PI / 2;
+    group.add(shaft);
+    
+    // O'q uchi
+    const tipGeo = new THREE.ConeGeometry(4, 12, 8);
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const tip = new THREE.Mesh(tipGeo, tipMat);
+    tip.position.set(36, 0, 0);
+    tip.rotation.z = -Math.PI / 2;
+    group.add(tip);
+    
+    return group;
+}
+
+let crowKillerArrows = [];
+
+function updateCrowKillerArrows() {
+    for (let i = crowKillerArrows.length - 1; i >= 0; i--) {
+        const arrow = crowKillerArrows[i];
+        if (!arrow.active) {
+            scene.remove(arrow.mesh);
+            crowKillerArrows.splice(i, 1);
+            continue;
+        }
+        
+        // Fizika
+        arrow.x += arrow.vx * 0.016;
+        arrow.y += arrow.vy * 0.016;
+        arrow.vy -= 500 * 0.016; // Gravity
+        
+        arrow.mesh.position.set(arrow.x, arrow.y, 0);
+        arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx);
+        
+        // Qarg'aga urish tekshiruvi
+        if (arrow.targetBird && arrow.targetBird.alive) {
+            const birdMesh = arrow.targetBird.mesh;
+            const dx = arrow.x - birdMesh.position.x;
+            const dy = arrow.y - birdMesh.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Distance ni oshirish - 30 dan 100 gacha
+            if (distance < 100) {
+                console.log('Qarg\'aga urildi! Distance:', distance);
+                // Qarg'ani urib tushirish
+                killBird(arrow.targetBird);
+                arrow.active = false;
+                scene.remove(arrow.mesh);
+                crowKillerArrows.splice(i, 1);
+            }
+        }
+        
+        // Yerga tushsa o'chirish
+        if (arrow.y < ground.position.y) {
+            arrow.active = false;
+            scene.remove(arrow.mesh);
+            crowKillerArrows.splice(i, 1);
+        }
+    }
+}
+
+function killBird(birdEntity) {
+    if (!birdEntity || !birdEntity.alive) return;
+    
+    birdEntity.alive = false;
+    
+    // Qarg'ani qirilishi animatsiyasi
+    const birdMesh = birdEntity.mesh;
+    birdMesh.rotation.z = Math.PI / 2;
+    
+    // Pastga tushish
+    const fallAnimation = () => {
+        birdMesh.position.y -= 5;
+        if (birdMesh.position.y > ground.position.y) {
+            requestAnimationFrame(fallAnimation);
+        } else {
+            scene.remove(birdMesh);
+        }
+    };
+    fallAnimation();
+    
+    // Particle effect
+    spawnParticles(birdMesh.position.x, birdMesh.position.y, 10, false);
+}
+
+function updateCrowUI() {
+    if (crowCountText) {
+        crowCountText.innerText = myCrow;
     }
 }
 
@@ -3755,6 +3983,7 @@ function gameLoop(now) {
     let timeScale = 1.0;
     if (!isAnimating && screenShake > 0) timeScale = 0.3; 
     if (now < cinematicSlowUntil) timeScale *= 0.23;
+    if (now < crowKillerCinematicUntil) timeScale *= 0.35; // Qush o'ldirish cinematic sekinlashtirish
     
     const dt = ((now - lastTime) / 1000) * timeScale;
     lastTime = now;
@@ -3786,7 +4015,7 @@ function gameLoop(now) {
     // Dust animation
     const positions = dustSystem.geometry.attributes.position.array;
     for(let i=0; i<dustCount*3; i+=3) {
-        positions[i] += currentWind * 10 * dt; 
+        positions[i] += currentWind * 10 * dt;
         if (positions[i] > 2000) {
             positions[i] = -2000 + Math.random() * 220;
             positions[i + 1] = Math.random() * 800 - 300;
@@ -3845,6 +4074,9 @@ function gameLoop(now) {
             }
         }
     });
+    
+    // Qarg'a o'qlarini yangilash
+    updateCrowKillerArrows();
 
     // Cloud animation
     clouds.forEach(cloud => {
