@@ -7,21 +7,31 @@
     <link rel="stylesheet" href="style.css">
     <style>
         body { padding: 20px; overflow-y: auto; display: block; }
-        .creator-panel { max-width: 700px; margin: 0 auto; background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 12px; position: relative; transform: none; left: auto; top: auto; }
+        .creator-panel { max-width: 800px; margin: 0 auto; background: rgba(15, 23, 42, 0.8); padding: 20px; border-radius: 12px; position: relative; transform: none; left: auto; top: auto; margin-bottom: 30px; }
         .form-group { margin-bottom: 15px; text-align: left; }
         .section-title { font-size: 1.1rem; color: #38bdf8; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(56, 189, 248, 0.3); padding-bottom: 5px; }
         label { display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 0.9rem; }
         input[type="text"], input[type="file"] { width: 100%; padding: 10px; border-radius: 8px; background: #334155; border: none; color: white; }
-        .preview-img { max-width: 100px; max-height: 100px; display: none; margin-top: 10px; border-radius: 5px; }
+        .preview-img { max-width: 100px; max-height: 100px; display: none; margin-top: 10px; border-radius: 5px; object-fit: contain; background: rgba(0,0,0,0.3); }
         .audio-preview { display: none; margin-top: 10px; width: 100%; }
         .flex-row { display: flex; gap: 15px; }
         .flex-row > div { flex: 1; }
+        
+        .models-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .model-card { background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .model-info { display: flex; align-items: center; gap: 15px; }
+        .model-thumb { width: 50px; height: 50px; border-radius: 5px; object-fit: contain; background: #0f172a; }
+        .model-actions { display: flex; gap: 10px; }
+        .btn-edit { background: #3b82f6; padding: 8px 15px; border-radius: 5px; color: white; border: none; cursor: pointer; }
+        .btn-delete { background: #ef4444; padding: 8px 15px; border-radius: 5px; color: white; border: none; cursor: pointer; }
+        .btn-cancel { background: #64748b; padding: 8px 15px; border-radius: 5px; color: white; border: none; cursor: pointer; display: none; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
     <div class="creator-panel panel">
-        <h2 style="margin-bottom: 15px;">Yangi Jangchi Modelini Yaratish</h2>
+        <h2 id="formTitle" style="margin-bottom: 15px;">Yangi Jangchi Modelini Yaratish</h2>
         <form id="modelForm">
+            <input type="hidden" id="modelId" name="id">
             <div class="form-group">
                 <label>Model nomi:</label>
                 <input type="text" id="modelName" name="name" placeholder="Masalan: Qahramon" required>
@@ -31,36 +41,36 @@
             <div class="flex-row">
                 <div class="form-group">
                     <label>Tik turgan (Idle):</label>
-                    <input type="file" name="shieldIdle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-idle')">
+                    <input type="file" name="shieldIdle" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-idle')">
                     <img id="prev-s-idle" class="preview-img">
                 </div>
                 <div class="form-group">
                     <label>O'q uzayotgan (Aim):</label>
-                    <input type="file" name="shieldAim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-aim')">
+                    <input type="file" name="shieldAim" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-aim')">
                     <img id="prev-s-aim" class="preview-img">
                 </div>
             </div>
             <div class="flex-row">
                 <div class="form-group">
                     <label>O'tirgan (Duck):</label>
-                    <input type="file" name="shieldDuck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-duck')">
+                    <input type="file" name="shieldDuck" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-duck')">
                     <img id="prev-s-duck" class="preview-img">
                 </div>
                 <div class="form-group">
                     <label>Himoya (Defend):</label>
-                    <input type="file" name="shieldDefend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-defend')">
+                    <input type="file" name="shieldDefend" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-defend')">
                     <img id="prev-s-defend" class="preview-img">
                 </div>
             </div>
             <div class="flex-row">
                 <div class="form-group">
                     <label>Yarador/Yiqilish (Hurt):</label>
-                    <input type="file" name="shieldHurt" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-hurt')">
+                    <input type="file" name="shieldHurt" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-hurt')">
                     <img id="prev-s-hurt" class="preview-img">
                 </div>
                 <div class="form-group">
                     <label>Qalqon sinishi (Break):</label>
-                    <input type="file" name="shieldBreak" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-break')">
+                    <input type="file" name="shieldBreak" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-break')">
                     <img id="prev-s-break" class="preview-img">
                 </div>
             </div>
@@ -69,31 +79,31 @@
             <div class="flex-row">
                 <div class="form-group">
                     <label>Tik turgan (Idle):</label>
-                    <input type="file" name="noShieldIdle" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-idle')">
+                    <input type="file" name="noShieldIdle" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-idle')">
                     <img id="prev-ns-idle" class="preview-img">
                 </div>
                 <div class="form-group">
                     <label>O'q uzayotgan (Aim):</label>
-                    <input type="file" name="noShieldAim" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-aim')">
+                    <input type="file" name="noShieldAim" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-aim')">
                     <img id="prev-ns-aim" class="preview-img">
                 </div>
             </div>
             <div class="flex-row">
                 <div class="form-group">
                     <label>O'tirgan (Duck):</label>
-                    <input type="file" name="noShieldDuck" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-duck')">
+                    <input type="file" name="noShieldDuck" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-duck')">
                     <img id="prev-ns-duck" class="preview-img">
                 </div>
                 <div class="form-group">
                     <label>Himoya (Defend):</label>
-                    <input type="file" name="noShieldDefend" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-defend')">
+                    <input type="file" name="noShieldDefend" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-defend')">
                     <img id="prev-ns-defend" class="preview-img">
                 </div>
             </div>
             <div class="flex-row">
                 <div class="form-group">
                     <label>Yarador/Yiqilish (Hurt):</label>
-                    <input type="file" name="noShieldHurt" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-hurt')">
+                    <input type="file" name="noShieldHurt" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-hurt')">
                     <img id="prev-ns-hurt" class="preview-img">
                 </div>
                 <div class="form-group"></div>
@@ -102,29 +112,40 @@
             <div class="section-title">Qo'shimcha</div>
             <div class="form-group">
                 <label>G'alaba nishonlash (Celebrate - ixtiyoriy):</label>
-                <input type="file" name="celebrate" accept="image/png, image/jpeg" onchange="preview(this, 'prev-celebrate')">
+                <input type="file" name="celebrate" class="file-input" accept="image/png, image/jpeg" onchange="preview(this, 'prev-celebrate')">
                 <img id="prev-celebrate" class="preview-img">
             </div>
             
             <div class="form-group">
                 <label>Fon musiqasi (bgMusic - .mp3, ixtiyoriy):</label>
-                <input type="file" name="bgMusic" accept="audio/mpeg, audio/mp3, audio/ogg" onchange="previewAudio(this, 'prev-audio')">
+                <input type="file" name="bgMusic" class="file-input" accept="audio/mpeg, audio/mp3, audio/ogg" onchange="previewAudio(this, 'prev-audio')">
                 <audio id="prev-audio" class="audio-preview" controls></audio>
             </div>
 
-            <button type="submit" class="primary-btn" style="background:#10b981; margin-top:10px; width:100%;">Saqlash</button>
+            <button type="submit" id="btnSubmit" class="primary-btn" style="background:#10b981; margin-top:10px; width:100%;">Saqlash</button>
+            <button type="button" id="btnCancel" class="btn-cancel" onclick="resetForm()">Bekor qilish</button>
             <button type="button" class="primary-btn" style="background:#475569; margin-top:10px; width:100%;" onclick="window.location.href='/'">Orqaga</button>
         </form>
         <div id="status" style="margin-top:15px; color:#10b981; text-align:center;"></div>
     </div>
+    
+    <div class="creator-panel panel" style="margin-top: 20px;">
+        <h2>Mavjud Modellar</h2>
+        <div class="models-list" id="modelsList">
+            <div style="color: #94a3b8; text-align: center; padding: 20px;">Yuklanmoqda...</div>
+        </div>
+    </div>
 
     <script>
+        let allModels = [];
+        let editMode = false;
+
         function preview(input, imgId) {
             const img = document.getElementById(imgId);
             if (input.files && input.files[0]) {
                 img.style.display = 'block';
                 img.src = URL.createObjectURL(input.files[0]);
-            } else {
+            } else if (!editMode) {
                 img.style.display = 'none';
             }
         }
@@ -134,8 +155,134 @@
             if (input.files && input.files[0]) {
                 audio.style.display = 'block';
                 audio.src = URL.createObjectURL(input.files[0]);
-            } else {
+            } else if (!editMode) {
                 audio.style.display = 'none';
+            }
+        }
+        
+        function showPreviewImage(id, url) {
+            const img = document.getElementById(id);
+            if (url) {
+                img.src = '/' + url;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+        }
+
+        async function fetchModels() {
+            try {
+                const res = await fetch('/api/models');
+                allModels = await res.json();
+                renderModels();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function renderModels() {
+            const list = document.getElementById('modelsList');
+            list.innerHTML = '';
+            if (allModels.length === 0) {
+                list.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 20px;">Hali modellar yo\'q.</div>';
+                return;
+            }
+            allModels.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                card.innerHTML = `
+                    <div class="model-info">
+                        <img class="model-thumb" src="/${m.textures.shieldIdle}" alt="thumb">
+                        <div>
+                            <div style="font-weight: bold; color: white;">${m.name}</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">${m.id}</div>
+                        </div>
+                    </div>
+                    <div class="model-actions">
+                        <button class="btn-edit" onclick="editModel('${m.id}')">Tahrirlash</button>
+                        <button class="btn-delete" onclick="deleteModel('${m.id}')">O'chirish</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+        
+        function editModel(id) {
+            const m = allModels.find(x => x.id === id);
+            if (!m) return;
+            
+            editMode = true;
+            document.getElementById('formTitle').innerText = "Modelni Tahrirlash";
+            document.getElementById('btnSubmit').innerText = "Yangilash";
+            document.getElementById('btnCancel').style.display = "block";
+            
+            document.getElementById('modelId').value = m.id;
+            document.getElementById('modelName').value = m.name;
+            
+            // Remove required attribute from all file inputs during edit mode
+            document.querySelectorAll('.file-input').forEach(el => el.removeAttribute('required'));
+            
+            // Load previews
+            showPreviewImage('prev-s-idle', m.textures.shieldIdle);
+            showPreviewImage('prev-s-aim', m.textures.shieldAim);
+            showPreviewImage('prev-s-duck', m.textures.shieldDuck);
+            showPreviewImage('prev-s-defend', m.textures.shieldDefend);
+            showPreviewImage('prev-s-hurt', m.textures.shieldHurt);
+            showPreviewImage('prev-s-break', m.textures.shieldBreak);
+            showPreviewImage('prev-ns-idle', m.textures.noShieldIdle);
+            showPreviewImage('prev-ns-aim', m.textures.noShieldAim);
+            showPreviewImage('prev-ns-duck', m.textures.noShieldDuck);
+            showPreviewImage('prev-ns-defend', m.textures.noShieldDefend);
+            showPreviewImage('prev-ns-hurt', m.textures.noShieldHurt);
+            showPreviewImage('prev-celebrate', m.textures.celebrate);
+            
+            if (m.bgMusic) {
+                const audio = document.getElementById('prev-audio');
+                audio.src = '/' + m.bgMusic;
+                audio.style.display = 'block';
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function resetForm() {
+            editMode = false;
+            document.getElementById('modelForm').reset();
+            document.getElementById('formTitle').innerText = "Yangi Jangchi Modelini Yaratish";
+            document.getElementById('btnSubmit').innerText = "Saqlash";
+            document.getElementById('btnCancel').style.display = "none";
+            document.getElementById('modelId').value = '';
+            
+            // Make core inputs required again
+            document.querySelectorAll('.file-input').forEach(el => {
+                if (el.name !== 'celebrate' && el.name !== 'bgMusic') {
+                    el.setAttribute('required', 'true');
+                }
+            });
+            
+            // Hide all previews
+            document.querySelectorAll('.preview-img').forEach(el => { el.style.display = 'none'; el.src = ''; });
+            document.getElementById('prev-audio').style.display = 'none';
+            document.getElementById('prev-audio').src = '';
+        }
+        
+        async function deleteModel(id) {
+            if (!confirm("Rostdan ham ushbu modelni o'chirmoqchimisiz?")) return;
+            try {
+                const res = await fetch('/api/models/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    if (document.getElementById('modelId').value === id) resetForm();
+                    await fetchModels();
+                } else {
+                    alert("O'chirishda xatolik: " + data.error);
+                }
+            } catch (e) {
+                alert("Internet xatosi.");
             }
         }
 
@@ -145,25 +292,34 @@
             const status = document.getElementById('status');
             status.innerText = "Yuklanmoqda...";
             status.style.color = "#f59e0b";
+            
+            const url = editMode ? '/api/models/update' : '/api/models/create';
+            
             try {
-                const res = await fetch('/api/models/create', {
+                const res = await fetch(url, {
                     method: 'POST',
                     body: formData
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    status.innerText = "Model muvaffaqiyatli saqlandi!";
+                    status.innerText = editMode ? "Model muvaffaqiyatli yangilandi!" : "Model muvaffaqiyatli saqlandi!";
                     status.style.color = "#10b981";
-                    setTimeout(() => window.location.href='/', 2000);
+                    resetForm();
+                    await fetchModels();
+                    setTimeout(() => { status.innerText = ''; }, 3000);
                 } else {
                     status.innerText = "Xatolik: " + (data.error || 'Noma\'lum xato');
                     status.style.color = "#ef4444";
                 }
             } catch (err) {
-                status.innerText = "Internet xatosi.";
+                console.error(err);
+                status.innerText = "Internet xatosi yoki server ishlamayapti.";
                 status.style.color = "#ef4444";
             }
         });
+        
+        // Initial load
+        fetchModels();
     </script>
 </body>
 </html>

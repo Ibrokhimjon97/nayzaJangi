@@ -51,6 +51,62 @@ function saveCustomModels(models) {
 app.get('/api/models', (req, res) => {
     res.json(loadCustomModels());
 });
+app.post('/api/models/delete', express.json(), (req, res) => {
+    try {
+        const id = req.body.id;
+        let models = loadCustomModels();
+        models = models.filter(m => m.id !== id);
+        saveCustomModels(models);
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+app.post('/api/models/update', upload.fields([
+    { name: 'shieldIdle', maxCount: 1 },
+    { name: 'shieldAim', maxCount: 1 },
+    { name: 'shieldDuck', maxCount: 1 },
+    { name: 'shieldDefend', maxCount: 1 },
+    { name: 'shieldHurt', maxCount: 1 },
+    { name: 'shieldBreak', maxCount: 1 },
+    { name: 'noShieldIdle', maxCount: 1 },
+    { name: 'noShieldAim', maxCount: 1 },
+    { name: 'noShieldDuck', maxCount: 1 },
+    { name: 'noShieldDefend', maxCount: 1 },
+    { name: 'noShieldHurt', maxCount: 1 },
+    { name: 'celebrate', maxCount: 1 },
+    { name: 'bgMusic', maxCount: 1 }
+]), (req, res) => {
+    try {
+        const id = req.body.id;
+        const models = loadCustomModels();
+        const modelIndex = models.findIndex(m => m.id === id);
+        if (modelIndex === -1) return res.status(404).json({ ok: false, error: 'Model topilmadi' });
+        
+        const files = req.files || {};
+        const oldModel = models[modelIndex];
+        
+        if (req.body.name) oldModel.name = req.body.name;
+        
+        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'celebrate'];
+        fileNames.forEach(fn => {
+            if (files[fn] && files[fn][0]) {
+                oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
+            }
+        });
+        
+        if (files.bgMusic && files.bgMusic[0]) {
+            oldModel.bgMusic = 'custom_models/' + files.bgMusic[0].filename;
+        }
+
+        saveCustomModels(models);
+        res.json({ ok: true, model: oldModel });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 
 app.post('/api/models/create', upload.fields([
     { name: 'shieldIdle', maxCount: 1 },
