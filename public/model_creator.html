@@ -36,6 +36,13 @@
                 <label>Model nomi:</label>
                 <input type="text" id="modelName" name="name" placeholder="Masalan: Qahramon" required>
             </div>
+            <div class="form-group">
+                <label>Qurol turi:</label>
+                <select id="weaponType" name="weaponType" style="width:100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white;">
+                    <option value="spear">Nayza</option>
+                    <option value="bow">Kamon</option>
+                </select>
+            </div>
             
             <div class="section-title">Qalqonli holatlar (Shielded)</div>
             <div class="flex-row">
@@ -73,6 +80,14 @@
                     <input type="file" name="shieldBreak" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-break')">
                     <img id="prev-s-break" class="preview-img">
                 </div>
+            </div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>Otgandan so'ng (After Shot):</label>
+                    <input type="file" name="shieldAfterShot" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-after')">
+                    <img id="prev-s-after" class="preview-img">
+                </div>
+                <div class="form-group"></div>
             </div>
 
             <div class="section-title">Qalqonsiz holatlar (No Shield)</div>
@@ -240,6 +255,11 @@
             
             document.getElementById('modelId').value = m.id;
             document.getElementById('modelName').value = m.name;
+            if (m.weaponType) {
+                document.getElementById('weaponType').value = m.weaponType;
+            } else {
+                document.getElementById('weaponType').value = 'spear';
+            }
             
             if (m.settings) {
                 document.getElementById('modelWidth').value = m.settings.width !== undefined ? m.settings.width : 560;

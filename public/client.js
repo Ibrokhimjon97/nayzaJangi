@@ -181,11 +181,13 @@ async function fetchCustomModels() {
                 shieldDefend: loadTexture(m.textures.shieldDefend),
                 shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
                 shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
+                shieldAfterShot: loadTexture(m.textures.shieldAfterShot || m.textures.shieldIdle),
                 noShieldIdle: loadTexture(m.textures.noShieldIdle),
                 noShieldAim: loadTexture(m.textures.noShieldAim),
                 noShieldDuck: loadTexture(m.textures.noShieldDuck),
                 noShieldDefend: loadTexture(m.textures.noShieldDefend),
                 noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
+                noShieldAfterShot: loadTexture(m.textures.noShieldAfterShot || m.textures.noShieldIdle),
                 celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
                 bgMusic: m.bgMusic
             };
@@ -1034,6 +1036,7 @@ function getOttomanTexture(model, state) {
             if (state === 'aim') return t.noShieldAim;
             if (state === 'defend') return t.noShieldDefend;
             if (state === 'hurt') return t.noShieldHurt;
+            if (state === 'afterShot') return t.noShieldAfterShot;
             if (state === 'celebrate') return t.celebrate;
             return t.noShieldIdle;
         } else {
@@ -1042,6 +1045,7 @@ function getOttomanTexture(model, state) {
             if (state === 'defend') return t.shieldDefend;
             if (state === 'break') return t.shieldBreak;
             if (state === 'hurt') return t.shieldHurt;
+            if (state === 'afterShot') return t.shieldAfterShot;
             if (state === 'celebrate') return t.celebrate;
             return t.shieldIdle;
         }
@@ -3972,7 +3976,13 @@ function startSpearAnimation(playerIndex, angle, power) {
         aiSuperTried: false
     };
     
-    const isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
+    let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
+    if (thrower?.userData?.isCustomModel) {
+        const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
+        if (cModel && cModel.weaponType === 'spear') {
+            isSpearmanThrow = true;
+        }
+    }
     applySpearVisualStyle(isSpearmanThrow);
     const spearScale = isSpearmanThrow ? 1.9 : 1;
     spearGroup.scale.setScalar(spearScale);
@@ -6092,7 +6102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleArtilleryClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (myHealth <= 0 || enemyHealth <= 0 || isMyTurn === false || artilleryCount <= 0) return;
+            if (myHealth <= 0 || enemyHealth <= 0 || currentTurnIndex !== myPlayerIndex || artilleryCount <= 0) return;
             isArtilleryAiming = !isArtilleryAiming;
             
             if (isArtilleryAiming) {

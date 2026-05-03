@@ -90,11 +90,13 @@ app.post('/api/models/update', upload.fields([
     { name: 'shieldDefend', maxCount: 1 },
     { name: 'shieldHurt', maxCount: 1 },
     { name: 'shieldBreak', maxCount: 1 },
+    { name: 'shieldAfterShot', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
     { name: 'noShieldAim', maxCount: 1 },
     { name: 'noShieldDuck', maxCount: 1 },
     { name: 'noShieldDefend', maxCount: 1 },
     { name: 'noShieldHurt', maxCount: 1 },
+    { name: 'noShieldAfterShot', maxCount: 1 },
     { name: 'celebrate', maxCount: 1 },
     { name: 'bgMusic', maxCount: 1 }
 ]), (req, res) => {
@@ -114,8 +116,9 @@ app.post('/api/models/update', upload.fields([
         if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
         if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
         if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
+        if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
         
-        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'celebrate'];
+        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'celebrate'];
         fileNames.forEach(fn => {
             if (files[fn] && files[fn][0]) {
                 oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
@@ -141,18 +144,20 @@ app.post('/api/models/create', upload.fields([
     { name: 'shieldDefend', maxCount: 1 },
     { name: 'shieldHurt', maxCount: 1 },
     { name: 'shieldBreak', maxCount: 1 },
+    { name: 'shieldAfterShot', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
     { name: 'noShieldAim', maxCount: 1 },
     { name: 'noShieldDuck', maxCount: 1 },
     { name: 'noShieldDefend', maxCount: 1 },
     { name: 'noShieldHurt', maxCount: 1 },
+    { name: 'noShieldAfterShot', maxCount: 1 },
     { name: 'celebrate', maxCount: 1 },
     { name: 'bgMusic', maxCount: 1 }
 ]), (req, res) => {
     try {
         const name = req.body.name || 'Yangi Model';
         const files = req.files || {};
-        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt) {
+        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt || !files.shieldAfterShot || !files.noShieldAfterShot) {
             console.error('Kemtik fayllar:', Object.keys(files));
             return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart. Yuborilgan fayllar: ' + Object.keys(files).join(', ') });
         }
@@ -172,8 +177,11 @@ app.post('/api/models/create', upload.fields([
                 noShieldDuck: 'custom_models/' + files.noShieldDuck[0].filename,
                 noShieldDefend: 'custom_models/' + files.noShieldDefend[0].filename,
                 noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
+                shieldAfterShot: 'custom_models/' + files.shieldAfterShot[0].filename,
+                noShieldAfterShot: 'custom_models/' + files.noShieldAfterShot[0].filename,
                 celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
             },
+            weaponType: req.body.weaponType || 'spear',
             bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null,
             settings: {
                 width: Number(req.body.width) || 560,
