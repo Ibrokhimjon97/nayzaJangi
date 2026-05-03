@@ -944,12 +944,27 @@ function createSoldier(isP1, charType = 0) {
     
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
-    const planeWidth = (group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360)) * mobileScaleBoost;
-    const planeHeight = (group.userData.isOttomanUnit ? 430 : 480) * mobileScaleBoost;
+    let cWidth = group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360);
+    let cHeight = group.userData.isOttomanUnit ? 430 : 480;
+    let cOffsetY = 0;
+    let cOffsetX = 0;
+    
+    if (group.userData.isCustomModel) {
+        const cModel = window.customModelsInfo.find(m => m.id == normalizedCharType);
+        if (cModel && cModel.settings) {
+            cWidth = cModel.settings.width || cWidth;
+            cHeight = cModel.settings.height || cHeight;
+            cOffsetY = cModel.settings.offsetY || 0;
+            cOffsetX = cModel.settings.offsetX || 0;
+        }
+    }
+    const planeWidth = cWidth * mobileScaleBoost;
+    const planeHeight = cHeight * mobileScaleBoost;
     const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
     const planeMesh = new THREE.Mesh(planeGeo, soldierMat);
-    planeMesh.position.y = planeHeight / 2;
-    if (group.userData.isOttomanUnit) planeMesh.position.x = 0;
+    planeMesh.position.y = planeHeight / 2 + cOffsetY;
+    planeMesh.position.x = cOffsetX;
+    if (group.userData.isOttomanUnit && !cOffsetX) planeMesh.position.x = 0;
     group.userData.planeMesh = planeMesh;
     group.userData.basePlaneY = planeHeight / 2;
     

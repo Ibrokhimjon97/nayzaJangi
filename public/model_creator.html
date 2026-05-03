@@ -109,6 +109,28 @@
                 <div class="form-group"></div>
             </div>
 
+            <div class="section-title">O'lcham va Joylashuv Sozlamalari</div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>Eni (Width) (Standart: 560):</label>
+                    <input type="number" id="modelWidth" name="width" value="560">
+                </div>
+                <div class="form-group">
+                    <label>Bo'yi (Height) (Standart: 430):</label>
+                    <input type="number" id="modelHeight" name="height" value="430">
+                </div>
+            </div>
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>Yerdan balandligi/pastligi (Offset Y):</label>
+                    <input type="number" id="modelOffsetY" name="offsetY" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Oldinga/Orqaga surish (Offset X):</label>
+                    <input type="number" id="modelOffsetX" name="offsetX" value="0">
+                </div>
+            </div>
+
             <div class="section-title">Qo'shimcha</div>
             <div class="form-group">
                 <label>G'alaba nishonlash (Celebrate - ixtiyoriy):</label>
@@ -219,6 +241,18 @@
             document.getElementById('modelId').value = m.id;
             document.getElementById('modelName').value = m.name;
             
+            if (m.settings) {
+                document.getElementById('modelWidth').value = m.settings.width !== undefined ? m.settings.width : 560;
+                document.getElementById('modelHeight').value = m.settings.height !== undefined ? m.settings.height : 430;
+                document.getElementById('modelOffsetY').value = m.settings.offsetY !== undefined ? m.settings.offsetY : 0;
+                document.getElementById('modelOffsetX').value = m.settings.offsetX !== undefined ? m.settings.offsetX : 0;
+            } else {
+                document.getElementById('modelWidth').value = 560;
+                document.getElementById('modelHeight').value = 430;
+                document.getElementById('modelOffsetY').value = 0;
+                document.getElementById('modelOffsetX').value = 0;
+            }
+            
             // Remove required attribute from all file inputs during edit mode
             document.querySelectorAll('.file-input').forEach(el => el.removeAttribute('required'));
             
@@ -252,6 +286,10 @@
             document.getElementById('btnSubmit').innerText = "Saqlash";
             document.getElementById('btnCancel').style.display = "none";
             document.getElementById('modelId').value = '';
+            document.getElementById('modelWidth').value = 560;
+            document.getElementById('modelHeight').value = 430;
+            document.getElementById('modelOffsetY').value = 0;
+            document.getElementById('modelOffsetX').value = 0;
             
             // Make core inputs required again
             document.querySelectorAll('.file-input').forEach(el => {

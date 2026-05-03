@@ -89,6 +89,12 @@ app.post('/api/models/update', upload.fields([
         
         if (req.body.name) oldModel.name = req.body.name;
         
+        oldModel.settings = oldModel.settings || {};
+        if (req.body.width !== undefined) oldModel.settings.width = Number(req.body.width);
+        if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
+        if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
+        if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
+        
         const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'celebrate'];
         fileNames.forEach(fn => {
             if (files[fn] && files[fn][0]) {
@@ -148,7 +154,13 @@ app.post('/api/models/create', upload.fields([
                 noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
                 celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
             },
-            bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null
+            bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null,
+            settings: {
+                width: Number(req.body.width) || 560,
+                height: Number(req.body.height) || 430,
+                offsetY: Number(req.body.offsetY) || 0,
+                offsetX: Number(req.body.offsetX) || 0
+            }
         };
         models.push(newModel);
         saveCustomModels(models);
