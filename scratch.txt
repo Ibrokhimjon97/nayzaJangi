@@ -1,151 +1,27 @@
-243: const musicVolumeInput = document.getElementById('music-volume');
-244: const musicMuteInput = document.getElementById('music-mute');
-247: const settingsMusicVolumeInput = document.getElementById('settings-music-volume');
-249: const settingsMusicTrackSelect = document.getElementById('settings-music-track');
-250: const inGameMusicTrackSelect = document.getElementById('in-game-music-track');
-290: const btnMusicToggle = document.getElementById('music-toggle-btn');
-318: // Audio Setup
-319: const AudioContext = window.AudioContext || window.webkitAudioContext;
-320: let audioCtx;
-321: let bgMusicNode = null;
-322: let bgMusicAudio = null;
-323: let audioUnlockAttached = false;
-324: let musicVolume = parseFloat(localStorage.getItem('nayza_music_volume') || '0.4');
-325: let musicMuted = localStorage.getItem('nayza_music_muted') === '1';
-328: let selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
-343: function initAudio() {
-344: if (!audioCtx) {
-345: audioCtx = new AudioContext();
-346: startBackgroundMusic();
-348: if (audioCtx.state === 'suspended') audioCtx.resume();
-349: if (!bgMusicAudio) {
-350: bgMusicAudio = new Audio(selectedMusicTrack);
-351: bgMusicAudio.loop = true;
-352: bgMusicAudio.preload = 'auto';
-353: bgMusicAudio.playsInline = true;
-354: bgMusicAudio.setAttribute('playsinline', 'true');
-355: bgMusicAudio.setAttribute('webkit-playsinline', 'true');
-357: bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-358: bgMusicAudio.play().catch(() => {});
-361: function applySelectedMusicTrack() {
-362: if (!bgMusicAudio) return;
-363: const currentSrc = String(bgMusicAudio.src || '');
-364: if (currentSrc.endsWith(selectedMusicTrack)) return;
-365: bgMusicAudio.src = selectedMusicTrack;
-366: bgMusicAudio.loop = true;
-367: bgMusicAudio.preload = 'auto';
-368: bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-369: bgMusicAudio.play().catch(() => {});
-377: if (!audioCtx) initAudio();
-378: else if (audioCtx.state === 'suspended') audioCtx.resume();
-379: const audio = new Audio(src);
-380: audio.preload = 'auto';
-381: audio.playsInline = true;
-382: audio.setAttribute('playsinline', 'true');
-383: audio.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
-384: audio.play().catch(() => {});
-412: if (!audioCtx) return;
-413: const osc = audioCtx.createOscillator();
-414: const gain = audioCtx.createGain();
-416: osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-417: osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.5);
-418: gain.gain.setValueAtTime(2, audioCtx.currentTime);
-419: gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-421: gain.connect(audioCtx.destination);
-423: osc.stop(audioCtx.currentTime + 0.5);
-430: function startBackgroundMusic() {
-431: if (!audioCtx) return;
-432: if (bgMusicNode) bgMusicNode.disconnect();
-433: bgMusicNode = audioCtx.createOscillator();
-434: const gain = audioCtx.createGain();
-435: bgMusicNode.type = 'triangle';
-436: bgMusicNode.frequency.value = 55;
-438: bgMusicNode.connect(gain);
-439: gain.connect(audioCtx.destination);
-440: bgMusicNode.start();
-443: function saveMusicSettings() {
-444: localStorage.setItem('nayza_music_volume', String(musicVolume));
-445: localStorage.setItem('nayza_music_muted', musicMuted ? '1' : '0');
-448: localStorage.setItem('nayza_music_track', selectedMusicTrack);
-451: function applyMusicSettings() {
-452: if (musicVolumeInput) musicVolumeInput.value = String(musicVolume);
-453: if (musicMuteInput) musicMuteInput.checked = musicMuted;
-456: if (settingsMusicVolumeInput) settingsMusicVolumeInput.value = String(musicVolume);
-458: if (settingsMusicTrackSelect) settingsMusicTrackSelect.value = selectedMusicTrack;
-459: if (inGameMusicTrackSelect) inGameMusicTrackSelect.value = selectedMusicTrack;
-460: if (bgMusicAudio) bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-461: if (btnVolMute) btnVolMute.innerText = musicMuted ? '🔇' : '🔊';
-462: if (btnMusicToggle) btnMusicToggle.innerText = musicMuted ? '🔇' : '🔊';
-463: applySelectedMusicTrack();
-3184: if (musicVolumeInput) {
-3185: musicVolumeInput.addEventListener('input', () => {
-3186: musicVolume = Math.max(0, Math.min(1, parseFloat(musicVolumeInput.value)));
-3187: applyMusicSettings();
-3188: saveMusicSettings();
-3192: if (musicMuteInput) {
-3193: musicMuteInput.addEventListener('change', () => {
-3194: musicMuted = !!musicMuteInput.checked;
-3195: applyMusicSettings();
-3196: saveMusicSettings();
-3203: saveMusicSettings();
-3207: if (settingsMusicVolumeInput) {
-3208: settingsMusicVolumeInput.addEventListener('input', () => {
-3209: musicVolume = Math.max(0, Math.min(1, parseFloat(settingsMusicVolumeInput.value)));
-3210: applyMusicSettings();
-3211: saveMusicSettings();
-3218: applyMusicSettings();
-3219: saveMusicSettings();
-3223: if (settingsMusicTrackSelect) {
-3224: settingsMusicTrackSelect.addEventListener('change', () => {
-3225: selectedMusicTrack = String(settingsMusicTrackSelect.value || 'music.mp3');
-3226: applyMusicSettings();
-3227: saveMusicSettings();
-3231: if (inGameMusicTrackSelect) {
-3232: inGameMusicTrackSelect.addEventListener('change', () => {
-3233: selectedMusicTrack = String(inGameMusicTrackSelect.value || 'music.mp3');
-3234: applyMusicSettings();
-3235: saveMusicSettings();
-3242: saveMusicSettings();
-3248: musicVolume = Math.max(0, musicVolume - 0.1);
-3249: applyMusicSettings();
-3250: saveMusicSettings();
-3255: musicVolume = Math.min(1, musicVolume + 0.1);
-3256: if (musicVolume > 0) musicMuted = false;
-3257: applyMusicSettings();
-3258: saveMusicSettings();
-3263: musicMuted = !musicMuted;
-3264: applyMusicSettings();
-3265: saveMusicSettings();
-3269: applyMusicSettings();
-3270: if (btnMusicToggle) {
-3271: btnMusicToggle.addEventListener('click', () => {
-3272: musicMuted = !musicMuted;
-3273: applyMusicSettings();
-3274: saveMusicSettings();
-3298: if (!audioCtx) return;
-3299: const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-3300: osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-3301: gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-3302: osc.connect(gain); gain.connect(audioCtx.destination);
-3303: osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-4679: musicVolumeLabel: "Fon musiqa balandligi",
-4680: musicMuteLabel: "Ovozni o'chirish",
-4730: musicVolumeLabel: "Громкость фоновой музыки",
-4731: musicMuteLabel: "Выключить звук",
-4782: musicVolumeLabel: "Background music volume",
-4783: musicMuteLabel: "Mute audio",
-4909: if (document.getElementById('txt-settings-music-volume')) document.getElementById('txt-settings-music-volume').innerText = "Fon musiqa balandligi:";
-4911: if (document.getElementById('txt-settings-music-track')) document.getElementById('txt-settings-music-track').innerText = "Fon musiqasi:";
-4945: if (document.getElementById('txt-music-volume')) document.getElementById('txt-music-volume').innerText = tf('musicVolumeLabel');
-4946: if (document.getElementById('txt-music-mute')) document.getElementById('txt-music-mute').innerText = tf('musicMuteLabel');
-5365: if (!audioUnlockAttached) {
-5366: const unlockAudio = () => {
-5367: initAudio();
-5368: document.removeEventListener('pointerdown', unlockAudio);
-5369: document.removeEventListener('touchstart', unlockAudio);
-5370: audioUnlockAttached = false;
-5372: document.addEventListener('pointerdown', unlockAudio, { once: true });
-5373: document.addEventListener('touchstart', unlockAudio, { once: true });
-5374: audioUnlockAttached = true;
-5420: if(typeof initAudio === 'function') initAudio();
-5517: if(typeof initAudio === 'function') initAudio();
+3315: socket.on('chatMessage', (data) => {
+3327: socket.on('gameStart', (data) => {
+3411: socket.on('nextTurn', (data) => {
+3416: socket.on('superState', (data) => {
+3427: socket.on('superIntercept', (data) => {
+3453: socket.on('spearThrown', (data) => {
+3459: socket.on('groundHit', (data) => {
+3467: socket.on('hitRegistered', (data) => {
+3507: socket.on('defenseStateChanged', (data) => {
+3513: socket.on('duckStateChanged', (data) => {
+3519: socket.on('wallStateChanged', (data) => {
+3527: socket.on('wallHitFx', (data) => {
+3532: socket.on('entityHit', (data) => {
+3550: socket.on('gameOver', (data) => {
+3554: socket.on('opponentDisconnected', () => {
+3562: socket.on('rematchRequest', () => {
+3573: socket.on('rematchStart', () => {
+3601: socket.on('rematchDeclined', () => {
+5400: socket.on('connect', () => {
+5669: socket.on('gameCreated', (code) => {
+5675: socket.on('joinError', () => {
+5679: socket.on('waiting', () => {
+5686: socket.on('friendsPresence', (payload) => {
+5701: socket.on('friendInvite', (payload) => {
+5748: socket.on('friendLookupResult', (payload) => {
+5788: socket.on('friendAddRequest', (payload) => {
+5820: socket.on('friendAdded', (payload) => {

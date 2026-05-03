@@ -888,11 +888,16 @@ io.on('connection', (socket) => {
         if (!room.inFlight) return;
         const ownerIndex = Number(data?.ownerIndex);
         if (!Number.isFinite(ownerIndex) || !room.walls[ownerIndex] || !room.walls[ownerIndex].active) return;
-        room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
+        if (data.isArtillery) {
+            room.walls[ownerIndex].hp = 0;
+        } else {
+            room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
+        }
         io.to(roomName).emit('wallHitFx', {
             ownerIndex,
             hitX: Number(data?.hitX || 0),
-            hitY: Number(data?.hitY || 0)
+            hitY: Number(data?.hitY || 0),
+            isArtillery: data.isArtillery
         });
         if (room.walls[ownerIndex].hp <= 0) {
             room.walls[ownerIndex] = { active: false, x: 0, hp: 0 };
@@ -938,7 +943,9 @@ io.on('connection', (socket) => {
             let shieldBroke = false;
             let duckDodged = false;
 
-            if (ducking && (hitZone === 'head' || hitZone === 'body')) {
+            if (payload.isArtillery) {
+                appliedDamage = 50;
+            } else if (ducking && (hitZone === 'head' || hitZone === 'body')) {
                 appliedDamage = 0;
                 duckDodged = true;
             } else if (room.shield[targetIndex] > 0 && defending && (hitZone === 'head' || hitZone === 'body')) {

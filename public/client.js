@@ -436,6 +436,50 @@ function playCrowSound() {
     playSfx('crowDead');
 }
 
+
+function triggerCinematicExplosion(x, y) {
+    cinematicMode = true;
+    cameraTargetX = x;
+    cameraTargetY = y + 50;
+    cameraZoomTarget = baseZoom * 2;
+    screenShake = 30;
+
+    const particleCount = 120;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    for(let i=0; i<particleCount; i++) {
+        positions[i*3] = x;
+        positions[i*3+1] = y;
+        positions[i*3+2] = 20;
+        colors[i*3] = 1.0;
+        colors[i*3+1] = Math.random() * 0.6 + 0.1;
+        colors[i*3+2] = 0.0;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 10, vertexColors: true, transparent: true, opacity: 1 });
+    const explosion = new THREE.Points(geometry, material);
+    scene.add(explosion);
+    
+    const velocities = [];
+    for(let i=0; i<particleCount; i++) {
+        velocities.push({
+            vx: (Math.random() - 0.5) * 800,
+            vy: (Math.random() - 0.5) * 800
+        });
+    }
+    explosion.userData = { vels: velocities, age: 0 };
+    if (!window.explosions) window.explosions = [];
+    window.explosions.push(explosion);
+    
+    playSfx('break');
+
+    setTimeout(() => {
+        cinematicMode = false;
+    }, 2000);
+}
+
 function startBackgroundMusic() {
     if (!audioCtx) return;
     if (bgMusicNode) bgMusicNode.disconnect();
@@ -1357,9 +1401,14 @@ function updateShopUI() {
     if (shopSuperMaxText) shopSuperMaxText.innerText = `Narx: ${SUPER_BUY_COST} ball`;
     if (shopDoubleMaxText) shopDoubleMaxText.innerText = `Soni: ${doubleCount}`;
     if (shopWallMaxText) shopWallMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.walls || 0))}`;
+    const shopArtilleryMaxText = document.getElementById('shop-artillery-max');
+    if (shopArtilleryMaxText) shopArtilleryMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.artillery || 0))}`;
+    const btnBuyArtillery = document.getElementById('btn-buy-artillery');
+    const ARTILLERY_BUY_COST = 500;
     if (btnBuySuper) btnBuySuper.disabled = score < SUPER_BUY_COST;
     if (btnBuyDouble) btnBuyDouble.disabled = score < DOUBLE_BUY_COST;
     if (btnBuyWall) btnBuyWall.disabled = score < WALL_BUY_COST;
+    if (btnBuyArtillery) btnBuyArtillery.disabled = score < ARTILLERY_BUY_COST;
 }
 
 function getWallPlacementLimits() {
@@ -2456,8 +2505,20 @@ function throwSpear(angle, power) {
         saveProfile();
         updateSuperUI();
     }
+    let artill = false;
+    if (isArtilleryAiming) {
+        artill = true;
+        isArtilleryAiming = false;
+        if (btnArtillery) btnArtillery.classList.remove('active');
+        if (myArtilleryCannon) myArtilleryCannon.visible = false;
+        artilleryCount--;
+        myProfile.artillery = artilleryCount;
+        saveProfile();
+        updateSuperUI();
+    }
+    
     if (gameMode === 'multi') {
-        socket.emit('throwSpear', { angle, power });
+        socket.emit('throwSpear', { angle, power, isArtillery: artill });
     } else if (gameMode === 'single') {
         if (currentTurnIndex === 0) {
             setModelActionState(p1Model, isDefenseActiveForPlayer(0) ? 'defend' : 'aim', 800);
@@ -3082,6 +3143,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitY,
                 isShieldHit: hitResult.isShieldHit,
                 hitAngle: finalAngle,
+                isArtillery: spear.isArtillery,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
                     damage: extraNetHit.damage,
@@ -3130,6 +3192,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitX,
                 hitY,
                 hitAngle: finalAngle,
+                isArtillery: spear.isArtillery,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
                     damage: extraNetHit.damage,
@@ -3451,16 +3514,21 @@ socket.on('superIntercept', (data) => {
 });
 
 socket.on('spearThrown', (data) => {
-    const { playerIndex, angle, power } = data;
+    const { playerIndex, angle, power, isArtillery } = data;
     setModelActionState(modelForPlayer(playerIndex), 'aim', 800);
-    startSpearAnimation(playerIndex, angle, power);
+    startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
 
 socket.on('groundHit', (data) => {
     if (spear && spear.playerIndex !== myPlayerIndex) {
-        stickSpear(null, data.hitX, data.hitY, data.hitAngle);
-        hideFlyingSpear();
-        playSfx('ground');
+        if (spear.isArtillery) {
+            triggerCinematicExplosion(data.hitX, data.hitY);
+            hideFlyingSpear();
+        } else {
+            stickSpear(null, data.hitX, data.hitY, data.hitAngle);
+            hideFlyingSpear();
+            playSfx('ground');
+        }
     }
 });
 
@@ -3469,8 +3537,12 @@ socket.on('hitRegistered', (data) => {
     const targetModel = targetIndex === 0 ? p1Model : p2Model;
     
     if (spear && spear.playerIndex !== myPlayerIndex) {
-        flashHit(targetModel);
         hideFlyingSpear();
+        if (spear.isArtillery) {
+            triggerCinematicExplosion(hitX, hitY);
+            showDamageText(hitX, hitY + 80, `-${damage}`, false, true);
+        } else {
+            flashHit(targetModel);
         
         if (duckDodged) {
             showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
@@ -3911,7 +3983,7 @@ function checkCollision() {
         hideFlyingSpear();
         if (gameMode === 'multi') {
             if (spear.playerIndex === myPlayerIndex) {
-                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY });
+                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY, isArtillery: spear.isArtillery });
             }
         } else {
             applyWallHit(wallOwnerIndex, hitX, hitY);
@@ -4029,7 +4101,7 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
             }
             if (gameMode === 'multi') {
                 if (!spear.entityHitEmitted) {
-                    socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z });
+                    socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z, isArtillery: spear.isArtillery });
                     spear.entityHitEmitted = true;
                 }
             } else {
@@ -4053,7 +4125,32 @@ function gameLoop(now) {
     if (isPaused) {
         lastTime = now;
     mixers.forEach(m => m.update(dt));
-        renderer.render(scene, camera);
+        
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    renderer.render(scene, camera);
         if(isLooping) requestAnimationFrame(gameLoop);
         return;
     }
@@ -4383,11 +4480,61 @@ function gameLoop(now) {
         }
     }
 
+    
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
     renderer.render(scene, camera);
     if(isLooping) requestAnimationFrame(gameLoop);
 }
 
-renderer.render(scene, camera);
+
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    renderer.render(scene, camera);
 
 // --- NEW PROFILE, STATS & LANGUAGE LOGIC ---
 let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
