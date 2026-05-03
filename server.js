@@ -57,17 +57,20 @@ app.post('/api/models/create', upload.fields([
     { name: 'shieldAim', maxCount: 1 },
     { name: 'shieldDuck', maxCount: 1 },
     { name: 'shieldDefend', maxCount: 1 },
+    { name: 'shieldHurt', maxCount: 1 },
+    { name: 'shieldBreak', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
     { name: 'noShieldAim', maxCount: 1 },
     { name: 'noShieldDuck', maxCount: 1 },
     { name: 'noShieldDefend', maxCount: 1 },
+    { name: 'noShieldHurt', maxCount: 1 },
     { name: 'celebrate', maxCount: 1 },
     { name: 'bgMusic', maxCount: 1 }
 ]), (req, res) => {
     try {
         const name = req.body.name || 'Yangi Model';
         const files = req.files || {};
-        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend) {
+        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt) {
             return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart.' });
         }
         const models = loadCustomModels();
@@ -79,10 +82,13 @@ app.post('/api/models/create', upload.fields([
                 shieldAim: 'custom_models/' + files.shieldAim[0].filename,
                 shieldDuck: 'custom_models/' + files.shieldDuck[0].filename,
                 shieldDefend: 'custom_models/' + files.shieldDefend[0].filename,
+                shieldHurt: 'custom_models/' + files.shieldHurt[0].filename,
+                shieldBreak: 'custom_models/' + files.shieldBreak[0].filename,
                 noShieldIdle: 'custom_models/' + files.noShieldIdle[0].filename,
                 noShieldAim: 'custom_models/' + files.noShieldAim[0].filename,
                 noShieldDuck: 'custom_models/' + files.noShieldDuck[0].filename,
                 noShieldDefend: 'custom_models/' + files.noShieldDefend[0].filename,
+                noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
                 celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
             },
             bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null

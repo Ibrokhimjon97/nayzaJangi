@@ -168,13 +168,13 @@ async function fetchCustomModels() {
                 shieldAim: loadTexture(m.textures.shieldAim),
                 shieldDuck: loadTexture(m.textures.shieldDuck),
                 shieldDefend: loadTexture(m.textures.shieldDefend),
-                shieldHurt: loadTexture(m.textures.shieldIdle),
-                shieldBreak: loadTexture(m.textures.noShieldIdle),
+                shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
+                shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
                 noShieldIdle: loadTexture(m.textures.noShieldIdle),
                 noShieldAim: loadTexture(m.textures.noShieldAim),
                 noShieldDuck: loadTexture(m.textures.noShieldDuck),
                 noShieldDefend: loadTexture(m.textures.noShieldDefend),
-                noShieldHurt: loadTexture(m.textures.noShieldIdle),
+                noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
                 celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
                 bgMusic: m.bgMusic
             };
