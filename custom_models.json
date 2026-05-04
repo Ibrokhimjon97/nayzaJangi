@@ -14,7 +14,8 @@
       "noShieldDuck": "custom_models/1777838541772-634782431.png",
       "noShieldDefend": "custom_models/1777838541774-39863292.png",
       "noShieldHurt": "custom_models/1777838541776-792085097.png",
-      "celebrate": "custom_models/1777838541778-161536922.png"
+      "celebrate": "custom_models/1777838541778-161536922.png",
+      "shieldAfterShot": "custom_models/1777887065900-517890612.png"
     },
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
@@ -22,7 +23,8 @@
       "height": 430,
       "offsetY": 0,
       "offsetX": 0
-    }
+    },
+    "weaponType": "bow"
   },
   {
     "id": "custom_1777843676373",
@@ -39,14 +41,17 @@
       "noShieldDuck": "custom_models/1777843676349-355256131.png",
       "noShieldDefend": "custom_models/1777843676351-553453094.png",
       "noShieldHurt": "custom_models/1777843676353-759105215.png",
-      "celebrate": "custom_models/1777843676306-242349779.png"
+      "celebrate": "custom_models/1777843676306-242349779.png",
+      "shieldAfterShot": "custom_models/1777845218515-884529067.png"
     },
     "bgMusic": "custom_models/1777843676355-678209768.mp3",
     "settings": {
-      "width": 480,
+      "width": 440,
       "height": 450,
       "offsetY": 5,
-      "offsetX": 0
-    }
+      "offsetX": 0,
+      "facesLeft": true
+    },
+    "weaponType": "spear"
   }
 ]

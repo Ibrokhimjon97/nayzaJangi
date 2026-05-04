@@ -872,7 +872,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('throwSpear', (data) => {
-        const { angle, power } = data;
+        const { angle, power, isArtillery } = data;
         const roomName = socket.roomId;
         const room = rooms[roomName];
 
@@ -884,7 +884,8 @@ io.on('connection', (socket) => {
         io.to(roomName).emit('spearThrown', {
             playerIndex: room.turnIndex,
             angle: angle,
-            power: power
+            power: power,
+            isArtillery: isArtillery
         });
         room.inFlight = true;
     });
@@ -1042,7 +1043,18 @@ io.on('connection', (socket) => {
             let duckDodged = false;
 
             if (payload.isArtillery) {
-                appliedDamage = 50;
+                if (room.shield[targetIndex] > 0 && defending) {
+                    shieldHit = true;
+                    shieldActiveBlock = true;
+                    appliedDamage = 0;
+                    room.shield[targetIndex] = 0; // Artillery breaks shield completely
+                } else if (room.shield[targetIndex] > 0 && payload.isShieldHit) {
+                    shieldHit = true;
+                    appliedDamage = 0;
+                    room.shield[targetIndex] = 0; // Artillery breaks shield completely
+                } else {
+                    appliedDamage = Math.ceil(room.health[targetIndex] / 2);
+                }
             } else if (ducking && (hitZone === 'head' || hitZone === 'body')) {
                 appliedDamage = 0;
                 duckDodged = true;
