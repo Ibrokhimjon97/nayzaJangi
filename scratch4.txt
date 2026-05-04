@@ -1,0 +1,100 @@
+5301: async function copyDonateValue(value, btnEl) {
+5302:     if (!value) return;
+5303:     try {
+5304:         await navigator.clipboard.writeText(value);
+5305:     } catch (_) {
+5306:         const ta = document.createElement('textarea');
+5307:         ta.value = value;
+5308:         document.body.appendChild(ta);
+5309:         ta.select();
+5310:         document.execCommand('copy');
+5311:         document.body.removeChild(ta);
+5312:     }
+5313:     if (btnEl) {
+5314:         const prev = btnEl.innerText;
+5315:         btnEl.innerText = '';
+5316:         setTimeout(() => { btnEl.innerText = prev; }, 900);
+5317:     }
+5318: }
+5319: 
+5320: const btnCopyHumo = document.getElementById('btn-copy-humo');
+5321: const btnCopyVisa = document.getElementById('btn-copy-visa');
+5322: if (btnCopyHumo) {
+5323:     btnCopyHumo.addEventListener('click', () => {
+5324:         const value = (document.getElementById('donate-humo')?.innerText || '').trim();
+5325:         copyDonateValue(value, btnCopyHumo);
+5326:     });
+5327: }
+5328: if (btnCopyVisa) {
+5329:     btnCopyVisa.addEventListener('click', () => {
+5330:         const value = (document.getElementById('donate-visa')?.innerText || '').trim();
+5331:         copyDonateValue(value, btnCopyVisa);
+5332:     });
+5333: }
+5334: 
+5335: if (btnBuySuper) {
+5336:     btnBuySuper.addEventListener('click', () => {
+5337:         if ((myStats.score || 0) < SUPER_BUY_COST) return;
+5338:         addScore(-SUPER_BUY_COST);
+5339:         myProfile.superPowers = Math.max(0, Number(myProfile.superPowers || 0) + 1);
+5340:         mySuper = myProfile.superPowers;
+5341:         saveProfile();
+5342:         updateSuperUI();
+5343:     });
+5344: }
+5345: 
+5346: if (btnBuyDouble) {
+5347:     btnBuyDouble.addEventListener('click', () => {
+5348:         const cur = Math.max(0, Number(myProfile.doubleSpears || 0));
+5349:         if ((myStats.score || 0) < DOUBLE_BUY_COST) return;
+5350:         addScore(-DOUBLE_BUY_COST);
+5351:         myProfile.doubleSpears = cur + 1;
+5352:         saveProfile();
+5353:         updateSuperUI();
+5354:     });
+5355: }
+5356: if (btnBuyWall) {
+5357:     btnBuyWall.addEventListener('click', () => {
+5358:         const cur = Math.max(0, Number(myProfile.walls || 0));
+5359:         if (Number(myStats.score || 0) < WALL_BUY_COST) return;
+5360:         addScore(-WALL_BUY_COST);
+5361:         myProfile.walls = cur + 1;
+5362:         saveProfile();
+5363:         updateSuperUI();
+5364:     });
+5365: }
+5366: 
+5367: if (btnBuyArtillery) {
+5368:     btnBuyArtillery.addEventListener('click', () => {
+5369:         const cur = Math.max(0, Number(myProfile.artillery || 0));
+5370:         if (Number(myStats.score || 0) < ARTILLERY_BUY_COST) return;
+5371:         addScore(-ARTILLERY_BUY_COST);
+5372:         myProfile.artillery = cur + 1;
+5373:         saveProfile();
+5374:         updateSuperUI();
+5375:     });
+5376: }
+5377: 
+5378: if (btnBuyCrowhunt) {
+5379:     btnBuyCrowhunt.addEventListener('click', () => {
+5380:         const cur = Math.max(0, Number(myProfile.crowhunt || 0));
+5381:         if (Number(myStats.score || 0) < CROWHUNT_BUY_COST) return;
+5382:         addScore(-CROWHUNT_BUY_COST);
+5383:         myProfile.crowhunt = cur + 1;
+5384:         saveProfile();
+5385:         updateSuperUI();
+5386:     });
+5387: }
+5388: 
+5389: 
+5390: if (btnAuthRegister) {
+5391:     btnAuthRegister.addEventListener('click', async () => {
+5392:         const name = (authNameInput?.value || '').trim();
+5393:         const phone = normalizePhone(authRegisterPhoneInput?.value || '');
+5394:         const age = Number(authAgeInput?.value || 0);
+5395:         const password = String(authRegisterPasswordInput?.value || '');
+5396:         if (!name || name.length < 2) return setAuthStatus("Ism kamida 2 ta belgi bo'lsin.", true);
+5397:         if (phone.length < 9) return setAuthStatus("Telefon raqamni to'liq kiriting.", true);
+5398:         if (!Number.isFinite(age) || age < 7 || age > 99) return setAuthStatus("Yosh 7-99 oralig'ida bo'lsin.", true);
+5399:         if (password.length < 4) return setAuthStatus("Parol kamida 4 ta belgi bo'lsin.", true);
+5400:         try {

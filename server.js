@@ -20,6 +20,185 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const multer = require('multer');
+const customModelsPath = path.join(__dirname, 'custom_models.json');
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const dir = path.join(__dirname, 'public', 'custom_models');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+function loadCustomModels() {
+    try {
+        if (!fs.existsSync(customModelsPath)) return [];
+        return JSON.parse(fs.readFileSync(customModelsPath, 'utf8'));
+    } catch {
+        return [];
+    }
+}
+
+function saveCustomModels(models) {
+    fs.writeFileSync(customModelsPath, JSON.stringify(models, null, 2), 'utf8');
+}
+
+app.get('/api/models', (req, res) => {
+    res.json(loadCustomModels());
+});
+app.post('/api/models/delete', express.json(), (req, res) => {
+    try {
+        const id = req.body.id;
+        let models = loadCustomModels();
+        const modelToDelete = models.find(m => m.id === id);
+        if (modelToDelete) {
+            // Delete texture files
+            if (modelToDelete.textures) {
+                const uniqueFiles = new Set(Object.values(modelToDelete.textures));
+                uniqueFiles.forEach(filePath => {
+                    const absolutePath = path.join(__dirname, 'public', filePath);
+                    if (fs.existsSync(absolutePath)) {
+                        try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting texture file:', err); }
+                    }
+                });
+            }
+            // Delete background music
+            if (modelToDelete.bgMusic) {
+                const absolutePath = path.join(__dirname, 'public', modelToDelete.bgMusic);
+                if (fs.existsSync(absolutePath)) {
+                    try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting music file:', err); }
+                }
+            }
+        }
+        models = models.filter(m => m.id !== id);
+        saveCustomModels(models);
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+app.post('/api/models/update', upload.fields([
+    { name: 'shieldIdle', maxCount: 1 },
+    { name: 'shieldAim', maxCount: 1 },
+    { name: 'shieldDuck', maxCount: 1 },
+    { name: 'shieldDefend', maxCount: 1 },
+    { name: 'shieldHurt', maxCount: 1 },
+    { name: 'shieldBreak', maxCount: 1 },
+    { name: 'shieldAfterShot', maxCount: 1 },
+    { name: 'noShieldIdle', maxCount: 1 },
+    { name: 'noShieldAim', maxCount: 1 },
+    { name: 'noShieldDuck', maxCount: 1 },
+    { name: 'noShieldDefend', maxCount: 1 },
+    { name: 'noShieldHurt', maxCount: 1 },
+    { name: 'noShieldAfterShot', maxCount: 1 },
+    { name: 'celebrate', maxCount: 1 },
+    { name: 'bgMusic', maxCount: 1 }
+]), (req, res) => {
+    try {
+        const id = req.body.id;
+        const models = loadCustomModels();
+        const modelIndex = models.findIndex(m => m.id === id);
+        if (modelIndex === -1) return res.status(404).json({ ok: false, error: 'Model topilmadi' });
+        
+        const files = req.files || {};
+        const oldModel = models[modelIndex];
+        
+        if (req.body.name) oldModel.name = req.body.name;
+        
+        oldModel.settings = oldModel.settings || {};
+        if (req.body.width !== undefined) oldModel.settings.width = Number(req.body.width);
+        if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
+        if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
+        if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
+        if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
+        
+        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'celebrate'];
+        fileNames.forEach(fn => {
+            if (files[fn] && files[fn][0]) {
+                oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
+            }
+        });
+        
+        if (files.bgMusic && files.bgMusic[0]) {
+            oldModel.bgMusic = 'custom_models/' + files.bgMusic[0].filename;
+        }
+
+        saveCustomModels(models);
+        res.json({ ok: true, model: oldModel });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+
+app.post('/api/models/create', upload.fields([
+    { name: 'shieldIdle', maxCount: 1 },
+    { name: 'shieldAim', maxCount: 1 },
+    { name: 'shieldDuck', maxCount: 1 },
+    { name: 'shieldDefend', maxCount: 1 },
+    { name: 'shieldHurt', maxCount: 1 },
+    { name: 'shieldBreak', maxCount: 1 },
+    { name: 'shieldAfterShot', maxCount: 1 },
+    { name: 'noShieldIdle', maxCount: 1 },
+    { name: 'noShieldAim', maxCount: 1 },
+    { name: 'noShieldDuck', maxCount: 1 },
+    { name: 'noShieldDefend', maxCount: 1 },
+    { name: 'noShieldHurt', maxCount: 1 },
+    { name: 'noShieldAfterShot', maxCount: 1 },
+    { name: 'celebrate', maxCount: 1 },
+    { name: 'bgMusic', maxCount: 1 }
+]), (req, res) => {
+    try {
+        const name = req.body.name || 'Yangi Model';
+        const files = req.files || {};
+        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt || !files.shieldAfterShot || !files.noShieldAfterShot) {
+            console.error('Kemtik fayllar:', Object.keys(files));
+            return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart. Yuborilgan fayllar: ' + Object.keys(files).join(', ') });
+        }
+        const models = loadCustomModels();
+        const newModel = {
+            id: 'custom_' + Date.now(),
+            name: name,
+            textures: {
+                shieldIdle: 'custom_models/' + files.shieldIdle[0].filename,
+                shieldAim: 'custom_models/' + files.shieldAim[0].filename,
+                shieldDuck: 'custom_models/' + files.shieldDuck[0].filename,
+                shieldDefend: 'custom_models/' + files.shieldDefend[0].filename,
+                shieldHurt: 'custom_models/' + files.shieldHurt[0].filename,
+                shieldBreak: 'custom_models/' + files.shieldBreak[0].filename,
+                noShieldIdle: 'custom_models/' + files.noShieldIdle[0].filename,
+                noShieldAim: 'custom_models/' + files.noShieldAim[0].filename,
+                noShieldDuck: 'custom_models/' + files.noShieldDuck[0].filename,
+                noShieldDefend: 'custom_models/' + files.noShieldDefend[0].filename,
+                noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
+                shieldAfterShot: 'custom_models/' + files.shieldAfterShot[0].filename,
+                noShieldAfterShot: 'custom_models/' + files.noShieldAfterShot[0].filename,
+                celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
+            },
+            weaponType: req.body.weaponType || 'spear',
+            bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null,
+            settings: {
+                width: Number(req.body.width) || 560,
+                height: Number(req.body.height) || 430,
+                offsetY: Number(req.body.offsetY) || 0,
+                offsetX: Number(req.body.offsetX) || 0
+            }
+        };
+        models.push(newModel);
+        saveCustomModels(models);
+        res.json({ ok: true, model: newModel });
+    } catch (e) {
+        console.error('Model saqlashda xatolik:', e);
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
 const leaderboardDbPath = path.join(__dirname, 'ratings.json');
 const usersDbPath = path.join(__dirname, 'users.json');
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -693,7 +872,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('throwSpear', (data) => {
-        const { angle, power } = data;
+        const { angle, power, isArtillery } = data;
         const roomName = socket.roomId;
         const room = rooms[roomName];
 
@@ -705,7 +884,8 @@ io.on('connection', (socket) => {
         io.to(roomName).emit('spearThrown', {
             playerIndex: room.turnIndex,
             angle: angle,
-            power: power
+            power: power,
+            isArtillery: isArtillery
         });
         room.inFlight = true;
     });
@@ -807,11 +987,16 @@ io.on('connection', (socket) => {
         if (!room.inFlight) return;
         const ownerIndex = Number(data?.ownerIndex);
         if (!Number.isFinite(ownerIndex) || !room.walls[ownerIndex] || !room.walls[ownerIndex].active) return;
-        room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
+        if (data.isArtillery) {
+            room.walls[ownerIndex].hp = 0;
+        } else {
+            room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
+        }
         io.to(roomName).emit('wallHitFx', {
             ownerIndex,
             hitX: Number(data?.hitX || 0),
-            hitY: Number(data?.hitY || 0)
+            hitY: Number(data?.hitY || 0),
+            isArtillery: data.isArtillery
         });
         if (room.walls[ownerIndex].hp <= 0) {
             room.walls[ownerIndex] = { active: false, x: 0, hp: 0 };
@@ -857,7 +1042,20 @@ io.on('connection', (socket) => {
             let shieldBroke = false;
             let duckDodged = false;
 
-            if (ducking && (hitZone === 'head' || hitZone === 'body')) {
+            if (payload.isArtillery) {
+                if (room.shield[targetIndex] > 0 && defending) {
+                    shieldHit = true;
+                    shieldActiveBlock = true;
+                    appliedDamage = 0;
+                    room.shield[targetIndex] = 0; // Artillery breaks shield completely
+                } else if (room.shield[targetIndex] > 0 && payload.isShieldHit) {
+                    shieldHit = true;
+                    appliedDamage = 0;
+                    room.shield[targetIndex] = 0; // Artillery breaks shield completely
+                } else {
+                    appliedDamage = Math.ceil(room.health[targetIndex] / 2);
+                }
+            } else if (ducking && (hitZone === 'head' || hitZone === 'body')) {
                 appliedDamage = 0;
                 duckDodged = true;
             } else if (room.shield[targetIndex] > 0 && defending && (hitZone === 'head' || hitZone === 'body')) {
@@ -1030,3 +1228,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
+// Force redeploy 1397934648782924301

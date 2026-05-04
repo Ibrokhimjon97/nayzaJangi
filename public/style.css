@@ -456,6 +456,36 @@ body, html {
     transform: scale(0.96);
 }
 
+.crow-btn {
+    position: absolute;
+    bottom: clamp(8px, 2vh, 20px);
+    right: clamp(292px, 45vw, 392px);
+    z-index: 100;
+    width: clamp(48px, 9vw, 66px);
+    height: clamp(48px, 9vw, 66px);
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    border-color: rgba(239, 68, 68, 0.75);
+    background: radial-gradient(circle at 30% 30%, rgba(254, 226, 226, 0.24), rgba(153, 27, 27, 0.92));
+}
+
+.artillery-btn {
+    position: absolute;
+    bottom: clamp(8px, 2vh, 20px);
+    right: clamp(348px, 54vw, 470px);
+    z-index: 100;
+    width: clamp(48px, 9vw, 66px);
+    height: clamp(48px, 9vw, 66px);
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    border-color: rgba(239, 68, 68, 0.75);
+    background: radial-gradient(circle at 30% 30%, rgba(254, 226, 226, 0.24), rgba(220, 38, 38, 0.92));
+}
+
+.artillery-btn.active {
+    background: radial-gradient(circle at 30% 30%, rgba(254, 226, 226, 0.45), rgba(185, 28, 28, 0.95));
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.65);
+    transform: scale(0.96);
+}
+
 .copy-icon-btn {
     min-width: 38px;
     padding: 6px 8px !important;

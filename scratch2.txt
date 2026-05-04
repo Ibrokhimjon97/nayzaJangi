@@ -1,0 +1,10 @@
+446: </button>
+447: <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;" aria-label="Tahta devor qo'yish yoki surish">
+448: 🧱
+449: <span id="wall-count" class="shield-count">0</span>
+450: </button>
+451: <button id="crow-button" class="icon-btn crow-btn" style="pointer-events: auto;" aria-label="Qarg'alarni otish">
+452: 🐦
+453: <span id="crow-count" class="shield-count">3</span>
+454: </button>
+455: <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>

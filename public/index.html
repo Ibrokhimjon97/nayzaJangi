@@ -146,8 +146,16 @@
             <h2>Yakkalik o'yin</h2>
             <div style="margin-top:10px; color:#94a3b8; font-size:0.95rem;">Tanlang:</div>
             <button id="btn-single-continue" class="primary-btn" style="margin-top:12px;">Avvalgi levelni davom etish</button>
+            <button id="btn-single-select-level" class="primary-btn" style="background:#8b5cf6; margin-top:8px;">Level tanlash</button>
             <button id="btn-single-new" class="primary-btn" style="background:#0ea5e9; margin-top:8px;">Yangi o'yin boshlash</button>
             <button id="btn-single-cancel" class="primary-btn" style="background:#475569; margin-top:8px;">Bekor qilish</button>
+        </div>
+
+        <div id="level-select-modal" class="screen hidden panel center-panel">
+            <h2>Level tanlash</h2>
+            <div id="level-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-top:15px; max-height:300px; overflow-y:auto;">
+            </div>
+            <button id="btn-level-select-cancel" class="primary-btn" style="background:#475569; margin-top:15px;">Bekor qilish</button>
         </div>
 
         <div id="friend-invite-modal" class="screen hidden panel center-panel">
@@ -247,10 +255,12 @@
                 </select>
 
                 <label id="txt-char-lbl" style="display:block; margin-bottom:5px;">Jangchi Modeli:</label>
-                <select id="select-char-type" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.1rem;">
+                <select id="select-char-type" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:5px; font-size:1.1rem;">
                     <option value="2">Usmonli jangchisi - kamonlik</option>
                     <option value="3">Usmonli jangchisi - nayzalik</option>
                 </select>
+                <button id="btn-create-custom-model" type="button" class="primary-btn" style="background:#8b5cf6; margin-bottom:15px; padding:6px 10px; font-size:0.85rem;" onclick="window.location.href='/model_creator.html'">+ Yangi model yaratish</button>
+
                 <label style="display:block; margin-bottom:5px;">Sizning ID:</label>
                 <input id="player-id-readonly" type="text" readonly style="width:100%; padding:8px; border-radius:5px; background:#1e293b; color:#86efac; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px; font-weight:700; letter-spacing:2px;">
                 <label style="display:block; margin-bottom:5px;">Do'st ID qo'shish:</label>
@@ -322,6 +332,36 @@
                     </div>
                     <div class="shop-meta"><span id="shop-wall-max">Soni: 0</span></div>
                     <button id="btn-buy-wall" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0f766e;">+1 Tahta devor sotib olish</button>
+                </div>
+
+                <div class="shop-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <span class="shop-item-title">💣 Artileriya</span>
+                    </div>
+                    <div class="shop-item-desc">Bir marta o'q uzadi, devorni yakson qiladi yoki dushmanga 50% zarar yetkazadi.</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
+                        <div class="shop-price">
+                            <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
+                            <b id="artillery-buy-cost">500</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-artillery-max">Soni: 0</span></div>
+                    </div>
+                    <button id="btn-buy-artillery" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ef4444;">+1 Artileriya sotib olish</button>
+                </div>
+
+                <div class="shop-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <span class="shop-item-title">🐦 Qush ovlash</span>
+                    </div>
+                    <div class="shop-item-desc">Osmon bo'ylab uchayotgan qarg'alarni ovlash funksiyasi.</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
+                        <div class="shop-price">
+                            <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
+                            <b id="crowhunt-buy-cost">300</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-crowhunt-max">Soni: 0</span></div>
+                    </div>
+                    <button id="btn-buy-crowhunt" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qush ovlash sotib olish</button>
                 </div>
             </div>
             <button id="btn-close-shop" class="primary-btn" style="background:#475569;">Yopish</button>
@@ -423,6 +463,14 @@
                 🧱
                 <span id="wall-count" class="shield-count">0</span>
             </button>
+            <button id="crow-button" class="icon-btn crow-btn hidden" style="pointer-events: auto; display:none;" aria-label="Qarg'alarni otish">
+                🐦
+                <span id="crow-count" class="shield-count">0</span>
+            </button>
+            <button id="artillery-button" class="icon-btn artillery-btn hidden" style="pointer-events: auto; display:none;" aria-label="Artileriya otish">
+                💣
+                <span id="artillery-count" class="shield-count">0</span>
+            </button>
             <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>
             <button id="music-toggle-btn" class="icon-btn" style="pointer-events: auto;" aria-label="Musiqani yoqish yoki o'chirish">🔊</button>
 
@@ -511,7 +559,15 @@
         <div id="game-over-screen" class="screen hidden panel center-panel">
             <h1 id="winner-text">O'yinchi Yutdi!</h1>
             <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
+            <button id="rematch-btn" class="primary-btn hidden" style="background: #8b5cf6; margin-top: 8px;">Revansh</button>
             <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">Bosh menyu</button>
+        </div>
+
+        <div id="rematch-modal" class="screen hidden panel center-panel">
+            <h2 id="rematch-title">Revansh</h2>
+            <p id="rematch-text" style="margin:10px 0 14px; color:#cbd5e1;">Raqibingiz revansh taklif qilmoqda, qayta o'ynaysizmi?</p>
+            <button id="btn-rematch-accept" class="primary-btn" style="background:#10b981;">Ha, o'ynayman</button>
+            <button id="btn-rematch-decline" class="primary-btn" style="background:#475569; margin-top:8px;">Yo'q</button>
         </div>
         
         <div id="disconnect-screen" class="screen hidden panel center-panel">
@@ -526,6 +582,6 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=19"></script>
+    <script src="client.js?v=56"></script>
 </body>
 </html>

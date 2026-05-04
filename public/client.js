@@ -48,6 +48,17 @@ function loadTextureWithBgRemoval(url) {
         
         if (data[3] > 200) {
             const bgR = data[0], bgG = data[1], bgB = data[2];
+
+let artilleryCount = 0;
+let isArtilleryAiming = false;
+let myArtilleryCannon = null;
+let btnArtillery = document.getElementById('artillery-button');
+let artilleryCountText = document.getElementById('artillery-count');
+window.artilleryCount = 0;
+window.isArtilleryAiming = false;
+window.myArtilleryCannon = null;
+window.btnArtillery = document.getElementById('artillery-button');
+window.artilleryCountText = document.getElementById('artillery-count');
             for (let i = 0; i < data.length; i += 4) {
                 if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
                     data[i+3] = 0;
@@ -103,13 +114,14 @@ function loadTexture(url, options = {}) {
     return tex;
 }
 
-const soldierTexture = loadTextureWithBgRemoval('askar.png');
-const nayzabozTexture = loadTextureWithBgRemoval('Nayzaboz.png');
+const soldierTexture = loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png');
+const nayzabozTexture = loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png');
 const qargaTexture = loadTextureWithBgRemoval('qarga.png');
 const daraxtKattaTexture = loadTexture('daraxtkatta.png');
 const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
 const qalaTexture = loadTexture('Qala.png');
 const devorTusiqTexture = loadTexture('devortusiq.png');
+const bulutTexture = loadTexture('bulut-Photoroom.png');
 const ottomanArcherTextures = {
     shieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
     shieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20monjal.png'),
@@ -122,6 +134,8 @@ const ottomanArcherTextures = {
     noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
     noShieldDuck: loadTexture('Kamonlik%20Usmoniy/utirganqalqonsizkamonboz.png'),
     noShieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png'),
+    shieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
+    noShieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
     celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
 };
 const ottomanSpearmanTextures = {
@@ -130,12 +144,68 @@ const ottomanSpearmanTextures = {
     shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
     shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
     shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
+    shieldDuck: loadTexture('Nayzalik%20Usmoniy/qalqonnayzautirgan.png'),
     noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
     noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
     noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
     noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    noShieldDuck: loadTexture('Nayzalik%20Usmoniy/nayzaqalqonsizutirgan.png'),
     celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
 };
+
+window.customModelsInfo = [];
+window.customModelTextures = {};
+
+async function fetchCustomModels() {
+    try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        window.customModelsInfo = data;
+        
+        const s1 = document.getElementById('select-char-type');
+        const s2 = document.getElementById('select-char-type-options');
+        data.forEach(m => {
+            if (s1) s1.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+            if (s2) s2.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+        });
+        
+        // Ensure values match profile if any
+        if (typeof myProfile !== 'undefined' && myProfile && myProfile.charType) {
+            if (s1) s1.value = String(myProfile.charType);
+            if (s2) s2.value = String(myProfile.charType);
+        }
+        
+        data.forEach(m => {
+            window.customModelTextures[m.id] = {
+                shieldIdle: loadTexture(m.textures.shieldIdle),
+                shieldAim: loadTexture(m.textures.shieldAim),
+                shieldDuck: loadTexture(m.textures.shieldDuck),
+                shieldDefend: loadTexture(m.textures.shieldDefend),
+                shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
+                shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
+                shieldAfterShot: loadTexture(m.textures.shieldAfterShot || m.textures.shieldIdle),
+                noShieldIdle: loadTexture(m.textures.noShieldIdle),
+                noShieldAim: loadTexture(m.textures.noShieldAim),
+                noShieldDuck: loadTexture(m.textures.noShieldDuck),
+                noShieldDefend: loadTexture(m.textures.noShieldDefend),
+                noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
+                noShieldAfterShot: loadTexture(m.textures.noShieldAfterShot || m.textures.noShieldIdle),
+                celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
+                bgMusic: m.bgMusic
+            };
+            
+            // Auto-play music if this is the currently selected profile character
+            if (typeof myProfile !== 'undefined' && myProfile && String(myProfile.charType) === m.id && m.bgMusic) {
+                if (typeof selectedMusicTrack !== 'undefined') {
+                    selectedMusicTrack = m.bgMusic;
+                    if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
+                }
+            }
+        });
+    } catch(e) { console.error('Error loading custom models:', e); }
+}
+fetchCustomModels();
+
 
 // Procedural Generation Mode Enabled - No external 3D models loaded.
 
@@ -154,6 +224,12 @@ const disconnectScreen = document.getElementById('disconnect-screen');
 const winnerText = document.getElementById('winner-text');
 const restartBtn = document.getElementById('restart-btn');
 const menuBtn = document.getElementById('menu-btn');
+const rematchBtn = document.getElementById('rematch-btn');
+const rematchModal = document.getElementById('rematch-modal');
+const rematchTitle = document.getElementById('rematch-title');
+const rematchText = document.getElementById('rematch-text');
+const btnRematchAccept = document.getElementById('btn-rematch-accept');
+const btnRematchDecline = document.getElementById('btn-rematch-decline');
 
 const p1Info = document.getElementById('p1-info');
 const p2Info = document.getElementById('p2-info');
@@ -171,6 +247,8 @@ const shieldButton = document.getElementById('shield-button');
 const shieldCountText = document.getElementById('shield-count');
 const superButton = document.getElementById('super-button');
 const superCountText = document.getElementById('super-count');
+const crowButton = document.getElementById('crow-button');
+const crowCountText = document.getElementById('crow-count');
 const duckButton = document.getElementById('duck-button');
 const doubleButton = document.getElementById('double-button');
 const doubleCountText = document.getElementById('double-count');
@@ -206,6 +284,10 @@ const btnBuyDouble = document.getElementById('btn-buy-double');
 const doubleCountSettings = document.getElementById('double-count-settings');
 const btnBuyWall = document.getElementById('btn-buy-wall');
 const wallCountSettings = document.getElementById('wall-count-settings');
+const btnBuyArtillery = document.getElementById('btn-buy-artillery');
+const btnBuyCrowhunt = document.getElementById('btn-buy-crowhunt');
+const ARTILLERY_BUY_COST = 500;
+const CROWHUNT_BUY_COST = 300;
 const shopScoreText = document.getElementById('shop-score-text');
 const shopSuperMaxText = document.getElementById('shop-super-max');
 const shopDoubleMaxText = document.getElementById('shop-double-max');
@@ -218,6 +300,10 @@ const singleModeModal = document.getElementById('single-mode-modal');
 const btnSingleContinue = document.getElementById('btn-single-continue');
 const btnSingleNew = document.getElementById('btn-single-new');
 const btnSingleCancel = document.getElementById('btn-single-cancel');
+const btnSingleSelectLevel = document.getElementById('btn-single-select-level');
+const levelSelectModal = document.getElementById('level-select-modal');
+const levelGrid = document.getElementById('level-grid');
+const btnLevelSelectCancel = document.getElementById('btn-level-select-cancel');
 const btnAddFriend = document.getElementById('btn-add-friend');
 const friendsListEl = document.getElementById('friends-list');
 const btnRefreshFriends = document.getElementById('btn-refresh-friends');
@@ -367,6 +453,50 @@ function playShieldBreak() {
 
 function playCrowSound() {
     playSfx('crowDead');
+}
+
+
+function triggerCinematicExplosion(x, y) {
+    cinematicMode = true;
+    cameraTargetX = x;
+    cameraTargetY = y + 50;
+    cameraZoomTarget = baseZoom * 2;
+    screenShake = 30;
+
+    const particleCount = 120;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    for(let i=0; i<particleCount; i++) {
+        positions[i*3] = x;
+        positions[i*3+1] = y;
+        positions[i*3+2] = 20;
+        colors[i*3] = 1.0;
+        colors[i*3+1] = Math.random() * 0.6 + 0.1;
+        colors[i*3+2] = 0.0;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 10, vertexColors: true, transparent: true, opacity: 1 });
+    const explosion = new THREE.Points(geometry, material);
+    scene.add(explosion);
+    
+    const velocities = [];
+    for(let i=0; i<particleCount; i++) {
+        velocities.push({
+            vx: (Math.random() - 0.5) * 800,
+            vy: (Math.random() - 0.5) * 800
+        });
+    }
+    explosion.userData = { vels: velocities, age: 0 };
+    if (!window.explosions) window.explosions = [];
+    window.explosions.push(explosion);
+    
+    playSfx('break');
+
+    setTimeout(() => {
+        cinematicMode = false;
+    }, 2000);
 }
 
 function startBackgroundMusic() {
@@ -668,16 +798,23 @@ function spawnEntities(options) {
     
     // Spawn Clouds
     for(let i=0; i<8; i++) {
-        const cloudGeo = new THREE.SphereGeometry(Math.random() * 20 + 20, 7, 7);
-        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+        const cloudWidth = 200 + Math.random() * 150;
+        const cloudHeight = 100 + Math.random() * 80;
+        const cloudGeo = new THREE.PlaneGeometry(cloudWidth, cloudHeight);
+        const cloudMat = new THREE.MeshBasicMaterial({
+            map: bulutTexture,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.position.set(
-            (Math.random() - 0.5) * 4000, 
-            300 + Math.random() * 300, 
-            -100 - Math.random() * 200
+            (Math.random() - 0.5) * 4000,
+            400 + Math.random() * 300,
+            -200 - Math.random() * 300
         );
-        cloud.scale.set(1.5, 0.6, 1);
-        cloud.userData = { vx: (Math.random() - 0.5) * 20 };
+        cloud.userData = { vx: (Math.random() - 0.5) * 15 };
         scene.add(cloud);
         clouds.push(cloud);
     }
@@ -689,7 +826,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            bird.position.set((seededRandom() - 0.5) * 3200, 320 + seededRandom() * 560, -30 + seededRandom() * 60);
+            // Qushlar balandroqda uchadi - 1200-1600 balandlik
+            bird.position.set((seededRandom() - 0.5) * 3200, 1200 + seededRandom() * 400, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -761,11 +899,12 @@ const pHeight = 160;
 function createSoldier(isP1, charType = 0) {
     const group = new THREE.Group();
     
-    const normalizedCharType = Number(charType || 0);
+    const normalizedCharType = (typeof charType === 'string' && charType.startsWith('custom_')) ? charType : Number(charType || 0);
     group.userData.charType = normalizedCharType;
-    group.userData.isOttomanArcher = normalizedCharType === 2;
-    group.userData.isOttomanSpearman = normalizedCharType === 3;
-    group.userData.isOttomanUnit = group.userData.isOttomanArcher || group.userData.isOttomanSpearman;
+    group.userData.isCustomModel = typeof normalizedCharType === 'string' && normalizedCharType.startsWith('custom_');
+    group.userData.isOttomanArcher = (normalizedCharType === 2 || normalizedCharType === 0);
+    group.userData.isOttomanSpearman = (normalizedCharType === 3 || normalizedCharType === 1);
+    group.userData.isOttomanUnit = group.userData.isOttomanArcher || group.userData.isOttomanSpearman || group.userData.isCustomModel;
     group.userData.shieldBroken = false;
     group.userData.visualState = 'idle';
     group.userData.forceState = null;
@@ -787,6 +926,9 @@ function createSoldier(isP1, charType = 0) {
     if (normalizedCharType === 1) selectedTexture = nayzabozTexture;
     if (normalizedCharType === 2) selectedTexture = ottomanArcherTextures.shieldIdle;
     if (normalizedCharType === 3) selectedTexture = ottomanSpearmanTextures.shieldIdle;
+    if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
+        selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
+    }
     const tex = selectedTexture.clone();
     tex.needsUpdate = true;
     if (group.userData.isOttomanUnit) {
@@ -810,22 +952,39 @@ function createSoldier(isP1, charType = 0) {
     
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
-    const planeWidth = (group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360)) * mobileScaleBoost;
-    const planeHeight = (group.userData.isOttomanUnit ? 430 : 480) * mobileScaleBoost;
+    let cWidth = group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360);
+    let cHeight = group.userData.isOttomanUnit ? 430 : 480;
+    let cOffsetY = 0;
+    let cOffsetX = 0;
+    
+    let facesLeft = false;
+    if (group.userData.isCustomModel) {
+        const cModel = window.customModelsInfo.find(m => m.id == normalizedCharType);
+        if (cModel && cModel.settings) {
+            cWidth = cModel.settings.width || cWidth;
+            cHeight = cModel.settings.height || cHeight;
+            cOffsetY = cModel.settings.offsetY || 0;
+            cOffsetX = cModel.settings.offsetX || 0;
+            facesLeft = !!cModel.settings.facesLeft;
+        }
+    }
+    const planeWidth = cWidth * mobileScaleBoost;
+    const planeHeight = cHeight * mobileScaleBoost;
     const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
     const planeMesh = new THREE.Mesh(planeGeo, soldierMat);
-    planeMesh.position.y = planeHeight / 2;
-    if (group.userData.isOttomanUnit) planeMesh.position.x = 0;
-    group.userData.planeMesh = planeMesh;
+    planeMesh.position.y = planeHeight / 2 + cOffsetY;
+    planeMesh.position.x = isP1 ? cOffsetX : -cOffsetX;
     
-    // Proper shadow casting requires a material that responds to light + castShadow flag
-    planeMesh.castShadow = true;
-    
-    if (!isP1) {
-        // Flip horizontally for bot
-        planeMesh.rotation.y = Math.PI;
+    // Yuzma-yuz turishni ta'minlash: Agar rasm chapga qaragan bo'lsa P1 ni o'girish, 
+    // agar rasm o'ngga qaragan bo'lsa P2 ni o'girish kerak.
+    const shouldFlip = isP1 ? facesLeft : !facesLeft;
+    if (shouldFlip) {
+        planeMesh.scale.x = -1;
     }
-    
+    if (group.userData.isOttomanUnit && !cOffsetX) planeMesh.position.x = 0;
+    group.userData.planeMesh = planeMesh;
+    group.userData.basePlaneY = planeHeight / 2;
+    planeMesh.castShadow = true;
     group.userData.torso.add(planeMesh); // attach to torso so breath animation works
     group.add(group.userData.torso);
     
@@ -852,11 +1011,13 @@ function getOttomanSpearmanTexture(model, state) {
     if (state === 'break') return ottomanSpearmanTextures.shieldBreak;
     if (state === 'celebrate') return ottomanSpearmanTextures.celebrate;
     if (!broken) {
+        if (state === 'duck') return ottomanSpearmanTextures.shieldDuck;
         if (state === 'defend') return ottomanSpearmanTextures.shieldDefend;
         if (state === 'aim') return ottomanSpearmanTextures.shieldAim;
         if (state === 'afterShot') return ottomanSpearmanTextures.shieldAfterShot;
         return ottomanSpearmanTextures.shieldIdle;
     }
+    if (state === 'duck') return ottomanSpearmanTextures.noShieldDuck;
     if (state === 'defend') return ottomanSpearmanTextures.noShieldDefend;
     if (state === 'aim') return ottomanSpearmanTextures.noShieldAim;
     if (state === 'afterShot') return ottomanSpearmanTextures.noShieldAfterShot;
@@ -864,6 +1025,29 @@ function getOttomanSpearmanTexture(model, state) {
 }
 
 function getOttomanTexture(model, state) {
+    const charType = String(model.userData.charType);
+    if (charType.startsWith('custom_') && window.customModelTextures[charType]) {
+        const t = window.customModelTextures[charType];
+        const shieldBroken = model.userData.shieldBroken;
+        if (shieldBroken) {
+            if (state === 'duck') return t.noShieldDuck;
+            if (state === 'aim') return t.noShieldAim;
+            if (state === 'defend') return t.noShieldDefend;
+            if (state === 'hurt') return t.noShieldHurt;
+            if (state === 'afterShot') return t.noShieldAfterShot;
+            if (state === 'celebrate') return t.celebrate;
+            return t.noShieldIdle;
+        } else {
+            if (state === 'duck') return t.shieldDuck;
+            if (state === 'aim') return t.shieldAim;
+            if (state === 'defend') return t.shieldDefend;
+            if (state === 'break') return t.shieldBreak;
+            if (state === 'hurt') return t.shieldHurt;
+            if (state === 'afterShot') return t.shieldAfterShot;
+            if (state === 'celebrate') return t.celebrate;
+            return t.shieldIdle;
+        }
+    }
     if (model.userData.isOttomanSpearman) return getOttomanSpearmanTexture(model, state);
     return getOttomanArcherTexture(model, state);
 }
@@ -872,10 +1056,18 @@ function setSoldierVisual(model, state) {
     if (!model || !model.userData) return;
     let targetState = state;
     const modelIndex = getPlayerIndexByModel(model);
-    if (model.userData.isOttomanArcher && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
+    if (model.userData.isOttomanUnit && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
         targetState = 'duck';
     }
     model.userData.visualState = targetState;
+
+    if (model.userData.planeMesh && model.userData.basePlaneY) {
+        if (model.userData.isOttomanSpearman && targetState === 'duck') {
+            model.userData.planeMesh.position.y = model.userData.basePlaneY + 45;
+        } else {
+            model.userData.planeMesh.position.y = model.userData.basePlaneY;
+        }
+    }
 
     if (!model.userData.isOttomanUnit) {
         const frameMap = { idle: 0, load: 0.25, aim: 0.5, afterShot: 0.75 };
@@ -949,8 +1141,15 @@ feather1.name = 'spear-feather';
 feather1.position.x = -50;
 spearGroup.add(feather1);
 
+
+const bombMesh = new THREE.Mesh(new THREE.SphereGeometry(18, 16, 16), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
+bombMesh.name = 'spear-bomb';
+bombMesh.visible = false;
+spearGroup.add(bombMesh);
+
 spearGroup.castShadow = true;
 scene.add(spearGroup);
+
 spearGroup.visible = false;
 const secondarySpearGroup = spearGroup.clone();
 secondarySpearGroup.visible = false;
@@ -962,23 +1161,37 @@ secondarySpearGroup.traverse((obj) => {
 });
 scene.add(secondarySpearGroup);
 
-function applySpearVisualStyle(isSpearmanThrow) {
+function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
     const styleScale = isSpearmanThrow ? 1.3 : 1;
     [spearGroup, secondarySpearGroup].forEach((group) => {
         if (!group) return;
         const shaft = group.getObjectByName('spear-shaft');
         const tipGroup = group.getObjectByName('spear-tip-group');
-        const blade = group.getObjectByName('spear-blade');
         const feather = group.getObjectByName('spear-feather');
-        if (shaft) shaft.scale.set(1, styleScale, styleScale);
-        if (tipGroup) tipGroup.scale.set(styleScale, styleScale, styleScale);
-        if (blade && blade.material && blade.material.color) {
-            blade.material.color.setHex(isSpearmanThrow ? 0xe2e8f0 : 0xffffff);
-            blade.material.needsUpdate = true;
-        }
-        if (feather && feather.material && feather.material.color) {
-            feather.material.color.setHex(isSpearmanThrow ? 0x7c3aed : 0xff0000);
-            feather.material.needsUpdate = true;
+        const bomb = group.getObjectByName('spear-bomb');
+
+        if (isArtillery) {
+            if (shaft) shaft.visible = false;
+            if (tipGroup) tipGroup.visible = false;
+            if (feather) feather.visible = false;
+            if (bomb) bomb.visible = true;
+        } else {
+            if (shaft) shaft.visible = true;
+            if (tipGroup) tipGroup.visible = true;
+            if (feather) feather.visible = true;
+            if (bomb) bomb.visible = false;
+            
+            const blade = group.getObjectByName('spear-blade');
+            if (shaft) shaft.scale.set(1, styleScale, styleScale);
+            if (tipGroup) tipGroup.scale.set(styleScale, styleScale, styleScale);
+            if (blade && blade.material && blade.material.color) {
+                blade.material.color.setHex(isSpearmanThrow ? 0xe2e8f0 : 0xffffff);
+                blade.material.needsUpdate = true;
+            }
+            if (feather && feather.material && feather.material.color) {
+                feather.material.color.setHex(isSpearmanThrow ? 0x7c3aed : 0xff0000);
+                feather.material.needsUpdate = true;
+            }
         }
     });
 }
@@ -1013,7 +1226,8 @@ window.addEventListener('resize', updateCameraBounds);
 
 // Game State
 let gameMode = 'menu';
-let myPlayerIndex = -1; 
+let myPlayerIndex = -1;
+let currentRoomName = null;
 let currentTurnIndex = 0;
 let currentWind = 0;
 let isAnimating = false;
@@ -1024,6 +1238,8 @@ let myShield = 5;
 let enemyShield = 5;
 let mySuper = 5;
 let enemySuper = 5;
+let myCrow = 0;
+let enemyCrow = 0;
 let myDefenseActive = false;
 let enemyDefenseActive = false;
 let myDuckActive = false;
@@ -1086,8 +1302,10 @@ function updateCampaignUI() {
 function getCampaignConfig(level) {
     const lvl = Math.max(1, level || 1);
     const distance = Math.min(3600, 2500 + (lvl - 1) * 60);
-    const birds = 5 + (lvl - 1) * 2;
-    let hitRate = 0.4;
+    const birds = Math.floor((5 + (lvl - 1) * 2) / 6);
+    let hitRate = 0.9;
+    let aiPrecision = 0.9;
+    let birdTargetChance = 0.1;
     let enemySuperCharges = 1;
     let enemySuperUseChance = 0.08;
     let enemyCount = 1;
@@ -1095,36 +1313,46 @@ function getCampaignConfig(level) {
     let enemyShieldAutoUses = 2;
     let enemySuperAutoUses = 2;
     if (lvl >= 11 && lvl <= 20) {
-        hitRate = 0.6;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 2;
         enemySuperUseChance = 0.24;
         enemyShieldAutoUses = 3;
         enemySuperAutoUses = 3;
     } else if (lvl >= 21 && lvl <= 30) {
-        hitRate = 0.8;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 3;
         enemySuperUseChance = 0.35;
         enemyWallEnabled = true;
         enemyShieldAutoUses = 5;
         enemySuperAutoUses = 5;
     } else if (lvl >= 31 && lvl <= 40) {
-        hitRate = 0.84;
+        hitRate = 0.9;
+        aiPrecision = 0.9;
+        birdTargetChance = 0.1;
         enemySuperCharges = 3;
         enemySuperUseChance = 0.4;
         enemyCount = 2;
         enemyShieldAutoUses = 5;
         enemySuperAutoUses = 5;
-    } else if (lvl >= 41 && lvl <= 60) {
+    } else if (lvl >= 41 && lvl <= 66) {
         // Hardcore campaign band: two enemies + higher AI precision/ability pressure.
-        hitRate = 0.92;
+        hitRate = 0.95;
+        aiPrecision = 1.0;
+        birdTargetChance = 0.1;
         enemySuperCharges = 4;
         enemySuperUseChance = 0.55;
         enemyCount = 2;
         enemyWallEnabled = true;
         enemyShieldAutoUses = 7;
         enemySuperAutoUses = 7;
-    } else if (lvl > 60) {
-        hitRate = 0.95;
+    } else if (lvl > 66) {
+        hitRate = 0.98;
+        aiPrecision = 1.0;
+        birdTargetChance = 0.1;
         enemySuperCharges = 5;
         enemySuperUseChance = 0.62;
         enemyCount = 2;
@@ -1139,6 +1367,8 @@ function getCampaignConfig(level) {
         enemyCount,
         enemyWallEnabled,
         hitRate,
+        aiPrecision,
+        birdTargetChance,
         enemySuperCharges,
         enemySuperUseChance,
         enemyShieldAutoUses,
@@ -1219,6 +1449,37 @@ function updateSuperUI() {
             doubleButton.classList.remove('active');
         }
     }
+    
+    // Artillery and Crow buttons logic
+    artilleryCount = Number(myProfile.artillery || 0);
+    myCrow = Number(myProfile.crowhunt || 0);
+    
+    const artCountText = document.getElementById('artillery-count');
+    const bArtillery = document.getElementById('artillery-button');
+    if (artCountText) artCountText.innerText = String(Math.max(0, artilleryCount));
+    if (bArtillery) {
+        if (artilleryCount > 0) {
+            bArtillery.style.display = 'inline-flex';
+            bArtillery.classList.remove('hidden');
+        } else {
+            bArtillery.style.display = 'none';
+            bArtillery.classList.add('hidden');
+        }
+    }
+    
+    const cBtn = document.getElementById('crow-button');
+    const cCountText = document.getElementById('crow-count');
+    if (cCountText) cCountText.innerText = String(Math.max(0, myCrow));
+    if (cBtn) {
+        if (myCrow > 0) {
+            cBtn.style.display = 'inline-flex';
+            cBtn.classList.remove('hidden');
+        } else {
+            cBtn.style.display = 'none';
+            cBtn.classList.add('hidden');
+        }
+    }
+    
     updateShopUI();
 }
 
@@ -1229,9 +1490,14 @@ function updateShopUI() {
     if (shopSuperMaxText) shopSuperMaxText.innerText = `Narx: ${SUPER_BUY_COST} ball`;
     if (shopDoubleMaxText) shopDoubleMaxText.innerText = `Soni: ${doubleCount}`;
     if (shopWallMaxText) shopWallMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.walls || 0))}`;
+    const shopArtilleryMaxText = document.getElementById('shop-artillery-max');
+    if (shopArtilleryMaxText) shopArtilleryMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.artillery || 0))}`;
+    const btnBuyArtillery = document.getElementById('btn-buy-artillery');
+    const ARTILLERY_BUY_COST = 500;
     if (btnBuySuper) btnBuySuper.disabled = score < SUPER_BUY_COST;
     if (btnBuyDouble) btnBuyDouble.disabled = score < DOUBLE_BUY_COST;
     if (btnBuyWall) btnBuyWall.disabled = score < WALL_BUY_COST;
+    if (btnBuyArtillery) btnBuyArtillery.disabled = score < ARTILLERY_BUY_COST;
 }
 
 function getWallPlacementLimits() {
@@ -1594,6 +1860,12 @@ function resetCameraAfterImpact() {
 
 updateCameraBounds();
 
+
+let artilleryCount = 0;
+let isArtilleryAiming = false;
+let myArtilleryCannon = null;
+let btnArtillery = document.getElementById('artillery-button');
+let artilleryCountText = document.getElementById('artillery-count');
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
 let dragCurrent = { x: 0, y: 0 };
@@ -1775,6 +2047,8 @@ function handleEnd(e) {
     if (myPlayerIndex === 1) angle = 180 - angle;
     if (angle < -20) angle = -20;
     if (angle > 110) angle = 110;
+            
+            
 
     throwSpear(angle, power);
 }
@@ -1899,13 +2173,10 @@ if (superButton) {
             e.preventDefault();
             e.stopPropagation();
         }
+        if (mySuper <= 0) return;
         superButton.classList.add('active');
         const used = tryUseSuperPower();
-        if (!used && mySuper > 0 && gameMode !== 'menu') {
-            showSuperUseWarning();
-        } else if (used) {
-            playSfx('superPress');
-        }
+        if (!used) showSuperUseWarning();
     };
     const releaseSuper = (e) => {
         if (e) {
@@ -1921,9 +2192,38 @@ if (superButton) {
         superButton.addEventListener('pointerleave', releaseSuper);
     } else {
         superButton.addEventListener('mousedown', pressSuper);
-        superButton.addEventListener('mouseup', releaseSuper);
         superButton.addEventListener('touchstart', pressSuper, { passive: false });
         superButton.addEventListener('touchend', releaseSuper, { passive: false });
+    }
+}
+
+if (crowButton) {
+    const pressCrow = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (myCrow <= 0) return;
+        crowButton.classList.add('active');
+        shootCrowKillerArrow();
+    };
+    const releaseCrow = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        crowButton.classList.remove('active');
+    };
+    if (window.PointerEvent) {
+        crowButton.addEventListener('pointerdown', pressCrow);
+        crowButton.addEventListener('pointerup', releaseCrow);
+        crowButton.addEventListener('pointercancel', releaseCrow);
+        crowButton.addEventListener('pointerleave', releaseCrow);
+    } else {
+        crowButton.addEventListener('mousedown', pressCrow);
+        crowButton.addEventListener('mouseup', releaseCrow);
+        crowButton.addEventListener('touchstart', pressCrow, { passive: false });
+        crowButton.addEventListener('touchend', releaseCrow, { passive: false });
     }
 }
 
@@ -2067,14 +2367,32 @@ function startSinglePlayer(opts) {
         p3Model = null;
     }
     const playerLeftSide = (level % 2 === 1);
-    const myChar = Number(myProfile.charType || 2) || 2;
-    const enemyChar = 2;
+    function getRandomEnemyChar(exclude) {
+        const defaultChars = [1, 2, 3];
+        const customChars = (window.customModelsInfo || []).map(m => m.id);
+        let allChars = defaultChars.concat(customChars);
+        if (exclude !== undefined) {
+            const filtered = allChars.filter(c => String(c) !== String(exclude));
+            if (filtered.length > 0) allChars = filtered;
+        }
+        return allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    const myChar = myProfile.charType || 2;
+    const enemyChar = getRandomEnemyChar(myChar);
     const p1Char = playerLeftSide ? myChar : enemyChar;
     const p2Char = playerLeftSide ? enemyChar : myChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
     if (campaignConfig.enemyCount === 2) {
-        p3Model = createSoldier(false, enemyChar);
+        let enemyChar2 = getRandomEnemyChar(myChar);
+        let tries = 10;
+        while ((enemyChar2 === enemyChar || String(enemyChar2) === String(myChar)) && tries > 0) {
+            enemyChar2 = getRandomEnemyChar(myChar);
+            tries--;
+        }
+        // Agar dushmanlar chap tomonda bo'lsa p3Model true (isLeftSide) bo'ladi
+        p3Model = createSoldier(!playerLeftSide, enemyChar2);
     }
     if (playerLeftSide) {
         myPlayerIndex = 0;
@@ -2094,14 +2412,18 @@ function startSinglePlayer(opts) {
     myShield = 5;
     enemyShield = 5;
     mySuper = Math.max(0, Number(myProfile.superPowers || 5));
+    artilleryCount = Math.max(0, Number(myProfile.artillery || 0));
+    myCrow = Math.max(0, Number(myProfile.crowhunt || 0));
     enemySuper = Math.max(0, Number(campaignConfig.enemySuperCharges || 1));
     enemyShieldUsesRemaining = Math.max(0, Number(campaignConfig.enemyShieldAutoUses || 0));
     enemySuperUsesRemaining = Math.max(0, Number(campaignConfig.enemySuperAutoUses || 0));
     enemyShieldAutoUsedThisFlight = false;
     myDefenseActive = false;
     enemyDefenseActive = false;
+    enemyDuckActive = false;
     updateHealthUI();
     updateShieldUI();
+    updateSuperUI();
     removeWall(0);
     removeWall(1);
     if (campaignConfig && campaignConfig.enemyWallEnabled) {
@@ -2173,21 +2495,66 @@ function fireEnemyVolleyShot() {
     if (!shooter) return;
 
     const profile = aiProfiles[aiDifficulty] || aiProfiles.normal;
+    const cfg = campaignConfig || getCampaignConfig(singleCampaignLevel);
     const shouldHit = shouldAiHit();
-    const targetModel = modelForPlayer(myPlayerIndex);
-    const dx = Math.abs(shooter.position.x - targetModel.position.x);
-    const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
-    let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
-    const jitter = shouldHit ? profile.powerJitter * 0.09 : profile.powerJitter;
-    const desiredDir = shooterIndex === 0 ? 1 : -1;
-    const windComp = shouldHit ? (-currentWind * desiredDir * (dx / 280)) : 0;
-    power += windComp;
-    power += (Math.random() - 0.5) * jitter;
-    let angle = (rad * 180) / Math.PI + (Math.random() - 0.5) * (shouldHit ? profile.angleJitter * 0.18 : profile.angleJitter);
+    
+    // AI asosan o'yinchiga nishonlaydi (90%), tasodifan qushlarni o'ldiradi (10%)
+    const targetBird = cfg.birdTargetChance > 0 && Math.random() < cfg.birdTargetChance;
+    let targetIndex, targetX, targetY;
+    
+    if (targetBird && entities.length > 0) {
+        // Qushni nishonlash
+        const birds = entities.filter(e => e.type === 'bird' && e.alive);
+        if (birds.length > 0) {
+            const targetBirdEntity = birds[Math.floor(Math.random() * birds.length)];
+            targetX = targetBirdEntity.mesh.position.x;
+            targetY = targetBirdEntity.mesh.position.y;
+            // Qush uchun maxsus hisoblash
+            const dx = Math.abs(shooter.position.x - targetX);
+            const dy = targetY - shooter.position.y;
+            const baseAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const rad = ((Math.abs(baseAngle) + Math.min(10, dx / 300)) * Math.PI) / 180;
+            let power = Math.sqrt((dx * dx + dy * dy) * GRAVITY / Math.max(0.2, Math.sin(2 * rad)));
+            const desiredDir = shooterIndex === 0 ? 1 : -1;
+            const windComp = (-currentWind * desiredDir * (dx / 280));
+            power += windComp;
+            let angle = baseAngle + (Math.random() - 0.5) * 5;
+            angle = Math.max(-20, Math.min(110, angle));
+            power = Math.max(700, Math.min(2000, power));
+            
+            setModelActionState(shooter, 'aim', 1000);
+            setTimeout(() => {
+                if (gameMode === 'single' && currentTurnIndex === getPrimaryEnemyTurnIndex() && !isPaused) {
+                    startSpearAnimation(shooterIndex, angle, power);
+                }
+            }, 800);
+            return;
+        }
+    }
+    
+    // O'yinchiga aniq nishonlash
+    targetIndex = myPlayerIndex;
+    const targetModel = modelForPlayer(targetIndex);
+    
+    // computeAccurateShot dan foydalanib aniq trajektoriya hisoblash
+    const accurateShot = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
+    if (!accurateShot) return;
+    
+    let angle = accurateShot.angle;
+    let power = accurateShot.power;
+    
+    // 100% aniqlik
     angle = Math.max(-20, Math.min(110, angle));
-
-    setModelActionState(shooter, 'aim', 900);
-    startSpearAnimation(shooterIndex, angle, Math.max(700, Math.min(2000, power)));
+    power = Math.max(700, Math.min(2000, power));
+    
+    // AI o'q otishidan oldin mo'ljalga olish holatini ko'rsatish
+    setModelActionState(shooter, 'aim', 1000);
+    
+    setTimeout(() => {
+        if (gameMode === 'single' && currentTurnIndex === getPrimaryEnemyTurnIndex() && !isPaused) {
+            startSpearAnimation(shooterIndex, angle, power);
+        }
+    }, 800);
 }
 
 function throwSpear(angle, power) {
@@ -2226,15 +2593,217 @@ function throwSpear(angle, power) {
         saveProfile();
         updateSuperUI();
     }
+    let artill = false;
+    if (isArtilleryAiming) {
+        artill = true;
+        isArtilleryAiming = false;
+        if (btnArtillery) btnArtillery.classList.remove('active');
+        if (myArtilleryCannon) myArtilleryCannon.visible = false;
+        artilleryCount--;
+        myProfile.artillery = artilleryCount;
+        saveProfile();
+        updateSuperUI();
+    }
+    
     if (gameMode === 'multi') {
-        socket.emit('throwSpear', { angle, power });
+        socket.emit('throwSpear', { angle, power, isArtillery: artill });
     } else if (gameMode === 'single') {
-        if (currentTurnIndex === 0) {
-            setModelActionState(p1Model, isDefenseActiveForPlayer(0) ? 'defend' : 'aim', 800);
-        } else {
-            setModelActionState(p2Model, isDefenseActiveForPlayer(1) ? 'defend' : 'aim', 800);
+        if (!artill) {
+            if (currentTurnIndex === 0) {
+                setModelActionState(p1Model, isDefenseActiveForPlayer(0) ? 'defend' : 'aim', 800);
+            } else {
+                setModelActionState(p2Model, isDefenseActiveForPlayer(1) ? 'defend' : 'aim', 800);
+            }
         }
-        startSpearAnimation(currentTurnIndex, angle, power);
+        startSpearAnimation(currentTurnIndex, angle, power, artill);
+    }
+}
+
+const CROW_KILLER_CINEMATIC_MS = 4000;
+let crowKillerCinematicActive = false;
+let crowKillerCinematicUntil = 0;
+
+function shootCrowKillerArrow() {
+    if (myCrow <= 0) return;
+    myCrow--;
+    myProfile.crowhunt = myCrow;
+    saveProfile();
+    updateCrowUI();
+    updateSuperUI();
+    
+    // Qarg'alarni aniqlash
+    const birds = entities.filter(e => e.type === 'bird' && e.alive);
+    if (birds.length === 0) return;
+    
+    // Barcha qushlarni urish
+    const targetCount = birds.length;
+    const targets = birds;
+    
+    // Cinematic effektni yoqish
+    crowKillerCinematicActive = true;
+    crowKillerCinematicUntil = performance.now() + CROW_KILLER_CINEMATIC_MS;
+    cameraState = 'crowKiller';
+    cameraZoomTarget = baseZoom * 1.8;
+    
+    // Har bir qarg'a uchun o'q otish
+    const shooterModel = modelForPlayer(myPlayerIndex);
+    if (!shooterModel) return;
+    
+    const startX = shooterModel.position.x;
+    const startY = shooterModel.position.y + 50;
+    
+    targets.forEach((bird, index) => {
+        setTimeout(() => {
+            const birdMesh = bird.mesh;
+            const targetX = birdMesh.position.x;
+            const targetY = birdMesh.position.y;
+            
+            // O'q trayektoriyasini hisoblash
+            const dx = targetX - startX;
+            const dy = targetY - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            const power = Math.min(distance * 2.5, 1800);
+            
+            // Maxsus o'q otish (dushmanga zarar bermaydi)
+            startCrowKillerArrowAnimation(startX, startY, angle, power, bird);
+            
+            // Camera target ni qarg'aga qaratish
+            cameraTargetX = targetX;
+            cameraTargetY = targetY;
+        }, index * 200); // Har bir o'q 200ms orqali (sekinroq)
+    });
+    
+    if (gameMode === 'multi') {
+        socket.emit('crowKillerShot', { count: targetCount });
+    }
+    
+    // Cinematic tugagandan keyin camera ni qaytarish
+    setTimeout(() => {
+        crowKillerCinematicActive = false;
+        cameraState = 'normal';
+        cameraZoomTarget = baseZoom;
+    }, CROW_KILLER_CINEMATIC_MS);
+}
+
+function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird) {
+    const rad = angle * Math.PI / 180;
+    const vx = power * Math.cos(rad);
+    const vy = power * Math.sin(rad);
+    
+    // Maxsus o'q yaratish
+    const arrow = createCrowKillerArrow();
+    arrow.position.set(startX, startY, 0);
+    scene.add(arrow);
+    
+    const arrowData = {
+        mesh: arrow,
+        x: startX,
+        y: startY,
+        vx: vx,
+        vy: vy,
+        targetBird: targetBird,
+        isCrowKiller: true,
+        active: true
+    };
+    
+    crowKillerArrows.push(arrowData);
+}
+
+function createCrowKillerArrow() {
+    const group = new THREE.Group();
+    
+    // O'q tanasi
+    const shaftGeo = new THREE.CylinderGeometry(2, 2, 60);
+    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+    shaft.rotation.z = -Math.PI / 2;
+    group.add(shaft);
+    
+    // O'q uchi
+    const tipGeo = new THREE.ConeGeometry(4, 12, 8);
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const tip = new THREE.Mesh(tipGeo, tipMat);
+    tip.position.set(36, 0, 0);
+    tip.rotation.z = -Math.PI / 2;
+    group.add(tip);
+    
+    return group;
+}
+
+let crowKillerArrows = [];
+
+function updateCrowKillerArrows() {
+    for (let i = crowKillerArrows.length - 1; i >= 0; i--) {
+        const arrow = crowKillerArrows[i];
+        if (!arrow.active) {
+            scene.remove(arrow.mesh);
+            crowKillerArrows.splice(i, 1);
+            continue;
+        }
+        
+        // Fizika
+        arrow.x += arrow.vx * 0.016;
+        arrow.y += arrow.vy * 0.016;
+        arrow.vy -= 500 * 0.016; // Gravity
+        
+        arrow.mesh.position.set(arrow.x, arrow.y, 0);
+        arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx);
+        
+        // Qarg'aga urish tekshiruvi
+        if (arrow.targetBird && arrow.targetBird.alive) {
+            const birdMesh = arrow.targetBird.mesh;
+            const dx = arrow.x - birdMesh.position.x;
+            const dy = arrow.y - birdMesh.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Distance ni oshirish - 30 dan 100 gacha
+            if (distance < 100) {
+                console.log('Qarg\'aga urildi! Distance:', distance);
+                // Qarg'ani urib tushirish
+                killBird(arrow.targetBird);
+                arrow.active = false;
+                scene.remove(arrow.mesh);
+                crowKillerArrows.splice(i, 1);
+            }
+        }
+        
+        // Yerga tushsa o'chirish
+        if (arrow.y < ground.position.y) {
+            arrow.active = false;
+            scene.remove(arrow.mesh);
+            crowKillerArrows.splice(i, 1);
+        }
+    }
+}
+
+function killBird(birdEntity) {
+    if (!birdEntity || !birdEntity.alive) return;
+    
+    birdEntity.alive = false;
+    
+    // Qarg'ani qirilishi animatsiyasi
+    const birdMesh = birdEntity.mesh;
+    birdMesh.rotation.z = Math.PI / 2;
+    
+    // Pastga tushish
+    const fallAnimation = () => {
+        birdMesh.position.y -= 5;
+        if (birdMesh.position.y > ground.position.y) {
+            requestAnimationFrame(fallAnimation);
+        } else {
+            scene.remove(birdMesh);
+        }
+    };
+    fallAnimation();
+    
+    // Particle effect
+    spawnParticles(birdMesh.position.x, birdMesh.position.y, 10, false);
+}
+
+function updateCrowUI() {
+    if (crowCountText) {
+        crowCountText.innerText = myCrow;
     }
 }
 
@@ -2264,6 +2833,7 @@ function tryUseSuperPower() {
     if (mySuper <= 0) return false;
     if (!(isAnimating && spear && spear.active)) return false;
     if (spear.playerIndex === myPlayerIndex) return false;
+    if (spear.isArtillery) return false;
 
     if (gameMode === 'multi') {
         triggerAbilityPulse(superButton);
@@ -2297,6 +2867,7 @@ function tryEnemyUseSuperPowerSingle() {
     if (!(isAnimating && spear && spear.active)) return false;
     if (spear.playerIndex !== myPlayerIndex) return false; // enemy only intercepts player's projectile
     if (spear.aiSuperTried) return false;
+    if (spear.isArtillery) return false;
 
     const enemyIndices = getEnemyIndices();
     if (!enemyIndices.length) return false;
@@ -2342,21 +2913,35 @@ function tryEnemyUseShieldSingle() {
     const dx = Math.abs(spear.x - enemyModel.position.x);
     const dy = spear.y - enemyModel.position.y;
     if (dx > 430 || dy < -120 || dy > 420) return false;
-    if (Math.random() > 0.72) return false;
+    
+    // AI Decision: Duck or Shield?
+    const rand = Math.random();
+    if (rand > 0.72) return false;
 
-    enemyDefenseActive = true;
-    enemyShieldUsesRemaining = Math.max(0, enemyShieldUsesRemaining - 1);
-    playSfx('shieldPress', 0.85);
-    setModelActionState(enemyModel, 'defend', 700);
-    if (p3Model) setModelActionState(p3Model, 'defend', 700);
-    setTimeout(() => {
-        enemyDefenseActive = false;
-        if (!isAnimating) {
-            setSoldierVisual(enemyModel, 'idle');
-            if (p3Model) setSoldierVisual(p3Model, 'idle');
-        }
-    }, 820);
-    return true;
+    if (rand < 0.3) {
+        // AI DUCKS
+        enemyDuckActive = true;
+        enemyShieldUsesRemaining = Math.max(0, enemyShieldUsesRemaining - 1);
+        setTimeout(() => {
+            enemyDuckActive = false;
+        }, 950);
+        return true;
+    } else {
+        // AI SHIELDS
+        enemyDefenseActive = true;
+        enemyShieldUsesRemaining = Math.max(0, enemyShieldUsesRemaining - 1);
+        playSfx('shieldPress', 0.85);
+        setModelActionState(enemyModel, 'defend', 700);
+        if (p3Model) setModelActionState(p3Model, 'defend', 700);
+        setTimeout(() => {
+            enemyDefenseActive = false;
+            if (!isAnimating) {
+                setSoldierVisual(enemyModel, 'idle');
+                if (p3Model) setSoldierVisual(p3Model, 'idle');
+            }
+        }, 820);
+        return true;
+    }
 }
 
 function advanceSingleTurnAfterShot() {
@@ -2466,7 +3051,9 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
     const target = modelForPlayer(targetIndex);
     if (!shooter || !target) return null;
     const dx = Math.abs(shooter.position.x - target.position.x);
-    const rad = ((38 + Math.min(14, dx / 220)) * Math.PI) / 180;
+    // Burchakni kamaytirish - 25-35 gradus (oldingi 38-52 o'rniga)
+    // Bu trayektoriyani pastroq qiladi, qarg'alarga tegmaydi
+    const rad = ((25 + Math.min(10, dx / 300)) * Math.PI) / 180;
     let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
     const desiredDir = shooterIndex === 0 ? 1 : -1;
     const windComp = (-currentWind * desiredDir * (dx / 280));
@@ -2586,16 +3173,34 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         } else {
             const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
             hitResult = calculateHitResult(targetIndex, relativeY, false);
-            if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
-
-            if (hitResult.isShieldHit) {
-                spawnParticles(hitX, hitY, 10, true);
-            } else if (hitResult.hitZone === 'head') {
-                spawnParticles(hitX, hitY, 40);
-            } else if (hitResult.hitZone === 'leg') {
-                spawnParticles(hitX, hitY, 15);
+            
+            if (spear && spear.isArtillery) {
+                const isDefending = isDefenseActiveForPlayer(targetIndex);
+                if (hitResult.isShieldHit || (isDefending && shieldForPlayer(targetIndex) > 0)) {
+                    hitResult.damage = 0;
+                    hitResult.msg = 'ARTILERIYA QAYTARILDI!';
+                    setShieldForPlayer(targetIndex, 0);
+                    spawnParticles(hitX, hitY, 10, true);
+                } else {
+                    const currentHp = targetIndex === myPlayerIndex ? myHealth : enemyHealth;
+                    const dmg = Math.ceil(currentHp / 2);
+                    hitResult.damage = dmg;
+                    hitResult.msg = `ARTILERIYA ZARBASI! -${dmg}`;
+                    hitResult.isCrit = true;
+                    triggerCinematicExplosion(hitX, hitY);
+                }
             } else {
-                spawnParticles(hitX, hitY, 25);
+                if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
+
+                if (hitResult.isShieldHit) {
+                    spawnParticles(hitX, hitY, 10, true);
+                } else if (hitResult.hitZone === 'head') {
+                    spawnParticles(hitX, hitY, 40);
+                } else if (hitResult.hitZone === 'leg') {
+                    spawnParticles(hitX, hitY, 15);
+                } else {
+                    spawnParticles(hitX, hitY, 25);
+                }
             }
         }
 
@@ -2665,6 +3270,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitY,
                 isShieldHit: hitResult.isShieldHit,
                 hitAngle: finalAngle,
+                isArtillery: spear.isArtillery,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
                     damage: extraNetHit.damage,
@@ -2713,6 +3319,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitX,
                 hitY,
                 hitAngle: finalAngle,
+                isArtillery: spear.isArtillery,
                 extraHit: hasExtraHit ? {
                     targetIndex: doubleOutcome.targetIndex,
                     damage: extraNetHit.damage,
@@ -2908,10 +3515,14 @@ socket.on('chatMessage', (data) => {
 });
 
 socket.on('gameStart', (data) => {
+    console.log('gameStart data:', JSON.stringify(data));
+    console.log('data.roomName:', data.roomName);
+    console.log('typeof data:', typeof data);
     clearRandomWaitTimer();
     gameMode = 'multi';
     waitingScreen.classList.add('hidden');
     multiMenu.classList.add('hidden');
+    menuScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     isPaused = false;
     isDragging = false;
@@ -2922,10 +3533,21 @@ socket.on('gameStart', (data) => {
     chatMessages.innerHTML = '';
     unreadMessages = 0; chatBadge.classList.add('hidden');
     btnToggleChat.classList.remove('hidden');
-    
+
+    // Room name ni saqlash (revansh uchun)
+    if (data.roomName) {
+        currentRoomName = data.roomName;
+        console.log('currentRoomName o\'rnatildi:', currentRoomName);
+    } else {
+        console.log('roomName kelmadi');
+    }
+
     const opts = data.options || { map: 'field', birds: false, animals: false, weather: 'sunny' };
     buildMap(opts.map, opts.weather || 'sunny');
     spawnEntities(opts);
+    
+    // Multiplayer rejimida jangchilar orasidagi masofani o'rnatish
+    currentBattleDistance = 3600; // Onlayn rejim uchun uzoq masofa
     
     myPlayerIndex = data.playerIndex;
     myDefenseActive = false;
@@ -2934,8 +3556,8 @@ socket.on('gameStart', (data) => {
     enemyDuckActive = false;
     
     scene.remove(p1Model); scene.remove(p2Model);
-    const myChar = Number(myProfile.charType || 2) || 2;
-    const oppChar = Number((data.opponentProfile && data.opponentProfile.charType) || 2) || 2;
+    const myChar = myProfile.charType || 2;
+    const oppChar = (data.opponentProfile && data.opponentProfile.charType) || 2;
     const p1Char = myPlayerIndex === 0 ? myChar : oppChar;
     const p2Char = myPlayerIndex === 1 ? myChar : oppChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
@@ -3019,49 +3641,58 @@ socket.on('superIntercept', (data) => {
 });
 
 socket.on('spearThrown', (data) => {
-    const { playerIndex, angle, power } = data;
+    const { playerIndex, angle, power, isArtillery } = data;
     setModelActionState(modelForPlayer(playerIndex), 'aim', 800);
-    startSpearAnimation(playerIndex, angle, power);
+    startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
 
 socket.on('groundHit', (data) => {
     if (spear && spear.playerIndex !== myPlayerIndex) {
-        stickSpear(null, data.hitX, data.hitY, data.hitAngle);
-        hideFlyingSpear();
-        playSfx('ground');
+        if (spear.isArtillery) {
+            triggerCinematicExplosion(data.hitX, data.hitY);
+            hideFlyingSpear();
+        } else {
+            stickSpear(null, data.hitX, data.hitY, data.hitAngle);
+            hideFlyingSpear();
+            playSfx('ground');
+        }
     }
 });
 
 socket.on('hitRegistered', (data) => {
     const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged } = data;
     const targetModel = targetIndex === 0 ? p1Model : p2Model;
-    
-    if (spear && spear.playerIndex !== myPlayerIndex) {
-        flashHit(targetModel);
-        hideFlyingSpear();
-        
-        if (duckDodged) {
-            showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
-        } else if (isShieldHit) {
-            spawnParticles(hitX, hitY, 10, true);
-            const msg = shieldActiveBlock ? "QALQON, BARAKALLA!" : `QALQONGA TEGDI! -${damage}`;
-            showDamageText(hitX, hitY + 80, msg, false, true);
-            playSfx(shieldActiveBlock ? 'shieldActive' : 'shieldPassive');
-        } else {
-            let isCrit = damage >= 40;
-            spawnParticles(hitX, hitY, isCrit ? 40 : 20);
-            if (hitZone === 'head') playSfx('headHit');
-            else if (hitZone === 'leg') playSfx('legHit');
-            else playSfx('ground', 0.9);
-            let msg = "-" + damage;
-            if (isCrit) msg = "BOSHGA! " + msg;
-            if (shieldlessDefense) msg = "HIMOYA! " + msg;
-            showDamageText(hitX, hitY + 80, msg, isCrit);
 
+    if (spear && spear.playerIndex !== myPlayerIndex) {
+        hideFlyingSpear();
+        if (spear.isArtillery) {
+            triggerCinematicExplosion(hitX, hitY);
+            showDamageText(hitX, hitY + 80, `-${damage}`, false, true);
             if (damage > 0) knockDownModel(targetModel);
+        } else {
+            flashHit(targetModel);
+            if (duckDodged) {
+                showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
+            } else if (isShieldHit) {
+                spawnParticles(hitX, hitY, 10, true);
+                const msg = shieldActiveBlock ? "QALQON, BARAKALLA!" : `QALQONGA TEGDI! -${damage}`;
+                showDamageText(hitX, hitY + 80, msg, false, true);
+                playSfx(shieldActiveBlock ? 'shieldActive' : 'shieldPassive');
+            } else {
+                let isCrit = damage >= 40;
+                spawnParticles(hitX, hitY, isCrit ? 40 : 20);
+                if (hitZone === 'head') playSfx('headHit');
+                else if (hitZone === 'leg') playSfx('legHit');
+                else playSfx('ground', 0.9);
+                let msg = "-" + damage;
+                if (isCrit) msg = "BOSHGA! " + msg;
+                if (shieldlessDefense) msg = "HIMOYA! " + msg;
+                showDamageText(hitX, hitY + 80, msg, isCrit);
+                if (damage > 0) knockDownModel(targetModel);
+            }
         }
     }
-    
+
     if (targetIndex === myPlayerIndex) {
         myHealth = newHealth; myShield = newShield;
     } else {
@@ -3071,7 +3702,6 @@ socket.on('hitRegistered', (data) => {
     if ((shieldBroke || newShield <= 0) && !targetModel.userData.shieldBroken) breakShield(targetModel);
     updateHealthUI();
 });
-
 socket.on('defenseStateChanged', (data) => {
     if (!data || data.playerIndex === myPlayerIndex) return;
     enemyDefenseActive = data.active;
@@ -3094,7 +3724,7 @@ socket.on('wallStateChanged', (data) => {
 
 socket.on('wallHitFx', (data) => {
     if (!data) return;
-    applyWallHit(Number(data.ownerIndex), Number(data.hitX || 0), Number(data.hitY || (ground.position.y + 90)));
+    applyWallHit(Number(data.ownerIndex), Number(data.hitX || 0), Number(data.hitY || (ground.position.y + 90)), data.isArtillery);
 });
 
 socket.on('entityHit', (data) => {
@@ -3126,6 +3756,61 @@ socket.on('opponentDisconnected', () => {
     }
 });
 
+// Revansh so'rovi keldi
+socket.on('rematchRequest', () => {
+    console.log('Revansh so\'rovi keldi');
+    if (rematchModal) {
+        rematchModal.classList.remove('hidden');
+        console.log('Modal ochildi');
+    } else {
+        console.log('Modal topilmadi');
+    }
+});
+
+// Revansh qabul qilindi - yangi o'yin boshlash
+socket.on('rematchStart', () => {
+    // O'yinni qayta boshlash
+    gameOverScreen.classList.add('hidden');
+    if (rematchModal) rematchModal.classList.add('hidden');
+    if (rematchBtn) {
+        rematchBtn.innerText = "Revansh";
+        rematchBtn.disabled = false;
+    }
+    // O'yin holatini qayta boshlash
+    myHealth = 100;
+    enemyHealth = 100;
+    mySuper = myProfile.superPowers || 5;
+    myCrow = myProfile.crowhunt || 0;
+    artilleryCount = myProfile.artillery || 0;
+    updateSuperUI();
+    updateHealthUI();
+    myDefenseActive = false;
+    enemyDefenseActive = false;
+    myDuckActive = false;
+    enemyDuckActive = false;
+    setDefenseActive(false, false);
+    setDuckActive(false, false);
+    currentTurnIndex = 0;
+    prevTurnIndex = -2;
+    isWallPlacementMode = false;
+    isWallDragActive = false;
+    singleShotLocked = false;
+    resetWeapon();
+});
+
+// Revansh rad etildi
+socket.on('rematchDeclined', () => {
+    if (rematchBtn) {
+        rematchBtn.innerText = "Rad etildi";
+        rematchBtn.disabled = true;
+    }
+    setTimeout(() => {
+        gameOverScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        gameMode = 'menu';
+    }, 2000);
+});
+
 function showGameOver(winnerIndex) {
     gameOverScreen.classList.remove('hidden');
     controlsPanel.classList.add('disabled');
@@ -3136,6 +3821,15 @@ function showGameOver(winnerIndex) {
         const nextLabel = t.nextLevelBtn || "Keyingi bosqich";
         const replayLabel = t.playAgainBtn || "Yana o'ynash";
         restartBtn.innerText = (gameMode === 'single' && winnerIndex === myPlayerIndex) ? nextLabel : replayLabel;
+    }
+    
+    // Online rejimda revansh tugmasini ko'rsatish
+    if (rematchBtn) {
+        if (gameMode === 'multi') {
+            rematchBtn.classList.remove('hidden');
+        } else {
+            rematchBtn.classList.add('hidden');
+        }
     }
     
     if (winnerIndex === myPlayerIndex) {
@@ -3189,6 +3883,44 @@ if (menuBtn) {
         menuScreen.classList.remove('hidden');
         gameMode = 'menu';
         updateCampaignUI();
+    });
+}
+
+// Revansh tugmasi - so'rov yuborish
+if (rematchBtn) {
+    rematchBtn.addEventListener('click', () => {
+        console.log('Revansh tugmasi bosildi, roomName:', currentRoomName);
+        if (socket && socket.connected) {
+            socket.emit('rematchRequest', { roomName: currentRoomName });
+            rematchBtn.innerText = "Kutilmoqda...";
+            rematchBtn.disabled = true;
+        } else {
+            console.log('Socket ulanmagan');
+            rematchBtn.innerText = "Xatolik";
+        }
+    });
+}
+
+// Revansh so'rovini qabul qilish
+if (btnRematchAccept) {
+    btnRematchAccept.addEventListener('click', () => {
+        if (socket && socket.connected) {
+            socket.emit('rematchAccept', { roomName: currentRoomName });
+        }
+        if (rematchModal) rematchModal.classList.add('hidden');
+    });
+}
+
+// Revansh so'rovini rad etish
+if (btnRematchDecline) {
+    btnRematchDecline.addEventListener('click', () => {
+        if (socket && socket.connected) {
+            socket.emit('rematchDecline', { roomName: currentRoomName });
+        }
+        if (rematchModal) rematchModal.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        gameMode = 'menu';
     });
 }
 
@@ -3271,21 +4003,52 @@ function updateTurn(turnIndex, wind) {
     updateSuperUI();
 }
 
-function startSpearAnimation(playerIndex, angle, power) {
+function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     isAnimating = true;
     controlsPanel.classList.add('disabled');
     hud.style.opacity = 0.3; 
     playThrowSound();
 
     const thrower = modelForPlayer(playerIndex);
-    const throwState = thrower?.userData?.isOttomanSpearman
-        ? 'afterShot'
-        : (thrower?.userData?.isOttomanArcher ? 'aim' : 'afterShot');
-    setModelActionState(thrower, throwState, 950);
+    const isSpearman = !!thrower?.userData?.isOttomanSpearman;
+    const isArcher = !!thrower?.userData?.isOttomanArcher;
+    const isCustom = !!thrower?.userData?.isCustomModel;
+    
+    let throwState = 'afterShot';
+    if (isArcher) throwState = 'aim';
+    if (isCustom) {
+        const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
+        if (cModel && cModel.weaponType === 'bow') throwState = 'aim';
+    }
+    
+    setModelActionState(thrower, throwState, isArcher || throwState === 'aim' ? 1200 : 950);
 
     // Start trajectory directly from the bow's position
-    const startX = playerIndex === 0 ? p1Model.position.x + 60 : thrower.position.x - 60;
-    const startY = thrower.position.y + 270; 
+    let startX = playerIndex === 0 ? p1Model.position.x + 60 : thrower.position.x - 60;
+    let startY = thrower.position.y + 270; 
+    
+    if (isArtillery) {
+        startX = thrower.position.x + (playerIndex === 0 ? 150 : -150) + (playerIndex === 0 ? 50 : -50);
+        startY = thrower.position.y + 150;
+        
+        if (playerIndex !== myPlayerIndex) {
+            if (!window.enemyArtilleryCannon) {
+                const tex = loadTexture('artileriya.png');
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat);
+                scene.add(window.enemyArtilleryCannon);
+            }
+            window.enemyArtilleryCannon.scale.set(1.5, 1.5, 1.5);
+            window.enemyArtilleryCannon.position.set(thrower.position.x + (playerIndex === 0 ? 150 : -150), thrower.position.y + 60, thrower.position.z + 10);
+                        
+            window.enemyArtilleryCannon.visible = true;
+            
+            // Hide it after a short delay
+            setTimeout(() => {
+                if (window.enemyArtilleryCannon) window.enemyArtilleryCannon.visible = false;
+            }, 1000);
+        }
+    }
 
     const rad = angle * (Math.PI / 180);
 
@@ -3301,12 +4064,19 @@ function startSpearAnimation(playerIndex, angle, power) {
         playerIndex: playerIndex,
         hitEntity: null,
         entityHitEmitted: false,
-        aiSuperTried: false
+        aiSuperTried: false,
+        isArtillery: isArtillery
     };
     
-    const isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
-    applySpearVisualStyle(isSpearmanThrow);
-    const spearScale = isSpearmanThrow ? 1.9 : 1;
+    let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
+    if (thrower?.userData?.isCustomModel) {
+        const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
+        if (cModel && cModel.weaponType === 'spear') {
+            isSpearmanThrow = true;
+        }
+    }
+    applySpearVisualStyle(isSpearmanThrow, isArtillery);
+    const spearScale = isArtillery ? 2.5 : (isSpearmanThrow ? 1.9 : 1);
     spearGroup.scale.setScalar(spearScale);
     secondarySpearGroup.scale.setScalar(spearScale);
     spearGroup.position.set(startX, startY, 0);
@@ -3354,12 +4124,18 @@ function getWallHitOwnerIndex() {
     return -1;
 }
 
-function applyWallHit(ownerIndex, hitX, hitY) {
+function applyWallHit(ownerIndex, hitX, hitY, isArtillery = false) {
     const wall = wallStates[ownerIndex];
     if (!wall || !wall.active) return;
-    wall.hp = Math.max(0, Number(wall.hp || WALL_HP_MAX) - 1);
-    showDamageText(hitX, hitY + 40, `DEVOR -1 (${wall.hp}/5)`, false, true);
-    spawnParticles(hitX, hitY, 12, true);
+    if (isArtillery) {
+        wall.hp = 0;
+        showDamageText(hitX, hitY + 40, "DEVOR PORTLADI!", true, false);
+        triggerCinematicExplosion(hitX, hitY);
+    } else {
+        wall.hp = Math.max(0, Number(wall.hp || WALL_HP_MAX) - 1);
+        showDamageText(hitX, hitY + 40, `DEVOR -1 (${wall.hp}/5)`, false, true);
+        spawnParticles(hitX, hitY, 12, true);
+    }
     if (wall.hp <= 0) {
         removeWall(ownerIndex);
     } else {
@@ -3380,10 +4156,10 @@ function checkCollision() {
         hideFlyingSpear();
         if (gameMode === 'multi') {
             if (spear.playerIndex === myPlayerIndex) {
-                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY });
+                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY, isArtillery: spear.isArtillery });
             }
         } else {
-            applyWallHit(wallOwnerIndex, hitX, hitY);
+            applyWallHit(wallOwnerIndex, hitX, hitY, spear.isArtillery);
             advanceSingleTurnAfterShot();
         }
         return;
@@ -3498,7 +4274,7 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
             }
             if (gameMode === 'multi') {
                 if (!spear.entityHitEmitted) {
-                    socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z });
+                    socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z, isArtillery: spear.isArtillery });
                     spear.entityHitEmitted = true;
                 }
             } else {
@@ -3522,13 +4298,39 @@ function gameLoop(now) {
     if (isPaused) {
         lastTime = now;
     mixers.forEach(m => m.update(dt));
-        renderer.render(scene, camera);
+        
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    renderer.render(scene, camera);
         if(isLooping) requestAnimationFrame(gameLoop);
         return;
     }
     let timeScale = 1.0;
     if (!isAnimating && screenShake > 0) timeScale = 0.3; 
     if (now < cinematicSlowUntil) timeScale *= 0.23;
+    if (now < crowKillerCinematicUntil) timeScale *= 0.35; // Qush o'ldirish cinematic sekinlashtirish
     
     const dt = ((now - lastTime) / 1000) * timeScale;
     lastTime = now;
@@ -3560,7 +4362,7 @@ function gameLoop(now) {
     // Dust animation
     const positions = dustSystem.geometry.attributes.position.array;
     for(let i=0; i<dustCount*3; i+=3) {
-        positions[i] += currentWind * 10 * dt; 
+        positions[i] += currentWind * 10 * dt;
         if (positions[i] > 2000) {
             positions[i] = -2000 + Math.random() * 220;
             positions[i + 1] = Math.random() * 800 - 300;
@@ -3619,6 +4421,9 @@ function gameLoop(now) {
             }
         }
     });
+    
+    // Qarg'a o'qlarini yangilash
+    updateCrowKillerArrows();
 
     // Cloud animation
     clouds.forEach(cloud => {
@@ -3781,8 +4586,13 @@ function gameLoop(now) {
             const dy = dragCurrent.y - dragStart.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
             
-            if (dist > 50) targetState = 'aim';
-            else if (dist > 10) targetState = 'load';
+            if (isArtilleryAiming) {
+                targetState = 'idle';
+            } else if (dist > 50) {
+                targetState = 'aim';
+            } else if (dist > 10) {
+                targetState = 'load';
+            }
             
             // Aiming zoom logic
             if (cameraState === 'static' || cameraState === 'aiming') {
@@ -3808,8 +4618,15 @@ function gameLoop(now) {
         const dy = dragCurrent.y - dragStart.y;
         
         if (Math.sqrt(dx*dx + dy*dy) > 10) {
-            const startX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
-            const startY = p1Model.position.y + 270;
+            let startX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
+            let startY = p1Model.position.y + 270;
+            
+            if (isArtilleryAiming) {
+                startX = (myPlayerIndex === 0 ? p1Model.position.x : p2Model.position.x) + (myPlayerIndex === 0 ? 200 : -200);
+                startY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 150;
+            }
+            
+            
             
             const points = [];
             let simX = startX;
@@ -3822,6 +4639,9 @@ function gameLoop(now) {
             if (angle < -20) angle = -20;
             if (angle > 110) angle = 110;
             
+            
+            
+
             const rad = angle * (Math.PI / 180);
             let simVx = power * Math.cos(rad);
             if (myPlayerIndex === 1) simVx = -simVx;
@@ -3848,11 +4668,61 @@ function gameLoop(now) {
         }
     }
 
+    
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
     renderer.render(scene, camera);
     if(isLooping) requestAnimationFrame(gameLoop);
 }
 
-renderer.render(scene, camera);
+
+    if (window.explosions) {
+        for (let i = window.explosions.length - 1; i >= 0; i--) {
+            const expl = window.explosions[i];
+            expl.userData.age += dt;
+            const posAttr = expl.geometry.attributes.position;
+            const mat = expl.material;
+            
+            for(let j=0; j<expl.userData.vels.length; j++) {
+                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
+            }
+            posAttr.needsUpdate = true;
+            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
+            
+            if (expl.userData.age > 1.5) {
+                scene.remove(expl);
+                expl.geometry.dispose();
+                expl.material.dispose();
+                window.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    renderer.render(scene, camera);
 
 // --- NEW PROFILE, STATS & LANGUAGE LOGIC ---
 let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
@@ -3865,7 +4735,7 @@ let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
     doubleSpears: 0,
     walls: 0
 };
-myProfile.charType = Number.isFinite(Number(myProfile.charType)) ? Number(myProfile.charType) : 2;
+myProfile.charType = myProfile.charType || 2;
 myProfile.superPowers = Math.max(0, Number(myProfile.superPowers || 5));
 myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0));
 myProfile.walls = Math.max(0, Number(myProfile.walls || 0));
@@ -4029,8 +4899,10 @@ function upsertFriend(friend) {
 }
 
 function renderFriendsList() {
+    console.log('renderFriendsList called, myFriends:', myFriends);
     if (!friendsListEl) return;
     if (!myFriends.length) {
+        console.log('No friends found');
         friendsListEl.innerText = "Do'stlar yo'q.";
         return;
     }
@@ -4047,8 +4919,9 @@ function renderFriendsList() {
             const options = {
                 map: document.getElementById('select-map') ? document.getElementById('select-map').value : 'field',
                 weather: selectWeather ? selectWeather.value : 'sunny',
-                birds: document.getElementById('check-birds') ? document.getElementById('check-birds').checked : false,
-                animals: document.getElementById('check-animals') ? document.getElementById('check-animals').checked : false,
+                birds: true, // Do'st chaqirishda qushlarni doim yoqish
+                birdCount: 20, // 20 ta qush
+                animals: false,
                 charType: myProfile.charType
             };
             socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
@@ -4482,11 +5355,22 @@ btnSaveSettings.addEventListener('click', () => {
 if (btnSaveProfile) btnSaveProfile.addEventListener('click', () => {
     myProfile.name = document.getElementById('input-name').value || "Jangchi";
     myProfile.avatar = document.getElementById('select-avatar').value;
-    const selectedCharType = Number(document.getElementById('select-char-type').value || 2);
-    myProfile.charType = Number.isFinite(selectedCharType) ? selectedCharType : 2;
+    const selectedCharType = document.getElementById('select-char-type').value || 2;
+    myProfile.charType = selectedCharType;
     myProfile.flag = document.getElementById('select-country').value;
     
     saveProfile();
+    
+    if (window.customModelsInfo) {
+        const custom = window.customModelsInfo.find(m => m.id === String(selectedCharType));
+        if (custom && custom.bgMusic) {
+            selectedMusicTrack = custom.bgMusic;
+        } else {
+            selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
+        }
+        if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
+    }
+    
     if (profileModal) profileModal.classList.add('hidden');
     menuScreen.classList.remove('hidden');
 });
@@ -4599,6 +5483,29 @@ if (btnBuyWall) {
     });
 }
 
+if (btnBuyArtillery) {
+    btnBuyArtillery.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.artillery || 0));
+        if (Number(myStats.score || 0) < ARTILLERY_BUY_COST) return;
+        addScore(-ARTILLERY_BUY_COST);
+        myProfile.artillery = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+
+if (btnBuyCrowhunt) {
+    btnBuyCrowhunt.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.crowhunt || 0));
+        if (Number(myStats.score || 0) < CROWHUNT_BUY_COST) return;
+        addScore(-CROWHUNT_BUY_COST);
+        myProfile.crowhunt = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+
+
 if (btnAuthRegister) {
     btnAuthRegister.addEventListener('click', async () => {
         const name = (authNameInput?.value || '').trim();
@@ -4701,16 +5608,58 @@ async function submitLeaderboard() {
 }
 
 async function renderLeaderboard() {
+    console.log('renderLeaderboard called, leaderboardList:', !!leaderboardList);
     if (!leaderboardList) return;
     const t = translations[myProfile.lang] || translations.en || translations.uz;
     const renderRows = (rows) => {
+        console.log('renderRows called with:', rows);
         if (!Array.isArray(rows) || !rows.length) return false;
-        leaderboardList.innerHTML = rows.map((r, idx) =>
-            `<div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
+        console.log('Leaderboard rows:', rows);
+        leaderboardList.innerHTML = rows.map((r, idx) => {
+            console.log('Row:', idx, r);
+            // playerId bo'lmasa, phone dan foydalanamiz
+            const playerId = r.playerId || r.phone;
+            const isMe = playerId && myProfile.playerId && playerId === myProfile.playerId;
+            // Agar o'zimiz bo'lsak tugma ko'rsatmaslik, aks holda ko'rsatish (phone bo'lmasa ham)
+            const showButton = !isMe && r.name !== myProfile.name;
+            console.log('playerId:', playerId, 'isMe:', isMe, 'showButton:', showButton);
+            const buttonHtml = showButton ? `<button class="primary-btn btn-invite-leaderboard" data-fid="${playerId}" data-fname="${r.name}" style="padding:4px 8px; font-size:0.7rem; background:#10b981;">Chaqirish</button>` : '';
+            console.log('Button HTML for', r.name, ':', buttonHtml);
+            return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
                 <span>${idx + 1}. ${r.flag || '🏳️'} ${r.name}</span>
-                <span><b>${r.score}</b></span>
-            </div>`
-        ).join('');
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span><b>${r.score}</b></span>
+                    ${buttonHtml}
+                </div>
+            </div>`;
+        }).join('');
+        
+        // Chaqirish tugmalariga event listener qo'shish
+        leaderboardList.querySelectorAll('.btn-invite-leaderboard').forEach((el) => {
+            el.addEventListener('click', () => {
+                const toPlayerId = el.getAttribute('data-fid');
+                const toPlayerName = el.getAttribute('data-fname');
+                if (!toPlayerId) return;
+                
+                const options = {
+                    map: 'field',
+                    weather: 'sunny',
+                    birds: true,
+                    birdCount: 20,
+                    animals: false,
+                    charType: myProfile.charType
+                };
+                
+                socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
+                
+                // Taklif yuborilgani haqida xabar
+                if (friendIdStatus) {
+                    friendIdStatus.style.color = '#3b82f6';
+                    friendIdStatus.innerText = `${toPlayerName} ga o'yin taklifi yuborildi.`;
+                }
+            });
+        });
+        
         return true;
     };
     let showedCached = false;
@@ -4888,6 +5837,59 @@ if (btnSingleCancel) {
     });
 }
 
+if (btnSingleSelectLevel) {
+    btnSingleSelectLevel.addEventListener('click', () => {
+        if (singleModeModal) singleModeModal.classList.add('hidden');
+        if (levelSelectModal) {
+            levelSelectModal.classList.remove('hidden');
+            renderLevelGrid();
+        }
+    });
+}
+
+if (btnLevelSelectCancel) {
+    btnLevelSelectCancel.addEventListener('click', () => {
+        if (levelSelectModal) levelSelectModal.classList.add('hidden');
+        if (singleModeModal) singleModeModal.classList.remove('hidden');
+    });
+}
+
+function renderLevelGrid() {
+    if (!levelGrid) return;
+    levelGrid.innerHTML = '';
+    
+    // singleCampaignLevel saqlangan eng yuqori level
+    const maxLevel = Math.max(1, singleCampaignLevel || 1);
+    for (let i = 1; i <= 100; i++) {
+        const levelBtn = document.createElement('button');
+        levelBtn.className = 'primary-btn';
+        levelBtn.style.padding = '8px 4px';
+        levelBtn.style.fontSize = '0.9rem';
+        levelBtn.style.minHeight = '40px';
+        
+        if (i <= maxLevel) {
+            levelBtn.style.background = '#10b981';
+            levelBtn.innerText = i;
+            levelBtn.addEventListener('click', () => {
+                singleCampaignLevel = i;
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                if (singleModeModal) singleModeModal.classList.add('hidden');
+                menuScreen.classList.add('hidden');
+                aiDifficulty = 'easy';
+                gameMode = 'single';
+                startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+            });
+        } else {
+            levelBtn.style.background = '#475569';
+            levelBtn.style.opacity = '0.5';
+            levelBtn.style.cursor = 'not-allowed';
+            levelBtn.innerText = '🔒';
+        }
+        
+        levelGrid.appendChild(levelBtn);
+    }
+}
+
 if(document.getElementById('btn-multi')) {
     document.getElementById('btn-multi').addEventListener('click', () => {
         if(typeof initAudio === 'function') initAudio();
@@ -4986,8 +5988,8 @@ if (btnConfirmCreate) {
         const birds = document.getElementById('check-birds') ? document.getElementById('check-birds').checked : false;
         const animals = document.getElementById('check-animals') ? document.getElementById('check-animals').checked : false;
         const difficulty = selectDifficulty ? selectDifficulty.value : 'normal';
-        const charTypeOpt = selectCharTypeOptions ? Number(selectCharTypeOptions.value || 2) : 2;
-        myProfile.charType = Number.isFinite(charTypeOpt) ? charTypeOpt : 2;
+        const charTypeOpt = selectCharTypeOptions ? selectCharTypeOptions.value || 2 : 2;
+        myProfile.charType = charTypeOpt;
         gameOptionsModal.classList.add('hidden');
         if (difficultyWrap) difficultyWrap.style.display = 'block';
         if (selectDifficulty) selectDifficulty.style.display = 'block';
@@ -5202,3 +6204,50 @@ if (chatQuickEmojis) {
         addChatMessage(msg, true);
     });
 }
+
+// Artillery functionality initialization
+document.addEventListener('DOMContentLoaded', () => {
+    btnArtillery = document.getElementById('artillery-button');
+    artilleryCountText = document.getElementById('artillery-count');
+    
+    if (btnArtillery) {
+        // Pointer events for artillery button
+        const handleArtilleryClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (myHealth <= 0 || enemyHealth <= 0 || currentTurnIndex !== myPlayerIndex || artilleryCount <= 0) return;
+            isArtilleryAiming = !isArtilleryAiming;
+            
+            if (isArtilleryAiming) {
+                btnArtillery.classList.add('active');
+                if (!myArtilleryCannon) {
+                    const tex = loadTexture('artileriya.png');
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat);
+                    scene.add(myArtilleryCannon);
+                }
+                const playerGrp = myPlayerIndex === 0 ? p1Model : p2Model;
+                if (playerGrp) {
+                    myArtilleryCannon.scale.set(1.5, 1.5, 1.5);
+                    myArtilleryCannon.position.set(playerGrp.position.x + (myPlayerIndex === 0 ? 150 : -150), playerGrp.position.y + 60, playerGrp.position.z + 10);
+                    myArtilleryCannon.visible = true;
+                    if (myPlayerIndex === 0) {
+                        myArtilleryCannon.rotation.y = Math.PI;
+                    } else {
+                        myArtilleryCannon.rotation.y = 0;
+                    }
+                }
+            } else {
+                btnArtillery.classList.remove('active');
+                if (myArtilleryCannon) myArtilleryCannon.visible = false;
+            }
+        };
+
+        if (window.PointerEvent) {
+            btnArtillery.addEventListener('pointerdown', handleArtilleryClick);
+        } else {
+            btnArtillery.addEventListener('mousedown', handleArtilleryClick);
+            btnArtillery.addEventListener('touchstart', handleArtilleryClick, { passive: false });
+        }
+    }
+});
