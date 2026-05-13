@@ -5839,6 +5839,36 @@ if (socket && socket.connected) socket.emit('registerProfile', myProfile);
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
 });
+
+// Android bildirishnoma ruxsati so'rash va notification tap listeneri
+if (IS_NATIVE_APP) {
+    const _initNotifications = () => {
+        try {
+            const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (!LN) return;
+            LN.requestPermissions().catch(() => {});
+            LN.createChannel({
+                id: 'invite',
+                name: "O'yin taklifi",
+                importance: 5,
+                vibration: true,
+                sound: 'default'
+            }).catch(() => {});
+            LN.addListener('localNotificationActionPerformed', () => {
+                // Notification bosilganda invite modal'ini ko'rsatish
+                if (pendingFriendInvite) {
+                    if (friendInviteText) friendInviteText.innerText = `${pendingFriendInvite.fromProfile?.name || "Do'stingiz"} sizni o'yinga chaqirdi. Qo'shilasizmi?`;
+                    if (friendInviteModal) friendInviteModal.classList.remove('hidden');
+                }
+            }).catch(() => {});
+        } catch (_) {}
+    };
+    if (document.readyState === 'complete') {
+        setTimeout(_initNotifications, 1000);
+    } else {
+        window.addEventListener('load', () => setTimeout(_initNotifications, 1000));
+    }
+}
 if (authUserCache && authUserCache.phone) {
     applyAuthedUser(authUserCache);
 }
@@ -6159,6 +6189,23 @@ socket.on('friendInvite', (payload) => {
     const fromName = pendingFriendInvite.fromProfile?.name || "Do'stingiz";
     if (friendInviteText) friendInviteText.innerText = `${fromName} sizni o'yinga chaqirdi. Qo'shilasizmi?`;
     if (friendInviteModal) friendInviteModal.classList.remove('hidden');
+    // Android native notification
+    if (IS_NATIVE_APP) {
+        try {
+            const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (LN) {
+                LN.schedule({
+                    notifications: [{
+                        id: 1001,
+                        title: "\u2694\uFE0F O'yin taklifi!",
+                        body: `${fromName} sizni Nayza Jangi o'yiniga chaqirdi! Bosing va o'ynang.`,
+                        schedule: { at: new Date(Date.now() + 300) },
+                        channelId: 'invite'
+                    }]
+                }).catch(() => {});
+            }
+        } catch (_) {}
+    }
 });
 
 if (btnFriendInviteAccept) {
