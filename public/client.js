@@ -103,17 +103,6 @@ function loadTexture(url, options = {}) {
         loadedTex.needsUpdate = true;
     }, undefined, (err) => {
         console.error('Texture load error:', url, err);
-        const errDiv = document.createElement('div');
-        errDiv.style.position = 'fixed';
-        errDiv.style.top = '0';
-        errDiv.style.left = '0';
-        errDiv.style.background = 'rgba(255,0,0,0.5)';
-        errDiv.style.color = 'white';
-        errDiv.style.fontSize = '10px';
-        errDiv.style.zIndex = '10000';
-        errDiv.innerText = 'Load fail: ' + url;
-        document.body.appendChild(errDiv);
-        setTimeout(() => errDiv.remove(), 5000);
     });
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
@@ -155,24 +144,20 @@ const ottomanArcherTextures = {
 };
 
 const ottomanSpearmanTextures = {
-    id: "3",
-    name: "Usmonli jangchisi - nayzalik",
-    textures: {
-        shieldIdle: fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
-        shieldAim: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20monjal.png'),
-        shieldDefend: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20himoya.png'),
-        shieldDuck: fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20qalqonli%20nayzaboz.png'),
-        shieldHurt: fixAssetUrl('Nayzalik%20Usmoniy/yaradornayzabozqalqonli.png'),
-        shieldBreak: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqoni%20yorildi.png'),
-        shieldAfterShot: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20nayza%20otgandan%20keyin.png'),
-        noShieldIdle: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20stand.png'),
-        noShieldAim: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otishga%20tayyorlanyapti.png'),
-        noShieldDuck: fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20nayzaboz.png'),
-        noShieldDefend: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20himoyalanyapti.png'),
-        noShieldHurt: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20yarador.png'),
-        noShieldAfterShot: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otgandan%20keyin.png'),
-        celebrate: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20xursandchilik.png')
-    },
+    shieldIdle: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png')),
+    shieldAim: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20monjal.png')),
+    shieldDefend: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20himoya.png')),
+    shieldDuck: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20qalqonli%20nayzaboz.png')),
+    shieldHurt: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/yaradornayzabozqalqonli.png')),
+    shieldBreak: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqoni%20yorildi.png')),
+    shieldAfterShot: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20nayza%20otgandan%20keyin.png')),
+    noShieldIdle: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20stand.png')),
+    noShieldAim: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otishga%20tayyorlanyapti.png')),
+    noShieldDuck: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20nayzaboz.png')),
+    noShieldDefend: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20himoyalanyapti.png')),
+    noShieldHurt: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20yarador.png')),
+    noShieldAfterShot: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otgandan%20keyin.png')),
+    celebrate: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20xursandchilik.png')),
     bgMusic: 'music.mp3'
 };
 
