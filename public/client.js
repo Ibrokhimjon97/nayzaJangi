@@ -383,6 +383,22 @@ const sfxPaths = {
     throw: IS_NATIVE_APP ? 'mp3/uquzilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uquzilganda.mp3'
 };
 
+// Brauzer tab / ilova fon rejimiga ketganda musiqani pauza qilish
+document.addEventListener('visibilitychange', () => {
+    try {
+        if (document.hidden) {
+            if (bgMusicAudio) bgMusicAudio.pause();
+        } else {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (bgMusicAudio && !musicMuted) {
+                bgMusicAudio.play().catch(() => {});
+            }
+        }
+    } catch (_) {
+        // ignore audio errors
+    }
+});
+
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new AudioContext();
@@ -1709,11 +1725,48 @@ const GRAVITY = 700;
 let lastTime = performance.now();
 
 // Cinematic Camera
-let cameraState = 'static'; 
-let cameraTargetX = 0;
-let cameraTargetY = 0;
-let cameraZoomTarget = 1;
-let screenShake = 0;
+let cameraState = 'normal';
+let cameraOffsetY = 120;
+let cameraOffsetZ = 1450;
+let cameraZoomTarget = baseZoom;
+
+// Mobil qurilmalarda portret rejimida bo'lsa, auto-rotate haqida ogohlantirish
+let orientationNoticeShown = false;
+function checkOrientationNotice() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(String(navigator.userAgent || ''));
+    if (!isMobile) return;
+    const portrait = window.innerHeight > window.innerWidth;
+    let banner = document.getElementById('rotate-warning');
+    if (!banner && portrait) {
+        banner = document.createElement('div');
+        banner.id = 'rotate-warning';
+        banner.style.position = 'fixed';
+        banner.style.zIndex = '9999';
+        banner.style.left = '50%';
+        banner.style.bottom = '20px';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.background = 'rgba(15,23,42,0.96)';
+        banner.style.borderRadius = '999px';
+        banner.style.padding = '10px 18px';
+        banner.style.color = '#e5f2ff';
+        banner.style.fontSize = '0.82rem';
+        banner.style.display = 'flex';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '8px';
+        banner.style.boxShadow = '0 12px 30px rgba(15,23,42,0.7)';
+        banner.innerHTML = '<span style="font-size:1.2rem;">📱</span><span>Ekran burilishiga ruxsat bering (auto-rotate) va telefonni yon tomonga agdarib o\'yinni davom ettiring.</span>';
+        document.body.appendChild(banner);
+        orientationNoticeShown = true;
+    }
+    if (banner && !portrait) {
+        banner.remove();
+        orientationNoticeShown = false;
+    }
+}
+
+window.addEventListener('resize', checkOrientationNotice);
+window.addEventListener('orientationchange', checkOrientationNotice);
+document.addEventListener('DOMContentLoaded', checkOrientationNotice);
 let cinematicSlowUntil = 0;
 const SUPER_CINEMATIC_MS = 8000;
 let superClashVisual = null;
