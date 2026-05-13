@@ -1,8 +1,12 @@
 const IS_NATIVE_APP = (() => {
+    const hasCapacitor = !!window.Capacitor;
     const viaCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
     const viaProtocol = String(window.location?.protocol || '').startsWith('capacitor');
-    const viaAndroidWebView = /android/i.test(String(navigator.userAgent || '')) && window.location?.hostname === 'localhost' && !window.location?.port;
-    return viaCapacitor || viaProtocol || viaAndroidWebView;
+    const host = String(window.location?.hostname || '');
+    const port = String(window.location?.port || '');
+    // Capacitor Android app odatda http://localhost:8080/ dan ishlaydi
+    const viaAndroidWebView = /android/i.test(String(navigator.userAgent || '')) && host === 'localhost' && (port === '' || port === '8080');
+    return hasCapacitor || viaCapacitor || viaProtocol || viaAndroidWebView;
 })();
 const REMOTE_SERVER_URL = 'https://nayza-jangi.onrender.com';
 const WEB_LOCAL_BASE = (() => {
@@ -594,6 +598,17 @@ renderer.toneMappingExposure = 1.0;
 if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
 else renderer.outputEncoding = THREE.sRGBEncoding;
 container.appendChild(renderer.domElement);
+
+// Android WebView'da ba'zan WebGL context yo'qolib qolishi mumkin (qora ekran).
+// Shunda sahifani qayta yuklab tiklaymiz.
+try {
+    renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+    }, false);
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+        try { window.location.reload(); } catch (_) {}
+    }, false);
+} catch (_) {}
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
@@ -6071,7 +6086,14 @@ if (btnMultiJoinShow) {
 
 if (btnMultiJoin) {
     btnMultiJoin.addEventListener('click', () => {
-        const code = (inputJoinCode && inputJoinCode.value ? inputJoinCode.value : '').trim();
+        if (!socket || !socket.connected) {
+            if (joinError) {
+                joinError.innerText = "Serverga ulanilmadi. Internetni tekshiring va qayta urinib ko'ring.";
+                joinError.style.display = 'block';
+            }
+            return;
+        }
+        const code = (inputJoinCode && inputJoinCode.value ? inputJoinCode.value : '').trim().toUpperCase().slice(0, 4);
         if (!code) return;
         socket.emit('joinGame', { profile: myProfile, code });
     });
