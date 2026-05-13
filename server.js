@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const multer = require('multer');
-const customModelsPath = path.join(__dirname, 'custom_models.json');
+const customModelsPath = path.join(__dirname, 'public', 'custom_models.json');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {

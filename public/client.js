@@ -157,9 +157,22 @@ window.customModelsInfo = [];
 window.customModelTextures = {};
 
 async function fetchCustomModels() {
+    let data = [];
     try {
         const res = await fetch('/api/models');
-        const data = await res.json();
+        if (res.ok) data = await res.json();
+        else throw new Error('API Fail');
+    } catch (e) {
+        console.warn('API fetch failed, trying local custom_models.json');
+        try {
+            const resLocal = await fetch('custom_models.json');
+            if (resLocal.ok) data = await resLocal.json();
+        } catch (e2) {
+            console.error('Local models failed:', e2);
+        }
+    }
+    
+    if (data && data.length > 0) {
         window.customModelsInfo = data;
         
         const s1 = document.getElementById('select-char-type');
@@ -202,7 +215,7 @@ async function fetchCustomModels() {
                 }
             }
         });
-    } catch(e) { console.error('Error loading custom models:', e); }
+    }
 }
 fetchCustomModels();
 
@@ -353,19 +366,21 @@ let musicVolume = parseFloat(localStorage.getItem('nayza_music_volume') || '0.4'
 let musicMuted = localStorage.getItem('nayza_music_muted') === '1';
 let sfxVolume = parseFloat(localStorage.getItem('nayza_sfx_volume') || '0.8');
 let sfxMuted = localStorage.getItem('nayza_sfx_muted') === '1';
-let selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
+let selectedMusicTrack = IS_NATIVE_APP 
+    ? (localStorage.getItem('nayza_music_track') || 'music.mp3')
+    : (WEB_LOCAL_BASE || '') + '/' + (localStorage.getItem('nayza_music_track') || 'music.mp3');
 const sfxPaths = {
-    button: 'mp3/buttonlarbosilganda.mp3',
-    aim: 'mp3/monjalgaolish.mp3',
-    ground: 'mp3/oqodamgasanchilishi.mp3',
-    shieldActive: 'mp3/oqqalqongategsa.mp3',
-    shieldPassive: 'mp3/uqqalqongategsaahh.mp3',
-    shieldPress: 'mp3/qalqontugmasibosilganda.mp3',
-    superPress: 'mp3/Superkuch.mp3',
-    crowDead: 'mp3/qargauldi.mp3',
-    headHit: 'mp3/uqodamgategsaboshiga.mp3',
-    legHit: 'mp3/uqoyoqqategsa.mp3',
-    throw: 'mp3/uquzilganda.mp3'
+    button: IS_NATIVE_APP ? 'mp3/buttonlarbosilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/buttonlarbosilganda.mp3',
+    aim: IS_NATIVE_APP ? 'mp3/monjalgaolish.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/monjalgaolish.mp3',
+    ground: IS_NATIVE_APP ? 'mp3/oqodamgasanchilishi.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/oqodamgasanchilishi.mp3',
+    shieldActive: IS_NATIVE_APP ? 'mp3/oqqalqongategsa.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/oqqalqongategsa.mp3',
+    shieldPassive: IS_NATIVE_APP ? 'mp3/uqqalqongategsaahh.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqqalqongategsaahh.mp3',
+    shieldPress: IS_NATIVE_APP ? 'mp3/qalqontugmasibosilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/qalqontugmasibosilganda.mp3',
+    superPress: IS_NATIVE_APP ? 'mp3/Superkuch.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/Superkuch.mp3',
+    crowDead: IS_NATIVE_APP ? 'mp3/qargauldi.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/qargauldi.mp3',
+    headHit: IS_NATIVE_APP ? 'mp3/uqodamgategsaboshiga.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqodamgategsaboshiga.mp3',
+    legHit: IS_NATIVE_APP ? 'mp3/uqoyoqqategsa.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqoyoqqategsa.mp3',
+    throw: IS_NATIVE_APP ? 'mp3/uquzilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uquzilganda.mp3'
 };
 
 function initAudio() {
@@ -2055,7 +2070,14 @@ function handleEnd(e) {
 
 const isUiTarget = (target) => {
     if (!target || typeof target.closest !== 'function') return false;
-    return !!(target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'));
+    return !!(
+        target.closest('button') || 
+        target.closest('input') || 
+        target.closest('select') || 
+        target.closest('textarea') || 
+        target.closest('#chat-container') || 
+        target.closest('#in-game-modal')
+    );
 };
 
 function pointerToWorldX(e) {
@@ -2068,7 +2090,13 @@ if (window.PointerEvent) {
         if (isUiTarget(e.target)) return;
         dragPointerId = e.pointerId;
         handleStart(e);
-    });
+    }, { passive: true });
+    
+    // Explicit touchstart for older Android/Capacitor versions
+    document.addEventListener('touchstart', (e) => {
+        if (isUiTarget(e.target)) return;
+        if (e.touches && e.touches[0]) handleStart(e.touches[0]);
+    }, { passive: true });
     document.addEventListener('pointermove', (e) => {
         if (isWallPlacementMode && isWallDragActive) {
             const myWall = wallStates[myPlayerIndex];
@@ -5791,6 +5819,22 @@ document.addEventListener('click', (e) => {
     if (!t || typeof t.closest !== 'function') return;
     if (t.closest('button')) playSfx('button', 0.85);
 });
+
+// Force touchstart to trigger click on mobile for all buttons
+document.addEventListener('touchstart', (e) => {
+    const t = e.target;
+    if (t && typeof t.closest === 'function') {
+        const btn = t.closest('button');
+        if (btn && !btn.disabled) {
+            // Only trigger for simple buttons that don't have specialized press-and-hold logic
+            const specialIds = ['shield-button', 'duck-button', 'super-button', 'crow-button'];
+            if (!specialIds.includes(btn.id)) {
+                btn.click();
+                playSfx('button', 0.85);
+            }
+        }
+    }
+}, { passive: true });
 
 // Missing Event Listeners
 if(document.getElementById('btn-single')) {
