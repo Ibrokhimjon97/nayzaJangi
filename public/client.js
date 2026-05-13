@@ -65,9 +65,23 @@ function loadTextureWithBgRemoval(url) {
         loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
         loadedTex.magFilter = THREE.LinearFilter;
         loadedTex.anisotropy = 8;
+        try {
+            tex.userData = tex.userData || {};
+            tex.userData.loaded = true;
+            const cbs = Array.isArray(tex.userData.onLoadCallbacks) ? tex.userData.onLoadCallbacks : [];
+            tex.userData.onLoadCallbacks = [];
+            cbs.forEach((fn) => {
+                try { fn(tex); } catch (_) {}
+            });
+        } catch (_) {}
     }, undefined, (err) => {
         console.error('Texture(BG) load error:', url, err);
     });
+    try {
+        tex.userData = tex.userData || {};
+        if (tex.userData.loaded !== true) tex.userData.loaded = false;
+        if (!Array.isArray(tex.userData.onLoadCallbacks)) tex.userData.onLoadCallbacks = [];
+    } catch (_) {}
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -101,9 +115,23 @@ function loadTexture(url, options = {}) {
         }
 
         loadedTex.needsUpdate = true;
+        try {
+            tex.userData = tex.userData || {};
+            tex.userData.loaded = true;
+            const cbs = Array.isArray(tex.userData.onLoadCallbacks) ? tex.userData.onLoadCallbacks : [];
+            tex.userData.onLoadCallbacks = [];
+            cbs.forEach((fn) => {
+                try { fn(tex); } catch (_) {}
+            });
+        } catch (_) {}
     }, undefined, (err) => {
         console.error('Texture load error:', url, err);
     });
+    try {
+        tex.userData = tex.userData || {};
+        if (tex.userData.loaded !== true) tex.userData.loaded = false;
+        if (!Array.isArray(tex.userData.onLoadCallbacks)) tex.userData.onLoadCallbacks = [];
+    } catch (_) {}
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -979,14 +1007,20 @@ function createSoldier(isP1, charType = 0) {
     if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
         selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
     }
-    const tex = selectedTexture.clone();
-    tex.needsUpdate = true;
-    if (group.userData.isOttomanUnit) {
-        tex.repeat.set(1, 1);
-    } else {
-        tex.repeat.set(0.26, 0.78); // 0.26 width, 0.78 height cuts off the top 22% (numbers)
-    }
-    tex.offset.set(0, 0); // Start from bottom
+    const applyTextureCrop = (t) => {
+        if (!t) return;
+        t.needsUpdate = true;
+        if (group.userData.isOttomanUnit) {
+            t.repeat.set(1, 1);
+        } else {
+            t.repeat.set(0.26, 0.78);
+        }
+        t.offset.set(0, 0);
+    };
+
+    const hasLoaded = !!(selectedTexture && selectedTexture.userData && selectedTexture.userData.loaded);
+    const tex = hasLoaded ? selectedTexture.clone() : selectedTexture;
+    applyTextureCrop(tex);
     
     // Use Standard Material with alphaTest 0.5 to fix black borders and enable proper shadows
     const soldierMat = new THREE.MeshBasicMaterial({
@@ -999,6 +1033,18 @@ function createSoldier(isP1, charType = 0) {
     });
     group.userData.mats.push(soldierMat);
     group.userData.tex = tex;
+
+    if (!hasLoaded && selectedTexture && selectedTexture.userData && Array.isArray(selectedTexture.userData.onLoadCallbacks)) {
+        selectedTexture.userData.onLoadCallbacks.push(() => {
+            try {
+                const cloned = selectedTexture.clone();
+                applyTextureCrop(cloned);
+                soldierMat.map = cloned;
+                soldierMat.needsUpdate = true;
+                group.userData.tex = cloned;
+            } catch (_) {}
+        });
+    }
     
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
