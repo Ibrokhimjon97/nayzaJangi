@@ -52,17 +52,6 @@ function loadTextureWithBgRemoval(url) {
         
         if (data[3] > 200) {
             const bgR = data[0], bgG = data[1], bgB = data[2];
-
-let artilleryCount = 0;
-let isArtilleryAiming = false;
-let myArtilleryCannon = null;
-let btnArtillery = document.getElementById('artillery-button');
-let artilleryCountText = document.getElementById('artillery-count');
-window.artilleryCount = 0;
-window.isArtilleryAiming = false;
-window.myArtilleryCannon = null;
-window.btnArtillery = document.getElementById('artillery-button');
-window.artilleryCountText = document.getElementById('artillery-count');
             for (let i = 0; i < data.length; i += 4) {
                 if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
                     data[i+3] = 0;
@@ -76,6 +65,8 @@ window.artilleryCountText = document.getElementById('artillery-count');
         loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
         loadedTex.magFilter = THREE.LinearFilter;
         loadedTex.anisotropy = 8;
+    }, undefined, (err) => {
+        console.error('Texture(BG) load error:', url, err);
     });
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
@@ -110,6 +101,19 @@ function loadTexture(url, options = {}) {
         }
 
         loadedTex.needsUpdate = true;
+    }, undefined, (err) => {
+        console.error('Texture load error:', url, err);
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.background = 'rgba(255,0,0,0.5)';
+        errDiv.style.color = 'white';
+        errDiv.style.fontSize = '10px';
+        errDiv.style.zIndex = '10000';
+        errDiv.innerText = 'Load fail: ' + url;
+        document.body.appendChild(errDiv);
+        setTimeout(() => errDiv.remove(), 5000);
     });
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
@@ -118,43 +122,58 @@ function loadTexture(url, options = {}) {
     return tex;
 }
 
-const soldierTexture = loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png');
-const nayzabozTexture = loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png');
-const qargaTexture = loadTextureWithBgRemoval('qarga.png');
-const daraxtKattaTexture = loadTexture('daraxtkatta.png');
-const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
-const qalaTexture = loadTexture('Qala.png');
-const devorTusiqTexture = loadTexture('devortusiq.png');
-const bulutTexture = loadTexture('bulut-Photoroom.png');
+function fixAssetUrl(url) {
+    if (!url) return url;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const base = WEB_LOCAL_BASE || '';
+    if (base && !url.startsWith('/')) return base + '/' + url;
+    return url;
+}
+
+const soldierTexture = loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%201.png'));
+const nayzabozTexture = loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'));
+const qargaTexture = loadTextureWithBgRemoval(fixAssetUrl('qarga.png'));
+const daraxtKattaTexture = loadTexture(fixAssetUrl('daraxtkatta.png'));
+const daraxtKichkinaTexture = loadTexture(fixAssetUrl('daraxtkichkina.png'));
+const qalaTexture = loadTexture(fixAssetUrl('Qala.png'));
+const devorTusiqTexture = loadTexture(fixAssetUrl('devortusiq.png'));
+const bulutTexture = loadTexture(fixAssetUrl('bulut-Photoroom.png'));
 const ottomanArcherTextures = {
-    shieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
-    shieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20monjal.png'),
-    shieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%202%20himoya.png'),
-    shieldDuck: loadTexture('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png'),
-    shieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png'),
-    shieldBreak: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png'),
-    noShieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
-    noShieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png'),
-    noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
-    noShieldDuck: loadTexture('Kamonlik%20Usmoniy/utirganqalqonsizkamonboz.png'),
-    noShieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png'),
-    shieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
-    noShieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
-    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
+    shieldIdle: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%201.png')),
+    shieldAim: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20monjal.png')),
+    shieldDefend: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%202%20himoya.png')),
+    shieldDuck: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png')),
+    shieldHurt: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png')),
+    shieldBreak: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png')),
+    noShieldIdle: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png')),
+    noShieldAim: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png')),
+    noShieldDefend: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png')),
+    noShieldHurt: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png')),
+    noShieldAfterShot: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20otgandan%20keyin.png')),
+    celebrate: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20xursandchilik.png')),
+    bgMusic: 'jumongsound.mp3'
 };
+
 const ottomanSpearmanTextures = {
-    shieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
-    shieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
-    shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
-    shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
-    shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
-    shieldDuck: loadTexture('Nayzalik%20Usmoniy/qalqonnayzautirgan.png'),
-    noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
-    noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
-    noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
-    noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
-    noShieldDuck: loadTexture('Nayzalik%20Usmoniy/nayzaqalqonsizutirgan.png'),
-    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
+    id: "3",
+    name: "Usmonli jangchisi - nayzalik",
+    textures: {
+        shieldIdle: fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
+        shieldAim: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20monjal.png'),
+        shieldDefend: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20himoya.png'),
+        shieldDuck: fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20qalqonli%20nayzaboz.png'),
+        shieldHurt: fixAssetUrl('Nayzalik%20Usmoniy/yaradornayzabozqalqonli.png'),
+        shieldBreak: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqoni%20yorildi.png'),
+        shieldAfterShot: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20nayza%20otgandan%20keyin.png'),
+        noShieldIdle: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20stand.png'),
+        noShieldAim: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otishga%20tayyorlanyapti.png'),
+        noShieldDuck: fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20nayzaboz.png'),
+        noShieldDefend: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20himoyalanyapti.png'),
+        noShieldHurt: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20yarador.png'),
+        noShieldAfterShot: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otgandan%20keyin.png'),
+        celebrate: fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20xursandchilik.png')
+    },
+    bgMusic: 'music.mp3'
 };
 
 window.customModelsInfo = [];
@@ -194,20 +213,20 @@ async function fetchCustomModels() {
         
         data.forEach(m => {
             window.customModelTextures[m.id] = {
-                shieldIdle: loadTexture(m.textures.shieldIdle),
-                shieldAim: loadTexture(m.textures.shieldAim),
-                shieldDuck: loadTexture(m.textures.shieldDuck),
-                shieldDefend: loadTexture(m.textures.shieldDefend),
-                shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
-                shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
-                shieldAfterShot: loadTexture(m.textures.shieldAfterShot || m.textures.shieldIdle),
-                noShieldIdle: loadTexture(m.textures.noShieldIdle),
-                noShieldAim: loadTexture(m.textures.noShieldAim),
-                noShieldDuck: loadTexture(m.textures.noShieldDuck),
-                noShieldDefend: loadTexture(m.textures.noShieldDefend),
-                noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
-                noShieldAfterShot: loadTexture(m.textures.noShieldAfterShot || m.textures.noShieldIdle),
-                celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
+                shieldIdle: loadTexture(fixAssetUrl(m.textures.shieldIdle)),
+                shieldAim: loadTexture(fixAssetUrl(m.textures.shieldAim)),
+                shieldDuck: loadTexture(fixAssetUrl(m.textures.shieldDuck)),
+                shieldDefend: loadTexture(fixAssetUrl(m.textures.shieldDefend)),
+                shieldHurt: loadTexture(fixAssetUrl(m.textures.shieldHurt || m.textures.shieldIdle)),
+                shieldBreak: loadTexture(fixAssetUrl(m.textures.shieldBreak || m.textures.noShieldIdle)),
+                shieldAfterShot: loadTexture(fixAssetUrl(m.textures.shieldAfterShot || m.textures.shieldIdle)),
+                noShieldIdle: loadTexture(fixAssetUrl(m.textures.noShieldIdle)),
+                noShieldAim: loadTexture(fixAssetUrl(m.textures.noShieldAim)),
+                noShieldDuck: loadTexture(fixAssetUrl(m.textures.noShieldDuck)),
+                noShieldDefend: loadTexture(fixAssetUrl(m.textures.noShieldDefend)),
+                noShieldHurt: loadTexture(fixAssetUrl(m.textures.noShieldHurt || m.textures.noShieldIdle)),
+                noShieldAfterShot: loadTexture(fixAssetUrl(m.textures.noShieldAfterShot || m.textures.noShieldIdle)),
+                celebrate: loadTexture(fixAssetUrl(m.textures.celebrate || m.textures.shieldIdle)),
                 bgMusic: m.bgMusic
             };
             
@@ -374,17 +393,17 @@ let selectedMusicTrack = IS_NATIVE_APP
     ? (localStorage.getItem('nayza_music_track') || 'music.mp3')
     : (WEB_LOCAL_BASE || '') + '/' + (localStorage.getItem('nayza_music_track') || 'music.mp3');
 const sfxPaths = {
-    button: IS_NATIVE_APP ? 'mp3/buttonlarbosilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/buttonlarbosilganda.mp3',
-    aim: IS_NATIVE_APP ? 'mp3/monjalgaolish.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/monjalgaolish.mp3',
-    ground: IS_NATIVE_APP ? 'mp3/oqodamgasanchilishi.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/oqodamgasanchilishi.mp3',
-    shieldActive: IS_NATIVE_APP ? 'mp3/oqqalqongategsa.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/oqqalqongategsa.mp3',
-    shieldPassive: IS_NATIVE_APP ? 'mp3/uqqalqongategsaahh.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqqalqongategsaahh.mp3',
-    shieldPress: IS_NATIVE_APP ? 'mp3/qalqontugmasibosilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/qalqontugmasibosilganda.mp3',
-    superPress: IS_NATIVE_APP ? 'mp3/Superkuch.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/Superkuch.mp3',
-    crowDead: IS_NATIVE_APP ? 'mp3/qargauldi.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/qargauldi.mp3',
-    headHit: IS_NATIVE_APP ? 'mp3/uqodamgategsaboshiga.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqodamgategsaboshiga.mp3',
-    legHit: IS_NATIVE_APP ? 'mp3/uqoyoqqategsa.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uqoyoqqategsa.mp3',
-    throw: IS_NATIVE_APP ? 'mp3/uquzilganda.mp3' : (WEB_LOCAL_BASE || '') + '/mp3/uquzilganda.mp3'
+    button: fixAssetUrl('mp3/buttonlarbosilganda.mp3'),
+    aim: fixAssetUrl('mp3/monjalgaolish.mp3'),
+    ground: fixAssetUrl('mp3/oqodamgasanchilishi.mp3'),
+    shieldActive: fixAssetUrl('mp3/oqqalqongategsa.mp3'),
+    shieldPassive: fixAssetUrl('mp3/uqqalqongategsaahh.mp3'),
+    shieldPress: fixAssetUrl('mp3/qalqontugmasibosilganda.mp3'),
+    superPress: fixAssetUrl('mp3/Superkuch.mp3'),
+    crowDead: fixAssetUrl('mp3/qargauldi.mp3'),
+    headHit: fixAssetUrl('mp3/uqodamgategsaboshiga.mp3'),
+    legHit: fixAssetUrl('mp3/uqoyoqqategsa.mp3'),
+    throw: fixAssetUrl('mp3/uquzilganda.mp3')
 };
 
 // Brauzer tab / ilova fon rejimiga ketganda musiqani pauza qilish
@@ -5904,11 +5923,17 @@ if (authPhone) {
 if (authTabLogin) authTabLogin.addEventListener('click', () => switchAuthTab('login'));
 if (authTabRegister) authTabRegister.addEventListener('click', () => switchAuthTab('register'));
 if (btnForgotToggle && forgotSection) {
-    btnForgotToggle.addEventListener('click', () => {
-        const hidden = forgotSection.classList.contains('hidden');
-        forgotSection.classList.toggle('hidden', !hidden);
-        btnForgotToggle.innerText = hidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
-    });
+    const handleForgotToggle = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        const isHidden = forgotSection.classList.contains('hidden');
+        forgotSection.classList.toggle('hidden', !isHidden);
+        btnForgotToggle.innerText = isHidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
+    };
+    btnForgotToggle.addEventListener('click', handleForgotToggle);
+    btnForgotToggle.addEventListener('touchstart', handleForgotToggle, { passive: false });
 }
 switchAuthTab('login');
 
@@ -5924,8 +5949,7 @@ document.addEventListener('touchstart', (e) => {
     if (t && typeof t.closest === 'function') {
         const btn = t.closest('button');
         if (btn && !btn.disabled) {
-            // Only trigger for simple buttons that don't have specialized press-and-hold logic
-            const specialIds = ['shield-button', 'duck-button', 'super-button', 'crow-button'];
+            const specialIds = ['shield-button', 'duck-button', 'super-button', 'crow-button', 'btn-forgot-toggle', 'btn-multi-join-show'];
             if (!specialIds.includes(btn.id)) {
                 btn.click();
                 playSfx('button', 0.85);
@@ -6078,10 +6102,16 @@ if (btnMultiRandom) {
 }
 
 if (btnMultiJoinShow) {
-    btnMultiJoinShow.addEventListener('click', () => {
+    const handleJoinShow = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (joinCodeContainer) joinCodeContainer.classList.toggle('hidden');
         if (joinError) joinError.style.display = 'none';
-    });
+    };
+    btnMultiJoinShow.addEventListener('click', handleJoinShow);
+    btnMultiJoinShow.addEventListener('touchstart', handleJoinShow, { passive: false });
 }
 
 if (btnMultiJoin) {
