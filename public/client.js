@@ -37,51 +37,39 @@ try {
 let trajectoryLine = null;
 const mixers = [];
 
+// Three.js TextureLoader: relative URL'lar bilan ishlatamiz - bu web va Android Capacitor ikkala muhitda ham ishlaydi.
+// THREE.TextureLoader avtomatik ravishda image yuklangach material'ni yangilaydi (needsUpdate orqali).
+
 function loadTextureWithBgRemoval(url) {
     const loader = new THREE.TextureLoader();
     const tex = loader.load(url, (loadedTex) => {
         const img = loadedTex.image;
         if (!img) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        
-        if (data[3] > 200) {
-            const bgR = data[0], bgG = data[1], bgB = data[2];
-            for (let i = 0; i < data.length; i += 4) {
-                if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
-                    data[i+3] = 0;
-                }
-            }
-            ctx.putImageData(imgData, 0, 0);
-            tex.image = canvas;
-            tex.needsUpdate = true;
-        }
-        loadedTex.generateMipmaps = true;
-        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
-        loadedTex.magFilter = THREE.LinearFilter;
-        loadedTex.anisotropy = 8;
         try {
-            tex.userData = tex.userData || {};
-            tex.userData.loaded = true;
-            const cbs = Array.isArray(tex.userData.onLoadCallbacks) ? tex.userData.onLoadCallbacks : [];
-            tex.userData.onLoadCallbacks = [];
-            cbs.forEach((fn) => {
-                try { fn(tex); } catch (_) {}
-            });
-        } catch (_) {}
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            if (data[3] > 200) {
+                const bgR = data[0], bgG = data[1], bgB = data[2];
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
+                        data[i+3] = 0;
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+                loadedTex.image = canvas;
+                loadedTex.needsUpdate = true;
+            }
+        } catch (e) {
+            console.warn('BG removal failed for', url, e);
+        }
     }, undefined, (err) => {
         console.error('Texture(BG) load error:', url, err);
     });
-    try {
-        tex.userData = tex.userData || {};
-        if (tex.userData.loaded !== true) tex.userData.loaded = false;
-        if (!Array.isArray(tex.userData.onLoadCallbacks)) tex.userData.onLoadCallbacks = [];
-    } catch (_) {}
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -92,46 +80,32 @@ function loadTextureWithBgRemoval(url) {
 function loadTexture(url, options = {}) {
     const loader = new THREE.TextureLoader();
     const tex = loader.load(url, (loadedTex) => {
-        const img = loadedTex.image;
-        if (!img) return;
-
-        if (options.removeBg) {
-            const source = loadedTex.image;
-            const canvas = document.createElement('canvas');
-            canvas.width = source.width;
-            canvas.height = source.height;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(source, 0, 0);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-            const bgR = data[0], bgG = data[1], bgB = data[2];
-            for (let i = 0; i < data.length; i += 4) {
-                if (Math.abs(data[i] - bgR) < 35 && Math.abs(data[i + 1] - bgG) < 35 && Math.abs(data[i + 2] - bgB) < 35) {
-                    data[i + 3] = 0;
+        if (options.removeBg && loadedTex.image) {
+            try {
+                const source = loadedTex.image;
+                const canvas = document.createElement('canvas');
+                canvas.width = source.width;
+                canvas.height = source.height;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(source, 0, 0);
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                const bgR = data[0], bgG = data[1], bgB = data[2];
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.abs(data[i] - bgR) < 35 && Math.abs(data[i + 1] - bgG) < 35 && Math.abs(data[i + 2] - bgB) < 35) {
+                        data[i + 3] = 0;
+                    }
                 }
+                ctx.putImageData(imgData, 0, 0);
+                loadedTex.image = canvas;
+            } catch (e) {
+                console.warn('BG removal failed for', url, e);
             }
-            ctx.putImageData(imgData, 0, 0);
-            loadedTex.image = canvas;
         }
-
         loadedTex.needsUpdate = true;
-        try {
-            tex.userData = tex.userData || {};
-            tex.userData.loaded = true;
-            const cbs = Array.isArray(tex.userData.onLoadCallbacks) ? tex.userData.onLoadCallbacks : [];
-            tex.userData.onLoadCallbacks = [];
-            cbs.forEach((fn) => {
-                try { fn(tex); } catch (_) {}
-            });
-        } catch (_) {}
     }, undefined, (err) => {
         console.error('Texture load error:', url, err);
     });
-    try {
-        tex.userData = tex.userData || {};
-        if (tex.userData.loaded !== true) tex.userData.loaded = false;
-        if (!Array.isArray(tex.userData.onLoadCallbacks)) tex.userData.onLoadCallbacks = [];
-    } catch (_) {}
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.generateMipmaps = true;
@@ -139,53 +113,45 @@ function loadTexture(url, options = {}) {
     return tex;
 }
 
-function fixAssetUrl(url) {
-    if (!url) return url;
-    if (url.startsWith('http') || url.startsWith('data:')) return url;
-    const base = WEB_LOCAL_BASE || '';
-    if (base && !url.startsWith('/')) return base + '/' + url;
-    return url;
-}
-
-const soldierTexture = loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%201.png'));
-const nayzabozTexture = loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'));
-const qargaTexture = loadTextureWithBgRemoval(fixAssetUrl('qarga.png'));
-const daraxtKattaTexture = loadTexture(fixAssetUrl('daraxtkatta.png'));
-const daraxtKichkinaTexture = loadTexture(fixAssetUrl('daraxtkichkina.png'));
-const qalaTexture = loadTexture(fixAssetUrl('Qala.png'));
-const devorTusiqTexture = loadTexture(fixAssetUrl('devortusiq.png'));
-const bulutTexture = loadTexture(fixAssetUrl('bulut-Photoroom.png'));
+const soldierTexture = loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png');
+const nayzabozTexture = loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png');
+const qargaTexture = loadTextureWithBgRemoval('qarga.png');
+const daraxtKattaTexture = loadTexture('daraxtkatta.png');
+const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
+const qalaTexture = loadTexture('Qala.png');
+const devorTusiqTexture = loadTexture('devortusiq.png');
+const bulutTexture = loadTexture('bulut-Photoroom.png');
 const ottomanArcherTextures = {
-    shieldIdle: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%201.png')),
-    shieldAim: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20monjal.png')),
-    shieldDefend: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%202%20himoya.png')),
-    shieldDuck: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png')),
-    shieldHurt: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png')),
-    shieldBreak: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png')),
-    noShieldIdle: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png')),
-    noShieldAim: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png')),
-    noShieldDefend: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png')),
-    noShieldHurt: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png')),
-    noShieldAfterShot: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20otgandan%20keyin.png')),
-    celebrate: loadTexture(fixAssetUrl('Kamonlik%20Usmoniy/kamonlik%20xursandchilik.png')),
+    shieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
+    shieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20monjal.png'),
+    shieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%202%20himoya.png'),
+    shieldDuck: loadTexture('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png'),
+    shieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png'),
+    shieldBreak: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png'),
+    noShieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
+    noShieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png'),
+    noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
+    noShieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png'),
+    noShieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20uq%20uzdi.png'),
+    celebrate: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
     bgMusic: 'jumongsound.mp3'
 };
 
 const ottomanSpearmanTextures = {
-    shieldIdle: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png')),
-    shieldAim: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20monjal.png')),
-    shieldDefend: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20himoya.png')),
-    shieldDuck: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20qalqonli%20nayzaboz.png')),
-    shieldHurt: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/yaradornayzabozqalqonli.png')),
-    shieldBreak: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqoni%20yorildi.png')),
-    shieldAfterShot: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20nayza%20otgandan%20keyin.png')),
-    noShieldIdle: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20stand.png')),
-    noShieldAim: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otishga%20tayyorlanyapti.png')),
-    noShieldDuck: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/Otirgan%20nayzaboz.png')),
-    noShieldDefend: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20himoyalanyapti.png')),
-    noShieldHurt: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20yarador.png')),
-    noShieldAfterShot: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20qalqonsiz%20nayza%20otgandan%20keyin.png')),
-    celebrate: loadTexture(fixAssetUrl('Nayzalik%20Usmoniy/nayzaboz%20xursandchilik.png')),
+    shieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
+    shieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
+    shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
+    shieldDuck: loadTexture('Nayzalik%20Usmoniy/qalqonnayzautirgan.png'),
+    shieldHurt: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
+    shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
+    shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
+    noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
+    noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
+    noShieldDuck: loadTexture('Nayzalik%20Usmoniy/nayzaqalqonsizutirgan.png'),
+    noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
+    noShieldHurt: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
     bgMusic: 'music.mp3'
 };
 
@@ -226,20 +192,20 @@ async function fetchCustomModels() {
         
         data.forEach(m => {
             window.customModelTextures[m.id] = {
-                shieldIdle: loadTexture(fixAssetUrl(m.textures.shieldIdle)),
-                shieldAim: loadTexture(fixAssetUrl(m.textures.shieldAim)),
-                shieldDuck: loadTexture(fixAssetUrl(m.textures.shieldDuck)),
-                shieldDefend: loadTexture(fixAssetUrl(m.textures.shieldDefend)),
-                shieldHurt: loadTexture(fixAssetUrl(m.textures.shieldHurt || m.textures.shieldIdle)),
-                shieldBreak: loadTexture(fixAssetUrl(m.textures.shieldBreak || m.textures.noShieldIdle)),
-                shieldAfterShot: loadTexture(fixAssetUrl(m.textures.shieldAfterShot || m.textures.shieldIdle)),
-                noShieldIdle: loadTexture(fixAssetUrl(m.textures.noShieldIdle)),
-                noShieldAim: loadTexture(fixAssetUrl(m.textures.noShieldAim)),
-                noShieldDuck: loadTexture(fixAssetUrl(m.textures.noShieldDuck)),
-                noShieldDefend: loadTexture(fixAssetUrl(m.textures.noShieldDefend)),
-                noShieldHurt: loadTexture(fixAssetUrl(m.textures.noShieldHurt || m.textures.noShieldIdle)),
-                noShieldAfterShot: loadTexture(fixAssetUrl(m.textures.noShieldAfterShot || m.textures.noShieldIdle)),
-                celebrate: loadTexture(fixAssetUrl(m.textures.celebrate || m.textures.shieldIdle)),
+                shieldIdle: loadTexture(m.textures.shieldIdle),
+                shieldAim: loadTexture(m.textures.shieldAim),
+                shieldDuck: loadTexture(m.textures.shieldDuck),
+                shieldDefend: loadTexture(m.textures.shieldDefend),
+                shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
+                shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
+                shieldAfterShot: loadTexture(m.textures.shieldAfterShot || m.textures.shieldIdle),
+                noShieldIdle: loadTexture(m.textures.noShieldIdle),
+                noShieldAim: loadTexture(m.textures.noShieldAim),
+                noShieldDuck: loadTexture(m.textures.noShieldDuck),
+                noShieldDefend: loadTexture(m.textures.noShieldDefend),
+                noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
+                noShieldAfterShot: loadTexture(m.textures.noShieldAfterShot || m.textures.noShieldIdle),
+                celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
                 bgMusic: m.bgMusic
             };
             
@@ -402,21 +368,19 @@ let musicVolume = parseFloat(localStorage.getItem('nayza_music_volume') || '0.4'
 let musicMuted = localStorage.getItem('nayza_music_muted') === '1';
 let sfxVolume = parseFloat(localStorage.getItem('nayza_sfx_volume') || '0.8');
 let sfxMuted = localStorage.getItem('nayza_sfx_muted') === '1';
-let selectedMusicTrack = IS_NATIVE_APP 
-    ? (localStorage.getItem('nayza_music_track') || 'music.mp3')
-    : (WEB_LOCAL_BASE || '') + '/' + (localStorage.getItem('nayza_music_track') || 'music.mp3');
+let selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
 const sfxPaths = {
-    button: fixAssetUrl('mp3/buttonlarbosilganda.mp3'),
-    aim: fixAssetUrl('mp3/monjalgaolish.mp3'),
-    ground: fixAssetUrl('mp3/oqodamgasanchilishi.mp3'),
-    shieldActive: fixAssetUrl('mp3/oqqalqongategsa.mp3'),
-    shieldPassive: fixAssetUrl('mp3/uqqalqongategsaahh.mp3'),
-    shieldPress: fixAssetUrl('mp3/qalqontugmasibosilganda.mp3'),
-    superPress: fixAssetUrl('mp3/Superkuch.mp3'),
-    crowDead: fixAssetUrl('mp3/qargauldi.mp3'),
-    headHit: fixAssetUrl('mp3/uqodamgategsaboshiga.mp3'),
-    legHit: fixAssetUrl('mp3/uqoyoqqategsa.mp3'),
-    throw: fixAssetUrl('mp3/uquzilganda.mp3')
+    button: 'mp3/buttonlarbosilganda.mp3',
+    aim: 'mp3/monjalgaolish.mp3',
+    ground: 'mp3/oqodamgasanchilishi.mp3',
+    shieldActive: 'mp3/oqqalqongategsa.mp3',
+    shieldPassive: 'mp3/uqqalqongategsaahh.mp3',
+    shieldPress: 'mp3/qalqontugmasibosilganda.mp3',
+    superPress: 'mp3/Superkuch.mp3',
+    crowDead: 'mp3/qargauldi.mp3',
+    headHit: 'mp3/uqodamgategsaboshiga.mp3',
+    legHit: 'mp3/uqoyoqqategsa.mp3',
+    throw: 'mp3/uquzilganda.mp3'
 };
 
 // Brauzer tab / ilova fon rejimiga ketganda musiqani pauza qilish
@@ -1007,20 +971,18 @@ function createSoldier(isP1, charType = 0) {
     if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
         selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
     }
-    const applyTextureCrop = (t) => {
-        if (!t) return;
-        t.needsUpdate = true;
+    // Texture'ni to'g'ridan-to'g'ri ishlatamiz (clone qilmasdan).
+    // three.js TextureLoader image yuklangach avtomatik ravishda needsUpdate qo'yadi va material yangilanadi.
+    // Bu Android Capacitor'da WebView image yuklash kechikishi bo'lganda ham to'g'ri ishlaydi.
+    const tex = selectedTexture;
+    if (tex) {
         if (group.userData.isOttomanUnit) {
-            t.repeat.set(1, 1);
+            tex.repeat.set(1, 1);
         } else {
-            t.repeat.set(0.26, 0.78);
+            tex.repeat.set(0.26, 0.78);
         }
-        t.offset.set(0, 0);
-    };
-
-    const hasLoaded = !!(selectedTexture && selectedTexture.userData && selectedTexture.userData.loaded);
-    const tex = hasLoaded ? selectedTexture.clone() : selectedTexture;
-    applyTextureCrop(tex);
+        tex.offset.set(0, 0);
+    }
     
     // Use Standard Material with alphaTest 0.5 to fix black borders and enable proper shadows
     const soldierMat = new THREE.MeshBasicMaterial({
@@ -1033,18 +995,6 @@ function createSoldier(isP1, charType = 0) {
     });
     group.userData.mats.push(soldierMat);
     group.userData.tex = tex;
-
-    if (!hasLoaded && selectedTexture && selectedTexture.userData && Array.isArray(selectedTexture.userData.onLoadCallbacks)) {
-        selectedTexture.userData.onLoadCallbacks.push(() => {
-            try {
-                const cloned = selectedTexture.clone();
-                applyTextureCrop(cloned);
-                soldierMat.map = cloned;
-                soldierMat.needsUpdate = true;
-                group.userData.tex = cloned;
-            } catch (_) {}
-        });
-    }
     
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
