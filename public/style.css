@@ -994,8 +994,10 @@ body, html {
     #menu-screen,
     #level-select-modal,
     .center-panel {
-        max-height: 85vh; /* Leave room for keyboard/UI */
+        max-height: 85vh;
         overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y !important; /* Force pan-y for mobile scrolls */
         pointer-events: auto !important;
     }
 
