@@ -4115,13 +4115,11 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     const isCustom = !!thrower?.userData?.isCustomModel;
     
     let throwState = 'afterShot';
-    if (isArcher) throwState = 'aim';
-    if (isCustom) {
-        const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
-        if (cModel && cModel.weaponType === 'bow') throwState = 'aim';
-    }
+    // Kamonchilarda aim holati rasmda o'qni tortib turgan holat bo'lgani uchun, 
+    // o'q uzilgandan so'ng 'afterShot' rasmiga o'tishi kerak.
+    // Eski mantiqda aim bo'lib qolgan edi, shuni afterShot ga o'zgartiramiz.
     
-    setModelActionState(thrower, throwState, isArcher || throwState === 'aim' ? 1200 : 950);
+    setModelActionState(thrower, throwState, 1100);
 
     // Start trajectory directly from the bow's position
     let startX = playerIndex === 0 ? p1Model.position.x + 60 : thrower.position.x - 60;
