@@ -5950,12 +5950,12 @@ document.addEventListener('touchend', (e) => {
                 if (dist < 10) {
                     btn.click();
                     // Click trigger bo'lgandan so'ng UI target bo'lsa, o'yin boshlanib ketishini oldini olish
-                    e.preventDefault();
+                    // Android/WebView da click trigger bo'lganda preventDefault ba'zan click eventni o'ldiradi
+                    // e.preventDefault(); 
                 }
             }
         }
     }
-}, { passive: false });
 }, { passive: true });
 
 // Missing Event Listeners
