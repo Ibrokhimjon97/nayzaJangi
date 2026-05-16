@@ -42,6 +42,7 @@ const mixers = [];
 
 function loadTextureWithBgRemoval(url) {
     const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
     const tex = loader.load(url, (loadedTex) => {
         const img = loadedTex.image;
         if (!img) return;
@@ -79,6 +80,7 @@ function loadTextureWithBgRemoval(url) {
 
 function loadTexture(url, options = {}) {
     const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
     const tex = loader.load(url, (loadedTex) => {
         if (options.removeBg && loadedTex.image) {
             try {
