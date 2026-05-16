@@ -1049,6 +1049,7 @@ function getOttomanArcherTexture(model, state) {
     if (state === 'duck') return broken ? ottomanArcherTextures.noShieldDuck : ottomanArcherTextures.shieldDuck;
     if (state === 'defend') return broken ? ottomanArcherTextures.noShieldDefend : ottomanArcherTextures.shieldDefend;
     if (state === 'aim') return broken ? ottomanArcherTextures.noShieldAim : ottomanArcherTextures.shieldAim;
+    if (state === 'afterShot') return broken ? ottomanArcherTextures.noShieldAfterShot : (ottomanArcherTextures.shieldAfterShot || ottomanArcherTextures.shieldIdle);
     return broken ? ottomanArcherTextures.noShieldIdle : ottomanArcherTextures.shieldIdle;
 }
 
