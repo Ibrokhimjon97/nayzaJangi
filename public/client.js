@@ -1244,6 +1244,9 @@ function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
 
 
 let baseZoom = 1;
+let screenShake = 0;
+let cameraTargetX = 0;
+let cameraTargetY = 0;
 
 function updateCameraBounds() {
     aspect = window.innerWidth / window.innerHeight;
