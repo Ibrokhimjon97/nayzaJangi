@@ -5929,18 +5929,33 @@ document.addEventListener('click', (e) => {
 });
 
 // Force touchstart to trigger click on mobile for all buttons
+// BUG FIX: touchstart click trigger scroll'ni buzayotgan edi. 
+// Endi faqat barmoq qimirlatmasdan (scroll qilmasdan) bosilsa ishlaydi.
+let lastTouchStartPos = { x: 0, y: 0 };
 document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        lastTouchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
     const t = e.target;
     if (t && typeof t.closest === 'function') {
         const btn = t.closest('button');
         if (btn && !btn.disabled) {
-            const specialIds = ['shield-button', 'duck-button', 'super-button', 'crow-button', 'btn-forgot-toggle', 'btn-multi-join-show'];
-            if (!specialIds.includes(btn.id)) {
-                btn.click();
-                playSfx('button', 0.85);
+            // Agar barmoq 10px dan ortiq surilmagan bo'lsa, demak bu click
+            const touch = e.changedTouches ? e.changedTouches[0] : null;
+            if (touch) {
+                const dist = Math.hypot(touch.clientX - lastTouchStartPos.x, touch.clientY - lastTouchStartPos.y);
+                if (dist < 10) {
+                    btn.click();
+                    // Click trigger bo'lgandan so'ng UI target bo'lsa, o'yin boshlanib ketishini oldini olish
+                    e.preventDefault();
+                }
             }
         }
     }
+}, { passive: false });
 }, { passive: true });
 
 // Missing Event Listeners
