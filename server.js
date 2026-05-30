@@ -18,6 +18,14 @@ const io = new Server(server, {
 
 app.use(cors({ origin: true }));
 app.use(express.json());
+app.use((req, res, next) => {
+    if (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('.json')) {
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+    }
+    next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const multer = require('multer');
@@ -303,7 +311,10 @@ function toPublicUser(user) {
         campaignLevel: Math.max(1, Number(user.campaignLevel) || 1),
         superPowers: Math.max(0, Number(user.superPowers || 0)),
         doubleSpears: Math.max(0, Number(user.doubleSpears || 0)),
-        walls: Math.max(0, Number(user.walls || 0))
+        walls: Math.max(0, Number(user.walls || 0)),
+        artillery: Math.max(0, Number(user.artillery || 0)),
+        crowhunt: Math.max(0, Number(user.crowhunt || 0)),
+        fireSpears: Math.max(0, Number(user.fireSpears || 0))
     };
 }
 
@@ -334,6 +345,9 @@ function upsertUserProgress(phone, progress = {}) {
         superPowers: Number.isFinite(Number(progress.superPowers)) ? Math.max(0, Number(progress.superPowers)) : Math.max(0, Number(prev.superPowers || 0)),
         doubleSpears: Number.isFinite(Number(progress.doubleSpears)) ? Math.max(0, Number(progress.doubleSpears)) : Math.max(0, Number(prev.doubleSpears || 0)),
         walls: Number.isFinite(Number(progress.walls)) ? Math.max(0, Number(progress.walls)) : Math.max(0, Number(prev.walls || 0)),
+        artillery: Number.isFinite(Number(progress.artillery)) ? Math.max(0, Number(progress.artillery)) : Math.max(0, Number(prev.artillery || 0)),
+        crowhunt: Number.isFinite(Number(progress.crowhunt)) ? Math.max(0, Number(progress.crowhunt)) : Math.max(0, Number(prev.crowhunt || 0)),
+        fireSpears: Number.isFinite(Number(progress.fireSpears)) ? Math.max(0, Number(progress.fireSpears)) : Math.max(0, Number(prev.fireSpears || 0)),
         updatedAt: Date.now()
     };
     saveUsers(users);
@@ -431,6 +445,9 @@ app.post('/api/leaderboard', async (req, res) => {
     const superPowers = Math.max(0, Number(req.body?.superPowers || 0));
     const doubleSpears = Math.max(0, Number(req.body?.doubleSpears || 0));
     const walls = Math.max(0, Number(req.body?.walls || 0));
+    const artillery = Math.max(0, Number(req.body?.artillery || 0));
+    const crowhunt = Math.max(0, Number(req.body?.crowhunt || 0));
+    const fireSpears = Math.max(0, Number(req.body?.fireSpears || 0));
     try {
         await upsertLeaderboardEntry(entry);
         if (entry.phone) {
@@ -441,7 +458,10 @@ app.post('/api/leaderboard', async (req, res) => {
                 campaignLevel,
                 superPowers,
                 doubleSpears,
-                walls
+                walls,
+                artillery,
+                crowhunt,
+                fireSpears
             });
         }
         res.json({ ok: true, source: supabaseEnabled ? 'supabase' : 'file' });
@@ -474,7 +494,10 @@ app.post('/api/leaderboard', async (req, res) => {
                     campaignLevel,
                     superPowers,
                     doubleSpears,
-                    walls
+                    walls,
+                    artillery,
+                    crowhunt,
+                    fireSpears
                 });
             }
             res.json({ ok: true, source: 'file-fallback' });
@@ -510,6 +533,9 @@ app.post('/api/auth/register', (req, res) => {
         superPowers: 5,
         doubleSpears: 0,
         walls: 0,
+        artillery: 0,
+        crowhunt: 0,
+        fireSpears: 0,
         passwordHash: hashPassword(password),
         createdAt: Date.now()
     };
@@ -587,7 +613,7 @@ function generateWind() {
 }
 
 function getRandomMap() {
-    const maps = ['field', 'castle', 'desert', 'winter'];
+    const maps = ['field', 'castle', 'desert', 'winter', 'mountain'];
     return maps[Math.floor(Math.random() * maps.length)];
 }
 
@@ -872,7 +898,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('throwSpear', (data) => {
-        const { angle, power, isArtillery } = data;
+        const { angle, power, isArtillery, isFire } = data;
         const roomName = socket.roomId;
         const room = rooms[roomName];
 
@@ -885,7 +911,8 @@ io.on('connection', (socket) => {
             playerIndex: room.turnIndex,
             angle: angle,
             power: power,
-            isArtillery: isArtillery
+            isArtillery: isArtillery,
+            isFire: !!isFire
         });
         room.inFlight = true;
     });
