@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nayza Jangi">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=45">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p { margin-bottom: 20px; color: #cbd5e1; }
@@ -47,11 +53,22 @@
     </style>
 </head>
 <body>
-    <div id="landscape-warning" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; color: white; text-align: center; font-size: 1.5rem; justify-content: center; align-items: center; flex-direction: column;">
+    <div id="landscape-warning" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; color: white; text-align: center; font-size: 1.5rem; justify-content: center; align-items: center; flex-direction: column;">
         <span style="font-size: 4rem; margin-bottom: 20px;">📱➡️</span>
         Iltimos, telefoningizni yotiq (landshaft) rejimiga burang!
     </div>
     <div id="canvas-container"></div>
+    <!-- Menyu/auth fonidagi to'liq ekran wallpaper (canvas ustida, UI ostida) -->
+    <div id="menu-wallpaper"></div>
+    <!-- Kirish intro ekrani (wallpaper) -->
+    <div id="intro-screen">
+        <div id="intro-overlay"></div>
+        <div id="intro-content">
+            <div class="intro-loader-bar"><div class="intro-loader-fill"></div></div>
+            <button id="btn-intro-start" class="primary-btn">Boshlash</button>
+            <div id="intro-hint">Ekranga teging</div>
+        </div>
+    </div>
     <div id="ui-layer">
         <div id="auth-modal" class="screen panel center-panel">
             <h2>Ro'yxatdan o'tish / Kirish</h2>
@@ -302,7 +319,7 @@
                     <div class="shop-item-desc">Raqib o'qiga qarshi super himoya ishlatadi.</div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
                         <span>Narx:</span>
-                        <b id="super-buy-cost">150</b>
+                        <b id="super-buy-cost">75</b>
                     </div>
                     <div class="shop-meta"><span id="shop-super-max">max 99</span></div>
                     <button id="btn-buy-super" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0ea5e9;">+1 Super kuch sotib olish</button>
@@ -315,10 +332,23 @@
                     <div class="shop-item-desc">Aktiv holatda bir otishda ikkita nayza uchadi.</div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
                         <span>Narx (1 dona):</span>
-                        <b id="double-buy-cost">220</b>
+                        <b id="double-buy-cost">110</b>
                     </div>
                     <div class="shop-meta"><span id="shop-double-max">Soni: 0</span></div>
                     <button id="btn-buy-double" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qo'sh nayza sotib olish</button>
+                </div>
+                <div class="shop-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span class="shop-item-title">🔥 Olov nayza</span>
+                        <b id="fire-count-settings">0</b>
+                    </div>
+                    <div class="shop-item-desc">Yonayotgan nayza otadi: tegganda qo'shimcha kuydirish zarari (+60%).</div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                        <span>Narx (1 dona):</span>
+                        <b id="fire-buy-cost">140</b>
+                    </div>
+                    <div class="shop-meta"><span id="shop-fire-max">Soni: 0</span></div>
+                    <button id="btn-buy-fire" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ea580c;">+1 Olov nayza sotib olish</button>
                 </div>
                 <div class="shop-item">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -328,7 +358,7 @@
                     <div class="shop-item-desc">5 ta nayzani to'sadi. O'yinda joyini surib o'zgartirsa bo'ladi.</div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
                         <span>Narx (1 dona):</span>
-                        <b id="wall-buy-cost">500</b>
+                        <b id="wall-buy-cost">250</b>
                     </div>
                     <div class="shop-meta"><span id="shop-wall-max">Soni: 0</span></div>
                     <button id="btn-buy-wall" class="primary-btn shop-buy-btn" style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0f766e;">+1 Tahta devor sotib olish</button>
@@ -342,7 +372,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
                         <div class="shop-price">
                             <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
-                            <b id="artillery-buy-cost">500</b>
+                            <b id="artillery-buy-cost">250</b>
                         </div>
                         <div class="shop-meta"><span id="shop-artillery-max">Soni: 0</span></div>
                     </div>
@@ -357,7 +387,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
                         <div class="shop-price">
                             <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
-                            <b id="crowhunt-buy-cost">300</b>
+                            <b id="crowhunt-buy-cost">150</b>
                         </div>
                         <div class="shop-meta"><span id="shop-crowhunt-max">Soni: 0</span></div>
                     </div>
@@ -397,6 +427,13 @@
                     <option id="opt-map-castle" value="castle">🏰 Qal'a</option>
                     <option id="opt-map-desert" value="desert">🏜️ Cho'l</option>
                     <option id="opt-map-winter" value="winter">❄️ Qish</option>
+                    <option id="opt-map-mountain" value="mountain">⛰️ Tog'</option>
+                    <option id="opt-map-samarkand" value="samarkand">🕌 Samarqand</option>
+                    <option id="opt-map-bukhara" value="bukhara">🕌 Buxoro</option>
+                    <option id="opt-map-istanbul" value="istanbul">🕌 Istanbul</option>
+                    <option id="opt-map-oasis" value="oasis">🌴 Voha</option>
+                    <option id="opt-map-canyon" value="canyon">🏜️ Kanyon</option>
+                    <option id="opt-map-volcano" value="volcano">🌋 Vulqon</option>
                 </select>
 
                 <label id="txt-weather-lbl" style="display:block; margin-bottom:5px;">Ob-havo:</label>
@@ -413,10 +450,6 @@
                     <span id="txt-birds-lbl">Havoda Uchuvchi Qushlar (To'siq)</span>
                 </label>
 
-                <label style="display:flex; align-items:center; gap:10px; margin-bottom:15px; cursor:pointer;">
-                    <input type="checkbox" id="check-animals" style="width:20px; height:20px; cursor:pointer;">
-                    <span id="txt-animals-lbl">O'tlab yuruvchi hayvonlar</span>
-                </label>
 
                 <label id="difficulty-wrap" style="display:block; margin-top: 8px; margin-bottom:5px;">Qiyinlik:</label>
                 <select id="select-difficulty" style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
@@ -459,13 +492,17 @@
                 ⚔️
                 <span id="double-count" class="shield-count">0</span>
             </button>
+            <button id="fire-button" class="icon-btn fire-btn" style="pointer-events: auto;" aria-label="Olov nayzani yoqish">
+                🔥
+                <span id="fire-count" class="shield-count">0</span>
+            </button>
             <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;" aria-label="Tahta devor qo'yish yoki surish">
                 🧱
                 <span id="wall-count" class="shield-count">0</span>
             </button>
-            <button id="crow-button" class="icon-btn crow-btn hidden" style="pointer-events: auto; display:none;" aria-label="Qarg'alarni otish">
+            <button id="crow-button" class="icon-btn crow-btn" style="pointer-events: auto;" aria-label="Qarg'alarni otish">
                 🐦
-                <span id="crow-count" class="shield-count">0</span>
+                <span id="crow-count" class="shield-count">3</span>
             </button>
             <button id="artillery-button" class="icon-btn artillery-btn hidden" style="pointer-events: auto; display:none;" aria-label="Artileriya otish">
                 💣
@@ -550,6 +587,14 @@
                 </div>
             </div>
 
+            <!-- Raqib resurslari paneli (qalqon, super, qo'sh nayza soni) -->
+            <div id="enemy-resources" class="enemy-resources-panel hidden">
+                <div class="res-item">🛡️<span id="enemy-res-shield" class="res-count">5</span></div>
+                <div class="res-item">🗡️<span id="enemy-res-super" class="res-count">5</span></div>
+                <div class="res-item">⚔️<span id="enemy-res-double" class="res-count">0</span></div>
+                <div class="res-item">🧱<span id="enemy-res-wall" class="res-count">0</span></div>
+            </div>
+
             <div class="controls panel" id="controls-panel" style="pointer-events: auto;">
                 <h3 id="turn-indicator">Sizning navbatingiz!</h3>
                 <p style="font-size: 0.9rem; color: #cbd5e1; text-align: center;">Ekranda barmog'ingiz/sichqoncha bilan tortib mo'ljalga oling va kuchni belgilang.<br>Nayzani otish uchun qo'yib yuboring!</p>
@@ -576,12 +621,29 @@
         </div>
         
         <!-- Damage text container -->
-        <div id="damage-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 20;"></div>
+        <div id="damage-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 1;"></div>
     </div>
 
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=56"></script>
+    <script src="client.js?v=45"></script>
+    <script>
+        // Mobile fullscreen
+        function tryFullscreen() {
+            const el = document.documentElement;
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+        }
+        document.addEventListener('touchstart', function handler() {
+            tryFullscreen();
+            document.removeEventListener('touchstart', handler);
+        }, { once: true });
+        document.addEventListener('click', function handler() {
+            tryFullscreen();
+            document.removeEventListener('click', handler);
+        }, { once: true });
+    </script>
 </body>
 </html>

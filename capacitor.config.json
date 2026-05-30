@@ -1,5 +1,9 @@
 {
   "appId": "uz.nayzajangi.app",
   "appName": "Nayza Jangi",
-  "webDir": "public"
+  "webDir": "public",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
 }

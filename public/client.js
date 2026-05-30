@@ -1,8 +1,12 @@
 const IS_NATIVE_APP = (() => {
+    const hasCapacitor = !!window.Capacitor;
     const viaCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
     const viaProtocol = String(window.location?.protocol || '').startsWith('capacitor');
-    const viaAndroidWebView = /android/i.test(String(navigator.userAgent || '')) && window.location?.hostname === 'localhost' && !window.location?.port;
-    return viaCapacitor || viaProtocol || viaAndroidWebView;
+    const host = String(window.location?.hostname || '');
+    const port = String(window.location?.port || '');
+    // Capacitor Android app odatda http://localhost:8080/ dan ishlaydi
+    const viaAndroidWebView = /android/i.test(String(navigator.userAgent || '')) && host === 'localhost' && (port === '' || port === '8080');
+    return hasCapacitor || viaCapacitor || viaProtocol || viaAndroidWebView;
 })();
 const REMOTE_SERVER_URL = 'https://nayza-jangi.onrender.com';
 const WEB_LOCAL_BASE = (() => {
@@ -31,47 +35,43 @@ try {
     console.warn('Socket initialization failed; online mode disabled.', err);
 }
 let trajectoryLine = null;
+let hintTrajectoryLine = null;      // Avvalgi otish trayektoriyasi (yordamchi hint)
+let lastPlayerShot = null;          // O'yinchining oxirgi otish parametrlari
 const mixers = [];
+
+// Three.js TextureLoader: relative URL'lar bilan ishlatamiz - bu web va Android Capacitor ikkala muhitda ham ishlaydi.
+// THREE.TextureLoader avtomatik ravishda image yuklangach material'ni yangilaydi (needsUpdate orqali).
 
 function loadTextureWithBgRemoval(url) {
     const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
     const tex = loader.load(url, (loadedTex) => {
         const img = loadedTex.image;
         if (!img) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        
-        if (data[3] > 200) {
-            const bgR = data[0], bgG = data[1], bgB = data[2];
-
-let artilleryCount = 0;
-let isArtilleryAiming = false;
-let myArtilleryCannon = null;
-let btnArtillery = document.getElementById('artillery-button');
-let artilleryCountText = document.getElementById('artillery-count');
-window.artilleryCount = 0;
-window.isArtilleryAiming = false;
-window.myArtilleryCannon = null;
-window.btnArtillery = document.getElementById('artillery-button');
-window.artilleryCountText = document.getElementById('artillery-count');
-            for (let i = 0; i < data.length; i += 4) {
-                if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
-                    data[i+3] = 0;
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            if (data[3] > 200) {
+                const bgR = data[0], bgG = data[1], bgB = data[2];
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
+                        data[i+3] = 0;
+                    }
                 }
+                ctx.putImageData(imgData, 0, 0);
+                loadedTex.image = canvas;
+                loadedTex.needsUpdate = true;
             }
-            ctx.putImageData(imgData, 0, 0);
-            tex.image = canvas;
-            tex.needsUpdate = true;
+        } catch (e) {
+            console.warn('BG removal failed for', url, e);
         }
-        loadedTex.generateMipmaps = true;
-        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
-        loadedTex.magFilter = THREE.LinearFilter;
-        loadedTex.anisotropy = 8;
+    }, undefined, (err) => {
+        console.error('Texture(BG) load error:', url, err);
     });
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
@@ -82,30 +82,33 @@ window.artilleryCountText = document.getElementById('artillery-count');
 
 function loadTexture(url, options = {}) {
     const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
     const tex = loader.load(url, (loadedTex) => {
-        const img = loadedTex.image;
-        if (!img) return;
-
-        if (options.removeBg) {
-            const source = loadedTex.image;
-            const canvas = document.createElement('canvas');
-            canvas.width = source.width;
-            canvas.height = source.height;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(source, 0, 0);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-            const bgR = data[0], bgG = data[1], bgB = data[2];
-            for (let i = 0; i < data.length; i += 4) {
-                if (Math.abs(data[i] - bgR) < 35 && Math.abs(data[i + 1] - bgG) < 35 && Math.abs(data[i + 2] - bgB) < 35) {
-                    data[i + 3] = 0;
+        if (options.removeBg && loadedTex.image) {
+            try {
+                const source = loadedTex.image;
+                const canvas = document.createElement('canvas');
+                canvas.width = source.width;
+                canvas.height = source.height;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(source, 0, 0);
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                const bgR = data[0], bgG = data[1], bgB = data[2];
+                for (let i = 0; i < data.length; i += 4) {
+                    if (Math.abs(data[i] - bgR) < 35 && Math.abs(data[i + 1] - bgG) < 35 && Math.abs(data[i + 2] - bgB) < 35) {
+                        data[i + 3] = 0;
+                    }
                 }
+                ctx.putImageData(imgData, 0, 0);
+                loadedTex.image = canvas;
+            } catch (e) {
+                console.warn('BG removal failed for', url, e);
             }
-            ctx.putImageData(imgData, 0, 0);
-            loadedTex.image = canvas;
         }
-
         loadedTex.needsUpdate = true;
+    }, undefined, (err) => {
+        console.error('Texture load error:', url, err);
     });
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
@@ -132,34 +135,50 @@ const ottomanArcherTextures = {
     noShieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
     noShieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png'),
     noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
-    noShieldDuck: loadTexture('Kamonlik%20Usmoniy/utirganqalqonsizkamonboz.png'),
     noShieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonsiz.png'),
-    shieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
-    noShieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
-    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
+    noShieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20uq%20uzdi.png'),
+    celebrate: loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png'),
+    bgMusic: 'jumongsound.mp3'
 };
+
 const ottomanSpearmanTextures = {
     shieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png'),
     shieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
     shieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%203.png'),
-    shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
-    shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
     shieldDuck: loadTexture('Nayzalik%20Usmoniy/qalqonnayzautirgan.png'),
+    shieldHurt: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%204.png'),
+    shieldBreak: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%205.png'),
+    shieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%202.png'),
     noShieldIdle: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%201.png'),
     noShieldAim: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
-    noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
-    noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
     noShieldDuck: loadTexture('Nayzalik%20Usmoniy/nayzaqalqonsizutirgan.png'),
-    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png')
+    noShieldDefend: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzalik%20qalqonsiz%202.png'),
+    noShieldHurt: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    noShieldAfterShot: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%201.png'),
+    celebrate: loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayzasiz%20qalqonsiz%20galaba%20nishonlash.png'),
+    bgMusic: 'music.mp3'
 };
 
 window.customModelsInfo = [];
 window.customModelTextures = {};
 
 async function fetchCustomModels() {
+    let data = [];
     try {
         const res = await fetch('/api/models');
-        const data = await res.json();
+        if (res.ok) data = await res.json();
+        else throw new Error('API Fail');
+    } catch (e) {
+        console.warn('API fetch failed, trying local custom_models.json');
+        try {
+            const resLocal = await fetch('custom_models.json');
+            if (resLocal.ok) data = await resLocal.json();
+        } catch (e2) {
+            console.error('Local models failed:', e2);
+        }
+    }
+    
+    if (data && data.length > 0) {
         window.customModelsInfo = data;
         
         const s1 = document.getElementById('select-char-type');
@@ -202,7 +221,7 @@ async function fetchCustomModels() {
                 }
             }
         });
-    } catch(e) { console.error('Error loading custom models:', e); }
+    }
 }
 fetchCustomModels();
 
@@ -286,8 +305,9 @@ const btnBuyWall = document.getElementById('btn-buy-wall');
 const wallCountSettings = document.getElementById('wall-count-settings');
 const btnBuyArtillery = document.getElementById('btn-buy-artillery');
 const btnBuyCrowhunt = document.getElementById('btn-buy-crowhunt');
-const ARTILLERY_BUY_COST = 500;
-const CROWHUNT_BUY_COST = 300;
+const btnBuyFire = document.getElementById('btn-buy-fire');
+const ARTILLERY_BUY_COST = 250;
+const CROWHUNT_BUY_COST = 150;
 const shopScoreText = document.getElementById('shop-score-text');
 const shopSuperMaxText = document.getElementById('shop-super-max');
 const shopDoubleMaxText = document.getElementById('shop-double-max');
@@ -367,6 +387,22 @@ const sfxPaths = {
     legHit: 'mp3/uqoyoqqategsa.mp3',
     throw: 'mp3/uquzilganda.mp3'
 };
+
+// Brauzer tab / ilova fon rejimiga ketganda musiqani pauza qilish
+document.addEventListener('visibilitychange', () => {
+    try {
+        if (document.hidden) {
+            if (bgMusicAudio) bgMusicAudio.pause();
+        } else {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (bgMusicAudio && !musicMuted) {
+                bgMusicAudio.play().catch(() => {});
+            }
+        }
+    } catch (_) {
+        // ignore audio errors
+    }
+});
 
 function initAudio() {
     if (!audioCtx) {
@@ -491,8 +527,10 @@ function triggerCinematicExplosion(x, y) {
     explosion.userData = { vels: velocities, age: 0 };
     if (!window.explosions) window.explosions = [];
     window.explosions.push(explosion);
-    
-    playSfx('break');
+
+    // Portlash ovozi: 'break' kaliti sfxPaths da yo'q edi (jim qolardi).
+    // Mavjud zarba ovozini balandroq ijro etamiz.
+    playSfx('ground', 1.4);
 
     setTimeout(() => {
         cinematicMode = false;
@@ -500,16 +538,8 @@ function triggerCinematicExplosion(x, y) {
 }
 
 function startBackgroundMusic() {
-    if (!audioCtx) return;
-    if (bgMusicNode) bgMusicNode.disconnect();
-    bgMusicNode = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    bgMusicNode.type = 'triangle';
-    bgMusicNode.frequency.value = 55; 
-    gain.gain.value = 0.05; 
-    bgMusicNode.connect(gain);
-    gain.connect(audioCtx.destination);
-    bgMusicNode.start();
+    // Oscillator olib tashlandi - u doimiy buzilgan ovoz berardi.
+    // Haqiqiy fon musiqasi bgMusicAudio (Audio element) orqali o'ynatiladi.
 }
 
 function saveMusicSettings() {
@@ -539,8 +569,26 @@ function applyMusicSettings() {
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a0b2e);
-scene.fog = new THREE.FogExp2(0x1a0b2e, 0.0008);
+scene.fog = new THREE.FogExp2(0x1a0b2e, 0.00018);
 const MOBILE_PERF_MODE = IS_NATIVE_APP;
+
+// Radial glow teksturasi - quyosh/oy diski va yorug'lik effektlari uchun.
+function makeRadialGlowTexture(innerColor = '#ffffff', outerColor = '#ffcc66') {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, innerColor);
+    grad.addColorStop(0.45, outerColor);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
 
 let frustumSize = 800;
 let aspect = window.innerWidth / window.innerHeight;
@@ -559,27 +607,72 @@ renderer.setPixelRatio(getPreferredPixelRatio());
 renderer.shadowMap.enabled = !MOBILE_PERF_MODE;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 1.18;
 if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
 else renderer.outputEncoding = THREE.sRGBEncoding;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+// Android WebView'da ba'zan WebGL context yo'qolib qolishi mumkin (qora ekran).
+// Shunda sahifani qayta yuklab tiklaymiz.
+try {
+    renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+    }, false);
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+        try { window.location.reload(); } catch (_) {}
+    }, false);
+} catch (_) {}
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
 scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+
+// Osmon/yer rangidan keluvchi yumshoq yorug'lik - sahnaga tabiiy hajm beradi.
+const hemiLight = new THREE.HemisphereLight(0xbfe3ff, 0x4a3b2a, 0.55);
+hemiLight.position.set(0, 1000, 0);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xfff2d9, 1.45);
 dirLight.position.set(200, 1000, 500);
 dirLight.castShadow = !MOBILE_PERF_MODE;
 dirLight.shadow.mapSize.width = MOBILE_PERF_MODE ? 1024 : 2048;
 dirLight.shadow.mapSize.height = MOBILE_PERF_MODE ? 1024 : 2048;
 dirLight.shadow.camera.near = 0.5;
 dirLight.shadow.camera.far = 1500;
+dirLight.shadow.bias = -0.0005;
 const d = 1000;
 dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d; dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
 scene.add(dirLight);
 
-const rimLight = new THREE.DirectionalLight(0x4444ff, 0.55);
+const rimLight = new THREE.DirectionalLight(0x6688ff, 0.6);
 rimLight.position.set(-200, 100, -300);
 scene.add(rimLight);
+
+// Quyosh/oy disk (sahna foni uchun glow effekti)
+const sunSpriteMat = new THREE.SpriteMaterial({
+    map: makeRadialGlowTexture('#fff6cf', '#ffd36b'),
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+const sunSprite = new THREE.Sprite(sunSpriteMat);
+sunSprite.scale.set(900, 900, 1);
+sunSprite.position.set(-1400, 760, -900);
+scene.add(sunSprite);
+
+// Tun uchun yulduzlar (statik nuqtalar)
+const starGeo = new THREE.BufferGeometry();
+const starCount = MOBILE_PERF_MODE ? 220 : 420;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+    starPos[i * 3] = (Math.random() - 0.5) * 6000;
+    starPos[i * 3 + 1] = 400 + Math.random() * 1400;
+    starPos[i * 3 + 2] = -1200 - Math.random() * 400;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 5, transparent: true, opacity: 0, depthWrite: false });
+const starField = new THREE.Points(starGeo, starMat);
+scene.add(starField);
 
 const groundGeo = new THREE.BoxGeometry(15000, 200, 1000);
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9, metalness: 0.1 });
@@ -606,7 +699,7 @@ for(let i=0; i<dustCount*3; i++) {
     if(i%3 === 1) dustPos[i] = Math.random() * 800 - 300; 
 }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-const dustMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 4, transparent: true, opacity: 0.4 });
+const dustMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 4, transparent: true, opacity: 0.12 });
 const dustSystem = new THREE.Points(dustGeo, dustMat);
 scene.add(dustSystem);
 let weatherType = 'sunny';
@@ -670,42 +763,234 @@ function createAnimal() {
     return group;
 }
 
+// ============================================================
+//  Tarixiy shahar va tabiat sahnalari uchun procedural backdrop'lar
+//  (Three.js geometriyasi bilan — tashqi rasmsiz, ishonchli ishlaydi)
+// ============================================================
+
+// Gumbazli machit/madrasa (Samarqand/Buxoro/Istanbul uslubida).
+function makeDomedBuilding(opts) {
+    const g = new THREE.Group();
+    const bodyColor = opts.bodyColor;
+    const domeColor = opts.domeColor;
+    const bw = opts.width;
+    const bh = opts.height;
+    // Asosiy bino tanasi
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(bw, bh, 40),
+        new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.85, flatShading: true })
+    );
+    body.position.y = bh / 2;
+    g.add(body);
+    // Markaziy peshtoq (iwan) - to'q kirish ravog'i
+    const portal = new THREE.Mesh(
+        new THREE.BoxGeometry(bw * 0.34, bh * 0.62, 6),
+        new THREE.MeshStandardMaterial({ color: 0x16324a, roughness: 0.9 })
+    );
+    portal.position.set(0, bh * 0.32, 22);
+    g.add(portal);
+    // Asosiy gumbaz (firuza)
+    const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(bw * 0.28, 18, 14, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: domeColor, roughness: 0.45, metalness: 0.25, flatShading: true })
+    );
+    dome.position.y = bh + bw * 0.06;
+    g.add(dome);
+    // Gumbaz uchidagi belgi
+    const finial = new THREE.Mesh(
+        new THREE.ConeGeometry(bw * 0.03, bh * 0.12, 8),
+        new THREE.MeshStandardMaterial({ color: 0xf5d76e, metalness: 0.6, roughness: 0.3 })
+    );
+    finial.position.y = bh + bw * 0.34;
+    g.add(finial);
+    // Ikki yon minora
+    for (const s of [-1, 1]) {
+        const minaret = new THREE.Mesh(
+            new THREE.CylinderGeometry(bw * 0.06, bw * 0.08, bh * 1.25, 10),
+            new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.8, flatShading: true })
+        );
+        minaret.position.set(s * bw * 0.62, bh * 0.62, -6);
+        g.add(minaret);
+        const cap = new THREE.Mesh(
+            new THREE.ConeGeometry(bw * 0.09, bh * 0.2, 10),
+            new THREE.MeshStandardMaterial({ color: domeColor, roughness: 0.5, metalness: 0.2 })
+        );
+        cap.position.set(s * bw * 0.62, bh * 1.34, -6);
+        g.add(cap);
+    }
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+    return g;
+}
+
+// === Yuqori sifatli Canvas2D fon rasmlari generatori ===
+function generateBackdropTexture(mapType, weather, width, height) {
+    const canvas = document.createElement('canvas');
+    const w = canvas.width = width || 2048;
+    const h = canvas.height = height || 768;
+    const ctx = canvas.getContext('2d');
+    const isNight = weather === 'night', isStorm = weather === 'storm', isRain = weather === 'rain', isSnow = weather === 'snow';
+    // OSMON
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.65);
+    if (isNight) { sky.addColorStop(0,'#020810'); sky.addColorStop(1,'#1e3050'); }
+    else if (isStorm) { sky.addColorStop(0,'#1a2a38'); sky.addColorStop(1,'#4a6070'); }
+    else if (isRain) { sky.addColorStop(0,'#3a5a70'); sky.addColorStop(1,'#8ab0c8'); }
+    else if (isSnow) { sky.addColorStop(0,'#a0c8e0'); sky.addColorStop(1,'#e8f4ff'); }
+    else { sky.addColorStop(0,'#0a4a90'); sky.addColorStop(0.5,'#1a70c0'); sky.addColorStop(1,'#90d4f8'); }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+    // Quyosh
+    if (!isStorm && !isRain) { const sx=isNight?w*0.8:w*0.2,sy=h*0.15,sr=isNight?30:55; const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr*4); sg.addColorStop(0,isNight?'rgba(220,235,255,0.9)':'rgba(255,250,200,0.95)'); sg.addColorStop(0.3,isNight?'rgba(180,200,230,0.2)':'rgba(255,220,100,0.3)'); sg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=sg; ctx.fillRect(0,0,w,h*0.5); ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fillStyle=isNight?'#e0eaff':'#fff8e0'; ctx.fill(); }
+    // Yulduzlar
+    if (isNight) { for(let s=0;s<100;s++){ctx.beginPath();ctx.arc(Math.random()*w,Math.random()*h*0.4,0.5+Math.random()*1.5,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${0.3+Math.random()*0.7})`;ctx.fill();} }
+    // Bulutlar
+    if (!isNight){for(let c=0;c<(isStorm?7:4);c++){const cx=Math.random()*w,cy=h*0.06+Math.random()*h*0.15;ctx.globalAlpha=isStorm?0.5:0.3;ctx.fillStyle=isStorm?'#3a4a5a':'#fff';for(let b=0;b<5;b++){ctx.beginPath();ctx.arc(cx+b*28-56,cy+Math.random()*8,22+Math.random()*25,0,Math.PI*2);ctx.fill();}}ctx.globalAlpha=1;}
+    // Sahna
+    const baseY = h * 0.62;
+    _paintScene(ctx, w, h, baseY, mapType, weather);
+    // Yer
+    const gc=_getGroundColors(mapType,weather); const grd=ctx.createLinearGradient(0,baseY,0,h); grd.addColorStop(0,gc[0]);grd.addColorStop(0.3,gc[1]);grd.addColorStop(1,gc[2]); ctx.fillStyle=grd;ctx.fillRect(0,baseY,w,h-baseY);
+    ctx.globalAlpha=0.12;for(let i=0;i<200;i++){ctx.fillStyle=gc[3]||'#1a3010';ctx.fillRect(Math.random()*w,baseY+Math.random()*(h-baseY),1+Math.random()*3,2+Math.random()*5);}ctx.globalAlpha=1;
+    const tex = new THREE.CanvasTexture(canvas); tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter; return tex;
+}
+
+function _getGroundColors(m,w){if(w==='night')return['#1a2a1a','#0f1a10','#080e08','#0a1a08'];if(m==='desert')return['#d4a848','#b88a30','#8a6820','#c09838'];if(m==='winter'||w==='snow')return['#e8f0f8','#d0e0ea','#b0c8d8','#c8dae8'];if(m==='volcano')return['#2a1810','#1a100a','#0e0806','#201008'];if(m==='canyon')return['#c07038','#a05828','#804020','#b06830'];if(m==='oasis')return['#3a8830','#2a6a20','#1a4a14','#2a7a28'];if(m==='samarkand'||m==='bukhara')return['#c8a868','#a88848','#806830','#b09050'];if(m==='istanbul')return['#5a8050','#4a6a40','#3a5030','#4a7a40'];return['#4a9a38','#3a7a28','#2a5a1a','#3a8a30'];}
+function _paintScene(ctx,w,h,baseY,mapType,weather){const n=weather==='night';if(mapType==='samarkand'||mapType==='bukhara'||mapType==='istanbul')_paintCity(ctx,w,h,baseY,mapType,n);else if(mapType==='mountain'||mapType==='winter')_paintMountains(ctx,w,h,baseY,weather);else if(mapType==='desert')_paintDesert(ctx,w,h,baseY,n);else if(mapType==='volcano')_paintVolcano(ctx,w,h,baseY);else if(mapType==='canyon')_paintCanyon(ctx,w,h,baseY);else if(mapType==='oasis')_paintOasis(ctx,w,h,baseY,n);else if(mapType==='castle')_paintCastle(ctx,w,h,baseY,n);else _paintField(ctx,w,h,baseY,n);}
+function _paintCity(ctx,w,h,baseY,mapType,n){const nc=n?'#141e30':(mapType==='istanbul'?'#8090a0':'#b09868');const dc=n?'#1a3040':(mapType==='istanbul'?'#7a8a98':'#18a0b8');ctx.globalAlpha=0.4;for(let i=0;i<14;i++){const bx=(w/14)*i+Math.random()*30,bw=60+Math.random()*80,bh=70+Math.random()*100;ctx.fillStyle=n?'#0e1828':'#9a8060';ctx.fillRect(bx,baseY-bh,bw,bh);if(Math.random()>0.5){ctx.fillStyle=dc;ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh,bw*0.28,Math.PI,0);ctx.fill();}}ctx.globalAlpha=1;for(let i=0;i<9;i++){const bx=(w/9)*i+Math.random()*20,bw=90+Math.random()*110,bh=130+Math.random()*150;const bg=ctx.createLinearGradient(bx,baseY-bh,bx,baseY);bg.addColorStop(0,nc);bg.addColorStop(1,n?'#0a1420':'#7a6848');ctx.fillStyle=bg;ctx.fillRect(bx,baseY-bh,bw,bh);if(!n){ctx.fillStyle='rgba(0,0,0,0.12)';for(let wy=15;wy<bh-15;wy+=22)for(let wx=8;wx<bw-8;wx+=18)ctx.fillRect(bx+wx,baseY-bh+wy,9,13);}else{for(let wy=15;wy<bh-15;wy+=22)for(let wx=8;wx<bw-8;wx+=18)if(Math.random()>0.6){ctx.fillStyle='rgba(255,200,80,0.6)';ctx.fillRect(bx+wx,baseY-bh+wy,9,13);}}if(Math.random()>0.3){ctx.fillStyle=dc;ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh,bw*0.3,Math.PI,0);ctx.fill();ctx.fillStyle='#d4a020';ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh-bw*0.26,3,0,Math.PI*2);ctx.fill();}if(Math.random()>0.6){const mw=13,mh=bh+50+Math.random()*60,mx=bx+bw+4;ctx.fillStyle=nc;ctx.fillRect(mx,baseY-mh,mw,mh);ctx.fillStyle=dc;ctx.beginPath();ctx.arc(mx+mw/2,baseY-mh,mw*0.7,Math.PI,0);ctx.fill();}}}
+function _paintMountains(ctx,w,h,baseY,weather){const s=weather==='snow';const c=s?['#4a6880','#5a7a90','#6a8aa0']:['#2a4a30','#3a5a38','#4a6a40'];for(let l=0;l<3;l++){ctx.fillStyle=c[l];ctx.globalAlpha=0.4+l*0.3;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-l*25-(140-l*30)*(0.5+0.5*Math.sin(x*0.0022+l*2))-Math.sin(x*0.007)*20;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;if(s){ctx.fillStyle='#f0f8ff';ctx.globalAlpha=0.7;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=4){const y=baseY-50-110*(0.5+0.5*Math.sin(x*0.0022+4))-Math.sin(x*0.007)*20;ctx.lineTo(x,y+25+Math.random()*8);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();ctx.globalAlpha=1;}}
+function _paintDesert(ctx,w,h,baseY,n){const dc=n?['#2a2018','#3a2a1a']:['#d4a848','#c09030'];for(let d=0;d<2;d++){ctx.fillStyle=dc[d];ctx.globalAlpha=d===0?0.5:1;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-(15+d*12)-Math.sin(x*0.003+d*2)*(35+d*18)-Math.sin(x*0.008+d)*12;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;const pc=n?'#1a1810':'#b08828';for(let i=0;i<3;i++){const px=w*0.15+i*w*0.32,pw=90+i*25,ph=70+i*18;ctx.fillStyle=pc;ctx.beginPath();ctx.moveTo(px-pw/2,baseY-3);ctx.lineTo(px,baseY-3-ph);ctx.lineTo(px+pw/2,baseY-3);ctx.closePath();ctx.fill();}}
+function _paintVolcano(ctx,w,h,baseY){const g=ctx.createRadialGradient(w*0.5,baseY,0,w*0.5,baseY,h*0.6);g.addColorStop(0,'rgba(200,50,10,0.18)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);[{x:w*0.2,pw:280,ph:200},{x:w*0.5,pw:380,ph:260},{x:w*0.8,pw:300,ph:190}].forEach(p=>{const v=ctx.createLinearGradient(p.x,baseY-p.ph,p.x,baseY);v.addColorStop(0,'#1a1210');v.addColorStop(1,'#2a1a14');ctx.fillStyle=v;ctx.beginPath();ctx.moveTo(p.x-p.pw/2,baseY);ctx.lineTo(p.x-15,baseY-p.ph);ctx.lineTo(p.x+15,baseY-p.ph);ctx.lineTo(p.x+p.pw/2,baseY);ctx.closePath();ctx.fill();ctx.fillStyle='#ff4a10';ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,baseY-p.ph+5,12,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.3;ctx.beginPath();ctx.arc(p.x,baseY-p.ph-5,28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});}
+function _paintCanyon(ctx,w,h,baseY){[{c:'#6a3018',a:150,f:0.002},{c:'#8a4420',a:120,f:0.003},{c:'#a85828',a:90,f:0.004},{c:'#c06830',a:60,f:0.005}].forEach((l,i)=>{ctx.fillStyle=l.c;ctx.globalAlpha=0.4+i*0.18;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=4){const y=baseY-l.a*(0.5+0.4*Math.sin(x*l.f+i))-Math.abs(Math.sin(x*0.01+i))*30;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();});ctx.globalAlpha=1;}
+function _paintOasis(ctx,w,h,baseY,n){const lg=ctx.createRadialGradient(w/2,baseY+8,0,w/2,baseY+8,w*0.22);lg.addColorStop(0,n?'#0a3040':'#30b8d8');lg.addColorStop(1,n?'#081820':'#1890b0');ctx.fillStyle=lg;ctx.globalAlpha=0.65;ctx.beginPath();ctx.ellipse(w/2,baseY+8,w*0.22,30,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;for(let i=0;i<8;i++){const px=w*0.08+(w*0.84/7)*i+(Math.random()-0.5)*25,trH=60+Math.random()*45;ctx.strokeStyle=n?'#3a2a18':'#7a5a2a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(px,baseY);ctx.quadraticCurveTo(px+(Math.random()-0.5)*15,baseY-trH*0.6,px+(Math.random()-0.5)*8,baseY-trH);ctx.stroke();ctx.fillStyle=n?'#1a3a18':'#2a8a30';for(let f=0;f<5;f++){const a=(f/5)*Math.PI*2;ctx.beginPath();ctx.ellipse(px+Math.cos(a)*32,baseY-trH+Math.sin(a)*10-3,24,7,a*0.3,0,Math.PI*2);ctx.fill();}}}
+function _paintCastle(ctx,w,h,baseY,n){const wc=n?'#1a2028':'#5a6858';const wallH=120;const wg=ctx.createLinearGradient(0,baseY-wallH,0,baseY);wg.addColorStop(0,wc);wg.addColorStop(1,n?'#0a1018':'#3a4838');ctx.fillStyle=wg;ctx.fillRect(w*0.1,baseY-wallH,w*0.8,wallH);for(let x=w*0.1;x<w*0.9;x+=28)ctx.fillRect(x,baseY-wallH-14,16,14);for(let i=0;i<6;i++){const tx=w*0.1+(w*0.8/5)*i,th=wallH+45+Math.random()*35,tw=32;ctx.fillStyle=n?'#141820':'#4a5848';ctx.fillRect(tx-tw/2,baseY-th,tw,th);ctx.beginPath();ctx.moveTo(tx-tw/2-4,baseY-th);ctx.lineTo(tx,baseY-th-28);ctx.lineTo(tx+tw/2+4,baseY-th);ctx.closePath();ctx.fill();ctx.fillStyle=n?'#8a2020':'#c03030';ctx.fillRect(tx-1,baseY-th-28,2,-18);ctx.beginPath();ctx.moveTo(tx+1,baseY-th-46);ctx.lineTo(tx+16,baseY-th-40);ctx.lineTo(tx+1,baseY-th-34);ctx.fill();}ctx.fillStyle='#3a2a1a';ctx.beginPath();ctx.arc(w/2,baseY,32,Math.PI,0);ctx.fill();ctx.fillRect(w/2-32,baseY-32,64,32);}
+function _paintField(ctx,w,h,baseY,n){const hc=n?['#1a2a18','#142214']:['#4a9a38','#3a7a28'];for(let l=0;l<2;l++){ctx.fillStyle=hc[l];ctx.globalAlpha=l===0?0.5:1;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-(8+l*6)-Math.sin(x*0.002+l*3)*(20+l*12)-Math.sin(x*0.006+l)*8;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;for(let i=0;i<10;i++){const tx=Math.random()*w,ty=baseY-8-Math.random()*15;ctx.fillStyle=n?'#2a1a10':'#5a3a1a';ctx.fillRect(tx-2,ty,5,15+Math.random()*10);ctx.fillStyle=n?'#1a3a14':'#2a7a20';ctx.beginPath();ctx.arc(tx,ty-5,15+Math.random()*10,0,Math.PI*2);ctx.fill();}}
+
+function buildCityBackdrop(mapType, safeRadius) {
+    // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
+}
+
+// Voha: palma daraxtlari + ko'l.
+function buildOasisBackdrop(safeRadius) {
+    // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
+}
+
+// Kanyon: qatlamli qizg'ish mesa qoyalar.
+function buildCanyonBackdrop(safeRadius) {
+    // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
+}
+
+// Vulqon: lava cho'qqilar va qizil porlash.
+function buildVolcanoBackdrop(safeRadius) {
+    // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
+}
+
 function buildMap(mapType, weather = 'sunny') {
-    let groundColor = 0x4ade80; // Bright green
+    let groundColor = 0x52c234; // Boy yorqin yashil
     let rockColor = 0x9ca3af;
-    let skyColor = 0x87ceeb; // Sky blue
+    let skyColor = 0x2e95e6; // To'q to'yingan havorang
+    let groundTopColor = 0x7dd956; // Yer ustki qatlam rangi (o't)
     
     if (mapType === 'winter') { 
-        groundColor = 0xffffff; rockColor = 0x94a3b8; skyColor = 0xadd8e6; 
+        groundColor = 0xd8e8f8; rockColor = 0x94a3b8; skyColor = 0x7fc3e8; groundTopColor = 0xf0f8ff;
     } else if (mapType === 'desert') { 
-        groundColor = 0xfcd34d; rockColor = 0xd97706; skyColor = 0x00bfff; 
+        groundColor = 0xd4a030; rockColor = 0xc77d10; skyColor = 0x1ea7e0; groundTopColor = 0xf4d078;
     } else if (mapType === 'castle') { 
-        groundColor = 0x64748b; rockColor = 0x475569; skyColor = 0x4682b4; 
+        groundColor = 0x4a5e3a; rockColor = 0x475569; skyColor = 0x2f7fc4; groundTopColor = 0x6a8050;
+    } else if (mapType === 'mountain') {
+        groundColor = 0x4a7030; rockColor = 0x6b5b4a; skyColor = 0x3a9bd4; groundTopColor = 0x6a9a48;
+    } else if (mapType === 'samarkand') {
+        groundColor = 0xb09050; rockColor = 0xa07d4a; skyColor = 0x2487d6; groundTopColor = 0xd4b878;
+    } else if (mapType === 'bukhara') {
+        groundColor = 0xc09860; rockColor = 0xb08a52; skyColor = 0x39a0dd; groundTopColor = 0xe0c090;
+    } else if (mapType === 'istanbul') {
+        groundColor = 0x5a7a5a; rockColor = 0x7d8a96; skyColor = 0x2b8fd8; groundTopColor = 0x7a9a70;
+    } else if (mapType === 'oasis') {
+        groundColor = 0x3a8a2a; rockColor = 0xc2a060; skyColor = 0x1fb0e6; groundTopColor = 0x5ab840;
+    } else if (mapType === 'canyon') {
+        groundColor = 0xa05828; rockColor = 0x8a4a26; skyColor = 0x2f9bdc; groundTopColor = 0xd07840;
+    } else if (mapType === 'volcano') {
+        groundColor = 0x2a2220; rockColor = 0x4a3530; skyColor = 0x6b3b2e; groundTopColor = 0x3a2e28;
     }
     
     if (weather === 'night') {
         skyColor = 0x0b1020;
-        groundColor = 0x1f2937;
+        groundColor = 0x1a2530;
+        groundTopColor = 0x263040;
         rockColor = 0x334155;
     } else if (weather === 'rain') {
         skyColor = 0x5f8ca8;
     } else if (weather === 'storm') {
         skyColor = 0x34495e;
-        groundColor = 0x7aa08c;
+        groundColor = 0x5a7a6a;
+        groundTopColor = 0x7aa08c;
     } else if (weather === 'snow') {
         skyColor = 0xcde9ff;
+        groundTopColor = 0xf0f8ff;
     }
 
     ground.material.color.setHex(groundColor);
     rocks.forEach(r => r.material.color.setHex(rockColor));
     scene.background.setHex(skyColor);
     scene.fog.color.setHex(skyColor);
-    scene.fog.density = (weather === 'storm') ? 0.0012 : 0.0008;
+    scene.fog.density = (weather === 'storm') ? 0.0004 : 0.00018;
     weatherType = weather;
     createWeatherSystem(weatherType);
 
+    // Yer ustki o't/qum qatlami (gradient effekt) - sahnani boyitadi.
+    if (!window._groundTopLayer) {
+        const gtGeo = new THREE.PlaneGeometry(15000, 40);
+        const gtMat = new THREE.MeshBasicMaterial({ color: 0x7dd956, transparent: true, opacity: 0.7, depthWrite: false });
+        window._groundTopLayer = new THREE.Mesh(gtGeo, gtMat);
+        window._groundTopLayer.position.set(0, ground.position.y + 100, 5);
+        scene.add(window._groundTopLayer);
+    }
+    window._groundTopLayer.material.color.setHex(groundTopColor);
+    window._groundTopLayer.material.opacity = (weather === 'night') ? 0.4 : 0.65;
+
+    // Quyosh/oy diski va yulduzlarni ob-havoga moslashtiramiz.
+    if (typeof sunSprite !== 'undefined' && sunSprite) {
+        if (weather === 'night') {
+            sunSprite.material.map = makeRadialGlowTexture('#eaf2ff', '#9fb6dd');
+            sunSprite.material.opacity = 0.85;
+            sunSprite.scale.set(560, 560, 1);
+            sunSprite.position.set(1300, 820, -900);
+        } else if (weather === 'storm' || weather === 'rain') {
+            sunSprite.material.opacity = 0.18;
+            sunSprite.scale.set(700, 700, 1);
+        } else if (weather === 'snow') {
+            sunSprite.material.map = makeRadialGlowTexture('#ffffff', '#cfe6ff');
+            sunSprite.material.opacity = 0.7;
+            sunSprite.scale.set(820, 820, 1);
+            sunSprite.position.set(-1400, 760, -900);
+        } else {
+            sunSprite.material.map = makeRadialGlowTexture('#fff6cf', '#ffd36b');
+            sunSprite.material.opacity = 0.92;
+            sunSprite.scale.set(900, 900, 1);
+            sunSprite.position.set(-1400, 760, -900);
+        }
+        sunSprite.material.needsUpdate = true;
+        sunSprite.userData.baseScale = sunSprite.scale.x;
+    }
+    if (typeof starMat !== 'undefined' && starMat) {
+        starMat.opacity = weather === 'night' ? 0.9 : 0;
+    }
+    // Yorug'lik intensivligini ob-havoga moslab, sahnani jonliroq qilamiz.
+    if (typeof dirLight !== 'undefined') {
+        if (weather === 'night') { dirLight.intensity = 0.6; dirLight.color.setHex(0x9fb6dd); }
+        else if (weather === 'storm') { dirLight.intensity = 0.8; dirLight.color.setHex(0xb9c4d6); }
+        else if (weather === 'rain') { dirLight.intensity = 1.0; dirLight.color.setHex(0xd6e0ee); }
+        else if (weather === 'snow') { dirLight.intensity = 1.3; dirLight.color.setHex(0xeaf2ff); }
+        else { dirLight.intensity = 1.45; dirLight.color.setHex(0xfff2d9); }
+    }
+    if (typeof hemiLight !== 'undefined') {
+        hemiLight.intensity = weather === 'night' ? 0.3 : (weather === 'storm' ? 0.4 : 0.55);
+    }
+
     // Decorative mixed trees placed away from fighters, with depth layers
-    mapBackdrops.forEach((obj) => scene.remove(obj));
+    mapBackdrops.forEach((obj) => {
+        scene.remove(obj);
+        // Procedural geometriyalarni (masalan tog' konuslari) xotiradan tozalaymiz.
+        if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
+        if (obj.material && typeof obj.material.dispose === 'function') obj.material.dispose();
+    });
     mapBackdrops = [];
     decorTrees.forEach((tree) => scene.remove(tree));
     decorTrees = [];
@@ -723,6 +1008,21 @@ function buildMap(mapType, weather = 'sunny') {
     } else if (mapType === 'field') {
         treesPerSide = 7;
         smallTreeChance = 0.52;
+    } else if (mapType === 'mountain') {
+        treesPerSide = 5;
+        smallTreeChance = 0.6;
+    } else if (mapType === 'samarkand' || mapType === 'bukhara' || mapType === 'istanbul') {
+        treesPerSide = 3;
+        smallTreeChance = 0.4;
+    } else if (mapType === 'oasis') {
+        treesPerSide = 6;
+        smallTreeChance = 0.3;
+    } else if (mapType === 'canyon') {
+        treesPerSide = 2;
+        smallTreeChance = 0.25;
+    } else if (mapType === 'volcano') {
+        treesPerSide = 1;
+        smallTreeChance = 0.2;
     }
     const safeRadius = Math.max(1300, currentBattleDistance / 2 + 420);
     if (mapType === 'castle') {
@@ -749,6 +1049,70 @@ function buildMap(mapType, weather = 'sunny') {
             mapBackdrops.push(qala);
         }
     }
+    if (mapType === 'mountain') {
+        // Procedural tog' siluetlari - uzoq fonda qatlamlangan konuslar.
+        const snowy = (weatherType === 'snow' || weatherType === 'winter');
+        const peakBase = new THREE.Color(snowy ? 0x8a99ad : 0x5b6450);
+        const peakSnow = new THREE.Color(0xf4f8ff);
+        const layerDefs = [
+            { z: -760, scale: 1.5, count: 7, tint: 0.55 },
+            { z: -540, scale: 1.18, count: 6, tint: 0.78 },
+            { z: -340, scale: 0.92, count: 5, tint: 1.0 }
+        ];
+        layerDefs.forEach((layer) => {
+            for (let m = 0; m < layer.count; m++) {
+                const peakH = (520 + Math.random() * 360) * layer.scale;
+                const peakW = (520 + Math.random() * 280) * layer.scale;
+                const coneGeo = new THREE.ConeGeometry(peakW / 2, peakH, 5);
+                const baseCol = peakBase.clone().multiplyScalar(layer.tint);
+                const coneMat = new THREE.MeshStandardMaterial({
+                    color: baseCol,
+                    roughness: 1,
+                    metalness: 0,
+                    flatShading: true
+                });
+                const cone = new THREE.Mesh(coneGeo, coneMat);
+                const spanX = (safeRadius * 2) + 1800;
+                cone.position.set(
+                    -spanX / 2 + (spanX / (layer.count - 1 || 1)) * m + (Math.random() - 0.5) * 220,
+                    ground.position.y + 90 + peakH / 2,
+                    layer.z
+                );
+                cone.castShadow = false;
+                cone.receiveShadow = false;
+                scene.add(cone);
+                mapBackdrops.push(cone);
+
+                // Qor cho'qqisi
+                if (snowy || Math.random() < 0.5) {
+                    const capH = peakH * 0.26;
+                    const capGeo = new THREE.ConeGeometry((peakW / 2) * 0.34, capH, 5);
+                    const capMat = new THREE.MeshStandardMaterial({ color: peakSnow, roughness: 0.85, flatShading: true });
+                    const cap = new THREE.Mesh(capGeo, capMat);
+                    cap.position.set(cone.position.x, ground.position.y + 90 + peakH - capH / 2, layer.z + 1);
+                    scene.add(cap);
+                    mapBackdrops.push(cap);
+                }
+            }
+        });
+    }
+    // Canvas2D orqali generatsiya qilingan chiroyli fon rasmi (barcha sahnalar uchun).
+    // Keng qilib yaratamiz - o'q uzoqqa uchganda ham fon tugamasligi uchun.
+    const backdropTex = generateBackdropTexture(mapType, weather, 2048, 768);
+    const backdropMat = new THREE.MeshBasicMaterial({
+        map: backdropTex,
+        transparent: false,
+        side: THREE.FrontSide,
+        fog: false,
+        depthWrite: false
+    });
+    const backdropW = 12000; // Juda keng - o'q qanchalik uzoqqa uchmasin, fon ko'rinadi
+    const backdropH = backdropW * 0.22;
+    const backdropPlane = new THREE.Mesh(new THREE.PlaneGeometry(backdropW, backdropH), backdropMat);
+    backdropPlane.position.set(0, ground.position.y + 90 + backdropH * 0.32, -700);
+    scene.add(backdropPlane);
+    mapBackdrops.push(backdropPlane);
+
     for (let side = -1; side <= 1; side += 2) {
         for (let i = 0; i < treesPerSide; i++) {
             const useSmallTree = Math.random() < smallTreeChance;
@@ -865,6 +1229,34 @@ function spawnParticles(x, y, amount, isWood=false) {
     }
 }
 
+// Olov nayza tegganda olov zarralari portlashi.
+const fireParticleGeo = new THREE.SphereGeometry(5, 6, 6);
+const fireColors = [0xff7518, 0xff3300, 0xffd000, 0xff9d00];
+function spawnFireBurst(x, y, amount = 26) {
+    for (let i = 0; i < amount; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+            color: fireColors[Math.floor(Math.random() * fireColors.length)],
+            transparent: true,
+            opacity: 0.95,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const drop = new THREE.Mesh(fireParticleGeo, mat);
+        drop.position.set(x, y, 22);
+        drop.userData = {
+            vx: (Math.random() - 0.5) * 520,
+            vy: Math.random() * 620 + 160,
+            vz: (Math.random() - 0.5) * 300,
+            life: 0.7 + Math.random() * 0.7,
+            isWood: false,
+            isFire: true
+        };
+        scene.add(drop);
+        bloodParticles.push(drop);
+    }
+    screenShake = MOBILE_PERF_MODE ? 12 : 20;
+}
+
 function createCrow(x, y) {
     const crowGroup = new THREE.Group();
     
@@ -929,14 +1321,18 @@ function createSoldier(isP1, charType = 0) {
     if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
         selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
     }
-    const tex = selectedTexture.clone();
-    tex.needsUpdate = true;
-    if (group.userData.isOttomanUnit) {
-        tex.repeat.set(1, 1);
-    } else {
-        tex.repeat.set(0.26, 0.78); // 0.26 width, 0.78 height cuts off the top 22% (numbers)
+    // Texture'ni to'g'ridan-to'g'ri ishlatamiz (clone qilmasdan).
+    // three.js TextureLoader image yuklangach avtomatik ravishda needsUpdate qo'yadi va material yangilanadi.
+    // Bu Android Capacitor'da WebView image yuklash kechikishi bo'lganda ham to'g'ri ishlaydi.
+    const tex = selectedTexture;
+    if (tex) {
+        if (group.userData.isOttomanUnit) {
+            tex.repeat.set(1, 1);
+        } else {
+            tex.repeat.set(0.26, 0.78);
+        }
+        tex.offset.set(0, 0);
     }
-    tex.offset.set(0, 0); // Start from bottom
     
     // Use Standard Material with alphaTest 0.5 to fix black borders and enable proper shadows
     const soldierMat = new THREE.MeshBasicMaterial({
@@ -1003,6 +1399,7 @@ function getOttomanArcherTexture(model, state) {
     if (state === 'duck') return broken ? ottomanArcherTextures.noShieldDuck : ottomanArcherTextures.shieldDuck;
     if (state === 'defend') return broken ? ottomanArcherTextures.noShieldDefend : ottomanArcherTextures.shieldDefend;
     if (state === 'aim') return broken ? ottomanArcherTextures.noShieldAim : ottomanArcherTextures.shieldAim;
+    if (state === 'afterShot') return broken ? ottomanArcherTextures.noShieldAfterShot : (ottomanArcherTextures.shieldAfterShot || ottomanArcherTextures.shieldIdle);
     return broken ? ottomanArcherTextures.noShieldIdle : ottomanArcherTextures.shieldIdle;
 }
 
@@ -1119,27 +1516,84 @@ let spear = null;
 let secondarySpear = null;
 const spearGroup = new THREE.Group();
 
-const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 110), new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.8 }));
+// === Haqiqiy kamon o'qi / nayza 3D modeli ===
+// MUHIM: o'qning/nayzaning faqat OLD tomonida uch (paykon) bo'ladi,
+// orqa tomonida esa patlar (fletching) bo'ladi. Ikki tomonida ham uch bo'lmasligi kerak.
+//
+// Shaft (o'q tanasi) - ingichka, uzun, tabiiy yog'och rangi, oldinga ozgina ingichkalashadi.
+const spearShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.5, 2.1, 150, 12),
+    new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.62, metalness: 0.08 })
+);
 spearShaft.name = 'spear-shaft';
 spearShaft.rotateZ(Math.PI / 2);
 spearShaft.castShadow = true;
 spearGroup.add(spearShaft);
+
+// Uch (broadhead) - FAQAT old tomonda. Metall uchburchak paykon (uzun, nafis bargsimon).
 const spearTipGroup = new THREE.Group();
 spearTipGroup.name = 'spear-tip-group';
-spearTipGroup.position.x = 60;
-const spearBlade = new THREE.Mesh(new THREE.ConeGeometry(5, 25, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.2 }));
+spearTipGroup.position.x = 75;
+const bladeMat = new THREE.MeshStandardMaterial({ color: 0xeef2f7, metalness: 0.96, roughness: 0.14 });
+// Asosiy uchli paykon
+const spearBlade = new THREE.Mesh(new THREE.ConeGeometry(5.2, 34, 16), bladeMat);
 spearBlade.name = 'spear-blade';
 spearBlade.rotateZ(-Math.PI / 2);
+spearBlade.position.x = 13;
 spearBlade.castShadow = true;
 spearTipGroup.add(spearBlade);
+// Paykon o'rta qirrasi (qirrali, jangovor ko'rinish uchun yassi rombsimon)
+const bladeEdge = new THREE.Mesh(
+    new THREE.OctahedronGeometry(4.4, 0),
+    new THREE.MeshStandardMaterial({ color: 0xcfd6df, metalness: 0.9, roughness: 0.22 })
+);
+bladeEdge.scale.set(2.0, 0.5, 1.0);
+bladeEdge.position.x = -2;
+bladeEdge.name = 'spear-blade-edge';
+spearTipGroup.add(bladeEdge);
+// Paykon bo'g'imi (socket) - uch bilan shaft orasidagi konussimon metall ulagich.
+const tipCollar = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.0, 3.0, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.3 })
+);
+tipCollar.rotateZ(Math.PI / 2);
+tipCollar.position.x = -16;
+spearTipGroup.add(tipCollar);
 spearGroup.add(spearTipGroup);
 
-// add feathers
-const featherMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-const feather1 = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 1), featherMat);
-feather1.name = 'spear-feather';
-feather1.position.x = -50;
-spearGroup.add(feather1);
+// Patlar (fletching) - FAQAT orqa tomonda uchta nafis pat (haqiqiy o'q kabi).
+const featherMat = new THREE.MeshStandardMaterial({
+    color: 0xe23b3b,
+    roughness: 0.8,
+    metalness: 0.05,
+    side: THREE.DoubleSide
+});
+const fletchingGroup = new THREE.Group();
+fletchingGroup.name = 'spear-feather';
+fletchingGroup.position.x = -64;
+const featherShape = new THREE.Shape();
+// Egri, oqimli pat shakli (tabiiy patga o'xshash).
+featherShape.moveTo(0, 0);
+featherShape.quadraticCurveTo(16, 9, 30, 7);
+featherShape.quadraticCurveTo(24, 2, 22, 0);
+featherShape.quadraticCurveTo(12, -1, 0, 0);
+const featherGeo = new THREE.ShapeGeometry(featherShape);
+for (let f = 0; f < 3; f++) {
+    const feather = new THREE.Mesh(featherGeo, featherMat.clone());
+    feather.rotation.x = (f * Math.PI * 2) / 3; // 120° oralab joylashadi
+    feather.position.x = -6;
+    feather.castShadow = true;
+    fletchingGroup.add(feather);
+}
+// Nock (o'qning kamon ipiga o'rnatiladigan orqa qismi) - tekis, uchsiz orqa.
+const nock = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.4, 2.0, 7, 10),
+    new THREE.MeshStandardMaterial({ color: 0x2a1c10, roughness: 0.85 })
+);
+nock.rotateZ(Math.PI / 2);
+nock.position.x = -79;
+spearGroup.add(nock);
+spearGroup.add(fletchingGroup);
 
 
 const bombMesh = new THREE.Mesh(new THREE.SphereGeometry(18, 16, 16), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
@@ -1149,6 +1603,40 @@ spearGroup.add(bombMesh);
 
 spearGroup.castShadow = true;
 scene.add(spearGroup);
+
+// Olov nayza glow effekti (nayzaga biriktiriladi)
+const fireSpearGlowMat = new THREE.SpriteMaterial({
+    map: makeRadialGlowTexture('#fff2b0', '#ff5a16'),
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+const fireSpearGlow = new THREE.Sprite(fireSpearGlowMat);
+fireSpearGlow.scale.set(150, 150, 1);
+fireSpearGlow.visible = false;
+spearGroup.add(fireSpearGlow);
+
+function applyFireSpearVisual(isFire) {
+    fireSpearGlow.visible = !!isFire;
+    // Nayza uchini olov rangiga bo'yaymiz.
+    const blade = spearGroup.getObjectByName('spear-blade');
+    const shaft = spearGroup.getObjectByName('spear-shaft');
+    if (blade && blade.material) {
+        if (isFire) {
+            if (blade.material.emissive) blade.material.emissive.setHex(0xff4500);
+            blade.material.color.setHex(0xffcc66);
+        } else {
+            if (blade.material.emissive) blade.material.emissive.setHex(0x000000);
+            blade.material.color.setHex(0xffffff);
+        }
+        blade.material.needsUpdate = true;
+    }
+    if (shaft && shaft.material && shaft.material.emissive) {
+        shaft.material.emissive.setHex(isFire ? 0x7a2500 : 0x000000);
+        shaft.material.needsUpdate = true;
+    }
+}
 
 spearGroup.visible = false;
 const secondarySpearGroup = spearGroup.clone();
@@ -1160,6 +1648,120 @@ secondarySpearGroup.traverse((obj) => {
     if ('emissive' in obj.material) obj.material.emissive.setHex(0x2e1065);
 });
 scene.add(secondarySpearGroup);
+
+// Uchayotgan nayza ortidagi porlovchi iz (trail) - zamonaviy vizual effekt.
+const SPEAR_TRAIL_LEN = MOBILE_PERF_MODE ? 18 : 28;
+const spearTrailGeo = new THREE.BufferGeometry();
+const spearTrailPos = new Float32Array(SPEAR_TRAIL_LEN * 3);
+spearTrailGeo.setAttribute('position', new THREE.BufferAttribute(spearTrailPos, 3));
+const spearTrailMat = new THREE.LineBasicMaterial({
+    color: 0xffd36b,
+    transparent: true,
+    opacity: 0.65,
+    linewidth: 2,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+});
+const spearTrail = new THREE.Line(spearTrailGeo, spearTrailMat);
+spearTrail.frustumCulled = false;
+spearTrail.visible = false;
+scene.add(spearTrail);
+let spearTrailHistory = [];
+
+function resetSpearTrail() {
+    spearTrailHistory = [];
+    spearTrail.visible = false;
+}
+
+// Avvalgi otish trayektoriyasini hint sifatida chizadi (xira ko'k chiziq).
+// O'yinchi o'q uzgan navbat parametrlarini saqlab, keyingi navbatda ko'rsatamiz.
+function clearHintTrajectory() {
+    if (hintTrajectoryLine) {
+        scene.remove(hintTrajectoryLine);
+        if (hintTrajectoryLine.geometry) hintTrajectoryLine.geometry.dispose();
+        if (hintTrajectoryLine.material) hintTrajectoryLine.material.dispose();
+        hintTrajectoryLine = null;
+    }
+}
+
+function buildHintTrajectory() {
+    clearHintTrajectory();
+    if (!lastPlayerShot) return;
+    const shot = lastPlayerShot;
+    const points = [];
+    let simX = shot.startX;
+    let simY = shot.startY;
+    const rad = shot.angle * (Math.PI / 180);
+    let simVx = shot.power * Math.cos(rad);
+    if (shot.playerIndex === 1) simVx = -simVx;
+    let simVy = shot.power * Math.sin(rad);
+    for (let i = 0; i < 60; i++) {
+        points.push(new THREE.Vector3(simX, simY, -2));
+        simX += simVx * 0.05;
+        simY += simVy * 0.05;
+        simVy -= GRAVITY * 0.05;
+        simVx += (shot.wind * 30) * 0.05;
+        if (simY < ground.position.y + 100) break;
+    }
+    if (points.length < 2) return;
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    // Yordamchi hint: xira moviy/siyohrang, nuqtali chiziq.
+    const mat = new THREE.LineDashedMaterial({
+        color: 0x38bdf8,
+        dashSize: 18,
+        gapSize: 14,
+        transparent: true,
+        opacity: 0.5,
+        linewidth: 2
+    });
+    hintTrajectoryLine = new THREE.Line(geo, mat);
+    hintTrajectoryLine.computeLineDistances();
+    scene.add(hintTrajectoryLine);
+}
+
+function updateSpearTrail() {
+    // Iz (trail) chizig'i olib tashlandi (foydalanuvchi so'roviga ko'ra):
+    // o'q/nayza ortida "arqonsimon" iz endi chizilmaydi.
+    if (spearTrail.visible) {
+        spearTrail.visible = false;
+        spearTrailHistory = [];
+    }
+    if (!spear || !spear.active) return;
+
+    // Olov nayza: uchish paytida olov zarralari sochiladi va glow miltillaydi (bu alohida effekt).
+    if (spear.isFire) {
+        if (fireSpearGlow) {
+            const pulse = 1 + Math.sin(performance.now() * 0.02) * 0.18;
+            fireSpearGlow.scale.set(150 * pulse, 150 * pulse, 1);
+        }
+        if (Math.random() < 0.7) {
+            spawnFireTrailParticle(spear.x, spear.y);
+        }
+    }
+}
+
+// Uchayotgan olov nayzadan ajralib chiqadigan kichik olov uchqunlari.
+function spawnFireTrailParticle(x, y) {
+    const mat = new THREE.MeshBasicMaterial({
+        color: fireColors[Math.floor(Math.random() * fireColors.length)],
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const drop = new THREE.Mesh(fireParticleGeo, mat);
+    drop.position.set(x + (Math.random() - 0.5) * 18, y + (Math.random() - 0.5) * 18, 22);
+    drop.userData = {
+        vx: (Math.random() - 0.5) * 160,
+        vy: 40 + Math.random() * 120,
+        vz: 0,
+        life: 0.35 + Math.random() * 0.4,
+        isWood: false,
+        isFire: true
+    };
+    scene.add(drop);
+    bloodParticles.push(drop);
+}
 
 function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
     const styleScale = isSpearmanThrow ? 1.3 : 1;
@@ -1188,9 +1790,20 @@ function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
                 blade.material.color.setHex(isSpearmanThrow ? 0xe2e8f0 : 0xffffff);
                 blade.material.needsUpdate = true;
             }
-            if (feather && feather.material && feather.material.color) {
-                feather.material.color.setHex(isSpearmanThrow ? 0x7c3aed : 0xff0000);
-                feather.material.needsUpdate = true;
+            // Patlar endi Group (uchta pat) - har bir patning rangini yangilaymiz.
+            if (feather) {
+                const featherColor = isSpearmanThrow ? 0x7c3aed : 0xe23b3b;
+                if (feather.material && feather.material.color) {
+                    feather.material.color.setHex(featherColor);
+                    feather.material.needsUpdate = true;
+                } else if (feather.children && feather.children.length) {
+                    feather.children.forEach((fch) => {
+                        if (fch.material && fch.material.color) {
+                            fch.material.color.setHex(featherColor);
+                            fch.material.needsUpdate = true;
+                        }
+                    });
+                }
             }
         }
     });
@@ -1198,6 +1811,9 @@ function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
 
 
 let baseZoom = 1;
+let screenShake = 0;
+let cameraTargetX = 0;
+let cameraTargetY = 0;
 
 function updateCameraBounds() {
     aspect = window.innerWidth / window.innerHeight;
@@ -1234,6 +1850,7 @@ let isAnimating = false;
 let singleShotLocked = false;
 let myHealth = 100;
 let enemyHealth = 100;
+let enemy2Health = 100; // 50+ levelda ikkinchi dushman uchun alohida jon
 let myShield = 5;
 let enemyShield = 5;
 let mySuper = 5;
@@ -1246,9 +1863,12 @@ let myDuckActive = false;
 let enemyDuckActive = false;
 let isDoubleSpearActive = false;
 let pendingDoubleShot = null;
-const SUPER_BUY_COST = 150;
-const DOUBLE_BUY_COST = 220;
-const WALL_BUY_COST = 500;
+let isFireSpearActive = false; // Olov nayza qobiliyati yoqilganmi
+let pendingFireShot = false;   // Joriy otish olov nayzami
+const SUPER_BUY_COST = 75;
+const DOUBLE_BUY_COST = 110;
+const WALL_BUY_COST = 250;
+const FIRE_SPEAR_BUY_COST = 140;
 const WALL_HP_MAX = 5;
 let enemyShieldUsesRemaining = 0;
 let enemySuperUsesRemaining = 0;
@@ -1301,79 +1921,88 @@ function updateCampaignUI() {
 
 function getCampaignConfig(level) {
     const lvl = Math.max(1, level || 1);
-    const distance = Math.min(3600, 2500 + (lvl - 1) * 60);
-    const birds = Math.floor((5 + (lvl - 1) * 2) / 6);
-    let hitRate = 0.9;
-    let aiPrecision = 0.9;
+    // Masofa bosqichma-bosqich oshadi (uzoqroq = qiyinroq).
+    const distance = Math.min(3700, 2400 + (lvl - 1) * 26);
+    // Qushlar (to'siq) soni level oshgani sayin ko'payadi.
+    const birds = Math.min(28, Math.floor(4 + lvl * 0.55));
+
+    // Qiyinlik silliq egri chiziq bo'ylab oshadi.
+    const t = Math.min(1, (lvl - 1) / 99); // 0..1 (1-level=0, 100-level=1)
+    let hitRate = 0.55 + t * 0.43;          // AI aniqligi 0.55 -> 0.98
+    let aiPrecision = 0.6 + t * 0.4;        // 0.6 -> 1.0
     let birdTargetChance = 0.1;
-    let enemySuperCharges = 1;
-    let enemySuperUseChance = 0.08;
-    let enemyCount = 1;
-    let enemyWallEnabled = false;
-    let enemyShieldAutoUses = 2;
-    let enemySuperAutoUses = 2;
-    if (lvl >= 11 && lvl <= 20) {
-        hitRate = 0.9;
-        aiPrecision = 0.9;
-        birdTargetChance = 0.1;
-        enemySuperCharges = 2;
-        enemySuperUseChance = 0.24;
-        enemyShieldAutoUses = 3;
-        enemySuperAutoUses = 3;
-    } else if (lvl >= 21 && lvl <= 30) {
-        hitRate = 0.9;
-        aiPrecision = 0.9;
-        birdTargetChance = 0.1;
-        enemySuperCharges = 3;
-        enemySuperUseChance = 0.35;
-        enemyWallEnabled = true;
-        enemyShieldAutoUses = 5;
-        enemySuperAutoUses = 5;
-    } else if (lvl >= 31 && lvl <= 40) {
-        hitRate = 0.9;
-        aiPrecision = 0.9;
-        birdTargetChance = 0.1;
-        enemySuperCharges = 3;
-        enemySuperUseChance = 0.4;
-        enemyCount = 2;
-        enemyShieldAutoUses = 5;
-        enemySuperAutoUses = 5;
-    } else if (lvl >= 41 && lvl <= 66) {
-        // Hardcore campaign band: two enemies + higher AI precision/ability pressure.
-        hitRate = 0.95;
-        aiPrecision = 1.0;
-        birdTargetChance = 0.1;
-        enemySuperCharges = 4;
-        enemySuperUseChance = 0.55;
-        enemyCount = 2;
-        enemyWallEnabled = true;
-        enemyShieldAutoUses = 7;
-        enemySuperAutoUses = 7;
-    } else if (lvl > 66) {
-        hitRate = 0.98;
-        aiPrecision = 1.0;
-        birdTargetChance = 0.1;
-        enemySuperCharges = 5;
-        enemySuperUseChance = 0.62;
-        enemyCount = 2;
-        enemyWallEnabled = true;
-        enemyShieldAutoUses = 8;
-        enemySuperAutoUses = 8;
-    }
+
+    // === Raqib zahiralari levelga qarab o'sadi (max 6 ta, 100-levelda) ===
+    // Super kuch: 1-levelda 1, 100-levelda 6
+    let enemySuperCharges = Math.max(1, Math.min(6, Math.floor(1 + t * 5)));
+    // Super ishlatish ehtimoli
+    let enemySuperUseChance = Math.min(0.62, 0.06 + t * 0.6);
+    // Qalqon ishlatish imkoniyati: 1-levelda 1, 100-levelda 6
+    let enemyShieldAutoUses = Math.max(1, Math.min(6, Math.floor(1 + t * 5)));
+    // Super avtomatik ishlatish: 1-levelda 1, 100-levelda 6
+    let enemySuperAutoUses = Math.max(1, Math.min(6, Math.floor(1 + t * 5)));
+
+    // 50-leveldan keyin DOIM ikki dushman jangchisi bo'ladi.
+    let enemyCount = lvl > 50 ? 2 : 1;
+    // Devor (to'siq) 18-leveldan boshlab dushmanda paydo bo'ladi. FAQAT 1 TA!
+    let enemyWallEnabled = lvl >= 18;
+
+    const env = getCampaignEnvironment(lvl);
     return {
         level: lvl,
         distance,
         birds,
         enemyCount,
         enemyWallEnabled,
+        enemyWallCount: 1, // Devor har doim faqat 1 ta
         hitRate,
         aiPrecision,
         birdTargetChance,
         enemySuperCharges,
         enemySuperUseChance,
         enemyShieldAutoUses,
-        enemySuperAutoUses
+        enemySuperAutoUses,
+        // 50+ levellarda ikkala dushman bir navbatda tengidan o'q uzadi (volley).
+        enemyVolleySimultaneous: lvl > 50,
+        map: env.map,
+        weather: env.weather
     };
+}
+
+// Kampaniya levelining tematik muhitini qaytaradi (xarita + ob-havo).
+// Har bir level guruhi alohida tabiat/shahar bo'lib, dunyo bo'ylab sayohat hissi beradi.
+function getCampaignEnvironment(level) {
+    const lvl = Math.max(1, level || 1);
+    // Boy, xilma-xil sahna ketma-ketligi (har 5 levelda yangi muhit).
+    // Tabiat va tarixiy shaharlar aralashmasi.
+    const scenes = [
+        { map: 'field',     weather: 'sunny' },   // 1-5   yashil dala, quyoshli
+        { map: 'desert',    weather: 'sunny' },   // 6-10  cho'l
+        { map: 'field',     weather: 'rain' },    // 11-15 yomg'irli dala
+        { map: 'samarkand', weather: 'sunny' },   // 16-20 Samarqand
+        { map: 'mountain',  weather: 'sunny' },   // 21-25 tog'
+        { map: 'winter',    weather: 'snow' },    // 26-30 qor
+        { map: 'bukhara',   weather: 'sunny' },   // 31-35 Buxoro
+        { map: 'castle',    weather: 'night' },   // 36-40 qal'a, tun
+        { map: 'oasis',     weather: 'sunny' },   // 41-45 voha
+        { map: 'istanbul',  weather: 'sunny' },   // 46-50 Istanbul
+        { map: 'field',     weather: 'storm' },   // 51-55 bo'ronli dala
+        { map: 'volcano',   weather: 'night' },   // 56-60 vulqon, tun
+        { map: 'winter',    weather: 'night' },   // 61-65 qishki tun
+        { map: 'samarkand', weather: 'night' },   // 66-70 Samarqand, tun
+        { map: 'canyon',    weather: 'sunny' },   // 71-75 kanyon
+        { map: 'desert',    weather: 'storm' },   // 76-80 cho'l bo'roni
+        { map: 'istanbul',  weather: 'rain' },    // 81-85 Istanbul, yomg'ir
+        { map: 'mountain',  weather: 'snow' },    // 86-90 qorli tog'
+        { map: 'bukhara',   weather: 'night' },   // 91-95 Buxoro, tun
+        { map: 'castle',    weather: 'storm' }    // 96-100 qal'a, jala
+    ];
+    const idx = Math.floor((lvl - 1) / 5) % scenes.length;
+    let { map, weather } = scenes[idx];
+    // Mantiqiy moslik tuzatishlari.
+    if (map === 'desert' && weather === 'snow') weather = 'sunny';
+    if (map === 'winter' && (weather === 'rain' || weather === 'storm')) weather = 'snow';
+    return { map, weather };
 }
 
 function applyBattlePositions() {
@@ -1404,6 +2033,46 @@ function getPlayerIndexByModel(model) {
     return -1;
 }
 
+// Ikki o'yinchi bir jamoada (ittifoqchi) ekanligini aniqlaydi.
+// Single rejimda: o'yinchi yolg'iz, qolgan barcha indekslar dushman jamoasi.
+// Dushmanlar bir-birini urmasligi kerak (50+ levelda ikki dushman).
+function areAllies(indexA, indexB) {
+    if (indexA === indexB) return true;
+    if (gameMode !== 'single') return false;
+    const enemies = getEnemyIndices();
+    const aIsEnemy = enemies.includes(indexA);
+    const bIsEnemy = enemies.includes(indexB);
+    // Ikkisi ham dushman bo'lsa - ittifoqchi (bir-birini urmasin).
+    return aIsEnemy && bIsEnemy;
+}
+
+// Berilgan targetIndex uchun jonni kamaytiradi (p3 uchun alohida enemy2Health).
+function applyDamageToTarget(targetIndex, damage) {
+    if (targetIndex === myPlayerIndex) {
+        myHealth -= damage;
+    } else if (p3Model && targetIndex === 2) {
+        enemy2Health -= damage;
+    } else {
+        enemyHealth -= damage;
+    }
+}
+
+// Berilgan targetIndex uchun jon qolganligini tekshiradi.
+function getHealthForTarget(targetIndex) {
+    if (targetIndex === myPlayerIndex) return myHealth;
+    if (p3Model && targetIndex === 2) return enemy2Health;
+    return enemyHealth;
+}
+
+// Barcha dushmanlar o'ldimi tekshiradi (50+ levelda ikkisi ham 0 bo'lishi kerak).
+function areAllEnemiesDead() {
+    if (enemyHealth <= 0) {
+        if (p3Model) return enemy2Health <= 0;
+        return true;
+    }
+    return false;
+}
+
 function shieldForPlayer(index) {
     return index === myPlayerIndex ? myShield : enemyShield;
 }
@@ -1426,6 +2095,32 @@ function updateShieldUI() {
     if (!shieldCountText) return;
     shieldCountText.innerText = Math.max(0, myShield);
     if (shieldButton) shieldButton.classList.toggle('broken', myShield <= 0);
+    updateEnemyResourcesUI();
+}
+
+// Raqibning qolgan resurslari (qalqon, super, qo'sh nayza, devor) ko'rsatiladi.
+function updateEnemyResourcesUI() {
+    const panel = document.getElementById('enemy-resources');
+    if (!panel) return;
+    if (gameMode !== 'single' && gameMode !== 'multi') {
+        panel.classList.add('hidden');
+        return;
+    }
+    panel.classList.remove('hidden');
+    const shieldEl = document.getElementById('enemy-res-shield');
+    const superEl = document.getElementById('enemy-res-super');
+    const doubleEl = document.getElementById('enemy-res-double');
+    const wallEl = document.getElementById('enemy-res-wall');
+    if (shieldEl) shieldEl.innerText = String(Math.max(0, enemyShield));
+    if (superEl) superEl.innerText = String(Math.max(0, enemySuper));
+    // Qo'sh nayza - raqibda yo'q (faqat o'yinchida)
+    if (doubleEl) doubleEl.innerText = '0';
+    if (wallEl) {
+        // Devor faqat 1 ta bo'lishi mumkin
+        const enemyIdx = getPrimaryEnemyTurnIndex ? getPrimaryEnemyTurnIndex() : (myPlayerIndex === 0 ? 1 : 0);
+        const ew = wallStates && wallStates[enemyIdx];
+        wallEl.innerText = (ew && ew.active) ? '1' : '0';
+    }
 }
 
 function updateSuperUI() {
@@ -1448,6 +2143,24 @@ function updateSuperUI() {
             isDoubleSpearActive = false;
             doubleButton.classList.remove('active');
         }
+    }
+
+    // Olov nayza tugmasi
+    const fireBtn = document.getElementById('fire-button');
+    const fireCountText = document.getElementById('fire-count');
+    const fireCount = Math.max(0, Number(myProfile.fireSpears || 0));
+    if (fireCountText) fireCountText.innerText = String(fireCount);
+    if (fireBtn) {
+        if (fireCount > 0) {
+            fireBtn.style.display = 'inline-flex';
+            fireBtn.classList.remove('hidden', 'broken');
+        } else {
+            isFireSpearActive = false;
+            fireBtn.classList.remove('active');
+            fireBtn.style.display = 'none';
+            fireBtn.classList.add('hidden');
+        }
+        fireBtn.classList.toggle('active', isFireSpearActive && fireCount > 0);
     }
     
     // Artillery and Crow buttons logic
@@ -1481,6 +2194,7 @@ function updateSuperUI() {
     }
     
     updateShopUI();
+    updateEnemyResourcesUI();
 }
 
 function updateShopUI() {
@@ -1492,12 +2206,26 @@ function updateShopUI() {
     if (shopWallMaxText) shopWallMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.walls || 0))}`;
     const shopArtilleryMaxText = document.getElementById('shop-artillery-max');
     if (shopArtilleryMaxText) shopArtilleryMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.artillery || 0))}`;
+    const shopFireMaxText = document.getElementById('shop-fire-max');
+    if (shopFireMaxText) shopFireMaxText.innerText = `Soni: ${Math.max(0, Number(myProfile.fireSpears || 0))}`;
+    const fireCountSettings = document.getElementById('fire-count-settings');
+    if (fireCountSettings) fireCountSettings.innerText = String(Math.max(0, Number(myProfile.fireSpears || 0)));
     const btnBuyArtillery = document.getElementById('btn-buy-artillery');
-    const ARTILLERY_BUY_COST = 500;
+    const btnBuyFire = document.getElementById('btn-buy-fire');
+    const ARTILLERY_BUY_COST = 250;
+    // Narx yorliqlarini dinamik yangilaymiz (eski cache ham to'g'ri ko'rsatadi).
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = String(val); };
+    setTxt('super-buy-cost', SUPER_BUY_COST);
+    setTxt('double-buy-cost', DOUBLE_BUY_COST);
+    setTxt('fire-buy-cost', FIRE_SPEAR_BUY_COST);
+    setTxt('wall-buy-cost', WALL_BUY_COST);
+    setTxt('artillery-buy-cost', ARTILLERY_BUY_COST);
+    setTxt('crowhunt-buy-cost', CROWHUNT_BUY_COST);
     if (btnBuySuper) btnBuySuper.disabled = score < SUPER_BUY_COST;
     if (btnBuyDouble) btnBuyDouble.disabled = score < DOUBLE_BUY_COST;
     if (btnBuyWall) btnBuyWall.disabled = score < WALL_BUY_COST;
     if (btnBuyArtillery) btnBuyArtillery.disabled = score < ARTILLERY_BUY_COST;
+    if (btnBuyFire) btnBuyFire.disabled = score < FIRE_SPEAR_BUY_COST;
 }
 
 function getWallPlacementLimits() {
@@ -1694,13 +2422,135 @@ const GRAVITY = 700;
 let lastTime = performance.now();
 
 // Cinematic Camera
-let cameraState = 'static'; 
-let cameraTargetX = 0;
-let cameraTargetY = 0;
-let cameraZoomTarget = 1;
-let screenShake = 0;
+let cameraState = 'normal';
+let cameraOffsetY = 120;
+let cameraOffsetZ = 1450;
+let cameraZoomTarget = baseZoom;
+
+// Mobil qurilmalarda portret rejimida bo'lsa, auto-rotate haqida ogohlantirish
+let orientationNoticeShown = false;
+function checkOrientationNotice() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(String(navigator.userAgent || ''));
+    if (!isMobile) return;
+    const portrait = window.innerHeight > window.innerWidth;
+    let banner = document.getElementById('rotate-warning');
+    if (!banner && portrait) {
+        banner = document.createElement('div');
+        banner.id = 'rotate-warning';
+        banner.style.position = 'fixed';
+        banner.style.zIndex = '9999';
+        banner.style.left = '50%';
+        banner.style.bottom = '20px';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.background = 'rgba(15,23,42,0.96)';
+        banner.style.borderRadius = '999px';
+        banner.style.padding = '10px 18px';
+        banner.style.color = '#e5f2ff';
+        banner.style.fontSize = '0.82rem';
+        banner.style.display = 'flex';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '8px';
+        banner.style.boxShadow = '0 12px 30px rgba(15,23,42,0.7)';
+        banner.innerHTML = '<span style="font-size:1.2rem;">📱</span><span>Ekran burilishiga ruxsat bering (auto-rotate) va telefonni yon tomonga agdarib o\'yinni davom ettiring.</span>';
+        document.body.appendChild(banner);
+        orientationNoticeShown = true;
+    }
+    if (banner && !portrait) {
+        banner.remove();
+        orientationNoticeShown = false;
+    }
+}
+
+window.addEventListener('resize', checkOrientationNotice);
+window.addEventListener('orientationchange', checkOrientationNotice);
+document.addEventListener('DOMContentLoaded', checkOrientationNotice);
 let cinematicSlowUntil = 0;
 const SUPER_CINEMATIC_MS = 8000;
+
+// === Sinematik effektni o'tkazib yuborish (skip) tizimi ===
+// Super himoya bilan o'q/nayza urib tushirilgandagi sekinlashtirilgan zoom effektini
+// o'yinchi xohlasa "O'tkazib yuborish" tugmasi bilan darrov tugatishi mumkin.
+let cinematicSkipBtn = null;
+let cinematicAfterCallback = null;   // Effekt tugagach (yoki skip qilinganda) ishlaydigan vazifa
+let cinematicAfterTimer = null;
+let cinematicFinished = false;
+
+function scheduleAfterCinematic(callback) {
+    // Avvalgi kutilayotgan vazifani tozalaymiz.
+    if (cinematicAfterTimer) {
+        clearTimeout(cinematicAfterTimer);
+        cinematicAfterTimer = null;
+    }
+    cinematicFinished = false;
+    cinematicAfterCallback = (typeof callback === 'function') ? callback : null;
+    cinematicAfterTimer = setTimeout(() => {
+        finishCinematicNow();
+    }, SUPER_CINEMATIC_MS);
+}
+
+function finishCinematicNow() {
+    if (cinematicFinished) return;
+    cinematicFinished = true;
+    if (cinematicAfterTimer) {
+        clearTimeout(cinematicAfterTimer);
+        cinematicAfterTimer = null;
+    }
+    const cb = cinematicAfterCallback;
+    cinematicAfterCallback = null;
+    if (cb) cb();
+}
+
+function getCinematicSkipBtn() {
+    if (cinematicSkipBtn) return cinematicSkipBtn;
+    let el = document.getElementById('skip-cinematic-btn');
+    if (!el) {
+        el = document.createElement('button');
+        el.id = 'skip-cinematic-btn';
+        el.type = 'button';
+        el.className = 'skip-cinematic-btn hidden';
+        el.innerHTML = "O'tkazib yuborish ⏭";
+        el.style.pointerEvents = 'auto';
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            skipCinematic();
+        });
+        const gs = document.getElementById('game-screen') || document.body;
+        gs.appendChild(el);
+    }
+    cinematicSkipBtn = el;
+    return el;
+}
+
+function showSkipCinematicButton() {
+    const btn = getCinematicSkipBtn();
+    btn.classList.remove('hidden');
+}
+
+function hideSkipCinematicButton() {
+    const btn = getCinematicSkipBtn();
+    btn.classList.add('hidden');
+}
+
+// Skip: sekinlashtirilgan effekt va zoomni darrov tugatib, navbatga o'tamiz.
+function skipCinematic() {
+    hideSkipCinematicButton();
+    cinematicSlowUntil = 0;
+    if (superInterceptCinematic) {
+        clearSuperInterceptCinematic();
+    }
+    if (crowKillerCinematicActive) {
+        crowKillerCinematicActive = false;
+        crowKillerCinematicUntil = 0;
+        if (cameraState === 'crowKiller') {
+            cameraState = 'normal';
+            cameraZoomTarget = baseZoom;
+        }
+    }
+    resetCameraAfterImpact();
+    finishCinematicNow();
+}
+
 let superClashVisual = null;
 let superInterceptCinematic = null;
 
@@ -1736,20 +2586,59 @@ function spawnSuperClashVisual(x, y) {
     setTimeout(() => clearSuperClashVisual(), 1200);
 }
 
-function createSuperCinematicSpear() {
+function createSuperCinematicSpear(weaponType = 'arrow') {
     const g = new THREE.Group();
-    const shaft = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.9, 1.9, 74),
-        new THREE.MeshStandardMaterial({ color: 0x8b5a34, roughness: 0.82 })
-    );
-    shaft.rotation.z = Math.PI / 2;
-    const tip = new THREE.Mesh(
-        new THREE.ConeGeometry(3.8, 16, 8),
-        new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.2 })
-    );
-    tip.position.x = 42;
-    tip.rotation.z = -Math.PI / 2;
-    g.add(shaft, tip);
+    if (weaponType === 'spear') {
+        // Uzun jangovor nayza: uzun tana + bargsimon paykon (faqat oldida uch).
+        const shaft = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.3, 2.7, 150, 12),
+            new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.62, metalness: 0.08 })
+        );
+        shaft.rotation.z = Math.PI / 2;
+        const blade = new THREE.Mesh(
+            new THREE.ConeGeometry(6, 40, 16),
+            new THREE.MeshStandardMaterial({ color: 0xeef2f7, metalness: 0.96, roughness: 0.14 })
+        );
+        blade.position.x = 92;
+        blade.rotation.z = -Math.PI / 2;
+        const collar = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.6, 3.4, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.3 })
+        );
+        collar.rotation.z = Math.PI / 2;
+        collar.position.x = 66;
+        g.add(shaft, collar, blade);
+        g.userData.cinematicLen = 150;
+    } else {
+        // Kamon o'qi: ingichka tana + paykon oldida + patlar orqada.
+        const shaft = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.5, 2.0, 90, 12),
+            new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.62, metalness: 0.08 })
+        );
+        shaft.rotation.z = Math.PI / 2;
+        const tip = new THREE.Mesh(
+            new THREE.ConeGeometry(4.4, 22, 16),
+            new THREE.MeshStandardMaterial({ color: 0xeef2f7, metalness: 0.96, roughness: 0.14 })
+        );
+        tip.position.x = 56;
+        tip.rotation.z = -Math.PI / 2;
+        // Orqa patlar
+        const featherMatC = new THREE.MeshStandardMaterial({ color: 0xe23b3b, roughness: 0.8, side: THREE.DoubleSide });
+        const fShape = new THREE.Shape();
+        fShape.moveTo(0, 0);
+        fShape.quadraticCurveTo(14, 8, 26, 6);
+        fShape.quadraticCurveTo(20, 1, 18, 0);
+        fShape.quadraticCurveTo(10, -1, 0, 0);
+        const fGeo = new THREE.ShapeGeometry(fShape);
+        for (let f = 0; f < 3; f++) {
+            const feather = new THREE.Mesh(fGeo, featherMatC.clone());
+            feather.rotation.x = (f * Math.PI * 2) / 3;
+            feather.position.x = -44;
+            g.add(feather);
+        }
+        g.add(shaft, tip);
+        g.userData.cinematicLen = 90;
+    }
     return g;
 }
 
@@ -1760,15 +2649,32 @@ function clearSuperInterceptCinematic() {
     superInterceptCinematic = null;
 }
 
-function startSuperInterceptCinematic(hitX, hitY, byPlayerIndex) {
+// O'yinchining jangovor quroli turini aniqlaydi: 'spear' (nayza) yoki 'arrow' (kamon o'qi).
+function getPlayerWeaponType(index) {
+    const model = modelForPlayer(index);
+    if (!model || !model.userData) return 'arrow';
+    if (model.userData.isOttomanSpearman) return 'spear';
+    if (model.userData.isCustomModel) {
+        const cModel = (window.customModelsInfo || []).find(m => m.id == model.userData.charType);
+        if (cModel && cModel.weaponType === 'spear') return 'spear';
+    }
+    return 'arrow';
+}
+
+function startSuperInterceptCinematic(hitX, hitY, byPlayerIndex, weaponInfo = {}) {
     clearSuperInterceptCinematic();
     const now = performance.now();
-    const defender = modelForPlayer(typeof byPlayerIndex === 'number' ? byPlayerIndex : myPlayerIndex) || p1Model;
+    const defenderIndex = typeof byPlayerIndex === 'number' ? byPlayerIndex : myPlayerIndex;
+    const defender = modelForPlayer(defenderIndex) || p1Model;
     const startX = defender.position.x + (hitX >= defender.position.x ? 120 : -120);
     const startY = defender.position.y + 165;
 
-    const playerSpear = createSuperCinematicSpear();
-    const enemySpear = createSuperCinematicSpear();
+    // playerSpear = super himoya qaytaruvchi quroli (himoyachining quroli),
+    // enemySpear = urib tushirilgan, raqib otgan quroli (aynan o'sha tur bo'lishi shart).
+    const defenderWeapon = weaponInfo.defenderWeapon || getPlayerWeaponType(defenderIndex);
+    const attackerWeapon = weaponInfo.attackerWeapon || 'arrow';
+    const playerSpear = createSuperCinematicSpear(defenderWeapon);
+    const enemySpear = createSuperCinematicSpear(attackerWeapon);
     playerSpear.position.set(startX, startY, 10);
     const phase = ((Math.abs(hitX) * 0.01) + (Math.abs(hitY) * 0.013) + (Number(byPlayerIndex || 0) * 0.37));
     const sideSign = Math.sin(phase) >= 0 ? 1 : -1;
@@ -1792,6 +2698,7 @@ function startSuperInterceptCinematic(hitX, hitY, byPlayerIndex) {
         enemyVx: sideSign * (2.8 + ((Math.cos(phase) + 1) * 0.6)),
         enemyVy: 90
     };
+    showSkipCinematicButton();
 }
 
 function updateSuperInterceptCinematic(now, dt) {
@@ -1800,6 +2707,7 @@ function updateSuperInterceptCinematic(now, dt) {
     const elapsed = now - seq.startMs;
     if (elapsed >= seq.durationMs) {
         clearSuperInterceptCinematic();
+        hideSkipCinematicButton();
         resetCameraAfterImpact();
         return;
     }
@@ -1848,12 +2756,14 @@ function updateSuperInterceptCinematic(now, dt) {
 
 function resetCameraAfterImpact() {
     cameraState = 'recover';
-    if (gameMode === 'multi' && currentTurnIndex >= 0) {
-        const activeModel = modelForPlayer(currentTurnIndex);
-        cameraTargetX = activeModel ? activeModel.position.x : 0;
-    } else {
-        cameraTargetX = 0;
+    // Sinematik effekt tugagach kamera HAR DOIM jangchiga qaratiladi.
+    // (Avval single rejimda x=0 ga qaytib, jangchi ko'rinmay qolardi - shu tuzatildi.)
+    let focusModel = (currentTurnIndex >= 0) ? modelForPlayer(currentTurnIndex) : null;
+    if (!focusModel) {
+        // Navbat hali aniqlanmagan bo'lsa, o'yinchining o'z modeliga qaratamiz.
+        focusModel = modelForPlayer(myPlayerIndex) || p1Model;
     }
+    cameraTargetX = focusModel ? focusModel.position.x : 0;
     cameraTargetY = 0;
     cameraZoomTarget = gameMode === 'multi' ? baseZoom * 1.08 : baseZoom;
 }
@@ -1899,6 +2809,41 @@ function updateHealthUI() {
     if (h2 < 30) p2HealthBar.style.background = '#ef4444';
     else if (h2 < 60) p2HealthBar.style.background = '#f59e0b';
     else p2HealthBar.style.background = '#10b981';
+
+    // Ikkinchi dushman (p3Model) uchun alohida health bar - RAQIB tomoniga qo'shiladi.
+    // O'yinchi chap (index=0) bo'lsa raqib p2-info da, o'ng (index=1) bo'lsa p1-info da.
+    const enemyInfoId = myPlayerIndex === 0 ? 'p2-info' : 'p1-info';
+    const enemyInfoEl = document.getElementById(enemyInfoId);
+    let p3Container = document.getElementById('p3-health-container');
+    
+    if (p3Model) {
+        // Agar p3 health bar hali yaratilmagan bo'lsa, raqib panelida yaratamiz.
+        if (!p3Container && enemyInfoEl) {
+            p3Container = document.createElement('div');
+            p3Container.id = 'p3-health-container';
+            p3Container.className = 'health-bar-container';
+            p3Container.style.marginTop = '3px';
+            const p3Bar = document.createElement('div');
+            p3Bar.id = 'p3-health';
+            p3Bar.className = 'health-bar-fill';
+            p3Container.appendChild(p3Bar);
+            enemyInfoEl.appendChild(p3Container);
+        }
+        // Agar bor bo'lsa, to'g'ri joyda ekanligini tekshiramiz.
+        if (p3Container && p3Container.parentElement !== enemyInfoEl && enemyInfoEl) {
+            enemyInfoEl.appendChild(p3Container);
+        }
+        const p3Bar = document.getElementById('p3-health');
+        if (p3Container && p3Bar) {
+            p3Container.style.display = '';
+            p3Bar.style.width = Math.max(0, enemy2Health) + '%';
+            if (enemy2Health < 30) p3Bar.style.background = '#ef4444';
+            else if (enemy2Health < 60) p3Bar.style.background = '#f59e0b';
+            else p3Bar.style.background = '#10b981';
+        }
+    } else if (p3Container) {
+        p3Container.style.display = 'none';
+    }
 }
 
 function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = false) {
@@ -1950,6 +2895,7 @@ function hideFlyingSpear() {
         if (child.userData && child.userData.tempCrow) spearGroup.remove(child);
     });
     secondarySpearGroup.visible = false;
+    if (typeof resetSpearTrail === 'function') resetSpearTrail();
 }
 
 function stickSpear(targetModel, hitX, hitY, angle) {
@@ -2055,7 +3001,14 @@ function handleEnd(e) {
 
 const isUiTarget = (target) => {
     if (!target || typeof target.closest !== 'function') return false;
-    return !!(target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'));
+    return !!(
+        target.closest('button') || 
+        target.closest('input') || 
+        target.closest('select') || 
+        target.closest('textarea') || 
+        target.closest('#chat-container') || 
+        target.closest('#in-game-modal')
+    );
 };
 
 function pointerToWorldX(e) {
@@ -2068,7 +3021,13 @@ if (window.PointerEvent) {
         if (isUiTarget(e.target)) return;
         dragPointerId = e.pointerId;
         handleStart(e);
-    });
+    }, { passive: true });
+    
+    // Explicit touchstart for older Android/Capacitor versions
+    document.addEventListener('touchstart', (e) => {
+        if (isUiTarget(e.target)) return;
+        if (e.touches && e.touches[0]) handleStart(e.touches[0]);
+    }, { passive: true });
     document.addEventListener('pointermove', (e) => {
         if (isWallPlacementMode && isWallDragActive) {
             const myWall = wallStates[myPlayerIndex];
@@ -2278,6 +3237,24 @@ if (doubleButton) {
     doubleButton.addEventListener('click', toggleDouble);
 }
 
+const fireButton = document.getElementById('fire-button');
+if (fireButton) {
+    const toggleFire = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (Number(myProfile.fireSpears || 0) <= 0) return;
+        isFireSpearActive = !isFireSpearActive;
+        fireButton.classList.toggle('active', isFireSpearActive);
+        if (isFireSpearActive) {
+            triggerAbilityPulse(fireButton);
+            playSfx('superPress', 0.7);
+        }
+    };
+    fireButton.addEventListener('click', toggleFire);
+}
+
 function deployOrRepositionWall() {
     if (gameMode === 'menu' || myPlayerIndex < 0) return;
     if (currentTurnIndex !== myPlayerIndex) return;
@@ -2342,6 +3319,9 @@ function startSinglePlayer(opts) {
     setDuckActive(false, false);
     enemyDuckActive = false;
     currentOpponentProfile = null;
+    // Yangi o'yin: avvalgi otish hint trayektoriyasini tozalaymiz.
+    lastPlayerShot = null;
+    clearHintTrajectory();
     const pauseBtn = document.getElementById('btn-pause');
     if (pauseBtn) pauseBtn.innerText = (translations[myProfile.lang] || translations.uz).pause;
     
@@ -2351,10 +3331,12 @@ function startSinglePlayer(opts) {
     aiHitAccumulator = 0;
     enemyVolleyQueue = [];
 
-    const randomMaps = ['field', 'castle', 'desert', 'winter'];
+    const randomMaps = ['field', 'castle', 'desert', 'winter', 'mountain'];
     const randomWeathers = ['sunny', 'night', 'rain', 'storm', 'snow'];
-    const autoMap = randomMaps[Math.floor(Math.random() * randomMaps.length)];
-    const autoWeather = randomWeathers[Math.floor(Math.random() * randomWeathers.length)];
+    // Kampaniya levellari endi tematik muhitga ega (bosqichma-bosqich o'zgaradi).
+    // Agar config muhitni bermasa, tasodifiy tanlaymiz.
+    const autoMap = campaignConfig.map || randomMaps[Math.floor(Math.random() * randomMaps.length)];
+    const autoWeather = campaignConfig.weather || randomWeathers[Math.floor(Math.random() * randomWeathers.length)];
     buildMap(autoMap, autoWeather);
     clouds = [];
     const effectiveBirds = opts.birds !== false;
@@ -2409,6 +3391,7 @@ function startSinglePlayer(opts) {
     
     myHealth = 100;
     enemyHealth = 100;
+    enemy2Health = 100;
     myShield = 5;
     enemyShield = 5;
     mySuper = Math.max(0, Number(myProfile.superPowers || 5));
@@ -2550,16 +3533,27 @@ function fireEnemyVolleyShot() {
     // AI o'q otishidan oldin mo'ljalga olish holatini ko'rsatish
     setModelActionState(shooter, 'aim', 1000);
     
+    // 50+ levellarda ikki dushman tengidan o'q uzgani uchun aim kechikishi qisqaroq.
+    const aimDelay = (cfg.enemyVolleySimultaneous && enemyVolleyQueue.length > 0) ? 250 : 800;
     setTimeout(() => {
         if (gameMode === 'single' && currentTurnIndex === getPrimaryEnemyTurnIndex() && !isPaused) {
             startSpearAnimation(shooterIndex, angle, power);
         }
-    }, 800);
+    }, aimDelay);
 }
 
 function throwSpear(angle, power) {
     if (gameMode === 'single' && singleShotLocked) return;
     if (gameMode === 'single') singleShotLocked = true;
+    // Yordamchi hint uchun: o'yinchining joriy otish parametrlarini saqlaymiz.
+    // Faqat o'yinchining o'z otishini saqlaymiz (raqibniki emas).
+    if (currentTurnIndex === myPlayerIndex) {
+        const sX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
+        const sY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 270;
+        lastPlayerShot = { startX: sX, startY: sY, angle, power, wind: currentWind, playerIndex: myPlayerIndex };
+        // Eski hint chizig'ini yangisi uchun tozalaymiz (keyingi navbatda chiziladi).
+        clearHintTrajectory();
+    }
     pendingDoubleShot = null;
     if (isDoubleSpearActive && Number(myProfile.doubleSpears || 0) > 0) {
         myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0) - 1);
@@ -2604,9 +3598,22 @@ function throwSpear(angle, power) {
         saveProfile();
         updateSuperUI();
     }
+
+    // Olov nayza: yoqilgan bo'lsa, ushbu otish uchun bittasini sarflaymiz.
+    // (Artileriya bilan birga ishlamaydi.)
+    pendingFireShot = false;
+    if (!artill && isFireSpearActive && Number(myProfile.fireSpears || 0) > 0) {
+        myProfile.fireSpears = Math.max(0, Number(myProfile.fireSpears || 0) - 1);
+        pendingFireShot = true;
+        isFireSpearActive = false;
+        const fireBtn = document.getElementById('fire-button');
+        if (fireBtn) fireBtn.classList.remove('active');
+        saveProfile();
+        updateSuperUI();
+    }
     
     if (gameMode === 'multi') {
-        socket.emit('throwSpear', { angle, power, isArtillery: artill });
+        socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot });
     } else if (gameMode === 'single') {
         if (!artill) {
             if (currentTurnIndex === 0) {
@@ -2807,7 +3814,7 @@ function updateCrowUI() {
     }
 }
 
-function performSuperInterceptVisual(hitX, hitY, byPlayerIndex = myPlayerIndex) {
+function performSuperInterceptVisual(hitX, hitY, byPlayerIndex = myPlayerIndex, attackerIndex = null) {
     const x = Number.isFinite(hitX) ? hitX : (spear ? spear.x : 0);
     const y = Number.isFinite(hitY) ? hitY : (spear ? spear.y : 0);
     cinematicSlowUntil = performance.now() + SUPER_CINEMATIC_MS;
@@ -2815,7 +3822,17 @@ function performSuperInterceptVisual(hitX, hitY, byPlayerIndex = myPlayerIndex) 
     cameraTargetX = x;
     cameraTargetY = y + 30;
     cameraZoomTarget = baseZoom * 2.25;
-    startSuperInterceptCinematic(x, y, byPlayerIndex);
+    // Urib tushirilgan o'q/nayza aynan raqib otgan quroli turi bo'lishi kerak.
+    let attackerWeapon = 'arrow';
+    if (spear && spear.weaponType) {
+        attackerWeapon = spear.weaponType;
+    } else if (typeof attackerIndex === 'number') {
+        attackerWeapon = getPlayerWeaponType(attackerIndex);
+    } else if (spear && typeof spear.playerIndex === 'number') {
+        attackerWeapon = getPlayerWeaponType(spear.playerIndex);
+    }
+    const defenderWeapon = getPlayerWeaponType(typeof byPlayerIndex === 'number' ? byPlayerIndex : myPlayerIndex);
+    startSuperInterceptCinematic(x, y, byPlayerIndex, { attackerWeapon, defenderWeapon });
     showDamageText(x, y + 70, "SUPER HIMOYA!", true, true);
 }
 
@@ -2853,9 +3870,9 @@ function tryUseSuperPower() {
     isAnimating = false;
     performSuperInterceptVisual(hitX, hitY, myPlayerIndex);
     celebrateSuperIntercept(myPlayerIndex);
-    setTimeout(() => {
+    scheduleAfterCinematic(() => {
         updateTurn(currentTurnIndex === 0 ? 1 : 0, generateWind());
-    }, SUPER_CINEMATIC_MS);
+    });
     return true;
 }
 
@@ -2880,6 +3897,7 @@ function tryEnemyUseSuperPowerSingle() {
     enemySuper = Math.max(0, enemySuper - 1);
     enemySuperUsesRemaining = Math.max(0, enemySuperUsesRemaining - 1);
     playSfx('superPress', 0.95);
+    updateEnemyResourcesUI();
 
     const hitX = spear.x;
     const hitY = spear.y;
@@ -2888,14 +3906,14 @@ function tryEnemyUseSuperPowerSingle() {
     isAnimating = false;
     performSuperInterceptVisual(hitX, hitY, byPlayerIndex);
     celebrateSuperIntercept(byPlayerIndex);
-    setTimeout(() => {
+    scheduleAfterCinematic(() => {
         const nextTurn = currentTurnIndex === 0 ? 1 : 0;
         updateTurn(nextTurn, generateWind());
         if (nextTurn === getPrimaryEnemyTurnIndex()) {
             // Small dramatic pause after super cinematic before AI shoots.
             setTimeout(() => playAITurn(), 750);
         }
-    }, SUPER_CINEMATIC_MS);
+    });
     return true;
 }
 
@@ -2947,7 +3965,10 @@ function tryEnemyUseShieldSingle() {
 function advanceSingleTurnAfterShot() {
     const enemyTurnIndex = getPrimaryEnemyTurnIndex();
     if (currentTurnIndex === enemyTurnIndex && enemyVolleyQueue.length > 0) {
-        setTimeout(() => fireEnemyVolleyShot(), 550);
+        // 50+ levellarda ikkala dushman "tengidan" (deyarli bir vaqtda) o'q uzadi.
+        const cfg = campaignConfig || getCampaignConfig(singleCampaignLevel);
+        const volleyDelay = cfg.enemyVolleySimultaneous ? 130 : 550;
+        setTimeout(() => fireEnemyVolleyShot(), volleyDelay);
         return;
     }
     enemyVolleyQueue = [];
@@ -3055,11 +4076,12 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
     // Bu trayektoriyani pastroq qiladi, qarg'alarga tegmaydi
     const rad = ((25 + Math.min(10, dx / 300)) * Math.PI) / 180;
     let power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, Math.sin(2 * rad)));
-    const desiredDir = shooterIndex === 0 ? 1 : -1;
+    // Yo'nalish otuvchining maydondagi tomoniga (nishonga nisbatan) bog'liq.
+    const desiredDir = (target.position.x >= shooter.position.x) ? 1 : -1;
     const windComp = (-currentWind * desiredDir * (dx / 280));
     power = (power + windComp) * powerScale;
     let angle = (rad * 180) / Math.PI;
-    angle += (shooterIndex === 0 ? 1 : -1) * angleOffsetDeg;
+    angle += desiredDir * angleOffsetDeg;
     angle = Math.max(-20, Math.min(110, angle));
     power = Math.max(700, Math.min(2000, power));
     return { angle, power };
@@ -3182,7 +4204,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                     setShieldForPlayer(targetIndex, 0);
                     spawnParticles(hitX, hitY, 10, true);
                 } else {
-                    const currentHp = targetIndex === myPlayerIndex ? myHealth : enemyHealth;
+                    const currentHp = getHealthForTarget(targetIndex);
                     const dmg = Math.ceil(currentHp / 2);
                     hitResult.damage = dmg;
                     hitResult.msg = `ARTILERIYA ZARBASI! -${dmg}`;
@@ -3191,6 +4213,13 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 }
             } else {
                 if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
+                // Olov nayza: tegganda kuydirish zarari (+60%) va olov zarralari.
+                if (spear && spear.isFire && !hitResult.isShieldHit && !hitResult.duckDodged && Number(hitResult.damage) > 0) {
+                    hitResult = applyDoubleDamageBoost(hitResult, 1.6);
+                    hitResult.isCrit = true;
+                    hitResult.msg = `🔥 ${String(hitResult.msg || '').replace('🔥 ', '')}`;
+                    spawnFireBurst(hitX, hitY);
+                }
 
                 if (hitResult.isShieldHit) {
                     spawnParticles(hitX, hitY, 10, true);
@@ -3220,18 +4249,16 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 setShieldForPlayer(targetIndex, shieldForPlayer(targetIndex) - 1);
                 const shieldHealth = shieldForPlayer(targetIndex);
                 if (hitResult.damage > 0) {
-                    if (hitMyself) myHealth -= hitResult.damage;
-                    else enemyHealth -= hitResult.damage;
+                    applyDamageToTarget(targetIndex, hitResult.damage);
                     updateHealthUI();
                 }
                 if (shieldHealth <= 0) breakShield(targetModel);
             } else {
-                if (hitMyself) myHealth -= hitResult.damage;
-                else enemyHealth -= hitResult.damage;
+                applyDamageToTarget(targetIndex, hitResult.damage);
                 updateHealthUI();
             }
             
-            if (myHealth <= 0 || enemyHealth <= 0) {
+            if (myHealth <= 0 || areAllEnemiesDead()) {
                 const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
                 setTimeout(() => showGameOver(winnerIndex), 1500);
             } else {
@@ -3250,8 +4277,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                         if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
                     }
                     if (boostedExtraHit.damage > 0) {
-                        if (extraMyself) myHealth -= boostedExtraHit.damage;
-                        else enemyHealth -= boostedExtraHit.damage;
+                        applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
                         updateHealthUI();
                     }
                 }
@@ -3306,8 +4332,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                     if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
                 }
                 if (boostedExtraHit.damage > 0) {
-                    if (extraMyself) myHealth -= boostedExtraHit.damage;
-                    else enemyHealth -= boostedExtraHit.damage;
+                    applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
                     updateHealthUI();
                 }
             }
@@ -3626,7 +4651,7 @@ socket.on('superIntercept', (data) => {
     performSuperInterceptVisual(hitX, hitY, byPlayerIndex);
     if (typeof byPlayerIndex === 'number') celebrateSuperIntercept(byPlayerIndex);
     if (typeof data?.nextTurn === 'number') {
-        setTimeout(() => updateTurn(data.nextTurn, data.wind), SUPER_CINEMATIC_MS);
+        scheduleAfterCinematic(() => updateTurn(data.nextTurn, data.wind));
     }
     if (typeof byPlayerIndex === 'number') {
         if (byPlayerIndex === myPlayerIndex && typeof data?.remaining === 'number') {
@@ -3641,8 +4666,9 @@ socket.on('superIntercept', (data) => {
 });
 
 socket.on('spearThrown', (data) => {
-    const { playerIndex, angle, power, isArtillery } = data;
+    const { playerIndex, angle, power, isArtillery, isFire } = data;
     setModelActionState(modelForPlayer(playerIndex), 'aim', 800);
+    if (isFire) pendingFireShot = true;
     startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
 
@@ -3856,6 +4882,35 @@ function showGameOver(winnerIndex) {
     cameraTargetX = winnerIndex === 0 ? p1Model.position.x : p2Model.position.x;
     cameraTargetY = -200;
     cameraZoomTarget = baseZoom * 1.5;
+
+    // G'alaba qozonganda bayram konfetti effekti.
+    if (winnerIndex === myPlayerIndex) {
+        spawnConfetti();
+        playSfx('crowDead', 0.6);
+    }
+}
+
+// G'alaba ekranida engil DOM-asoslangan konfetti yog'diradi (mobil/Android'ga mos).
+function spawnConfetti() {
+    try {
+        const colors = ['#fbbf24', '#ef4444', '#22d3ee', '#10b981', '#a855f7', '#f472b6'];
+        const count = MOBILE_PERF_MODE ? 36 : 70;
+        const layer = document.getElementById('ui-layer') || document.body;
+        for (let i = 0; i < count; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + 'vw';
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDuration = (1.8 + Math.random() * 1.8) + 's';
+            piece.style.animationDelay = (Math.random() * 0.6) + 's';
+            piece.style.width = (6 + Math.random() * 8) + 'px';
+            piece.style.height = (10 + Math.random() * 10) + 'px';
+            piece.style.setProperty('--drift', (Math.random() * 200 - 100) + 'px');
+            piece.style.setProperty('--spin', (Math.random() * 720 - 360) + 'deg');
+            layer.appendChild(piece);
+            setTimeout(() => piece.remove(), 4200);
+        }
+    } catch (_) {}
 }
 
 if (restartBtn) {
@@ -3934,6 +4989,13 @@ function updateTurn(turnIndex, wind) {
     }
     if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
+
+    // O'yinchi navbati boshlanganda avvalgi otish trayektoriyasini hint sifatida ko'rsatamiz.
+    if (turnIndex === myPlayerIndex && lastPlayerShot) {
+        buildHintTrajectory();
+    } else {
+        clearHintTrajectory();
+    }
 
     p1Info.classList.toggle('active', turnIndex === 0);
     p2Info.classList.toggle('active', turnIndex === 1);
@@ -4015,20 +5077,24 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     const isCustom = !!thrower?.userData?.isCustomModel;
     
     let throwState = 'afterShot';
-    if (isArcher) throwState = 'aim';
-    if (isCustom) {
-        const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
-        if (cModel && cModel.weaponType === 'bow') throwState = 'aim';
-    }
+    // Kamonchilarda aim holati rasmda o'qni tortib turgan holat bo'lgani uchun, 
+    // o'q uzilgandan so'ng 'afterShot' rasmiga o'tishi kerak.
+    // Eski mantiqda aim bo'lib qolgan edi, shuni afterShot ga o'zgartiramiz.
     
-    setModelActionState(thrower, throwState, isArcher || throwState === 'aim' ? 1200 : 950);
+    setModelActionState(thrower, throwState, 1100);
+
+    // Otish yo'nalishi otuvchining maydondagi TOMONIGA qarab aniqlanadi.
+    // Chap tomondagi jangchi (x < 0) o'ngga, o'ng tomondagi (x > 0) chapga otadi.
+    // (Avval bu faqat index===0 ga bog'liq edi, shu sabab 50+ levelda chap tomondagi
+    //  ikkinchi raqib (p3) teskari - o'yinchidan teskari tomonga - otib yuborardi.)
+    const facingRight = thrower.position.x < 0;
 
     // Start trajectory directly from the bow's position
-    let startX = playerIndex === 0 ? p1Model.position.x + 60 : thrower.position.x - 60;
+    let startX = thrower.position.x + (facingRight ? 60 : -60);
     let startY = thrower.position.y + 270; 
     
     if (isArtillery) {
-        startX = thrower.position.x + (playerIndex === 0 ? 150 : -150) + (playerIndex === 0 ? 50 : -50);
+        startX = thrower.position.x + (facingRight ? 200 : -200);
         startY = thrower.position.y + 150;
         
         if (playerIndex !== myPlayerIndex) {
@@ -4039,7 +5105,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
                 scene.add(window.enemyArtilleryCannon);
             }
             window.enemyArtilleryCannon.scale.set(1.5, 1.5, 1.5);
-            window.enemyArtilleryCannon.position.set(thrower.position.x + (playerIndex === 0 ? 150 : -150), thrower.position.y + 60, thrower.position.z + 10);
+            window.enemyArtilleryCannon.position.set(thrower.position.x + (facingRight ? 150 : -150), thrower.position.y + 60, thrower.position.z + 10);
                         
             window.enemyArtilleryCannon.visible = true;
             
@@ -4053,7 +5119,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     const rad = angle * (Math.PI / 180);
 
     let vx = power * Math.cos(rad);
-    if (playerIndex !== 0) vx = -vx;
+    if (!facingRight) vx = -vx;
 
     spear = {
         x: startX,
@@ -4065,8 +5131,11 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         hitEntity: null,
         entityHitEmitted: false,
         aiSuperTried: false,
-        isArtillery: isArtillery
+        isArtillery: isArtillery,
+        isFire: !isArtillery && pendingFireShot,
+        weaponType: getPlayerWeaponType(playerIndex)
     };
+    pendingFireShot = false;
     
     let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
     if (thrower?.userData?.isCustomModel) {
@@ -4081,6 +5150,8 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     secondarySpearGroup.scale.setScalar(spearScale);
     spearGroup.position.set(startX, startY, 0);
     spearGroup.visible = true;
+    // Olov nayza: nayzaga yonayotgan glow va olovni biriktiramiz.
+    applyFireSpearVisual(spear.isFire);
     if (pendingDoubleShot) {
         const shot = pendingDoubleShot;
         const shotRad = shot.angle * (Math.PI / 180);
@@ -4230,6 +5301,9 @@ function checkCollision() {
         const hitBottomY = m.position.y + 30;
         const relativeY = spear.y - m.position.y;
         if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
+        // Ittifoqchini (bir tomondagi raqibni) o'qi/nayzasi urmaydi - dushmanlar
+        // bir-birining jonini kamaytirmaydi (50+ levelda ikki dushman).
+        if (i !== spear.playerIndex && areAllies(i, spear.playerIndex)) continue;
         if (Math.abs(spear.x - m.position.x) < 55 &&
             spear.y > hitBottomY && 
             spear.y < hitTopY) {
@@ -4296,35 +5370,11 @@ let isPaused = false;
 
 function gameLoop(now) {
     if (isPaused) {
+        // Pauza paytida hech narsani yangilamaymiz, faqat sahnani qayta chizamiz.
+        // (Avval bu yerda `dt` e'lon qilinishidan oldin ishlatilib, crash bo'lardi.)
         lastTime = now;
-    mixers.forEach(m => m.update(dt));
-        
-    if (window.explosions) {
-        for (let i = window.explosions.length - 1; i >= 0; i--) {
-            const expl = window.explosions[i];
-            expl.userData.age += dt;
-            const posAttr = expl.geometry.attributes.position;
-            const mat = expl.material;
-            
-            for(let j=0; j<expl.userData.vels.length; j++) {
-                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
-                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
-                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
-            }
-            posAttr.needsUpdate = true;
-            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
-            
-            if (expl.userData.age > 1.5) {
-                scene.remove(expl);
-                expl.geometry.dispose();
-                expl.material.dispose();
-                window.explosions.splice(i, 1);
-            }
-        }
-    }
-
-    renderer.render(scene, camera);
-        if(isLooping) requestAnimationFrame(gameLoop);
+        renderer.render(scene, camera);
+        if (isLooping) requestAnimationFrame(gameLoop);
         return;
     }
     let timeScale = 1.0;
@@ -4375,6 +5425,17 @@ function gameLoop(now) {
         }
     }
     dustSystem.geometry.attributes.position.needsUpdate = true;
+
+    // Tunda yulduzlar miltillaydi (faqat ko'rinib turganda).
+    if (typeof starField !== 'undefined' && starField && starField.material.opacity > 0.01) {
+        starField.material.opacity = 0.55 + Math.sin(now * 0.0015) * 0.35;
+        starField.rotation.z += 0.00002;
+    }
+    // Quyosh diski yengilgina "nafas oladi" - tirik atmosfera.
+    if (typeof sunSprite !== 'undefined' && sunSprite && sunSprite.material.opacity > 0.2 && sunSprite.userData.baseScale) {
+        const pulse = 1 + Math.sin(now * 0.0012) * 0.02;
+        sunSprite.scale.set(sunSprite.userData.baseScale * pulse, sunSprite.userData.baseScale * pulse, 1);
+    }
 
     if (weatherSystem && weatherVelocities) {
         const wPos = weatherSystem.geometry.attributes.position.array;
@@ -4461,7 +5522,22 @@ function gameLoop(now) {
         p.position.z += p.userData.vz * dt;
         p.userData.vy -= GRAVITY * 1.5 * dt;
         p.userData.life -= dt;
-        
+
+        // Olov zarralari: ko'tarilib so'nadi (yerga yopishmaydi).
+        if (p.userData.isFire) {
+            p.userData.vy -= GRAVITY * 0.7 * dt; // olov yengilroq, sekin tushadi
+            const lifeRatio = Math.max(0, Math.min(1, p.userData.life / 1.4));
+            if (p.material) p.material.opacity = lifeRatio;
+            const s = 0.6 + lifeRatio * 0.8;
+            p.scale.set(s, s, s);
+            if (p.userData.life <= 0) {
+                scene.remove(p);
+                if (p.material) p.material.dispose();
+                bloodParticles.splice(i, 1);
+            }
+            continue;
+        }
+
         if (p.position.y < ground.position.y + 100) {
             p.position.y = ground.position.y + 100;
             p.userData.vy = 0;
@@ -4517,6 +5593,9 @@ function gameLoop(now) {
 
         if (!interceptedByAiSuper) checkCollision();
         if (!spear.active) enemyShieldAutoUsedThisFlight = false;
+        updateSpearTrail();
+    } else {
+        updateSpearTrail();
     }
 
     if (secondarySpear && secondarySpear.active) {
@@ -4540,6 +5619,14 @@ function gameLoop(now) {
         camera.position.y += (cameraTargetY - camera.position.y) * 5 * dt;
         camera.zoom += (cameraZoomTarget - camera.zoom) * 3 * dt;
         camera.updateProjectionMatrix();
+        // 'recover' holatida kamera maqsadga yetgach 'static' ga o'tadi.
+        if (cameraState === 'recover') {
+            const dx = Math.abs(camera.position.x - cameraTargetX);
+            const dy = Math.abs(camera.position.y - cameraTargetY);
+            if (dx < 3 && dy < 3) {
+                cameraState = 'static';
+            }
+        }
     }
     
     if (screenShake > 0) {
@@ -4698,31 +5785,16 @@ function gameLoop(now) {
 }
 
 
-    if (window.explosions) {
-        for (let i = window.explosions.length - 1; i >= 0; i--) {
-            const expl = window.explosions[i];
-            expl.userData.age += dt;
-            const posAttr = expl.geometry.attributes.position;
-            const mat = expl.material;
-            
-            for(let j=0; j<expl.userData.vels.length; j++) {
-                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
-                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
-                expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
-            }
-            posAttr.needsUpdate = true;
-            mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
-            
-            if (expl.userData.age > 1.5) {
-                scene.remove(expl);
-                expl.geometry.dispose();
-                expl.material.dispose();
-                window.explosions.splice(i, 1);
-            }
-        }
-    }
-
+// Menyu ortida 3D sahna ko'rinib tursin uchun bir martalik boshlang'ich render.
+// (Avval bu yerda gameLoop'dan tashqarida `dt` ishlatadigan yetim "dead code"
+//  bor edi; u runtime xatosiga olib kelishi mumkin edi - olib tashlandi.)
+try {
+    buildMap('field', 'sunny');
+    camera.position.set(0, 60, 1000);
+    camera.zoom = 1;
+    camera.updateProjectionMatrix();
     renderer.render(scene, camera);
+} catch (_) {}
 
 // --- NEW PROFILE, STATS & LANGUAGE LOGIC ---
 let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
@@ -4815,6 +5887,9 @@ function applyAuthedUser(user) {
     if (Number.isFinite(Number(user.superPowers))) myProfile.superPowers = Math.max(0, Number(user.superPowers));
     if (Number.isFinite(Number(user.doubleSpears))) myProfile.doubleSpears = Math.max(0, Number(user.doubleSpears));
     if (Number.isFinite(Number(user.walls))) myProfile.walls = Math.max(0, Number(user.walls));
+    if (Number.isFinite(Number(user.artillery))) myProfile.artillery = Math.max(0, Number(user.artillery));
+    if (Number.isFinite(Number(user.crowhunt))) myProfile.crowhunt = Math.max(0, Number(user.crowhunt));
+    if (Number.isFinite(Number(user.fireSpears))) myProfile.fireSpears = Math.max(0, Number(user.fireSpears));
     const localCampaignLevel = Math.max(1, Number(localStorage.getItem('nayza_single_level') || singleCampaignLevel || 1));
     if (Number.isFinite(Number(user.campaignLevel))) {
         // Never downgrade campaign progress from stale auth cache/server lag.
@@ -5505,6 +6580,17 @@ if (btnBuyCrowhunt) {
     });
 }
 
+if (btnBuyFire) {
+    btnBuyFire.addEventListener('click', () => {
+        const cur = Math.max(0, Number(myProfile.fireSpears || 0));
+        if (Number(myStats.score || 0) < FIRE_SPEAR_BUY_COST) return;
+        addScore(-FIRE_SPEAR_BUY_COST);
+        myProfile.fireSpears = cur + 1;
+        saveProfile();
+        updateSuperUI();
+    });
+}
+
 
 if (btnAuthRegister) {
     btnAuthRegister.addEventListener('click', async () => {
@@ -5586,7 +6672,10 @@ async function submitLeaderboard() {
         campaignLevel: singleCampaignLevel,
         superPowers: Math.max(0, Number(myProfile.superPowers || 0)),
         doubleSpears: Math.max(0, Number(myProfile.doubleSpears || 0)),
-        walls: Math.max(0, Number(myProfile.walls || 0))
+        walls: Math.max(0, Number(myProfile.walls || 0)),
+        artillery: Math.max(0, Number(myProfile.artillery || 0)),
+        crowhunt: Math.max(0, Number(myProfile.crowhunt || 0)),
+        fireSpears: Math.max(0, Number(myProfile.fireSpears || 0))
     };
     try {
         await fetch(`${API_BASE}/api/leaderboard`, {
@@ -5755,9 +6844,97 @@ if (authModal) authModal.classList.remove('hidden');
 menuScreen.classList.add('hidden');
 if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
 if (socket && socket.connected) socket.emit('registerProfile', myProfile);
+
+// Menyu/auth/profil/do'kon kabi ekranlardan biri ochiq bo'lsa wallpaper ko'rinadi,
+// o'yin (game-screen) faol bo'lsa yashiriladi. Bu funksiya holatni avtomatik kuzatadi.
+const _menuWallpaperEl = document.getElementById('menu-wallpaper');
+const _wallpaperScreenIds = [
+    'menu-screen', 'auth-modal', 'multi-menu', 'settings-modal', 'profile-modal',
+    'shop-modal', 'rating-modal', 'about-modal', 'help-modal', 'single-mode-modal',
+    'level-select-modal', 'game-options-modal', 'waiting-screen', 'game-over-screen'
+];
+function updateMenuWallpaper() {
+    if (!_menuWallpaperEl) return;
+    const introVisible = (() => {
+        const intro = document.getElementById('intro-screen');
+        return intro && !intro.classList.contains('hide');
+    })();
+    const gameVisible = (() => {
+        const gs = document.getElementById('game-screen');
+        return gs && !gs.classList.contains('hidden');
+    })();
+    let anyMenuVisible = false;
+    for (const id of _wallpaperScreenIds) {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) { anyMenuVisible = true; break; }
+    }
+    const shouldShow = !introVisible && !gameVisible && anyMenuVisible;
+    _menuWallpaperEl.classList.toggle('show', shouldShow);
+}
+// Ekran holatlari turli joylarda o'zgargani uchun, doimiy yengil kuzatuv qo'yamiz.
+setInterval(updateMenuWallpaper, 350);
+
+// --- Kirish intro ekrani logikasi ---
+(function setupIntroScreen() {
+    const introScreen = document.getElementById('intro-screen');
+    if (!introScreen) return;
+    let introDismissed = false;
+    const dismissIntro = () => {
+        if (introDismissed) return;
+        introDismissed = true;
+        try { initAudio(); } catch (_) {}
+        introScreen.classList.add('hide');
+        updateMenuWallpaper();
+        setTimeout(() => {
+            if (introScreen && introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
+        }, 800);
+    };
+    const startBtn = document.getElementById('btn-intro-start');
+    if (startBtn) {
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismissIntro();
+        });
+    }
+    // Ekranning istalgan joyiga teginish ham intro'ni yopadi.
+    introScreen.addEventListener('pointerdown', dismissIntro);
+    introScreen.addEventListener('touchstart', dismissIntro, { passive: true });
+    // Agar foydalanuvchi hech narsa bosmasa, 6 soniyadan keyin avtomatik yopiladi.
+    setTimeout(dismissIntro, 6000);
+})();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
 });
+
+// Android bildirishnoma ruxsati so'rash va notification tap listeneri
+if (IS_NATIVE_APP) {
+    const _initNotifications = () => {
+        try {
+            const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (!LN) return;
+            LN.requestPermissions().catch(() => {});
+            LN.createChannel({
+                id: 'invite',
+                name: "O'yin taklifi",
+                importance: 5,
+                vibration: true,
+                sound: 'default'
+            }).catch(() => {});
+            LN.addListener('localNotificationActionPerformed', () => {
+                // Notification bosilganda invite modal'ini ko'rsatish
+                if (pendingFriendInvite) {
+                    if (friendInviteText) friendInviteText.innerText = `${pendingFriendInvite.fromProfile?.name || "Do'stingiz"} sizni o'yinga chaqirdi. Qo'shilasizmi?`;
+                    if (friendInviteModal) friendInviteModal.classList.remove('hidden');
+                }
+            }).catch(() => {});
+        } catch (_) {}
+    };
+    if (document.readyState === 'complete') {
+        setTimeout(_initNotifications, 1000);
+    } else {
+        window.addEventListener('load', () => setTimeout(_initNotifications, 1000));
+    }
+}
 if (authUserCache && authUserCache.phone) {
     applyAuthedUser(authUserCache);
 }
@@ -5778,11 +6955,17 @@ if (authPhone) {
 if (authTabLogin) authTabLogin.addEventListener('click', () => switchAuthTab('login'));
 if (authTabRegister) authTabRegister.addEventListener('click', () => switchAuthTab('register'));
 if (btnForgotToggle && forgotSection) {
-    btnForgotToggle.addEventListener('click', () => {
-        const hidden = forgotSection.classList.contains('hidden');
-        forgotSection.classList.toggle('hidden', !hidden);
-        btnForgotToggle.innerText = hidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
-    });
+    const handleForgotToggle = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        const isHidden = forgotSection.classList.contains('hidden');
+        forgotSection.classList.toggle('hidden', !isHidden);
+        btnForgotToggle.innerText = isHidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
+    };
+    btnForgotToggle.addEventListener('click', handleForgotToggle);
+    btnForgotToggle.addEventListener('touchstart', handleForgotToggle, { passive: false });
 }
 switchAuthTab('login');
 
@@ -5791,6 +6974,36 @@ document.addEventListener('click', (e) => {
     if (!t || typeof t.closest !== 'function') return;
     if (t.closest('button')) playSfx('button', 0.85);
 });
+
+// Force touchstart to trigger click on mobile for all buttons
+// BUG FIX: touchstart click trigger scroll'ni buzayotgan edi. 
+// Endi faqat barmoq qimirlatmasdan (scroll qilmasdan) bosilsa ishlaydi.
+let lastTouchStartPos = { x: 0, y: 0 };
+document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        lastTouchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    const t = e.target;
+    if (t && typeof t.closest === 'function') {
+        const btn = t.closest('button');
+        if (btn && !btn.disabled) {
+            // Agar barmoq 10px dan ortiq surilmagan bo'lsa, demak bu click
+            const touch = e.changedTouches ? e.changedTouches[0] : null;
+            if (touch) {
+                const dist = Math.hypot(touch.clientX - lastTouchStartPos.x, touch.clientY - lastTouchStartPos.y);
+                if (dist < 10) {
+                    btn.click();
+                    // Click trigger bo'lgandan so'ng UI target bo'lsa, o'yin boshlanib ketishini oldini olish
+                    // Android/WebView da click trigger bo'lganda preventDefault ba'zan click eventni o'ldiradi
+                    // e.preventDefault(); 
+                }
+            }
+        }
+    }
+}, { passive: true });
 
 // Missing Event Listeners
 if(document.getElementById('btn-single')) {
@@ -5858,34 +7071,47 @@ function renderLevelGrid() {
     if (!levelGrid) return;
     levelGrid.innerHTML = '';
     
-    // singleCampaignLevel saqlangan eng yuqori level
-    const maxLevel = Math.max(1, singleCampaignLevel || 1);
-    for (let i = 1; i <= 100; i++) {
+    // Barcha levellar ochiq (qulfsiz). Joriy level alohida rangda belgilanadi.
+    const currentLevel = Math.max(1, singleCampaignLevel || 1);
+    // Har bir muhit uchun kichik emoji belgisi (level oldindan ko'rinishi).
+    const mapEmoji = {
+        field: '🌿', castle: '🏰', desert: '🏜️', winter: '❄️', mountain: '⛰️',
+        samarkand: '🕌', bukhara: '🏛️', istanbul: '🌉', oasis: '🌴', canyon: '🏕️', volcano: '🌋'
+    };
+    const TOTAL_LEVELS = 100;
+    for (let i = 1; i <= TOTAL_LEVELS; i++) {
         const levelBtn = document.createElement('button');
         levelBtn.className = 'primary-btn';
         levelBtn.style.padding = '8px 4px';
         levelBtn.style.fontSize = '0.9rem';
         levelBtn.style.minHeight = '40px';
-        
-        if (i <= maxLevel) {
-            levelBtn.style.background = '#10b981';
-            levelBtn.innerText = i;
-            levelBtn.addEventListener('click', () => {
-                singleCampaignLevel = i;
-                if (levelSelectModal) levelSelectModal.classList.add('hidden');
-                if (singleModeModal) singleModeModal.classList.add('hidden');
-                menuScreen.classList.add('hidden');
-                aiDifficulty = 'easy';
-                gameMode = 'single';
-                startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
-            });
-        } else {
-            levelBtn.style.background = '#475569';
-            levelBtn.style.opacity = '0.5';
-            levelBtn.style.cursor = 'not-allowed';
-            levelBtn.innerText = '🔒';
-        }
-        
+        levelBtn.style.display = 'flex';
+        levelBtn.style.flexDirection = 'column';
+        levelBtn.style.alignItems = 'center';
+        levelBtn.style.justifyContent = 'center';
+        levelBtn.style.lineHeight = '1.1';
+
+        const env = getCampaignEnvironment(i);
+        const emoji = mapEmoji[env.map] || '⚔️';
+        // Boss levellar (50+ ikki dushman) qizil-binafsha bilan ajratiladi.
+        const isBoss = i > 50;
+        levelBtn.style.background = (i === currentLevel)
+            ? 'linear-gradient(135deg, #f59e0b, #ef4444)'
+            : (isBoss
+                ? 'linear-gradient(135deg, #a855f7, #6d28d9)'
+                : 'linear-gradient(135deg, #10b981, #059669)');
+        levelBtn.innerHTML = `<span style="font-size:1rem;font-weight:800;">${i}</span><span style="font-size:0.72rem;opacity:0.9;">${emoji}${isBoss ? '⚔️' : ''}</span>`;
+        levelBtn.title = `Level ${i}${isBoss ? ' (2 dushman)' : ''}`;
+        levelBtn.addEventListener('click', () => {
+            singleCampaignLevel = i;
+            if (levelSelectModal) levelSelectModal.classList.add('hidden');
+            if (singleModeModal) singleModeModal.classList.add('hidden');
+            menuScreen.classList.add('hidden');
+            aiDifficulty = 'easy';
+            gameMode = 'single';
+            startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+        });
+
         levelGrid.appendChild(levelBtn);
     }
 }
@@ -5936,15 +7162,28 @@ if (btnMultiRandom) {
 }
 
 if (btnMultiJoinShow) {
-    btnMultiJoinShow.addEventListener('click', () => {
+    const handleJoinShow = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (joinCodeContainer) joinCodeContainer.classList.toggle('hidden');
         if (joinError) joinError.style.display = 'none';
-    });
+    };
+    btnMultiJoinShow.addEventListener('click', handleJoinShow);
+    btnMultiJoinShow.addEventListener('touchstart', handleJoinShow, { passive: false });
 }
 
 if (btnMultiJoin) {
     btnMultiJoin.addEventListener('click', () => {
-        const code = (inputJoinCode && inputJoinCode.value ? inputJoinCode.value : '').trim();
+        if (!socket || !socket.connected) {
+            if (joinError) {
+                joinError.innerText = "Serverga ulanilmadi. Internetni tekshiring va qayta urinib ko'ring.";
+                joinError.style.display = 'block';
+            }
+            return;
+        }
+        const code = (inputJoinCode && inputJoinCode.value ? inputJoinCode.value : '').trim().toUpperCase().slice(0, 4);
         if (!code) return;
         socket.emit('joinGame', { profile: myProfile, code });
     });
@@ -6062,6 +7301,23 @@ socket.on('friendInvite', (payload) => {
     const fromName = pendingFriendInvite.fromProfile?.name || "Do'stingiz";
     if (friendInviteText) friendInviteText.innerText = `${fromName} sizni o'yinga chaqirdi. Qo'shilasizmi?`;
     if (friendInviteModal) friendInviteModal.classList.remove('hidden');
+    // Android native notification
+    if (IS_NATIVE_APP) {
+        try {
+            const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (LN) {
+                LN.schedule({
+                    notifications: [{
+                        id: 1001,
+                        title: "\u2694\uFE0F O'yin taklifi!",
+                        body: `${fromName} sizni Nayza Jangi o'yiniga chaqirdi! Bosing va o'ynang.`,
+                        schedule: { at: new Date(Date.now() + 300) },
+                        channelId: 'invite'
+                    }]
+                }).catch(() => {});
+            }
+        } catch (_) {}
+    }
 });
 
 if (btnFriendInviteAccept) {
@@ -6215,7 +7471,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleArtilleryClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (myHealth <= 0 || enemyHealth <= 0 || currentTurnIndex !== myPlayerIndex || artilleryCount <= 0) return;
+            if (myHealth <= 0 || areAllEnemiesDead() || currentTurnIndex !== myPlayerIndex || artilleryCount <= 0) return;
             isArtilleryAiming = !isArtilleryAiming;
             
             if (isArtilleryAiming) {

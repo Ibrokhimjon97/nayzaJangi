@@ -1,0 +1,22 @@
+{
+  "name": "Nayza Jangi",
+  "short_name": "Nayza Jangi",
+  "description": "3D Nayza uloqtirish o'yini",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "qarga.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "qarga.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
