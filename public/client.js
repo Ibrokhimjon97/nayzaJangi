@@ -2596,7 +2596,7 @@ function applySoldierWeatherTone() {
 
 const pos1X = -1300;
 const pos2X = 1300;
-const pos3Offset = 260;
+const pos3Offset = 135;
 
 let p1Model = createSoldier(true, 2);
 p1Model.position.x = pos1X;
@@ -2913,6 +2913,50 @@ function isPortraitMode() {
     return (window.innerHeight / Math.max(1, window.innerWidth)) > 1.05;
 }
 
+function getFocusCameraTarget(turnIndex) {
+    const isPortrait = isPortraitMode();
+    if (!isPortrait) {
+        // Landscape (albom) rejimida butun jang maydoni markazda (x=0, y=0) ko'rinadi.
+        // O'yinchi va barcha raqiblar (shu jumladan 50+ levellardagi 2 raqib ham) to'liq ekranda doimiy ko'rinib turadi.
+        return { x: 0, y: 0, zoom: baseZoom };
+    }
+    
+    // Portret rejimida:
+    const myIdx = (typeof myPlayerIndex === 'number' && myPlayerIndex >= 0) ? myPlayerIndex : 0;
+    const isMyTurn = (turnIndex === myIdx || turnIndex === -1);
+    if (isMyTurn) {
+        const myModel = (typeof modelForPlayer === 'function' ? modelForPlayer(myIdx) : null) || p1Model;
+        const dir = (myModel && myModel.position.x < 0) ? 1 : -1;
+        return {
+            x: myModel ? myModel.position.x + dir * 140 : 0,
+            y: (myModel ? myModel.position.y : 0) + 80,
+            zoom: baseZoom
+        };
+    }
+    
+    // Raqib(lar) navbati / raqib tomoni:
+    const primaryEnemyModel = (myIdx === 0) ? p2Model : p1Model;
+    if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) {
+        // Ikki raqib mavjud bo'lganda, kamera ikkalasining o'rtasiga qaratiladi
+        const e1X = primaryEnemyModel ? primaryEnemyModel.position.x : 1300;
+        const e2X = p3Model.position.x;
+        const midX = (e1X + e2X) / 2;
+        const dir = (e1X < 0) ? 1 : -1;
+        return {
+            x: midX + dir * 30,
+            y: (primaryEnemyModel ? primaryEnemyModel.position.y : 0) + 80,
+            zoom: baseZoom * 0.90 // Ikkala raqib ham portret ekraniga to'liq sig'ishi uchun
+        };
+    }
+    
+    const dir = (primaryEnemyModel && primaryEnemyModel.position.x < 0) ? 1 : -1;
+    return {
+        x: primaryEnemyModel ? primaryEnemyModel.position.x + dir * 140 : 0,
+        y: (primaryEnemyModel ? primaryEnemyModel.position.y : 0) + 80,
+        zoom: baseZoom
+    };
+}
+
 function updateCameraBounds() {
     aspect = window.innerWidth / Math.max(1, window.innerHeight);
     const isPortrait = isPortraitMode();
@@ -2932,24 +2976,20 @@ function updateCameraBounds() {
         baseZoom = 0.88;
     } else {
         // Landshaft (albom) rejimida butun maydon keng ko'rinadi
-        const minWorldWidth = 2800;
+        const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
+        const neededWidth = battleDist + (p3Model ? (pos3Offset + 380) : 260) + 380;
+        const minWorldWidth = Math.max(2800, neededWidth);
         const zoomX = (frustumSize * aspect) / minWorldWidth;
-        const mobileZoomBoost = isMobileView ? 1.24 : 1.1;
+        const mobileZoomBoost = isMobileView ? 1.08 : 1.0;
         baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5);
     }
     
-    if (cameraState === 'static') {
-        cameraZoomTarget = baseZoom;
-        camera.zoom = baseZoom;
-        if (isPortrait) {
-            const shooter = (typeof modelForPlayer === 'function') ? modelForPlayer(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex) : null;
-            const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
-            camera.position.x = shooter ? shooter.position.x + dir * 180 : 0;
-            camera.position.y = (shooter ? shooter.position.y : 0) + 90;
-        } else {
-            camera.position.x = 0;
-            camera.position.y = 0;
-        }
+    if (cameraState === 'static' || cameraState === 'recover') {
+        const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+        cameraZoomTarget = camFocus.zoom;
+        camera.zoom = camFocus.zoom;
+        camera.position.x = camFocus.x;
+        camera.position.y = camFocus.y;
         camera.updateProjectionMatrix();
     }
 }
@@ -3123,16 +3163,29 @@ function getCampaignEnvironment(level) {
 
 function applyBattlePositions() {
     const half = currentBattleDistance / 2;
-    p1Model.position.x = -half;
-    p2Model.position.x = half;
-    if (p3Model) p3Model.position.x = half + pos3Offset;
+    const playerLeftSide = (typeof singleCampaignLevel !== 'undefined' ? (singleCampaignLevel % 2 === 1) : true);
+    if (playerLeftSide || gameMode === 'multi') {
+        p1Model.position.x = -half;
+        p2Model.position.x = half;
+        if (p3Model) {
+            p3Model.position.x = half + pos3Offset;
+            p3Model.position.z = -15;
+        }
+    } else {
+        p1Model.position.x = -half;
+        p2Model.position.x = half;
+        if (p3Model) {
+            p3Model.position.x = -half - pos3Offset;
+            p3Model.position.z = -15;
+        }
+    }
 }
 
 function getEnemyIndices() {
     const enemies = [];
-    if (myPlayerIndex !== 0) enemies.push(0);
-    if (myPlayerIndex !== 1) enemies.push(1);
-    if (p3Model && myPlayerIndex !== 2) enemies.push(2);
+    if (myPlayerIndex !== 0 && (enemyHealth > 0 || myPlayerIndex === 0)) enemies.push(0);
+    if (myPlayerIndex !== 1 && (enemyHealth > 0 || myPlayerIndex === 1)) enemies.push(1);
+    if (p3Model && myPlayerIndex !== 2 && enemy2Health > 0) enemies.push(2);
     return enemies;
 }
 
@@ -3155,7 +3208,7 @@ function getPlayerIndexByModel(model) {
 function areAllies(indexA, indexB) {
     if (indexA === indexB) return true;
     if (gameMode !== 'single') return false;
-    const enemies = getEnemyIndices();
+    const enemies = [0, 1, 2].filter(idx => idx !== myPlayerIndex);
     const aIsEnemy = enemies.includes(indexA);
     const bIsEnemy = enemies.includes(indexB);
     // Ikkisi ham dushman bo'lsa - ittifoqchi (bir-birini urmasin).
@@ -3168,8 +3221,29 @@ function applyDamageToTarget(targetIndex, damage) {
         myHealth -= damage;
     } else if (p3Model && targetIndex === 2) {
         enemy2Health -= damage;
+        if (enemy2Health <= 0) {
+            enemy2Health = 0;
+            if (p3Model) {
+                p3Model.userData.isKnockedDown = true;
+                setSoldierVisual(p3Model, 'hurt');
+                if (p3Model.userData.planeMesh && p3Model.userData.planeMesh.material) {
+                    p3Model.userData.planeMesh.material.opacity = 0.45;
+                }
+            }
+        }
     } else {
         enemyHealth -= damage;
+        if (enemyHealth <= 0) {
+            enemyHealth = 0;
+            const primaryEnemy = (myPlayerIndex === 0) ? p2Model : p1Model;
+            if (primaryEnemy) {
+                primaryEnemy.userData.isKnockedDown = true;
+                setSoldierVisual(primaryEnemy, 'hurt');
+                if (primaryEnemy.userData.planeMesh && primaryEnemy.userData.planeMesh.material) {
+                    primaryEnemy.userData.planeMesh.material.opacity = 0.45;
+                }
+            }
+        }
     }
 }
 
@@ -3839,15 +3913,17 @@ function updateSuperInterceptCinematic(now, dt) {
 
 function resetCameraAfterImpact() {
     cameraState = 'recover';
-    let focusModel = (currentTurnIndex >= 0) ? modelForPlayer(currentTurnIndex) : null;
-    if (!focusModel) {
-        focusModel = modelForPlayer(myPlayerIndex) || p1Model;
-    }
     const isPortrait = isPortraitMode();
-    const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
-    cameraTargetX = focusModel ? (isPortrait ? focusModel.position.x + dir * 180 : focusModel.position.x) : 0;
-    cameraTargetY = isPortrait ? (focusModel ? focusModel.position.y + 80 : 0) : 0;
-    cameraZoomTarget = isPortrait ? baseZoom : (gameMode === 'multi' ? baseZoom * 1.08 : baseZoom);
+    if (!isPortrait) {
+        cameraTargetX = 0;
+        cameraTargetY = 0;
+        cameraZoomTarget = baseZoom;
+        return;
+    }
+    const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+    cameraTargetX = camFocus.x;
+    cameraTargetY = camFocus.y;
+    cameraZoomTarget = camFocus.zoom;
 }
 
 updateCameraBounds();
@@ -4505,14 +4581,21 @@ function startSinglePlayer(opts) {
         myPlayerIndex = 0;
         p1Model.position.x = -currentBattleDistance / 2;
         p2Model.position.x = currentBattleDistance / 2;
-        if (p3Model) p3Model.position.x = currentBattleDistance / 2 + pos3Offset;
+        if (p3Model) {
+            p3Model.position.x = currentBattleDistance / 2 + pos3Offset;
+            p3Model.position.z = -15;
+        }
     } else {
         myPlayerIndex = 1;
         p1Model.position.x = -currentBattleDistance / 2;
         p2Model.position.x = currentBattleDistance / 2;
-        if (p3Model) p3Model.position.x = -currentBattleDistance / 2 - pos3Offset;
+        if (p3Model) {
+            p3Model.position.x = -currentBattleDistance / 2 - pos3Offset;
+            p3Model.position.z = -15;
+        }
     }
     applySoldierWeatherTone();
+    updateCameraBounds();
     
     myHealth = 100;
     enemyHealth = 100;
@@ -5310,7 +5393,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
     if (doubleOutcome) spawnDoubleSpearVisual(doubleOutcome);
     
     if (hitOpponent) {
-        const targetModel = targetIndex === 0 ? p1Model : p2Model;
+        const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
         flashHit(targetModel);
         hideFlyingSpear();
         
@@ -6187,9 +6270,12 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.classList.add('turn-pulse');
     }
 
-    const activeModel = modelForPlayer(turnIndex);
-    const activeX = activeModel ? activeModel.position.x : 0;
     const isOnlineTurnFocus = gameMode === 'multi';
+    const camFocus = getFocusCameraTarget(turnIndex);
+    cameraState = 'target';
+    cameraTargetX = camFocus.x;
+    cameraTargetY = camFocus.y;
+    cameraZoomTarget = camFocus.zoom;
 
     if (turnIndex === myPlayerIndex) {
         controlsPanel.classList.remove('disabled');
@@ -6198,10 +6284,6 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.classList.add('turn-self');
         turnIndicator.classList.remove('turn-opponent');
         
-        cameraState = 'target';
-        cameraTargetX = activeX;
-        cameraTargetY = 0;
-        cameraZoomTarget = isOnlineTurnFocus ? baseZoom * 1.08 : baseZoom;
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
             camera.position.y = cameraTargetY;
@@ -6224,10 +6306,6 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.classList.add('turn-opponent');
         turnIndicator.classList.remove('turn-self');
         
-        cameraState = 'target';
-        cameraTargetX = activeX;
-        cameraTargetY = 0;
-        cameraZoomTarget = isOnlineTurnFocus ? baseZoom * 1.08 : baseZoom;
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
             camera.position.y = cameraTargetY;
@@ -6826,8 +6904,8 @@ function gameLoop(now) {
         camera.position.y += (cameraTargetY - camera.position.y) * 5 * dt;
         camera.zoom += (cameraZoomTarget - camera.zoom) * 3 * dt;
         camera.updateProjectionMatrix();
-        // 'recover' holatida kamera maqsadga yetgach 'static' ga o'tadi.
-        if (cameraState === 'recover') {
+        // 'recover', 'target' yoki 'normal' holatida kamera maqsadga yetgach 'static' ga o'tadi.
+        if (cameraState === 'recover' || cameraState === 'target' || cameraState === 'normal') {
             const dx = Math.abs(camera.position.x - cameraTargetX);
             const dy = Math.abs(camera.position.y - cameraTargetY);
             if (dx < 3 && dy < 3) {
@@ -6899,16 +6977,10 @@ function gameLoop(now) {
         } else if (!isDragging && cameraState === 'aiming') {
             // Revert back when stopped aiming
             cameraState = 'static';
-            cameraZoomTarget = baseZoom;
-            if (isPortraitMode()) {
-                const shooter = modelForPlayer(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
-                const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
-                cameraTargetX = shooter ? shooter.position.x + dir * 180 : 0;
-                cameraTargetY = (shooter ? shooter.position.y : 0) + 90;
-            } else {
-                cameraTargetX = 0;
-                cameraTargetY = 0;
-            }
+            const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+            cameraTargetX = camFocus.x;
+            cameraTargetY = camFocus.y;
+            cameraZoomTarget = camFocus.zoom;
         }
         
         setSoldierVisual(model, targetState);
