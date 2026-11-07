@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=51">
+    <link rel="stylesheet" href="style.css?v=52">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -280,6 +280,7 @@
         </div>
 
         <div id="about-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-about-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2 id="txt-about-title">O'yin haqida</h2>
             <div style="text-align:left; color:#cbd5e1; font-size:0.95rem; line-height:1.5;">
                 <div><b>Muallif:</b> To'raboyev Ibrohimjon Bahtiyor o'g'li</div>
@@ -301,6 +302,7 @@
 
         <!-- Daily Rewards Modal -->
         <div id="daily-rewards-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-rewards-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2>🎁 Kunlik Kirish Sovg'alari</h2>
             <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Har kuni kiring va bepul resurslarni
                 oling!</p>
@@ -315,6 +317,7 @@
 
         <!-- Daily Quests Modal -->
         <div id="daily-quests-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-quests-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2>🎯 Kunlik Vazifalar</h2>
             <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Vazifalarni bajaring va ballar ishlang!
             </p>
@@ -327,6 +330,7 @@
 
         <!-- Settings Modal -->
         <div id="settings-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-settings-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2 id="txt-settings-title">Sozlamalar</h2>
             <div style="margin: 15px 0; text-align: left;">
                 <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
@@ -846,7 +850,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=51"></script>
+    <script src="client.js?v=52"></script>
     <script>
         // Mobile fullscreen
         function tryFullscreen() {

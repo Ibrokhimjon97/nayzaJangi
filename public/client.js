@@ -7701,6 +7701,14 @@ btnSaveSettings.addEventListener('click', () => {
     menuScreen.classList.remove('hidden');
 });
 
+const btnCloseSettingsX = document.getElementById('btn-close-settings-x');
+if (btnCloseSettingsX) {
+    btnCloseSettingsX.addEventListener('click', () => {
+        if (settingsModal) settingsModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.remove('hidden');
+    });
+}
+
 if (btnSaveProfile) btnSaveProfile.addEventListener('click', () => {
     myProfile.name = document.getElementById('input-name').value || "Jangchi";
     myProfile.avatar = document.getElementById('select-avatar').value;
@@ -7763,6 +7771,14 @@ if (btnCloseAbout) {
     btnCloseAbout.addEventListener('click', () => {
         if (aboutModal) aboutModal.classList.add('hidden');
         menuScreen.classList.remove('hidden');
+    });
+}
+
+const btnCloseAboutX = document.getElementById('btn-close-about-x');
+if (btnCloseAboutX) {
+    btnCloseAboutX.addEventListener('click', () => {
+        if (aboutModal) aboutModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.remove('hidden');
     });
 }
 
@@ -8135,7 +8151,8 @@ const _menuWallpaperEl = document.getElementById('menu-wallpaper');
 const _wallpaperScreenIds = [
     'menu-screen', 'auth-modal', 'multi-menu', 'settings-modal', 'profile-modal',
     'shop-modal', 'rating-modal', 'about-modal', 'help-modal', 'single-mode-modal',
-    'level-select-modal', 'game-options-modal', 'waiting-screen', 'game-over-screen'
+    'level-select-modal', 'game-options-modal', 'waiting-screen', 'game-over-screen',
+    'daily-rewards-modal', 'daily-quests-modal'
 ];
 function updateMenuWallpaper() {
     if (!_menuWallpaperEl) return;
@@ -8268,6 +8285,7 @@ document.addEventListener('click', (e) => {
 // BUG FIX: touchstart click trigger scroll'ni buzayotgan edi. 
 // Endi faqat barmoq qimirlatmasdan (scroll qilmasdan) bosilsa ishlaydi.
 let lastTouchStartPos = { x: 0, y: 0 };
+let lastTouchTriggerTime = 0;
 document.addEventListener('touchstart', (e) => {
     if (e.touches && e.touches[0]) {
         lastTouchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -8284,15 +8302,22 @@ document.addEventListener('touchend', (e) => {
             if (touch) {
                 const dist = Math.hypot(touch.clientX - lastTouchStartPos.x, touch.clientY - lastTouchStartPos.y);
                 if (dist < 10) {
+                    lastTouchTriggerTime = Date.now();
                     btn.click();
-                    // Click trigger bo'lgandan so'ng UI target bo'lsa, o'yin boshlanib ketishini oldini olish
-                    // Android/WebView da click trigger bo'lganda preventDefault ba'zan click eventni o'ldiradi
-                    // e.preventDefault(); 
                 }
             }
         }
     }
 }, { passive: true });
+
+// Prevent delayed synthetic click on touch devices from ghost-clicking elements underneath or double firing
+document.addEventListener('click', (e) => {
+    if (Date.now() - lastTouchTriggerTime < 350 && e.isTrusted) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+    }
+}, true);
 
 // Missing Event Listeners
 if(document.getElementById('btn-single')) {
@@ -9038,7 +9063,11 @@ function checkDailyAutoPopup() {
         setTimeout(() => {
             renderDailyRewards();
             const modal = document.getElementById('daily-rewards-modal');
-            if (modal && gameMode === 'menu') modal.classList.remove('hidden');
+            if (modal && gameMode === 'menu') {
+                modal.classList.remove('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
+                if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+            }
         }, 1200);
     }
 }
@@ -9121,16 +9150,47 @@ function initDailyRewards() {
     const btnDailyRewards = document.getElementById('btn-daily-rewards');
     const modal = document.getElementById('daily-rewards-modal');
     const btnClose = document.getElementById('btn-close-daily');
+    const btnCloseX = document.getElementById('btn-close-rewards-x');
     const btnClaim = document.getElementById('btn-claim-daily');
 
+    function openModal(e) {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        renderDailyRewards();
+        if (modal) modal.classList.remove('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    }
+
+    function closeModal(e) {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        if (modal) modal.classList.add('hidden');
+        if (menuScreen) {
+            menuScreen.classList.remove('hidden');
+            menuScreen.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (menuScreen) menuScreen.style.pointerEvents = '';
+            }, 350);
+        }
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    }
+
     if (btnDailyRewards && modal) {
-        btnDailyRewards.addEventListener('click', () => {
-            renderDailyRewards();
-            modal.classList.remove('hidden');
-        });
+        btnDailyRewards.addEventListener('click', openModal);
+        btnDailyRewards.addEventListener('touchend', (e) => openModal(e), { passive: false });
     }
     if (btnClose && modal) {
-        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+        btnClose.addEventListener('click', closeModal);
+        btnClose.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+    }
+    if (btnCloseX && modal) {
+        btnCloseX.addEventListener('click', closeModal);
+        btnCloseX.addEventListener('touchend', (e) => closeModal(e), { passive: false });
     }
     if (btnClaim) {
         btnClaim.addEventListener('click', claimDailyReward);
@@ -9221,29 +9281,80 @@ function initDailyQuests() {
     const btn = document.getElementById('btn-daily-quests');
     const modal = document.getElementById('daily-quests-modal');
     const btnClose = document.getElementById('btn-close-quests');
+    const btnCloseX = document.getElementById('btn-close-quests-x');
+
+    function openModal(e) {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        renderDailyQuests();
+        if (modal) modal.classList.remove('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    }
+
+    function closeModal(e) {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        if (modal) modal.classList.add('hidden');
+        if (menuScreen) {
+            menuScreen.classList.remove('hidden');
+            menuScreen.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (menuScreen) menuScreen.style.pointerEvents = '';
+            }, 350);
+        }
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    }
 
     if (btn && modal) {
-        btn.addEventListener('click', () => {
-            renderDailyQuests();
-            modal.classList.remove('hidden');
-        });
+        btn.addEventListener('click', openModal);
+        btn.addEventListener('touchend', (e) => openModal(e), { passive: false });
     }
     if (btnClose && modal) {
-        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+        btnClose.addEventListener('click', closeModal);
+        btnClose.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+    }
+    if (btnCloseX && modal) {
+        btnCloseX.addEventListener('click', closeModal);
+        btnCloseX.addEventListener('touchend', (e) => closeModal(e), { passive: false });
     }
 }
 
-// Artillery functionality initialization
-document.addEventListener('DOMContentLoaded', () => {
+// Global modal ESC key handler
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+        const modals = ['daily-quests-modal', 'daily-rewards-modal', 'about-modal', 'settings-modal', 'shop-modal', 'rating-modal', 'help-modal'];
+        let closedAny = false;
+        for (const id of modals) {
+            const m = document.getElementById(id);
+            if (m && !m.classList.contains('hidden')) {
+                m.classList.add('hidden');
+                closedAny = true;
+            }
+        }
+        if (closedAny && menuScreen) {
+            menuScreen.classList.remove('hidden');
+            if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+        }
+    }
+});
+
+// Initialization logic
+function _runPageInits() {
     initDailyRewards();
     initDailyQuests();
     initEmotesUI();
     if (typeof checkAutoJoinTelegramRoom === 'function') checkAutoJoinTelegramRoom();
+    
     btnArtillery = document.getElementById('artillery-button');
     artilleryCountText = document.getElementById('artillery-count');
     
-    if (btnArtillery) {
-        // Pointer events for artillery button
+    if (btnArtillery && !btnArtillery._hasArtilleryListener) {
+        btnArtillery._hasArtilleryListener = true;
         const handleArtilleryClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -9282,4 +9393,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btnArtillery.addEventListener('touchstart', handleArtilleryClick, { passive: false });
         }
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _runPageInits);
+} else {
+    _runPageInits();
+}

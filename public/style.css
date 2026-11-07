@@ -661,6 +661,37 @@ body, html {
     overflow-x: hidden;
 }
 
+.modal-close-x {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #f1f5f9;
+    font-size: 1.25rem;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    transition: background 0.18s ease, transform 0.18s ease;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.modal-close-x:hover,
+.modal-close-x:active {
+    background: rgba(239, 68, 68, 0.85);
+    color: #ffffff;
+    transform: scale(1.08);
+}
+
 .chat-container {
     position: absolute;
     bottom: 20px;
