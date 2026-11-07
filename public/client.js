@@ -8414,28 +8414,28 @@ setInterval(updateMenuWallpaper, 350);
     const introScreen = document.getElementById('intro-screen');
     if (!introScreen) return;
     let introDismissed = false;
-    const dismissIntro = () => {
+    const dismissIntro = (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         if (introDismissed) return;
         introDismissed = true;
         try { initAudio(); } catch (_) {}
         introScreen.classList.add('hide');
-        updateMenuWallpaper();
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
         setTimeout(() => {
             if (introScreen && introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
-        }, 800);
+        }, 600);
     };
     const startBtn = document.getElementById('btn-intro-start');
     if (startBtn) {
-        startBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dismissIntro();
-        });
+        startBtn.addEventListener('click', dismissIntro);
+        startBtn.addEventListener('touchstart', dismissIntro, { passive: true });
+        startBtn.addEventListener('pointerdown', dismissIntro);
     }
-    // Ekranning istalgan joyiga teginish ham intro'ni yopadi.
     introScreen.addEventListener('pointerdown', dismissIntro);
     introScreen.addEventListener('touchstart', dismissIntro, { passive: true });
-    // Agar foydalanuvchi hech narsa bosmasa, 6 soniyadan keyin avtomatik yopiladi.
-    setTimeout(dismissIntro, 6000);
+    introScreen.addEventListener('click', dismissIntro);
+    // 3.5 soniyadan so'ng avtomatik o'tish
+    setTimeout(dismissIntro, 3500);
 })();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
