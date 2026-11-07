@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=52">
+    <link rel="stylesheet" href="style.css?v=53">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -369,6 +369,7 @@
 
         <!-- Profile Modal -->
         <div id="profile-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-profile-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2 id="txt-profile-title">Profil</h2>
             <div style="margin: 15px 0; text-align: left;">
                 <label id="txt-name-lbl" style="display:block; margin-bottom:5px;">Ism:</label>
@@ -435,6 +436,7 @@
 
         <!-- Help Modal -->
         <div id="help-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-help-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2>Yordam va yo'riqnoma</h2>
             <div style="margin: 12px 0; text-align: left; line-height: 1.6; color:#dbeafe; font-size:0.95rem;">
                 <p><b>O'yin haqida:</b> Nayza Jangi - navbat asosida o'ynaladigan duel o'yini. Har navbatda mo'ljal va
@@ -453,6 +455,7 @@
         </div>
 
         <div id="shop-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-shop-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2>Do'kon</h2>
             <div class="shop-balance">Balans: <b id="shop-score-text">0</b> ball</div>
             <div style="margin: 15px 0; text-align: left;">
@@ -560,6 +563,7 @@
 
         <!-- Rating Modal -->
         <div id="rating-modal" class="screen hidden panel center-panel">
+            <button type="button" id="btn-close-rating-x" class="modal-close-x" aria-label="Yopish">✕</button>
             <h2 id="txt-rating-title">Sizning Reytingingiz</h2>
             <div style="margin: 20px 0; font-size: 1.2rem; text-align: left; line-height: 1.8;">
                 <p>🏆 <span id="txt-score-lbl">Ball:</span> <b id="stat-score" style="color: #f59e0b;">0</b></p>
@@ -850,7 +854,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=52"></script>
+    <script src="client.js?v=53"></script>
     <script>
         // Mobile fullscreen
         function tryFullscreen() {
