@@ -2299,3 +2299,394 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     min-width: 14px;
     text-align: center;
 }
+
+/* === Turn Timer Badge === */
+.turn-timer-badge {
+    position: absolute;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.88);
+    border: 2px solid #38bdf8;
+    color: #38bdf8;
+    font-weight: 800;
+    font-size: 1.15rem;
+    padding: 4px 14px;
+    border-radius: 20px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(56, 189, 248, 0.4);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    transition: all 0.25s ease;
+}
+.turn-timer-badge.timer-warning {
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
+    animation: timerPulse 0.6s infinite alternate ease-in-out;
+}
+@keyframes timerPulse {
+    0% { transform: translateX(-50%) scale(1); }
+    100% { transform: translateX(-50%) scale(1.15); }
+}
+
+/* === Screen Vignette & Dramatic Flashes === */
+.screen-vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.screen-vignette.vignette-damage {
+    opacity: 1;
+    background: radial-gradient(circle at center, transparent 40%, rgba(220, 38, 38, 0.45) 85%, rgba(185, 28, 28, 0.8) 100%);
+}
+.screen-vignette.vignette-headshot {
+    opacity: 1;
+    background: radial-gradient(circle at center, transparent 35%, rgba(245, 158, 11, 0.4) 80%, rgba(217, 119, 6, 0.75) 100%);
+}
+
+/* === Emote System === */
+.emote-btn {
+    position: absolute;
+    bottom: 20px;
+    left: 75px;
+    z-index: 100;
+    font-size: 1.25rem;
+    background: rgba(30, 41, 59, 0.85);
+    border: 2px solid #8b5cf6;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s, background 0.2s;
+}
+.emote-btn:active {
+    transform: scale(0.92);
+}
+.emote-picker {
+    position: absolute;
+    bottom: 78px;
+    left: 60px;
+    z-index: 110;
+    display: flex;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 24px;
+    padding: 6px 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+}
+.emote-choice {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    padding: 4px;
+    transition: transform 0.15s;
+    user-select: none;
+}
+.emote-choice:hover, .emote-choice:active {
+    transform: scale(1.3);
+}
+
+/* === Comic Speech Bubble === */
+.speech-bubble {
+    position: absolute;
+    background: #ffffff;
+    color: #1e293b;
+    font-size: 2rem;
+    padding: 8px 14px;
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 200;
+    transform: translate(-50%, -100%) scale(0);
+    animation: popBubble 2.5s ease-out forwards;
+    white-space: nowrap;
+}
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px 8px 0;
+    border-style: solid;
+    border-color: #ffffff transparent;
+    display: block;
+    width: 0;
+}
+@keyframes popBubble {
+    0% { transform: translate(-50%, -100%) scale(0.2); opacity: 0; }
+    15% { transform: translate(-50%, -115%) scale(1.15); opacity: 1; }
+    25% { transform: translate(-50%, -110%) scale(1); opacity: 1; }
+    80% { transform: translate(-50%, -130%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -160%) scale(0.7); opacity: 0; }
+}
+
+/* === Daily Rewards & Quests Modals === */
+.daily-rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 15px 0;
+}
+.daily-reward-card {
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s ease;
+}
+.daily-reward-card.active {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), #1e293b);
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+    transform: scale(1.04);
+}
+.daily-reward-card.claimed {
+    opacity: 0.6;
+    border-color: #10b981;
+}
+.daily-reward-card.claimed::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    color: #10b981;
+    font-weight: 800;
+}
+.daily-day-title {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 4px;
+}
+.daily-reward-icon {
+    font-size: 1.6rem;
+    margin: 4px 0;
+}
+.daily-reward-val {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+.quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 15px 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+.quest-item {
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.quest-info {
+    flex: 1;
+}
+.quest-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+.quest-reward {
+    font-size: 0.8rem;
+    color: #fbbf24;
+    margin-top: 2px;
+}
+.quest-progress-bg {
+    width: 100%;
+    height: 6px;
+    background: #334155;
+    border-radius: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.quest-progress-fill {
+    height: 100%;
+    background: #10b981;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.quest-claim-btn {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: #10b981;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    min-width: 75px;
+}
+.quest-claim-btn:disabled {
+    background: #475569;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* ============================================================
+   PORTRET VA LANDSHAFT RESPONSIVE REJIMLAR (v51)
+   Telefon tik tutilganda (Portret) ham, yonbosh tutilganda (Landshaft) ham
+   o'yinchi barcha tugmalarni qulay bosa oladi va maydon to'liq ko'rinadi.
+   ============================================================ */
+
+@media screen and (orientation: portrait), screen and (max-aspect-ratio: 1/1) {
+    /* HUD paneli: tepada ixcham va chiroyli */
+    .hud {
+        padding: 8px 10px !important;
+        grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) !important;
+        gap: 6px !important;
+    }
+    .player-info {
+        min-width: 82px !important;
+        max-width: 33vw !important;
+        padding: 5px 8px !important;
+    }
+    .player-info h2 {
+        font-size: 0.74rem !important;
+        margin-bottom: 2px !important;
+    }
+    .hud-score {
+        font-size: 0.70rem !important;
+    }
+    .wind-indicator {
+        padding: 4px 8px !important;
+        font-size: 0.70rem !important;
+    }
+
+    /* O'yin ichidagi tugmalar portretda: pastki o'ng burchakda 2 qatorli ixcham dock */
+    .shield-btn {
+        bottom: 12px !important;
+        right: 12px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
+    }
+    .super-btn {
+        bottom: 12px !important;
+        right: 62px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
+    }
+    .duck-btn {
+        bottom: 12px !important;
+        right: 112px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+    .double-btn {
+        bottom: 12px !important;
+        right: 162px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* 2-qator (yuqoriroqda) */
+    .fire-btn {
+        bottom: 62px !important;
+        right: 12px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+    .wall-btn {
+        bottom: 62px !important;
+        right: 62px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+    .crow-btn {
+        bottom: 62px !important;
+        right: 112px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+    .artillery-btn {
+        bottom: 62px !important;
+        right: 162px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+
+    /* Chap tomondagi tugmalar: Menyu, Musiqa, Emote, Chat */
+    #in-game-menu-btn {
+        bottom: 12px !important;
+        left: 12px !important;
+        padding: 8px 14px !important;
+        font-size: 0.74rem !important;
+        min-height: 38px !important;
+    }
+    #music-toggle-btn {
+        bottom: 56px !important;
+        left: 12px !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1rem !important;
+    }
+    .emote-btn {
+        bottom: 100px !important;
+        left: 12px !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1rem !important;
+    }
+    #btn-toggle-chat {
+        bottom: 144px !important;
+        left: 12px !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1rem !important;
+    }
+
+    /* Navbat indikatori: tugmalar ustida markazda erkin turadi */
+    .controls {
+        bottom: 116px !important;
+        width: auto !important;
+        max-width: 90vw !important;
+        padding: 4px 8px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        pointer-events: none !important;
+    }
+    .controls p {
+        display: none !important; /* Portretda ortiqcha matn ekranni to'sib qo'ymasligi uchun yashiriladi */
+    }
+    #turn-indicator {
+        font-size: 0.82rem !important;
+        padding: 5px 14px !important;
+        pointer-events: auto !important;
+    }
+}
+

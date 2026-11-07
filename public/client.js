@@ -34,6 +34,37 @@ try {
 } catch (err) {
     console.warn('Socket initialization failed; online mode disabled.', err);
 }
+
+// --- Telegram WebApp Integratsiyasi ---
+const tg = window.Telegram?.WebApp;
+if (tg) {
+    try {
+        tg.ready();
+        tg.expand();
+        if (typeof tg.requestFullscreen === 'function') {
+            tg.requestFullscreen();
+        }
+        if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#111827');
+        if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0b0f19');
+    } catch (e) {
+        console.warn('Telegram WebApp init warning:', e);
+    }
+}
+
+function triggerHaptic(type = 'light') {
+    try {
+        if (tg && tg.HapticFeedback) {
+            if (['light', 'medium', 'heavy', 'rigid', 'soft'].includes(type)) {
+                tg.HapticFeedback.impactOccurred(type);
+            } else if (['success', 'warning', 'error'].includes(type)) {
+                tg.HapticFeedback.notificationOccurred(type);
+            } else if (type === 'selection') {
+                tg.HapticFeedback.selectionChanged();
+            }
+        }
+    } catch (e) {}
+}
+
 let trajectoryLine = null;
 let hintTrajectoryLine = null;      // Avvalgi otish trayektoriyasi (yordamchi hint)
 let lastPlayerShot = null;          // O'yinchining oxirgi otish parametrlari
@@ -822,46 +853,1106 @@ function makeDomedBuilding(opts) {
     return g;
 }
 
+// === Cheksiz Osmon Tekstura Generatori (Infinite Sky Canvas) ===
+function generateInfiniteSkyTexture(mapType, weather) {
+    const canvas = document.createElement('canvas');
+    const w = canvas.width = 1024;
+    const h = canvas.height = 2048;
+    const ctx = canvas.getContext('2d');
+    const isNight = weather === 'night';
+    const isStorm = weather === 'storm';
+    const isRain = weather === 'rain';
+    const isSnow = weather === 'snow';
+
+    // 1. Vertikal osmon gradienti (Ufqdan to koinotgacha bo'lgan silliq o'tish)
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    if (isNight) {
+        sky.addColorStop(0.0, '#010308');
+        sky.addColorStop(0.3, '#030814');
+        sky.addColorStop(0.6, '#081224');
+        sky.addColorStop(0.85, '#0f203c');
+        sky.addColorStop(1.0, '#1c345a');
+    } else if (isStorm) {
+        sky.addColorStop(0.0, '#0a0e14');
+        sky.addColorStop(0.4, '#182430');
+        sky.addColorStop(0.7, '#304254');
+        sky.addColorStop(0.9, '#486074');
+        sky.addColorStop(1.0, '#668094');
+    } else if (isRain) {
+        sky.addColorStop(0.0, '#12202e');
+        sky.addColorStop(0.4, '#2c445c');
+        sky.addColorStop(0.7, '#4e6e88');
+        sky.addColorStop(0.9, '#6c90ab');
+        sky.addColorStop(1.0, '#92b4cc');
+    } else if (isSnow) {
+        sky.addColorStop(0.0, '#264464');
+        sky.addColorStop(0.4, '#527c9e');
+        sky.addColorStop(0.7, '#86afd0');
+        sky.addColorStop(0.9, '#b2d4ec');
+        sky.addColorStop(1.0, '#e2f0fa');
+    } else if (mapType === 'registan') {
+        sky.addColorStop(0.0, '#041630');
+        sky.addColorStop(0.35, '#0c3868');
+        sky.addColorStop(0.65, '#1664aa');
+        sky.addColorStop(0.85, '#389ade');
+        sky.addColorStop(0.95, '#ffd284');
+        sky.addColorStop(1.0, '#ffe8b4');
+    } else if (mapType === 'sakura') {
+        sky.addColorStop(0.0, '#0a102e');
+        sky.addColorStop(0.35, '#1e2b5a');
+        sky.addColorStop(0.6, '#4d5894');
+        sky.addColorStop(0.82, '#8a7db6');
+        sky.addColorStop(0.94, '#f8b9cd');
+        sky.addColorStop(1.0, '#fff0f6');
+    } else if (mapType === 'taiga') {
+        sky.addColorStop(0.0, '#020a14');
+        sky.addColorStop(0.3, '#081a2e');
+        sky.addColorStop(0.55, '#0e344c');
+        sky.addColorStop(0.78, '#1b546c');
+        sky.addColorStop(0.92, '#388094');
+        sky.addColorStop(1.0, '#76b4c4');
+    } else if (mapType === 'citadel') {
+        sky.addColorStop(0.0, '#0a0d14');
+        sky.addColorStop(0.35, '#16202c');
+        sky.addColorStop(0.65, '#283648');
+        sky.addColorStop(0.85, '#425266');
+        sky.addColorStop(0.95, '#6a5246');
+        sky.addColorStop(1.0, '#8c6850');
+    } else if (mapType === 'volcano') {
+        sky.addColorStop(0.0, '#0c0402');
+        sky.addColorStop(0.3, '#200b06');
+        sky.addColorStop(0.6, '#44180e');
+        sky.addColorStop(0.85, '#762612');
+        sky.addColorStop(0.95, '#c43e14');
+        sky.addColorStop(1.0, '#f86c1c');
+    } else if (mapType === 'desert' || mapType === 'canyon') {
+        sky.addColorStop(0.0, '#061c3a');
+        sky.addColorStop(0.35, '#104074');
+        sky.addColorStop(0.65, '#2072b4');
+        sky.addColorStop(0.85, '#52a8ea');
+        sky.addColorStop(0.95, '#f8c278');
+        sky.addColorStop(1.0, '#ffe4aa');
+    } else {
+        sky.addColorStop(0.0, '#061e44');
+        sky.addColorStop(0.35, '#0e3f7e');
+        sky.addColorStop(0.65, '#1a6ac2');
+        sky.addColorStop(0.85, '#3fa4f2');
+        sky.addColorStop(0.96, '#a4d9ff');
+        sky.addColorStop(1.0, '#dcf2ff');
+    }
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Kosmik yulduzlar (Yuqori stratosfera qatlami)
+    const starCount = isNight ? 300 : 70;
+    for (let s = 0; s < starCount; s++) {
+        const sx = Math.random() * w;
+        const sy = Math.random() * (isNight ? h * 0.78 : h * 0.38);
+        const sr = 0.5 + Math.random() * (isNight ? 1.7 : 1.1);
+        const sa = (0.3 + Math.random() * 0.7) * (isNight ? 1 : (1 - sy / (h * 0.38)));
+        ctx.fillStyle = `rgba(255, 255, 255, ${sa.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 3. Tayga uchun Shimol yog'dusi nurlari (Aurora Borealis)
+    if (mapType === 'taiga' || (isNight && Math.random() < 0.35)) {
+        const aurGradient = ctx.createLinearGradient(0, h * 0.12, w, h * 0.42);
+        aurGradient.addColorStop(0, 'rgba(46, 204, 113, 0)');
+        aurGradient.addColorStop(0.3, 'rgba(46, 204, 113, 0.22)');
+        aurGradient.addColorStop(0.6, 'rgba(26, 188, 156, 0.25)');
+        aurGradient.addColorStop(0.8, 'rgba(155, 89, 182, 0.18)');
+        aurGradient.addColorStop(1, 'rgba(155, 89, 182, 0)');
+        ctx.fillStyle = aurGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.38);
+        for (let x = 0; x <= w; x += 10) {
+            const y = h * 0.26 + Math.sin(x * 0.008) * 60 + Math.cos(x * 0.015) * 30;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h * 0.44);
+        ctx.lineTo(0, h * 0.44);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // 4. Yuqori sirrus bulutlari
+    if (!isNight && !isStorm) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        for (let c = 0; c < 5; c++) {
+            const cy = h * 0.46 + c * 75;
+            ctx.beginPath();
+            ctx.ellipse(w * (0.2 + c * 0.16), cy, 180 + c * 30, 16, Math.PI * 0.02, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+}
+
 // === Yuqori sifatli Canvas2D fon rasmlari generatori ===
 function generateBackdropTexture(mapType, weather, width, height) {
     const canvas = document.createElement('canvas');
     const w = canvas.width = width || 2048;
-    const h = canvas.height = height || 768;
+    const h = canvas.height = height || 1024;
     const ctx = canvas.getContext('2d');
     const isNight = weather === 'night', isStorm = weather === 'storm', isRain = weather === 'rain', isSnow = weather === 'snow';
-    // OSMON
-    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.65);
-    if (isNight) { sky.addColorStop(0,'#020810'); sky.addColorStop(1,'#1e3050'); }
-    else if (isStorm) { sky.addColorStop(0,'#1a2a38'); sky.addColorStop(1,'#4a6070'); }
-    else if (isRain) { sky.addColorStop(0,'#3a5a70'); sky.addColorStop(1,'#8ab0c8'); }
-    else if (isSnow) { sky.addColorStop(0,'#a0c8e0'); sky.addColorStop(1,'#e8f4ff'); }
-    else { sky.addColorStop(0,'#0a4a90'); sky.addColorStop(0.5,'#1a70c0'); sky.addColorStop(1,'#90d4f8'); }
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-    // Quyosh
-    if (!isStorm && !isRain) { const sx=isNight?w*0.8:w*0.2,sy=h*0.15,sr=isNight?30:55; const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr*4); sg.addColorStop(0,isNight?'rgba(220,235,255,0.9)':'rgba(255,250,200,0.95)'); sg.addColorStop(0.3,isNight?'rgba(180,200,230,0.2)':'rgba(255,220,100,0.3)'); sg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=sg; ctx.fillRect(0,0,w,h*0.5); ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fillStyle=isNight?'#e0eaff':'#fff8e0'; ctx.fill(); }
+
+    // OSMON UFQI GRADIENTI
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.72);
+    if (isNight) { sky.addColorStop(0, '#020810'); sky.addColorStop(1, '#1e3050'); }
+    else if (isStorm) { sky.addColorStop(0, '#1a2a38'); sky.addColorStop(1, '#4a6070'); }
+    else if (isRain) { sky.addColorStop(0, '#3a5a70'); sky.addColorStop(1, '#8ab0c8'); }
+    else if (isSnow) { sky.addColorStop(0, '#a0c8e0'); sky.addColorStop(1, '#e8f4ff'); }
+    else if (mapType === 'registan') { sky.addColorStop(0, '#145ea8'); sky.addColorStop(0.65, '#40a4e8'); sky.addColorStop(1, '#ffd088'); }
+    else if (mapType === 'sakura') { sky.addColorStop(0, '#304278'); sky.addColorStop(0.65, '#6a78b4'); sky.addColorStop(1, '#f8c2d4'); }
+    else if (mapType === 'taiga') { sky.addColorStop(0, '#0a2038'); sky.addColorStop(0.65, '#1c4864'); sky.addColorStop(1, '#68a8bc'); }
+    else if (mapType === 'citadel') { sky.addColorStop(0, '#121822'); sky.addColorStop(0.65, '#2e3a4c'); sky.addColorStop(1, '#6a564c'); }
+    else { sky.addColorStop(0, '#0a4a90'); sky.addColorStop(0.5, '#1a70c0'); sky.addColorStop(1, '#90d4f8'); }
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // Quyosh / Oy diski va yog'dusi
+    if (!isStorm && !isRain) {
+        const sx = isNight ? w * 0.8 : w * 0.22;
+        const sy = h * 0.18;
+        const sr = isNight ? 35 : 60;
+        const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 4);
+        sg.addColorStop(0, isNight ? 'rgba(220,235,255,0.9)' : 'rgba(255,250,200,0.95)');
+        sg.addColorStop(0.3, isNight ? 'rgba(180,200,230,0.2)' : 'rgba(255,220,100,0.3)');
+        sg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = sg;
+        ctx.fillRect(0, 0, w, h * 0.55);
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = isNight ? '#e0eaff' : '#fff8e0';
+        ctx.fill();
+    }
+
     // Yulduzlar
-    if (isNight) { for(let s=0;s<100;s++){ctx.beginPath();ctx.arc(Math.random()*w,Math.random()*h*0.4,0.5+Math.random()*1.5,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${0.3+Math.random()*0.7})`;ctx.fill();} }
-    // Bulutlar
-    if (!isNight){for(let c=0;c<(isStorm?7:4);c++){const cx=Math.random()*w,cy=h*0.06+Math.random()*h*0.15;ctx.globalAlpha=isStorm?0.5:0.3;ctx.fillStyle=isStorm?'#3a4a5a':'#fff';for(let b=0;b<5;b++){ctx.beginPath();ctx.arc(cx+b*28-56,cy+Math.random()*8,22+Math.random()*25,0,Math.PI*2);ctx.fill();}}ctx.globalAlpha=1;}
-    // Sahna
-    const baseY = h * 0.62;
+    if (isNight) {
+        for (let s = 0; s < 140; s++) {
+            ctx.beginPath();
+            ctx.arc(Math.random() * w, Math.random() * h * 0.45, 0.5 + Math.random() * 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.7})`;
+            ctx.fill();
+        }
+    }
+
+    // Yengil bulutlar
+    if (!isNight) {
+        for (let c = 0; c < (isStorm ? 8 : 5); c++) {
+            const cx = Math.random() * w, cy = h * 0.08 + Math.random() * h * 0.16;
+            ctx.globalAlpha = isStorm ? 0.5 : 0.3;
+            ctx.fillStyle = isStorm ? '#3a4a5a' : '#fff';
+            for (let b = 0; b < 5; b++) {
+                ctx.beginPath();
+                ctx.arc(cx + b * 32 - 64, cy + Math.random() * 10, 26 + Math.random() * 28, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Sahna va landshaftlar
+    const baseY = h * 0.70;
     _paintScene(ctx, w, h, baseY, mapType, weather);
-    // Yer
-    const gc=_getGroundColors(mapType,weather); const grd=ctx.createLinearGradient(0,baseY,0,h); grd.addColorStop(0,gc[0]);grd.addColorStop(0.3,gc[1]);grd.addColorStop(1,gc[2]); ctx.fillStyle=grd;ctx.fillRect(0,baseY,w,h-baseY);
-    ctx.globalAlpha=0.12;for(let i=0;i<200;i++){ctx.fillStyle=gc[3]||'#1a3010';ctx.fillRect(Math.random()*w,baseY+Math.random()*(h-baseY),1+Math.random()*3,2+Math.random()*5);}ctx.globalAlpha=1;
-    const tex = new THREE.CanvasTexture(canvas); tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter; return tex;
+
+    // Yer qatlami
+    const gc = _getGroundColors(mapType, weather);
+    const grd = ctx.createLinearGradient(0, baseY, 0, h);
+    grd.addColorStop(0, gc[0]);
+    grd.addColorStop(0.3, gc[1]);
+    grd.addColorStop(1, gc[2]);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, baseY, w, h - baseY);
+
+    ctx.globalAlpha = 0.14;
+    for (let i = 0; i < 240; i++) {
+        ctx.fillStyle = gc[3] || '#1a3010';
+        ctx.fillRect(Math.random() * w, baseY + Math.random() * (h - baseY), 1 + Math.random() * 3, 2 + Math.random() * 5);
+    }
+    ctx.globalAlpha = 1;
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
 }
 
-function _getGroundColors(m,w){if(w==='night')return['#1a2a1a','#0f1a10','#080e08','#0a1a08'];if(m==='desert')return['#d4a848','#b88a30','#8a6820','#c09838'];if(m==='winter'||w==='snow')return['#e8f0f8','#d0e0ea','#b0c8d8','#c8dae8'];if(m==='volcano')return['#2a1810','#1a100a','#0e0806','#201008'];if(m==='canyon')return['#c07038','#a05828','#804020','#b06830'];if(m==='oasis')return['#3a8830','#2a6a20','#1a4a14','#2a7a28'];if(m==='samarkand'||m==='bukhara')return['#c8a868','#a88848','#806830','#b09050'];if(m==='istanbul')return['#5a8050','#4a6a40','#3a5030','#4a7a40'];return['#4a9a38','#3a7a28','#2a5a1a','#3a8a30'];}
-function _paintScene(ctx,w,h,baseY,mapType,weather){const n=weather==='night';if(mapType==='samarkand'||mapType==='bukhara'||mapType==='istanbul')_paintCity(ctx,w,h,baseY,mapType,n);else if(mapType==='mountain'||mapType==='winter')_paintMountains(ctx,w,h,baseY,weather);else if(mapType==='desert')_paintDesert(ctx,w,h,baseY,n);else if(mapType==='volcano')_paintVolcano(ctx,w,h,baseY);else if(mapType==='canyon')_paintCanyon(ctx,w,h,baseY);else if(mapType==='oasis')_paintOasis(ctx,w,h,baseY,n);else if(mapType==='castle')_paintCastle(ctx,w,h,baseY,n);else _paintField(ctx,w,h,baseY,n);}
-function _paintCity(ctx,w,h,baseY,mapType,n){const nc=n?'#141e30':(mapType==='istanbul'?'#8090a0':'#b09868');const dc=n?'#1a3040':(mapType==='istanbul'?'#7a8a98':'#18a0b8');ctx.globalAlpha=0.4;for(let i=0;i<14;i++){const bx=(w/14)*i+Math.random()*30,bw=60+Math.random()*80,bh=70+Math.random()*100;ctx.fillStyle=n?'#0e1828':'#9a8060';ctx.fillRect(bx,baseY-bh,bw,bh);if(Math.random()>0.5){ctx.fillStyle=dc;ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh,bw*0.28,Math.PI,0);ctx.fill();}}ctx.globalAlpha=1;for(let i=0;i<9;i++){const bx=(w/9)*i+Math.random()*20,bw=90+Math.random()*110,bh=130+Math.random()*150;const bg=ctx.createLinearGradient(bx,baseY-bh,bx,baseY);bg.addColorStop(0,nc);bg.addColorStop(1,n?'#0a1420':'#7a6848');ctx.fillStyle=bg;ctx.fillRect(bx,baseY-bh,bw,bh);if(!n){ctx.fillStyle='rgba(0,0,0,0.12)';for(let wy=15;wy<bh-15;wy+=22)for(let wx=8;wx<bw-8;wx+=18)ctx.fillRect(bx+wx,baseY-bh+wy,9,13);}else{for(let wy=15;wy<bh-15;wy+=22)for(let wx=8;wx<bw-8;wx+=18)if(Math.random()>0.6){ctx.fillStyle='rgba(255,200,80,0.6)';ctx.fillRect(bx+wx,baseY-bh+wy,9,13);}}if(Math.random()>0.3){ctx.fillStyle=dc;ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh,bw*0.3,Math.PI,0);ctx.fill();ctx.fillStyle='#d4a020';ctx.beginPath();ctx.arc(bx+bw/2,baseY-bh-bw*0.26,3,0,Math.PI*2);ctx.fill();}if(Math.random()>0.6){const mw=13,mh=bh+50+Math.random()*60,mx=bx+bw+4;ctx.fillStyle=nc;ctx.fillRect(mx,baseY-mh,mw,mh);ctx.fillStyle=dc;ctx.beginPath();ctx.arc(mx+mw/2,baseY-mh,mw*0.7,Math.PI,0);ctx.fill();}}}
-function _paintMountains(ctx,w,h,baseY,weather){const s=weather==='snow';const c=s?['#4a6880','#5a7a90','#6a8aa0']:['#2a4a30','#3a5a38','#4a6a40'];for(let l=0;l<3;l++){ctx.fillStyle=c[l];ctx.globalAlpha=0.4+l*0.3;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-l*25-(140-l*30)*(0.5+0.5*Math.sin(x*0.0022+l*2))-Math.sin(x*0.007)*20;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;if(s){ctx.fillStyle='#f0f8ff';ctx.globalAlpha=0.7;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=4){const y=baseY-50-110*(0.5+0.5*Math.sin(x*0.0022+4))-Math.sin(x*0.007)*20;ctx.lineTo(x,y+25+Math.random()*8);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();ctx.globalAlpha=1;}}
-function _paintDesert(ctx,w,h,baseY,n){const dc=n?['#2a2018','#3a2a1a']:['#d4a848','#c09030'];for(let d=0;d<2;d++){ctx.fillStyle=dc[d];ctx.globalAlpha=d===0?0.5:1;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-(15+d*12)-Math.sin(x*0.003+d*2)*(35+d*18)-Math.sin(x*0.008+d)*12;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;const pc=n?'#1a1810':'#b08828';for(let i=0;i<3;i++){const px=w*0.15+i*w*0.32,pw=90+i*25,ph=70+i*18;ctx.fillStyle=pc;ctx.beginPath();ctx.moveTo(px-pw/2,baseY-3);ctx.lineTo(px,baseY-3-ph);ctx.lineTo(px+pw/2,baseY-3);ctx.closePath();ctx.fill();}}
-function _paintVolcano(ctx,w,h,baseY){const g=ctx.createRadialGradient(w*0.5,baseY,0,w*0.5,baseY,h*0.6);g.addColorStop(0,'rgba(200,50,10,0.18)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);[{x:w*0.2,pw:280,ph:200},{x:w*0.5,pw:380,ph:260},{x:w*0.8,pw:300,ph:190}].forEach(p=>{const v=ctx.createLinearGradient(p.x,baseY-p.ph,p.x,baseY);v.addColorStop(0,'#1a1210');v.addColorStop(1,'#2a1a14');ctx.fillStyle=v;ctx.beginPath();ctx.moveTo(p.x-p.pw/2,baseY);ctx.lineTo(p.x-15,baseY-p.ph);ctx.lineTo(p.x+15,baseY-p.ph);ctx.lineTo(p.x+p.pw/2,baseY);ctx.closePath();ctx.fill();ctx.fillStyle='#ff4a10';ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,baseY-p.ph+5,12,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.3;ctx.beginPath();ctx.arc(p.x,baseY-p.ph-5,28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});}
-function _paintCanyon(ctx,w,h,baseY){[{c:'#6a3018',a:150,f:0.002},{c:'#8a4420',a:120,f:0.003},{c:'#a85828',a:90,f:0.004},{c:'#c06830',a:60,f:0.005}].forEach((l,i)=>{ctx.fillStyle=l.c;ctx.globalAlpha=0.4+i*0.18;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=4){const y=baseY-l.a*(0.5+0.4*Math.sin(x*l.f+i))-Math.abs(Math.sin(x*0.01+i))*30;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();});ctx.globalAlpha=1;}
-function _paintOasis(ctx,w,h,baseY,n){const lg=ctx.createRadialGradient(w/2,baseY+8,0,w/2,baseY+8,w*0.22);lg.addColorStop(0,n?'#0a3040':'#30b8d8');lg.addColorStop(1,n?'#081820':'#1890b0');ctx.fillStyle=lg;ctx.globalAlpha=0.65;ctx.beginPath();ctx.ellipse(w/2,baseY+8,w*0.22,30,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;for(let i=0;i<8;i++){const px=w*0.08+(w*0.84/7)*i+(Math.random()-0.5)*25,trH=60+Math.random()*45;ctx.strokeStyle=n?'#3a2a18':'#7a5a2a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(px,baseY);ctx.quadraticCurveTo(px+(Math.random()-0.5)*15,baseY-trH*0.6,px+(Math.random()-0.5)*8,baseY-trH);ctx.stroke();ctx.fillStyle=n?'#1a3a18':'#2a8a30';for(let f=0;f<5;f++){const a=(f/5)*Math.PI*2;ctx.beginPath();ctx.ellipse(px+Math.cos(a)*32,baseY-trH+Math.sin(a)*10-3,24,7,a*0.3,0,Math.PI*2);ctx.fill();}}}
-function _paintCastle(ctx,w,h,baseY,n){const wc=n?'#1a2028':'#5a6858';const wallH=120;const wg=ctx.createLinearGradient(0,baseY-wallH,0,baseY);wg.addColorStop(0,wc);wg.addColorStop(1,n?'#0a1018':'#3a4838');ctx.fillStyle=wg;ctx.fillRect(w*0.1,baseY-wallH,w*0.8,wallH);for(let x=w*0.1;x<w*0.9;x+=28)ctx.fillRect(x,baseY-wallH-14,16,14);for(let i=0;i<6;i++){const tx=w*0.1+(w*0.8/5)*i,th=wallH+45+Math.random()*35,tw=32;ctx.fillStyle=n?'#141820':'#4a5848';ctx.fillRect(tx-tw/2,baseY-th,tw,th);ctx.beginPath();ctx.moveTo(tx-tw/2-4,baseY-th);ctx.lineTo(tx,baseY-th-28);ctx.lineTo(tx+tw/2+4,baseY-th);ctx.closePath();ctx.fill();ctx.fillStyle=n?'#8a2020':'#c03030';ctx.fillRect(tx-1,baseY-th-28,2,-18);ctx.beginPath();ctx.moveTo(tx+1,baseY-th-46);ctx.lineTo(tx+16,baseY-th-40);ctx.lineTo(tx+1,baseY-th-34);ctx.fill();}ctx.fillStyle='#3a2a1a';ctx.beginPath();ctx.arc(w/2,baseY,32,Math.PI,0);ctx.fill();ctx.fillRect(w/2-32,baseY-32,64,32);}
-function _paintField(ctx,w,h,baseY,n){const hc=n?['#1a2a18','#142214']:['#4a9a38','#3a7a28'];for(let l=0;l<2;l++){ctx.fillStyle=hc[l];ctx.globalAlpha=l===0?0.5:1;ctx.beginPath();ctx.moveTo(0,baseY);for(let x=0;x<=w;x+=3){const y=baseY-(8+l*6)-Math.sin(x*0.002+l*3)*(20+l*12)-Math.sin(x*0.006+l)*8;ctx.lineTo(x,y);}ctx.lineTo(w,baseY);ctx.closePath();ctx.fill();}ctx.globalAlpha=1;for(let i=0;i<10;i++){const tx=Math.random()*w,ty=baseY-8-Math.random()*15;ctx.fillStyle=n?'#2a1a10':'#5a3a1a';ctx.fillRect(tx-2,ty,5,15+Math.random()*10);ctx.fillStyle=n?'#1a3a14':'#2a7a20';ctx.beginPath();ctx.arc(tx,ty-5,15+Math.random()*10,0,Math.PI*2);ctx.fill();}}
+function _getGroundColors(m, w) {
+    if (w === 'night') return ['#1a2a1a', '#0f1a10', '#080e08', '#0a1a08'];
+    if (m === 'registan') return ['#d4a858', '#b88a38', '#8a6420', '#c89c44'];
+    if (m === 'sakura') return ['#3e8848', '#2e6c38', '#1c4c24', '#52a85e'];
+    if (m === 'taiga') return ['#24402a', '#182e1c', '#0e1e12', '#325838'];
+    if (m === 'citadel') return ['#3e444a', '#2a3036', '#1a2024', '#505860'];
+    if (m === 'desert') return ['#d4a848', '#b88a30', '#8a6820', '#c09838'];
+    if (m === 'winter' || w === 'snow') return ['#e8f0f8', '#d0e0ea', '#b0c8d8', '#c8dae8'];
+    if (m === 'volcano') return ['#2a1810', '#1a100a', '#0e0806', '#201008'];
+    if (m === 'canyon') return ['#c07038', '#a05828', '#804020', '#b06830'];
+    if (m === 'oasis') return ['#3a8830', '#2a6a20', '#1a4a14', '#2a7a28'];
+    if (m === 'samarkand' || m === 'bukhara') return ['#c8a868', '#a88848', '#806830', '#b09050'];
+    if (m === 'istanbul') return ['#5a8050', '#4a6a40', '#3a5030', '#4a7a40'];
+    return ['#4a9a38', '#3a7a28', '#2a5a1a', '#3a8a30'];
+}
+
+function _paintScene(ctx, w, h, baseY, mapType, weather) {
+    const n = weather === 'night';
+    if (mapType === 'registan') _paintRegistan(ctx, w, h, baseY, n);
+    else if (mapType === 'sakura') _paintSakura(ctx, w, h, baseY, n);
+    else if (mapType === 'taiga') _paintTaiga(ctx, w, h, baseY, n);
+    else if (mapType === 'citadel') _paintCitadel(ctx, w, h, baseY, n);
+    else if (mapType === 'samarkand' || mapType === 'bukhara' || mapType === 'istanbul') _paintCity(ctx, w, h, baseY, mapType, n);
+    else if (mapType === 'mountain' || mapType === 'winter') _paintMountains(ctx, w, h, baseY, weather);
+    else if (mapType === 'desert') _paintDesert(ctx, w, h, baseY, n);
+    else if (mapType === 'volcano') _paintVolcano(ctx, w, h, baseY);
+    else if (mapType === 'canyon') _paintCanyon(ctx, w, h, baseY);
+    else if (mapType === 'oasis') _paintOasis(ctx, w, h, baseY, n);
+    else if (mapType === 'castle') _paintCastle(ctx, w, h, baseY, n);
+    else _paintField(ctx, w, h, baseY, n);
+}
+
+// 1. Registon maydoni: Peshtoq portallari, qovurg'ali moviy gumbazlar va minoralar
+function _paintRegistan(ctx, w, h, baseY, n) {
+    const duneCols = n ? ['#1e1610', '#2a2014'] : ['#cda152', '#b8893a'];
+    for (let d = 0; d < 2; d++) {
+        ctx.fillStyle = duneCols[d];
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 4) {
+            const y = baseY - (25 + d * 22) - Math.sin(x * 0.002 + d * 1.8) * 35;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    const wallCol = n ? '#141c28' : '#be955c';
+    const wallDark = n ? '#0c121c' : '#947240';
+    const domeTurquoise = n ? '#0e4a5c' : '#10b8d4';
+    const domeDark = n ? '#072832' : '#0c7d92';
+    const goldTrim = n ? '#6a501a' : '#f0b830';
+
+    const centers = [w * 0.28, w * 0.5, w * 0.72];
+    centers.forEach((cx, idx) => {
+        const isMain = (idx === 1);
+        const pw = isMain ? 240 : 180;
+        const ph = isMain ? 320 : 250;
+        const px = cx - pw / 2;
+        const py = baseY - ph;
+
+        const wg = ctx.createLinearGradient(px, py, px, baseY);
+        wg.addColorStop(0, wallCol);
+        wg.addColorStop(1, wallDark);
+        ctx.fillStyle = wg;
+        ctx.fillRect(px, py, pw, ph);
+
+        ctx.strokeStyle = domeTurquoise;
+        ctx.lineWidth = 6;
+        ctx.strokeRect(px + 12, py + 12, pw - 24, ph - 12);
+
+        const archW = pw * 0.56;
+        const archH = ph * 0.62;
+        const archX = cx - archW / 2;
+        const archY = baseY - archH;
+
+        ctx.fillStyle = n ? '#070c14' : '#684d28';
+        ctx.beginPath();
+        ctx.moveTo(archX, baseY);
+        ctx.lineTo(archX, archY + archH * 0.35);
+        ctx.quadraticCurveTo(archX, archY, cx, archY - 15);
+        ctx.quadraticCurveTo(archX + archW, archY, archX + archW, archY + archH * 0.35);
+        ctx.lineTo(archX + archW, baseY);
+        ctx.closePath();
+        ctx.fill();
+
+        if (n) {
+            const fl = ctx.createRadialGradient(cx, baseY - archH * 0.4, 0, cx, baseY - archH * 0.4, 60);
+            fl.addColorStop(0, 'rgba(255, 180, 50, 0.6)');
+            fl.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = fl;
+            ctx.fillRect(archX, archY - 20, archW, archH + 20);
+        }
+
+        for (const gx of [cx - pw * 0.36, cx + pw * 0.36]) {
+            const dw = isMain ? 72 : 54;
+            const dh = isMain ? 90 : 68;
+            const dy = py - dh * 0.55;
+
+            ctx.fillStyle = wallCol;
+            ctx.fillRect(gx - dw / 2, dy, dw, dh * 0.6);
+
+            const dg = ctx.createLinearGradient(gx - dw / 2, dy - dh * 0.4, gx + dw / 2, dy);
+            dg.addColorStop(0, domeTurquoise);
+            dg.addColorStop(1, domeDark);
+            ctx.fillStyle = dg;
+            ctx.beginPath();
+            ctx.arc(gx, dy, dw / 2, Math.PI, 0);
+            ctx.fill();
+
+            ctx.fillStyle = goldTrim;
+            ctx.fillRect(gx - 2, dy - dw / 2 - 14, 4, 14);
+            ctx.beginPath();
+            ctx.arc(gx, dy - dw / 2 - 16, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        for (const mx of [px - 16, px + pw + 6]) {
+            const mw = 18;
+            const mh = ph + (isMain ? 65 : 45);
+            const my = baseY - mh;
+
+            ctx.fillStyle = wallCol;
+            ctx.fillRect(mx, my, mw, mh);
+
+            ctx.fillStyle = goldTrim;
+            ctx.fillRect(mx - 4, my + 15, mw + 8, 8);
+
+            ctx.fillStyle = domeTurquoise;
+            ctx.beginPath();
+            ctx.arc(mx + mw / 2, my, mw * 0.65, Math.PI, 0);
+            ctx.fill();
+        }
+    });
+}
+
+// 2. Sakura bog'i: Fudzi tog'i, yapon pagodasi va pushti gullagan daraxtlar
+function _paintSakura(ctx, w, h, baseY, n) {
+    const fujiX = w * 0.5;
+    const fujiW = 580;
+    const fujiH = 360;
+    const fujiTopY = baseY - fujiH;
+
+    const fg = ctx.createLinearGradient(fujiX, fujiTopY, fujiX, baseY);
+    fg.addColorStop(0, n ? '#1c1e38' : '#5a6288');
+    fg.addColorStop(1, n ? '#0d1222' : '#8898b8');
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.moveTo(fujiX - fujiW / 2, baseY);
+    ctx.quadraticCurveTo(fujiX - fujiW * 0.22, fujiTopY + 40, fujiX - 45, fujiTopY);
+    ctx.lineTo(fujiX + 45, fujiTopY);
+    ctx.quadraticCurveTo(fujiX + fujiW * 0.22, fujiTopY + 40, fujiX + fujiW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    const snowH = fujiH * 0.32;
+    ctx.fillStyle = n ? '#788ca8' : '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(fujiX - 45, fujiTopY);
+    ctx.lineTo(fujiX + 45, fujiTopY);
+    ctx.quadraticCurveTo(fujiX + 110, fujiTopY + snowH * 0.65, fujiX + 95, fujiTopY + snowH);
+    for (let s = 3; s >= -3; s--) {
+        ctx.lineTo(fujiX + s * 24, fujiTopY + snowH + (s % 2 === 0 ? 12 : -8));
+    }
+    ctx.quadraticCurveTo(fujiX - 110, fujiTopY + snowH * 0.65, fujiX - 45, fujiTopY);
+    ctx.closePath();
+    ctx.fill();
+
+    const pagX = w * 0.82;
+    const pagBaseH = 260;
+    const pagMat = n ? '#10141e' : '#2d1b18';
+    const vermilion = n ? '#4a1818' : '#b22222';
+
+    ctx.fillStyle = pagMat;
+    ctx.fillRect(pagX - 14, baseY - pagBaseH, 28, pagBaseH);
+
+    for (let t = 0; t < 5; t++) {
+        const ty = baseY - 60 - t * 45;
+        const tw = 90 - t * 10;
+        ctx.fillStyle = vermilion;
+        ctx.beginPath();
+        ctx.moveTo(pagX - tw / 2 - 12, ty);
+        ctx.quadraticCurveTo(pagX - tw / 4, ty - 12, pagX, ty - 14);
+        ctx.quadraticCurveTo(pagX + tw / 4, ty - 12, pagX + tw / 2 + 12, ty);
+        ctx.lineTo(pagX + tw / 2, ty + 6);
+        ctx.lineTo(pagX - tw / 2, ty + 6);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.strokeStyle = n ? '#50442a' : '#d4af37';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pagX, baseY - pagBaseH);
+    ctx.lineTo(pagX, baseY - pagBaseH - 35);
+    ctx.stroke();
+
+    const blossomColors = n
+        ? ['#4a2838', '#5c3248', '#382030']
+        : ['#ffb7c5', '#ffaec9', '#ffffff', '#ff94b4'];
+
+    for (let tr = 0; tr < 12; tr++) {
+        const tx = w * 0.05 + (w * 0.9 / 11) * tr + (Math.sin(tr * 4) * 35);
+        const th = 90 + (tr % 3) * 35;
+        const ty = baseY - th;
+
+        ctx.strokeStyle = n ? '#161210' : '#4a2f24';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(tx, baseY);
+        ctx.quadraticCurveTo(tx + (tr % 2 === 0 ? 15 : -15), baseY - th * 0.6, tx, ty);
+        ctx.stroke();
+
+        for (let b = 0; b < 7; b++) {
+            const bx = tx + Math.cos(b * 1.1) * (26 + (b % 3) * 12);
+            const by = ty + Math.sin(b * 1.1) * (18 + (b % 2) * 8);
+            const br = 22 + (b % 3) * 8;
+            ctx.fillStyle = blossomColors[(tr + b) % blossomColors.length];
+            ctx.globalAlpha = n ? 0.75 : 0.88;
+            ctx.beginPath();
+            ctx.arc(bx, by, br, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+}
+
+// 3. Sibir taygasi: Shimol yog'dusi, qorli tog'lar va qalin archazor
+function _paintTaiga(ctx, w, h, baseY, n) {
+    const aurCols = ['rgba(46, 204, 113, 0.28)', 'rgba(26, 188, 156, 0.25)', 'rgba(155, 89, 182, 0.2)'];
+    aurCols.forEach((col, idx) => {
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY - 350);
+        for (let x = 0; x <= w; x += 6) {
+            const y = baseY - 350 - idx * 50 - Math.sin(x * 0.003 + idx * 1.5) * 80 - Math.cos(x * 0.008) * 30;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY - 200);
+        ctx.lineTo(0, baseY - 200);
+        ctx.closePath();
+        ctx.fill();
+    });
+
+    const peakCol = n ? '#0c1622' : '#3d4d5c';
+    ctx.fillStyle = peakCol;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 5) {
+        const y = baseY - 180 - Math.sin(x * 0.002) * 110 - Math.abs(Math.sin(x * 0.007)) * 50;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    const pineCols = n
+        ? ['#0a1410', '#0e1c14', '#12241a', '#162c20']
+        : ['#142b1a', '#1a3822', '#22482c', '#2c5c38'];
+
+    for (let layer = 0; layer < 4; layer++) {
+        ctx.fillStyle = pineCols[layer];
+        const count = 35 + layer * 15;
+        const layerH = 90 + layer * 35;
+        const step = w / count;
+
+        for (let i = 0; i <= count; i++) {
+            const px = i * step + (Math.sin(i * 9) * step * 0.35);
+            const ph = layerH + (Math.cos(i * 7) * 25);
+            const pw = 28 + layer * 8;
+
+            ctx.beginPath();
+            ctx.moveTo(px - pw / 2, baseY);
+            ctx.lineTo(px, baseY - ph);
+            ctx.lineTo(px + pw / 2, baseY);
+            ctx.closePath();
+            ctx.fill();
+
+            if (!n || layer === 3) {
+                ctx.fillStyle = 'rgba(235, 245, 255, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(px - pw * 0.3, baseY - ph * 0.5);
+                ctx.lineTo(px, baseY - ph);
+                ctx.lineTo(px + pw * 0.3, baseY - ph * 0.5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = pineCols[layer];
+            }
+        }
+    }
+}
+
+// 4. Buyuk Qasr: Kuchli granit bastionlar, tishli devorlar va olov mash'alalari
+function _paintCitadel(ctx, w, h, baseY, n) {
+    const cliffCol = n ? '#0a0d12' : '#2a2f38';
+    ctx.fillStyle = cliffCol;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 5) {
+        const y = baseY - 160 - Math.sin(x * 0.0025) * 80 - Math.sin(x * 0.009) * 35;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    const stoneLight = n ? '#141820' : '#454e58';
+    const stoneDark = n ? '#0c0e14' : '#2b323a';
+    const wallH = 170;
+
+    const wg = ctx.createLinearGradient(0, baseY - wallH, 0, baseY);
+    wg.addColorStop(0, stoneLight);
+    wg.addColorStop(1, stoneDark);
+    ctx.fillStyle = wg;
+    ctx.fillRect(w * 0.05, baseY - wallH, w * 0.9, wallH);
+
+    for (let x = w * 0.05; x < w * 0.95; x += 32) {
+        ctx.fillRect(x, baseY - wallH - 18, 18, 18);
+    }
+
+    for (let i = 0; i < 7; i++) {
+        const tx = w * 0.08 + (w * 0.84 / 6) * i;
+        const tw = 55;
+        const th = wallH + 60 + (i % 2 === 1 ? 40 : 0);
+        const ty = baseY - th;
+
+        ctx.fillStyle = stoneDark;
+        ctx.fillRect(tx - tw / 2, ty, tw, th);
+
+        for (let bx = tx - tw / 2; bx < tx + tw / 2; bx += 14) {
+            ctx.fillRect(bx, ty - 12, 8, 12);
+        }
+
+        ctx.fillStyle = '#b81e1e';
+        ctx.fillRect(tx - 1, ty - 35, 2, 25);
+        ctx.beginPath();
+        ctx.moveTo(tx + 1, ty - 35);
+        ctx.lineTo(tx + 28, ty - 26);
+        ctx.lineTo(tx + 1, ty - 17);
+        ctx.closePath();
+        ctx.fill();
+
+        const fx = tx;
+        const fy = ty + 40;
+        const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, 28);
+        fg.addColorStop(0, 'rgba(255, 140, 20, 0.9)');
+        fg.addColorStop(0.4, 'rgba(255, 70, 10, 0.4)');
+        fg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = fg;
+        ctx.fillRect(fx - 28, fy - 28, 56, 56);
+    }
+
+    const gw = 70;
+    ctx.fillStyle = '#0a0a0c';
+    ctx.beginPath();
+    ctx.arc(w / 2, baseY - 50, gw / 2, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(w / 2 - gw / 2, baseY - 50, gw, 50);
+}
+
+// 5. Maydon: 3 qatlamli zumrad tepaliklar, shamol tegirmoni va o'tloqlar
+function _paintField(ctx, w, h, baseY, n) {
+    const hillCols = n
+        ? ['#101e14', '#152818', '#1b3420']
+        : ['#4b8c38', '#3e782c', '#336522'];
+
+    for (let l = 0; l < 3; l++) {
+        ctx.fillStyle = hillCols[l];
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 4) {
+            const y = baseY - (15 + l * 18) - Math.sin(x * 0.002 + l * 2.2) * (30 + l * 15) - Math.sin(x * 0.006 + l) * 12;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    const wmX = w * 0.74;
+    const wmY = baseY - 75;
+    ctx.fillStyle = n ? '#0c160e' : '#283622';
+    ctx.beginPath();
+    ctx.moveTo(wmX - 16, wmY + 45);
+    ctx.lineTo(wmX - 10, wmY);
+    ctx.lineTo(wmX + 10, wmY);
+    ctx.lineTo(wmX + 16, wmY + 45);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = n ? '#0c160e' : '#283622';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(wmX - 35, wmY - 25);
+    ctx.lineTo(wmX + 35, wmY + 25);
+    ctx.moveTo(wmX - 25, wmY + 35);
+    ctx.lineTo(wmX + 25, wmY - 35);
+    ctx.stroke();
+
+    for (let i = 0; i < 14; i++) {
+        const tx = (w / 14) * i + Math.sin(i * 5) * 30;
+        const th = 25 + (i % 3) * 12;
+        const ty = baseY - 12 - (i % 2) * 8;
+        ctx.fillStyle = n ? '#101c10' : '#27521a';
+        ctx.beginPath();
+        ctx.arc(tx, ty - th * 0.6, th * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+
+function _paintCity(ctx, w, h, baseY, mapType, n) {
+    const nc = n ? '#141e30' : (mapType === 'istanbul' ? '#8090a0' : '#b09868');
+    const dc = n ? '#1a3040' : (mapType === 'istanbul' ? '#7a8a98' : '#18a0b8');
+    ctx.globalAlpha = 0.4;
+    for (let i = 0; i < 14; i++) {
+        const bx = (w / 14) * i + Math.random() * 30, bw = 60 + Math.random() * 80, bh = 70 + Math.random() * 100;
+        ctx.fillStyle = n ? '#0e1828' : '#9a8060';
+        ctx.fillRect(bx, baseY - bh, bw, bh);
+        if (Math.random() > 0.5) {
+            ctx.fillStyle = dc;
+            ctx.beginPath();
+            ctx.arc(bx + bw / 2, baseY - bh, bw * 0.28, Math.PI, 0);
+            ctx.fill();
+        }
+    }
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 9; i++) {
+        const bx = (w / 9) * i + Math.random() * 20, bw = 90 + Math.random() * 110, bh = 130 + Math.random() * 150;
+        const bg = ctx.createLinearGradient(bx, baseY - bh, bx, baseY);
+        bg.addColorStop(0, nc);
+        bg.addColorStop(1, n ? '#0a1420' : '#7a6848');
+        ctx.fillStyle = bg;
+        ctx.fillRect(bx, baseY - bh, bw, bh);
+        if (!n) {
+            ctx.fillStyle = 'rgba(0,0,0,0.12)';
+            for (let wy = 15; wy < bh - 15; wy += 22) {
+                for (let wx = 8; wx < bw - 8; wx += 18) {
+                    ctx.fillRect(bx + wx, baseY - bh + wy, 9, 13);
+                }
+            }
+        } else {
+            for (let wy = 15; wy < bh - 15; wy += 22) {
+                for (let wx = 8; wx < bw - 8; wx += 18) {
+                    if (Math.random() > 0.6) {
+                        ctx.fillStyle = 'rgba(255,200,80,0.6)';
+                        ctx.fillRect(bx + wx, baseY - bh + wy, 9, 13);
+                    }
+                }
+            }
+        }
+        if (Math.random() > 0.3) {
+            ctx.fillStyle = dc;
+            ctx.beginPath();
+            ctx.arc(bx + bw / 2, baseY - bh, bw * 0.3, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#d4a020';
+            ctx.beginPath();
+            ctx.arc(bx + bw / 2, baseY - bh - bw * 0.26, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (Math.random() > 0.6) {
+            const mw = 13, mh = bh + 50 + Math.random() * 60, mx = bx + bw + 4;
+            ctx.fillStyle = nc;
+            ctx.fillRect(mx, baseY - mh, mw, mh);
+            ctx.fillStyle = dc;
+            ctx.beginPath();
+            ctx.arc(mx + mw / 2, baseY - mh, mw * 0.7, Math.PI, 0);
+            ctx.fill();
+        }
+    }
+}
+
+function _paintMountains(ctx, w, h, baseY, weather) {
+    const s = weather === 'snow';
+    const c = s ? ['#4a6880', '#5a7a90', '#6a8aa0'] : ['#2a4a30', '#3a5a38', '#4a6a40'];
+    for (let l = 0; l < 3; l++) {
+        ctx.fillStyle = c[l];
+        ctx.globalAlpha = 0.4 + l * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 3) {
+            const y = baseY - l * 25 - (140 - l * 30) * (0.5 + 0.5 * Math.sin(x * 0.0022 + l * 2)) - Math.sin(x * 0.007) * 20;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (s) {
+        ctx.fillStyle = '#f0f8ff';
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 4) {
+            const y = baseY - 50 - 110 * (0.5 + 0.5 * Math.sin(x * 0.0022 + 4)) - Math.sin(x * 0.007) * 20;
+            ctx.lineTo(x, y + 25 + Math.random() * 8);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+function _paintDesert(ctx, w, h, baseY, n) {
+    const dc = n ? ['#2a2018', '#3a2a1a'] : ['#d4a848', '#c09030'];
+    for (let d = 0; d < 2; d++) {
+        ctx.fillStyle = dc[d];
+        ctx.globalAlpha = d === 0 ? 0.5 : 1;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 3) {
+            const y = baseY - (15 + d * 12) - Math.sin(x * 0.003 + d * 2) * (35 + d * 18) - Math.sin(x * 0.008 + d) * 12;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const pc = n ? '#1a1810' : '#b08828';
+    for (let i = 0; i < 3; i++) {
+        const px = w * 0.15 + i * w * 0.32, pw = 90 + i * 25, ph = 70 + i * 18;
+        ctx.fillStyle = pc;
+        ctx.beginPath();
+        ctx.moveTo(px - pw / 2, baseY - 3);
+        ctx.lineTo(px, baseY - 3 - ph);
+        ctx.lineTo(px + pw / 2, baseY - 3);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function _paintVolcano(ctx, w, h, baseY) {
+    const g = ctx.createRadialGradient(w * 0.5, baseY, 0, w * 0.5, baseY, h * 0.6);
+    g.addColorStop(0, 'rgba(200,50,10,0.18)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    [{ x: w * 0.2, pw: 280, ph: 200 }, { x: w * 0.5, pw: 380, ph: 260 }, { x: w * 0.8, pw: 300, ph: 190 }].forEach(p => {
+        const v = ctx.createLinearGradient(p.x, baseY - p.ph, p.x, baseY);
+        v.addColorStop(0, '#1a1210');
+        v.addColorStop(1, '#2a1a14');
+        ctx.fillStyle = v;
+        ctx.beginPath();
+        ctx.moveTo(p.x - p.pw / 2, baseY);
+        ctx.lineTo(p.x - 15, baseY - p.ph);
+        ctx.lineTo(p.x + 15, baseY - p.ph);
+        ctx.lineTo(p.x + p.pw / 2, baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ff4a10';
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(p.x, baseY - p.ph + 5, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(p.x, baseY - p.ph - 5, 28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+}
+
+function _paintCanyon(ctx, w, h, baseY) {
+    [{ c: '#6a3018', a: 150, f: 0.002 }, { c: '#8a4420', a: 120, f: 0.003 }, { c: '#a85828', a: 90, f: 0.004 }, { c: '#c06830', a: 60, f: 0.005 }].forEach((l, i) => {
+        ctx.fillStyle = l.c;
+        ctx.globalAlpha = 0.4 + i * 0.18;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += 4) {
+            const y = baseY - l.a * (0.5 + 0.4 * Math.sin(x * l.f + i)) - Math.abs(Math.sin(x * 0.01 + i)) * 30;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, baseY);
+        ctx.closePath();
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+}
+
+function _paintOasis(ctx, w, h, baseY, n) {
+    const lg = ctx.createRadialGradient(w / 2, baseY + 8, 0, w / 2, baseY + 8, w * 0.22);
+    lg.addColorStop(0, n ? '#0a3040' : '#30b8d8');
+    lg.addColorStop(1, n ? '#081820' : '#1890b0');
+    ctx.fillStyle = lg;
+    ctx.globalAlpha = 0.65;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, baseY + 8, w * 0.22, 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 8; i++) {
+        const px = w * 0.08 + (w * 0.84 / 7) * i + (Math.random() - 0.5) * 25, trH = 60 + Math.random() * 45;
+        ctx.strokeStyle = n ? '#3a2a18' : '#7a5a2a';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(px, baseY);
+        ctx.quadraticCurveTo(px + (Math.random() - 0.5) * 15, baseY - trH * 0.6, px + (Math.random() - 0.5) * 8, baseY - trH);
+        ctx.stroke();
+        ctx.fillStyle = n ? '#1a3a18' : '#2a8a30';
+        for (let f = 0; f < 5; f++) {
+            const a = (f / 5) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.ellipse(px + Math.cos(a) * 32, baseY - trH + Math.sin(a) * 10 - 3, 24, 7, a * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+function _paintCastle(ctx, w, h, baseY, n) {
+    const wc = n ? '#1a2028' : '#5a6858';
+    const wallH = 120;
+    const wg = ctx.createLinearGradient(0, baseY - wallH, 0, baseY);
+    wg.addColorStop(0, wc);
+    wg.addColorStop(1, n ? '#0a1018' : '#3a4838');
+    ctx.fillStyle = wg;
+    ctx.fillRect(w * 0.1, baseY - wallH, w * 0.8, wallH);
+    for (let x = w * 0.1; x < w * 0.9; x += 28) ctx.fillRect(x, baseY - wallH - 14, 16, 14);
+    for (let i = 0; i < 6; i++) {
+        const tx = w * 0.1 + (w * 0.8 / 5) * i, th = wallH + 45 + Math.random() * 35, tw = 32;
+        ctx.fillStyle = n ? '#141820' : '#4a5848';
+        ctx.fillRect(tx - tw / 2, baseY - th, tw, th);
+        ctx.beginPath();
+        ctx.moveTo(tx - tw / 2 - 4, baseY - th);
+        ctx.lineTo(tx, baseY - th - 28);
+        ctx.lineTo(tx + tw / 2 + 4, baseY - th);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = n ? '#8a2020' : '#c03030';
+        ctx.fillRect(tx - 1, baseY - th - 28, 2, -18);
+        ctx.beginPath();
+        ctx.moveTo(tx + 1, baseY - th - 46);
+        ctx.lineTo(tx + 16, baseY - th - 40);
+        ctx.lineTo(tx + 1, baseY - th - 34);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#3a2a1a';
+    ctx.beginPath();
+    ctx.arc(w / 2, baseY, 32, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(w / 2 - 32, baseY - 32, 64, 32);
+}
+
+// 6. 3D Bezatish modellari (Tegirmon, Torii darvozasi, Registon Peshtoqi, Citadel minorasi, Mash'alalar)
+function spawnSceneryProps(mapType, weather, safeRadius) {
+    if (!window._animatedScenery) window._animatedScenery = [];
+    window._animatedScenery = [];
+
+    const isNight = weather === 'night';
+
+    if (mapType === 'field') {
+        const wmGroup = new THREE.Group();
+        const towerGeo = new THREE.CylinderGeometry(45, 75, 280, 10);
+        const towerMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x2a2820 : 0xd8caa8, roughness: 0.85, flatShading: true });
+        const tower = new THREE.Mesh(towerGeo, towerMat);
+        tower.position.y = 140;
+        wmGroup.add(tower);
+
+        const roofGeo = new THREE.ConeGeometry(58, 80, 10);
+        const roofMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x1a1820 : 0x6d3d2c, roughness: 0.7 });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 320;
+        wmGroup.add(roof);
+
+        const rotor = new THREE.Group();
+        const hubGeo = new THREE.CylinderGeometry(14, 14, 16, 8);
+        const hubMat = new THREE.MeshStandardMaterial({ color: 0x3d2816, roughness: 0.8 });
+        const hub = new THREE.Mesh(hubGeo, hubMat);
+        hub.rotation.x = Math.PI / 2;
+        rotor.add(hub);
+
+        const sailMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x3a3830 : 0xf2ebd9, roughness: 0.6, side: THREE.DoubleSide });
+        const armMat = new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.85 });
+
+        for (let b = 0; b < 4; b++) {
+            const arm = new THREE.Group();
+            arm.rotation.z = (b * Math.PI) / 2;
+
+            const wood = new THREE.Mesh(new THREE.BoxGeometry(7, 160, 5), armMat);
+            wood.position.y = 80;
+            arm.add(wood);
+
+            const sail = new THREE.Mesh(new THREE.BoxGeometry(32, 110, 2), sailMat);
+            sail.position.set(16, 95, 2);
+            arm.add(sail);
+
+            rotor.add(arm);
+        }
+        rotor.position.set(0, 260, 50);
+        wmGroup.add(rotor);
+
+        wmGroup.position.set(safeRadius + 380, ground.position.y + 100, -260);
+        scene.add(wmGroup);
+        mapBackdrops.push(wmGroup);
+
+        window._animatedScenery.push({ type: 'rotor', mesh: rotor, dir: 1 });
+
+    } else if (mapType === 'sakura') {
+        const toriiGroup = new THREE.Group();
+        const toriiMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x4a1818 : 0xcc2914, roughness: 0.6 });
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x222224, roughness: 0.9 });
+
+        for (const sx of [-90, 90]) {
+            const col = new THREE.Mesh(new THREE.CylinderGeometry(13, 16, 310, 12), toriiMat);
+            col.position.set(sx, 155, 0);
+            toriiGroup.add(col);
+
+            const plinth = new THREE.Mesh(new THREE.CylinderGeometry(20, 24, 30, 8), baseMat);
+            plinth.position.set(sx, 15, 0);
+            toriiGroup.add(plinth);
+        }
+
+        const kasagi = new THREE.Mesh(new THREE.BoxGeometry(260, 24, 24), toriiMat);
+        kasagi.position.set(0, 310, 0);
+        toriiGroup.add(kasagi);
+
+        const shimagi = new THREE.Mesh(new THREE.BoxGeometry(230, 16, 18), toriiMat);
+        shimagi.position.set(0, 265, 0);
+        toriiGroup.add(shimagi);
+
+        const gaku = new THREE.Mesh(new THREE.BoxGeometry(22, 35, 8), baseMat);
+        gaku.position.set(0, 287, 0);
+        toriiGroup.add(gaku);
+
+        toriiGroup.position.set(-(safeRadius + 320), ground.position.y + 100, -220);
+        scene.add(toriiGroup);
+        mapBackdrops.push(toriiGroup);
+
+        for (const side of [-1, 1]) {
+            const toro = new THREE.Group();
+            const lanternBase = new THREE.Mesh(new THREE.CylinderGeometry(14, 18, 120, 6), baseMat);
+            lanternBase.position.y = 60;
+            toro.add(lanternBase);
+
+            const lamp = new THREE.Mesh(
+                new THREE.BoxGeometry(36, 36, 36),
+                new THREE.MeshStandardMaterial({ color: isNight ? 0xffdf70 : 0xfffae0, emissive: isNight ? 0xffaa20 : 0x443311, emissiveIntensity: isNight ? 0.9 : 0.2 })
+            );
+            lamp.position.y = 138;
+            toro.add(lamp);
+
+            const lampRoof = new THREE.Mesh(new THREE.ConeGeometry(38, 30, 4), baseMat);
+            lampRoof.rotation.y = Math.PI / 4;
+            lampRoof.position.y = 170;
+            toro.add(lampRoof);
+
+            toro.position.set(toriiGroup.position.x + side * 150, ground.position.y + 100, -180);
+            scene.add(toro);
+            mapBackdrops.push(toro);
+        }
+
+    } else if (mapType === 'registan') {
+        const regGroup = new THREE.Group();
+        const sandMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x3a2c1a : 0xddae58, roughness: 0.8, flatShading: true });
+        const domeMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x0e4860 : 0x0cb6d4, roughness: 0.45, metalness: 0.15 });
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xdfb034, roughness: 0.3, metalness: 0.6 });
+
+        const portal = new THREE.Mesh(new THREE.BoxGeometry(220, 340, 60), sandMat);
+        portal.position.y = 170;
+        regGroup.add(portal);
+
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(60, 60, 70, 20), sandMat);
+        drum.position.set(0, 375, 0);
+        regGroup.add(drum);
+
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(68, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.6), domeMat);
+        dome.position.set(0, 395, 0);
+        regGroup.add(dome);
+
+        const finial = new THREE.Mesh(new THREE.ConeGeometry(12, 45, 8), goldMat);
+        finial.position.set(0, 475, 0);
+        regGroup.add(finial);
+
+        for (const sx of [-130, 130]) {
+            const minaret = new THREE.Mesh(new THREE.CylinderGeometry(20, 26, 420, 14), sandMat);
+            minaret.position.set(sx, 210, 0);
+            regGroup.add(minaret);
+
+            const mCap = new THREE.Mesh(new THREE.ConeGeometry(24, 50, 14), domeMat);
+            mCap.position.set(sx, 445, 0);
+            regGroup.add(mCap);
+        }
+
+        regGroup.position.set(safeRadius + 360, ground.position.y + 100, -280);
+        scene.add(regGroup);
+        mapBackdrops.push(regGroup);
+
+    } else if (mapType === 'citadel') {
+        const citGroup = new THREE.Group();
+        const stoneMat = new THREE.MeshStandardMaterial({ color: isNight ? 0x1c2024 : 0x485058, roughness: 0.9, flatShading: true });
+        const darkIron = new THREE.MeshStandardMaterial({ color: 0x111315, roughness: 0.7, metalness: 0.8 });
+
+        const tower = new THREE.Mesh(new THREE.BoxGeometry(240, 360, 180), stoneMat);
+        tower.position.y = 180;
+        citGroup.add(tower);
+
+        for (let m = -90; m <= 90; m += 45) {
+            const merlon = new THREE.Mesh(new THREE.BoxGeometry(24, 35, 190), stoneMat);
+            merlon.position.set(m, 375, 0);
+            citGroup.add(merlon);
+        }
+
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 140, 6), darkIron);
+        pole.position.set(0, 430, 0);
+        citGroup.add(pole);
+
+        const flagMat = new THREE.MeshStandardMaterial({ color: 0xa81c1c, roughness: 0.7, side: THREE.DoubleSide });
+        const flag = new THREE.Mesh(new THREE.PlaneGeometry(70, 45), flagMat);
+        flag.position.set(38, 470, 0);
+        citGroup.add(flag);
+
+        const brazier = new THREE.Mesh(new THREE.ConeGeometry(20, 26, 6), darkIron);
+        brazier.rotation.x = Math.PI;
+        brazier.position.set(90, 220, 95);
+        citGroup.add(brazier);
+
+        const flameLight = new THREE.PointLight(0xff6a14, isNight ? 2.2 : 1.2, 450);
+        flameLight.position.set(90, 240, 105);
+        citGroup.add(flameLight);
+
+        window._animatedScenery.push({ type: 'flicker', light: flameLight, baseIntensity: isNight ? 2.2 : 1.2 });
+
+        citGroup.position.set(-(safeRadius + 340), ground.position.y + 100, -250);
+        scene.add(citGroup);
+        mapBackdrops.push(citGroup);
+
+    } else if (mapType === 'taiga') {
+        const campGroup = new THREE.Group();
+        const logMat = new THREE.MeshStandardMaterial({ color: 0x3d2714, roughness: 0.9 });
+        for (let l = 0; l < 4; l++) {
+            const log = new THREE.Mesh(new THREE.CylinderGeometry(7, 9, 70, 6), logMat);
+            log.rotation.z = Math.PI / 4 + (l * Math.PI) / 4;
+            log.position.y = 15;
+            campGroup.add(log);
+        }
+        const fire = new THREE.Mesh(
+            new THREE.ConeGeometry(18, 40, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff7711, emissive: 0xff4400, emissiveIntensity: 1.2 })
+        );
+        fire.position.y = 25;
+        campGroup.add(fire);
+
+        const campLight = new THREE.PointLight(0xff7722, isNight ? 2.5 : 1.4, 500);
+        campLight.position.set(0, 35, 20);
+        campGroup.add(campLight);
+
+        window._animatedScenery.push({ type: 'flicker', light: campLight, baseIntensity: isNight ? 2.5 : 1.4 });
+
+        campGroup.position.set(safeRadius + 260, ground.position.y + 100, -120);
+        scene.add(campGroup);
+        mapBackdrops.push(campGroup);
+
+    } else if (mapType === 'volcano') {
+        const obsGroup = new THREE.Group();
+        const obsMat = new THREE.MeshStandardMaterial({ color: 0x141012, roughness: 0.4, metalness: 0.3, flatShading: true });
+        for (let p = 0; p < 5; p++) {
+            const h = 180 + p * 50;
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(15, 28, h, 6), obsMat);
+            pillar.position.set((p - 2) * 55, h / 2, (Math.random() - 0.5) * 40);
+            pillar.rotation.z = (Math.random() - 0.5) * 0.15;
+            obsGroup.add(pillar);
+        }
+        obsGroup.position.set(safeRadius + 320, ground.position.y + 100, -220);
+        scene.add(obsGroup);
+        mapBackdrops.push(obsGroup);
+    }
+}
 
 function buildCityBackdrop(mapType, safeRadius) {
     // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
@@ -1146,7 +2237,10 @@ function buildMap(mapType, weather = 'sunny') {
             tree.userData.depthBand = depthBand;
 
             // Keep trees crisp and neutral in all weather types.
-            tree.material.color.setRGB(1, 1, 1);
+            if (mapType === 'sakura') tree.material.color.setRGB(1.0, 0.78, 0.88);
+            else if (mapType === 'taiga') tree.material.color.setRGB(0.72, 0.90, 0.80);
+            else if (mapType === 'winter' || weatherType === 'snow') tree.material.color.setRGB(0.85, 0.95, 1.0);
+            else tree.material.color.setRGB(1, 1, 1);
             scene.add(tree);
             decorTrees.push(tree);
         }
@@ -1815,25 +2909,47 @@ let screenShake = 0;
 let cameraTargetX = 0;
 let cameraTargetY = 0;
 
+function isPortraitMode() {
+    return (window.innerHeight / Math.max(1, window.innerWidth)) > 1.05;
+}
+
 function updateCameraBounds() {
-    aspect = window.innerWidth / window.innerHeight;
+    aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    const isPortrait = isPortraitMode();
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
+    
+    frustumSize = isPortrait ? 950 : 800;
     camera.left = -frustumSize * aspect / 2;
     camera.right = frustumSize * aspect / 2;
+    camera.top = frustumSize / 2;
+    camera.bottom = -frustumSize / 2;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(getPreferredPixelRatio());
     
-    // Ensure world width of 2200 is always visible (zoomed in closer)
-    const minWorldWidth = 2800;
-    const zoomX = (frustumSize * aspect) / minWorldWidth;
-    const mobileZoomBoost = isMobileView ? 1.24 : 1.1;
-    baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5); // Allow zooming in more
+    if (isPortrait) {
+        // Portret rejimida o'yinchi va nayza juda kichik bo'lib ketmasligi uchun qulay masshtab
+        baseZoom = 0.88;
+    } else {
+        // Landshaft (albom) rejimida butun maydon keng ko'rinadi
+        const minWorldWidth = 2800;
+        const zoomX = (frustumSize * aspect) / minWorldWidth;
+        const mobileZoomBoost = isMobileView ? 1.24 : 1.1;
+        baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5);
+    }
     
-    if(cameraState === 'static') {
+    if (cameraState === 'static') {
         cameraZoomTarget = baseZoom;
         camera.zoom = baseZoom;
-        camera.position.x = 0;
+        if (isPortrait) {
+            const shooter = (typeof modelForPlayer === 'function') ? modelForPlayer(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex) : null;
+            const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
+            camera.position.x = shooter ? shooter.position.x + dir * 180 : 0;
+            camera.position.y = (shooter ? shooter.position.y : 0) + 90;
+        } else {
+            camera.position.x = 0;
+            camera.position.y = 0;
+        }
         camera.updateProjectionMatrix();
     }
 }
@@ -2427,43 +3543,10 @@ let cameraOffsetY = 120;
 let cameraOffsetZ = 1450;
 let cameraZoomTarget = baseZoom;
 
-// Mobil qurilmalarda portret rejimida bo'lsa, auto-rotate haqida ogohlantirish
-let orientationNoticeShown = false;
-function checkOrientationNotice() {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(String(navigator.userAgent || ''));
-    if (!isMobile) return;
-    const portrait = window.innerHeight > window.innerWidth;
-    let banner = document.getElementById('rotate-warning');
-    if (!banner && portrait) {
-        banner = document.createElement('div');
-        banner.id = 'rotate-warning';
-        banner.style.position = 'fixed';
-        banner.style.zIndex = '9999';
-        banner.style.left = '50%';
-        banner.style.bottom = '20px';
-        banner.style.transform = 'translateX(-50%)';
-        banner.style.background = 'rgba(15,23,42,0.96)';
-        banner.style.borderRadius = '999px';
-        banner.style.padding = '10px 18px';
-        banner.style.color = '#e5f2ff';
-        banner.style.fontSize = '0.82rem';
-        banner.style.display = 'flex';
-        banner.style.alignItems = 'center';
-        banner.style.gap = '8px';
-        banner.style.boxShadow = '0 12px 30px rgba(15,23,42,0.7)';
-        banner.innerHTML = '<span style="font-size:1.2rem;">📱</span><span>Ekran burilishiga ruxsat bering (auto-rotate) va telefonni yon tomonga agdarib o\'yinni davom ettiring.</span>';
-        document.body.appendChild(banner);
-        orientationNoticeShown = true;
-    }
-    if (banner && !portrait) {
-        banner.remove();
-        orientationNoticeShown = false;
-    }
-}
-
-window.addEventListener('resize', checkOrientationNotice);
-window.addEventListener('orientationchange', checkOrientationNotice);
-document.addEventListener('DOMContentLoaded', checkOrientationNotice);
+// Mobil qurilmalarda portret va landshaft rejimlariga avtomatik moslashuv
+window.addEventListener('orientationchange', () => {
+    setTimeout(updateCameraBounds, 100);
+});
 let cinematicSlowUntil = 0;
 const SUPER_CINEMATIC_MS = 8000;
 
@@ -2756,16 +3839,15 @@ function updateSuperInterceptCinematic(now, dt) {
 
 function resetCameraAfterImpact() {
     cameraState = 'recover';
-    // Sinematik effekt tugagach kamera HAR DOIM jangchiga qaratiladi.
-    // (Avval single rejimda x=0 ga qaytib, jangchi ko'rinmay qolardi - shu tuzatildi.)
     let focusModel = (currentTurnIndex >= 0) ? modelForPlayer(currentTurnIndex) : null;
     if (!focusModel) {
-        // Navbat hali aniqlanmagan bo'lsa, o'yinchining o'z modeliga qaratamiz.
         focusModel = modelForPlayer(myPlayerIndex) || p1Model;
     }
-    cameraTargetX = focusModel ? focusModel.position.x : 0;
-    cameraTargetY = 0;
-    cameraZoomTarget = gameMode === 'multi' ? baseZoom * 1.08 : baseZoom;
+    const isPortrait = isPortraitMode();
+    const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
+    cameraTargetX = focusModel ? (isPortrait ? focusModel.position.x + dir * 180 : focusModel.position.x) : 0;
+    cameraTargetY = isPortrait ? (focusModel ? focusModel.position.y + 80 : 0) : 0;
+    cameraZoomTarget = isPortrait ? baseZoom : (gameMode === 'multi' ? baseZoom * 1.08 : baseZoom);
 }
 
 updateCameraBounds();
@@ -2846,47 +3928,90 @@ function updateHealthUI() {
     }
 }
 
+let activeDamageTexts = [];
+
 function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = false) {
+    if (!damageText) return;
     const vector = new THREE.Vector3(worldX, worldY, 0);
     vector.project(camera);
     
-    const x = (vector.x * .5 + .5) * window.innerWidth;
-    const y = (-(vector.y * .5) + .5) * window.innerHeight;
+    let screenX = (vector.x * .5 + .5) * window.innerWidth;
+    let screenY = (-(vector.y * .5) + .5) * window.innerHeight;
+
+    // Yozuvlar bir-birini ustiga chiqib qolmasligi uchun vaqt va masofaga qarab siljitish (Anti-overlap)
+    const now = Date.now();
+    activeDamageTexts = activeDamageTexts.filter(t => (now - t.timestamp) < 1100);
+
+    let overlapCount = 0;
+    for (let i = 0; i < activeDamageTexts.length; i++) {
+        const other = activeDamageTexts[i];
+        if (Math.abs(other.x - screenX) < 120 && Math.abs(other.y - screenY) < 45) {
+            overlapCount++;
+        }
+    }
+
+    if (overlapCount > 0) {
+        screenY -= overlapCount * 28;
+        screenX += (overlapCount % 2 === 1 ? 14 : -14);
+    }
+    activeDamageTexts.push({ x: screenX, y: screenY, timestamp: now });
 
     const el = document.createElement('div');
     el.className = 'damage-text';
     el.innerText = damageText;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    if(isCrit) {
-        el.style.fontSize = '3.5rem';
+    el.style.left = screenX + 'px';
+    el.style.top = screenY + 'px';
+    el.style.transform = 'translate(-50%, -50%)';
+
+    // Ixcham va chiroyli zamonaviy shriftlar
+    if (isCrit) {
+        triggerHaptic('heavy');
+        el.style.fontSize = 'clamp(1.15rem, 2.2vw, 1.45rem)';
         el.style.color = '#fbbf24';
-        screenShake = MOBILE_PERF_MODE ? 16 : 30; 
-    } else if(isShield) {
+        el.style.textShadow = '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 4px #000';
+        screenShake = MOBILE_PERF_MODE ? 14 : 22; 
+    } else if (isShield) {
+        triggerHaptic('rigid');
+        el.style.fontSize = 'clamp(1rem, 1.9vw, 1.3rem)';
         el.style.color = '#38bdf8';
-        screenShake = MOBILE_PERF_MODE ? 9 : 15;
+        el.style.textShadow = '0 0 8px rgba(56, 189, 248, 0.6), 0 2px 4px #000';
+        screenShake = MOBILE_PERF_MODE ? 8 : 12;
     } else {
-        screenShake = MOBILE_PERF_MODE ? 7 : 10; 
+        triggerHaptic('light');
+        el.style.fontSize = 'clamp(0.95rem, 1.8vw, 1.25rem)';
+        el.style.color = '#ef4444';
+        screenShake = MOBILE_PERF_MODE ? 6 : 9; 
     }
+
     damageContainer.appendChild(el);
-    setTimeout(() => el.remove(), 1500);
+    setTimeout(() => el.remove(), 1350);
 }
 
-function showCenterNotice(text) {
+function getCenterNoticeContainer() {
+    let container = document.getElementById('center-notice-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'center-notice-container';
+        container.style.cssText = 'position:fixed;top:18%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:9999;width:max-content;max-width:90vw;';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showCenterNotice(text, duration = 1800) {
+    if (!text) return;
+    const container = getCenterNoticeContainer();
     const el = document.createElement('div');
-    el.className = 'damage-text';
+    el.className = 'center-notice-banner';
     el.innerText = text;
-    el.style.left = '50%';
-    el.style.top = '48%';
-    el.style.transform = 'translate(-50%, -50%)';
-    el.style.textAlign = 'center';
-    el.style.maxWidth = '86vw';
-    el.style.padding = '8px 12px';
-    el.style.background = 'rgba(15, 23, 42, 0.78)';
-    el.style.borderRadius = '10px';
-    el.style.color = '#38bdf8';
-    damageContainer.appendChild(el);
-    setTimeout(() => el.remove(), 1800);
+    el.style.cssText = 'background:rgba(15,23,42,0.88);border:1px solid rgba(56,189,248,0.35);box-shadow:0 4px 14px rgba(0,0,0,0.5),0 0 10px rgba(56,189,248,0.2);color:#e0f2fe;font-size:clamp(0.82rem,1.6vw,1.05rem);font-weight:700;padding:6px 16px;border-radius:999px;text-align:center;letter-spacing:0.3px;animation:bannerPopIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards;transition:opacity 0.3s ease,transform 0.3s ease;';
+    container.appendChild(el);
+
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-10px) scale(0.95)';
+        setTimeout(() => el.remove(), 320);
+    }, duration);
 }
 
 function hideFlyingSpear() {
@@ -3331,7 +4456,7 @@ function startSinglePlayer(opts) {
     aiHitAccumulator = 0;
     enemyVolleyQueue = [];
 
-    const randomMaps = ['field', 'castle', 'desert', 'winter', 'mountain'];
+    const randomMaps = ['field', 'castle', 'registan', 'sakura', 'taiga', 'citadel', 'desert', 'winter', 'mountain', 'samarkand', 'bukhara', 'istanbul', 'oasis', 'canyon', 'volcano'];
     const randomWeathers = ['sunny', 'night', 'rain', 'storm', 'snow'];
     // Kampaniya levellari endi tematik muhitga ega (bosqichma-bosqich o'zgaradi).
     // Agar config muhitni bermasa, tasodifiy tanlaymiz.
@@ -3434,6 +4559,7 @@ function startSinglePlayer(opts) {
     }
     prevTurnIndex = -2;
     updateCampaignUI();
+    setTimeout(() => { if (typeof checkDailyAutoPopup === 'function') checkDailyAutoPopup(); }, 500);
     updateTurn(myPlayerIndex, generateWind());
     if(!isLooping) {
         isLooping = true;
@@ -3548,6 +4674,7 @@ function throwSpear(angle, power) {
     // Yordamchi hint uchun: o'yinchining joriy otish parametrlarini saqlaymiz.
     // Faqat o'yinchining o'z otishini saqlaymiz (raqibniki emas).
     if (currentTurnIndex === myPlayerIndex) {
+        triggerHaptic('medium');
         const sX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
         const sY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 270;
         lastPlayerShot = { startX: sX, startY: sY, angle, power, wind: currentWind, playerIndex: myPlayerIndex };
@@ -3997,7 +5124,7 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
 
     if (relativeY > headThreshold) {
         damage = 40;
-        msg = "BOSHGA! -40";
+        msg = "🎯 HEADSHOT! -40";
         isCrit = true;
         hitZone = 'head';
     } else if (relativeY < legThreshold) {
@@ -4014,7 +5141,7 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
     const defending = isDefenseActiveForPlayer(targetIndex);
 
     if (hasShield && defending && (hitZone === 'head' || hitZone === 'body')) {
-        return { damage: 0, msg: "QALQON, BARAKALLA!", isCrit: false, hitZone, isShieldHit: true, shieldActiveBlock: true, shieldlessDefense: false };
+        return { damage: 0, msg: "🛡️ QALQON! BLOK", isCrit: false, hitZone, isShieldHit: true, shieldActiveBlock: true, shieldlessDefense: false };
     }
 
     if (hasShield && hitZone === 'body') {
@@ -4235,6 +5362,16 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
 
         playHitByResult(hitResult);
         showDamageText(hitX, hitY + 80, hitResult.msg, hitResult.isCrit, hitResult.isShieldHit || hitResult.shieldlessDefense);
+        
+        if (hitResult.hitZone === 'head') {
+            if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
+            if (typeof checkQuestProgress === 'function') checkQuestProgress('headshot', 1);
+            // Duplicate second headshot banner removed
+            screenShake = Math.max(screenShake, 18);
+        } else if (targetIndex === myPlayerIndex && hitResult.damage > 0) {
+            if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
+        }
+
         if (!isSuicide && spear && spear.playerIndex === myPlayerIndex && targetIndex !== myPlayerIndex) {
             addScore(getScoreDeltaForHit(hitResult));
         }
@@ -4701,15 +5838,24 @@ socket.on('hitRegistered', (data) => {
                 showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
             } else if (isShieldHit) {
                 spawnParticles(hitX, hitY, 10, true);
-                const msg = shieldActiveBlock ? "QALQON, BARAKALLA!" : `QALQONGA TEGDI! -${damage}`;
+                const msg = shieldActiveBlock ? "🛡️ QALQON! BLOK" : `QALQONGA TEGDI! -${damage}`;
                 showDamageText(hitX, hitY + 80, msg, false, true);
                 playSfx(shieldActiveBlock ? 'shieldActive' : 'shieldPassive');
             } else {
                 let isCrit = damage >= 40;
                 spawnParticles(hitX, hitY, isCrit ? 40 : 20);
-                if (hitZone === 'head') playSfx('headHit');
-                else if (hitZone === 'leg') playSfx('legHit');
-                else playSfx('ground', 0.9);
+                if (hitZone === 'head') {
+                    playSfx('headHit');
+                    if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
+                    screenShake = Math.max(screenShake, 18);
+                } else if (hitZone === 'leg') {
+                    playSfx('legHit');
+                } else {
+                    playSfx('ground', 0.9);
+                }
+                if (targetIndex === myPlayerIndex && damage > 0) {
+                    if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
+                }
                 let msg = "-" + damage;
                 if (isCrit) msg = "BOSHGA! " + msg;
                 if (shieldlessDefense) msg = "HIMOYA! " + msg;
@@ -4767,7 +5913,7 @@ socket.on('entityHit', (data) => {
             spear.vy = Math.min(spear.vy, -120);
         }
         spawnParticles(hitX, hitY, 20);
-            showDamageText(hitX, hitY + 50, "QUSH!", true);
+            // Bird hit text removed by user request
     }
 });
 
@@ -4837,7 +5983,24 @@ socket.on('rematchDeclined', () => {
     }, 2000);
 });
 
+socket.on('turnTimerStart', (data) => {
+    if (typeof startTurnTimerUI === 'function') {
+        startTurnTimerUI(data?.duration || 25);
+    }
+});
+
+socket.on('turnTimedOut', (data) => {
+    showCenterNotice("Vaqt tugadi! Navbat o'tdi", 1800);
+});
+
+socket.on('playerEmote', (data) => {
+    if (data && typeof data.playerIndex === 'number' && typeof spawnEmoteBubble === 'function') {
+        spawnEmoteBubble(data.playerIndex, data.emote || '👍');
+    }
+});
+
 function showGameOver(winnerIndex) {
+    if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
     gameOverScreen.classList.remove('hidden');
     controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
@@ -4859,7 +6022,9 @@ function showGameOver(winnerIndex) {
     }
     
     if (winnerIndex === myPlayerIndex) {
+        triggerHaptic('success');
         myStats.wins++;
+        if (typeof checkQuestProgress === 'function') checkQuestProgress('win', 1);
         if (gameMode === 'single') {
             singleCampaignLevel += 1;
             localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
@@ -4873,6 +6038,8 @@ function showGameOver(winnerIndex) {
             } catch {}
             updateCampaignUI();
         }
+    } else {
+        triggerHaptic('error');
     }
     myStats.games++;
     saveStats();
@@ -4989,6 +6156,12 @@ function updateTurn(turnIndex, wind) {
     }
     if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
+
+    turnsSinceLastCrate = (typeof turnsSinceLastCrate === 'number' ? turnsSinceLastCrate : 0) + 1;
+    if (turnsSinceLastCrate >= 4) {
+        turnsSinceLastCrate = 0;
+        if (typeof spawnAirDropCrate === 'function') spawnAirDropCrate();
+    }
 
     // O'yinchi navbati boshlanganda avvalgi otish trayektoriyasini hint sifatida ko'rsatamiz.
     if (turnIndex === myPlayerIndex && lastPlayerShot) {
@@ -5236,6 +6409,15 @@ function checkCollision() {
         return;
     }
 
+    if (typeof checkAirDropCrateHit === 'function' && checkAirDropCrateHit()) {
+        spear.active = false;
+        isAnimating = false;
+        resetCameraAfterImpact();
+        hideFlyingSpear();
+        if (gameMode === 'single') advanceSingleTurnAfterShot();
+        return;
+    }
+
     let hitEntity = null;
     for(let e of entities) {
         if (e.alive) {
@@ -5264,7 +6446,8 @@ function checkCollision() {
         spear.vy = Math.min(spear.vy, -120);
         spear.vx *= 0.35;
         playCrowSound();
-        showDamageText(spear.x, spear.y + 50, "QARG'A!", true);
+        // Crow hit text removed by user request
+        if (typeof checkQuestProgress === 'function') checkQuestProgress('crow', 1);
         if (gameMode === 'multi' && spear.playerIndex === myPlayerIndex && !spear.entityHitEmitted) {
             socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX: spear.x, hitY: spear.y, hitAngle: spearGroup.rotation.z });
             spear.entityHitEmitted = true;
@@ -5339,7 +6522,7 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
         hideFlyingSpear();
         spawnParticles(hitX, hitY, 20);
         
-        showDamageText(hitX, hitY + 50, "QUSH!", true);
+        // Bird hit text removed by user request
         
         if (spear.playerIndex === myPlayerIndex || gameMode === 'single') {
             if (spear.playerIndex === myPlayerIndex) {
@@ -5485,6 +6668,7 @@ function gameLoop(now) {
     
     // Qarg'a o'qlarini yangilash
     updateCrowKillerArrows();
+    if (typeof updateAirDropCrates === 'function') updateAirDropCrates(dt);
 
     // Cloud animation
     clouds.forEach(cloud => {
@@ -5511,6 +6695,19 @@ function gameLoop(now) {
             const depthInfluence = band === 2 ? 0.8 : (band === 0 ? 1.12 : 1);
             tree.rotation.z = (d.baseRot || 0) + Math.sin(now * 0.0012 * speed + phase) * amp * depthInfluence;
             tree.position.x = (d.baseX || tree.position.x) + Math.sin(now * 0.0006 * speed + phase) * (1.8 + band) * amp * 42;
+        }
+    }
+
+    // 3D dekorativ jismlar animatsiyasi (tegirmon parraklari, mash'ala olovi)
+    if (window._animatedScenery && window._animatedScenery.length) {
+        for (let i = 0; i < window._animatedScenery.length; i++) {
+            const prop = window._animatedScenery[i];
+            if (prop.type === 'rotor' && prop.mesh) {
+                const windSpeed = 0.8 + Math.abs(currentWind) * 0.18;
+                prop.mesh.rotation.z += dt * windSpeed * (prop.dir || 1);
+            } else if (prop.type === 'flicker' && prop.light) {
+                prop.light.intensity = prop.baseIntensity + (Math.random() - 0.5) * 0.35;
+            }
         }
     }
 
@@ -5573,7 +6770,17 @@ function gameLoop(now) {
             const lx = spear.vx / velLen;
             const ly = spear.vy / velLen;
             cameraTargetX = spear.x + lx * lead;
-            cameraTargetY = spear.y + ly * (lead * 0.45);
+
+            // Damped vertical altitude tracking:
+            // Nayza qanchalik baland uchmasin, o'yin maydoni va ufq doimo ko'rinib turadi
+            const groundSurfaceY = ground.position.y + 100;
+            const spearAltitude = Math.max(0, spear.y - groundSurfaceY);
+            cameraTargetY = Math.max(0, Math.min(spearAltitude * 0.52, 1450));
+
+            // Dinamik masshtab: nayza balandlagan sari kamera silliq zoom-out qiladi
+            const altitudeRatio = Math.min(1, spearAltitude / 2200);
+            const dynamicZoom = Math.max(0.60, 1 - altitudeRatio * 0.40);
+            cameraZoomTarget = baseZoom * 1.15 * dynamicZoom;
         }
 
         // In single-player, AI can intercept player's projectile with super power.
@@ -5684,17 +6891,24 @@ function gameLoop(now) {
             // Aiming zoom logic
             if (cameraState === 'static' || cameraState === 'aiming') {
                 cameraState = 'aiming';
-                // Move camera towards the character and zoom in
-                cameraTargetX = model.position.x + (idx === 0 ? 95 : -95); 
-                cameraTargetY = model.position.y + 160;
-                cameraZoomTarget = baseZoom * 1.75;
+                const isPortrait = isPortraitMode();
+                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 130 : 95) : (isPortrait ? -130 : -95)); 
+                cameraTargetY = model.position.y + 140;
+                cameraZoomTarget = isPortrait ? baseZoom * 1.28 : baseZoom * 1.75;
             }
         } else if (!isDragging && cameraState === 'aiming') {
             // Revert back when stopped aiming
             cameraState = 'static';
             cameraZoomTarget = baseZoom;
-            cameraTargetX = 0;
-            cameraTargetY = 0;
+            if (isPortraitMode()) {
+                const shooter = modelForPlayer(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+                const dir = (currentTurnIndex === 0 || (currentTurnIndex === -1 && myPlayerIndex === 0)) ? 1 : -1;
+                cameraTargetX = shooter ? shooter.position.x + dir * 180 : 0;
+                cameraTargetY = (shooter ? shooter.position.y : 0) + 90;
+            } else {
+                cameraTargetX = 0;
+                cameraTargetY = 0;
+            }
         }
         
         setSoldierVisual(model, targetState);
@@ -5827,7 +7041,64 @@ let myStats = JSON.parse(localStorage.getItem('nayza_stats')) || {
 if (!Number.isFinite(Number(myStats.score))) myStats.score = 500;
 const LEGACY_BONUS_KEY = 'nayza_legacy_500_bonus_v1';
 let legacyBonusApplied = localStorage.getItem(LEGACY_BONUS_KEY) === '1';
-let authPhone = normalizePhone(localStorage.getItem('nayza_auth_phone') || '');
+let authPhone = localStorage.getItem('nayza_auth_phone') || '';
+
+async function autoLoginTelegramUser() {
+    const tgUser = tg?.initDataUnsafe?.user;
+    if (!tgUser || !tgUser.id) return false;
+
+    // Telegram orqali ochilgan bo'lsa darhol auth modalni yashiramiz va menyuni ko'rsatamiz
+    if (authModal) authModal.classList.add('hidden');
+    if (menuScreen) menuScreen.classList.remove('hidden');
+
+    const tgName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Jangchi';
+    const tgPhone = 'tg_' + tgUser.id;
+    authPhone = tgPhone;
+    myProfile.phone = tgPhone;
+    if (tgName && (!myProfile.name || myProfile.name === 'Player' || myProfile.name === "Noma'lum")) {
+        myProfile.name = tgName;
+    }
+    localStorage.setItem('nayza_auth_phone', authPhone);
+    saveProfile();
+
+    try {
+        const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: tgUser })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok && data.user) {
+            applyAuthedUser(data.user);
+            console.log('[Telegram Auth] Avtomatik login bajarildi:', data.user.name);
+            return true;
+        }
+    } catch (err) {
+        console.warn('[Telegram Auth] API xatosi, lokal profil qo\'llanadi:', err);
+    }
+    return true;
+}
+
+// Telegram WebApp orqali kirgan o'yinchini avtomatik tanib olish va login qilish
+try {
+    const tgUser = tg?.initDataUnsafe?.user;
+    if (tgUser) {
+        authPhone = 'tg_' + tgUser.id;
+        localStorage.setItem('nayza_auth_phone', authPhone);
+        const tgName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username;
+        if (tgName && (!myProfile.name || myProfile.name === 'Player' || myProfile.name === "Noma'lum")) {
+            myProfile.name = tgName;
+            localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
+        }
+        autoLoginTelegramUser();
+    }
+} catch (e) {
+    console.warn('Telegram auto-profile error:', e);
+}
+
+function isUserLoggedIn() { 
+    return Boolean(authPhone && (String(authPhone).replace(/\D/g, '').length >= 7 || String(authPhone).startsWith('tg_'))); 
+}
 let authUserCache = null;
 try {
     const rawAuthUser = localStorage.getItem('nayza_auth_user');
@@ -5879,7 +7150,8 @@ async function authRequest(endpoint, payload) {
 function applyAuthedUser(user) {
     if (!user) return;
     myProfile.name = String(user.name || myProfile.name || 'Jangchi').slice(0, 30);
-    myProfile.phone = String(user.phone || '').replace(/\D/g, '').slice(-15);
+    const userPhoneStr = String(user.phone || '');
+    myProfile.phone = userPhoneStr.startsWith('tg_') ? userPhoneStr : userPhoneStr.replace(/\D/g, '').slice(-15);
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
     if (Number.isFinite(Number(user.score))) myStats.score = Number(user.score);
     if (Number.isFinite(Number(user.wins))) myStats.wins = Math.max(0, Number(user.wins));
@@ -5921,7 +7193,9 @@ function applyAuthedUser(user) {
 }
 
 function normalizePhone(value) {
-    const digits = String(value || '').replace(/\D/g, '');
+    const str = String(value || '').trim();
+    if (str.startsWith('tg_')) return str;
+    const digits = str.replace(/\D/g, '');
     if (!digits) return '';
     if (digits.length === 9) return `998${digits}`;
     if (digits.length === 12 && digits.startsWith('998')) return digits;
@@ -6840,8 +8114,18 @@ if (!audioUnlockAttached) {
     document.addEventListener('touchstart', unlockAudio, { once: true });
     audioUnlockAttached = true;
 }
-if (authModal) authModal.classList.remove('hidden');
-menuScreen.classList.add('hidden');
+const isTgUser = Boolean(tg?.initDataUnsafe?.user);
+if (isTgUser) {
+    if (authModal) authModal.classList.add('hidden');
+    if (menuScreen) menuScreen.classList.remove('hidden');
+    autoLoginTelegramUser();
+} else if (isUserLoggedIn()) {
+    if (authModal) authModal.classList.add('hidden');
+    if (menuScreen) menuScreen.classList.remove('hidden');
+} else {
+    if (authModal) authModal.classList.remove('hidden');
+    if (menuScreen) menuScreen.classList.add('hidden');
+}
 if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
 if (socket && socket.connected) socket.emit('registerProfile', myProfile);
 
@@ -6904,6 +8188,7 @@ setInterval(updateMenuWallpaper, 350);
 })();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
+    if (typeof checkAutoJoinTelegramRoom === 'function') checkAutoJoinTelegramRoom();
 });
 
 // Android bildirishnoma ruxsati so'rash va notification tap listeneri
@@ -6944,13 +8229,17 @@ if (authPhone) {
         .then((r) => r.json())
         .then((data) => {
             if (data && data.ok && data.user) applyAuthedUser(data.user);
-            else if (!authUserCache || !authUserCache.phone) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            else if (!authUserCache || !authUserCache.phone) {
+                if (!isTgUser) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            }
         })
         .catch(() => {
-            if (!authUserCache || !authUserCache.phone) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            if (!authUserCache || !authUserCache.phone) {
+                if (!isTgUser) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+            }
         });
 } else if (!authUserCache || !authUserCache.phone) {
-    setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
+    if (!isTgUser) setAuthStatus("Ro'yxatdan o'ting yoki kiring.", true);
 }
 if (authTabLogin) authTabLogin.addEventListener('click', () => switchAuthTab('login'));
 if (authTabRegister) authTabRegister.addEventListener('click', () => switchAuthTab('register'));
@@ -7269,6 +8558,57 @@ socket.on('gameCreated', (code) => {
     if (joinError) joinError.style.display = 'none';
 });
 
+// Telegram orqali do'stga taklifnoma yuborish
+const btnShareTg = document.getElementById('btn-share-tg');
+if (btnShareTg) {
+    btnShareTg.addEventListener('click', () => {
+        const code = (createCodeText ? createCodeText.innerText : '').trim();
+        if (!code || code === '1234' || code === '...') {
+            showCenterNotice("Avval o'yin xonasini yarating!");
+            return;
+        }
+        triggerHaptic('selection');
+        const botUsername = 'Kamonboz_bot';
+        // Telegram Mini App direct link va bot start link
+        const inviteUrl = `https://t.me/${botUsername}?startapp=${encodeURIComponent(code)}`;
+        const inviteText = `🏹 Men bilan Kamonboz duelida 1v1 nayza jangiga tushasizmi?\n🔑 Xona kodi: ${code}\n👇 Havolani bosing va to'g'ridan-to'g'ri jangga kiring:`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(inviteText)}`;
+
+        if (tg && typeof tg.openTelegramLink === 'function') {
+            tg.openTelegramLink(shareUrl);
+        } else {
+            window.open(shareUrl, '_blank');
+        }
+    });
+}
+
+function checkAutoJoinTelegramRoom() {
+    let code = tg?.initDataUnsafe?.start_param;
+    if (!code) {
+        try {
+            const sp = new URLSearchParams(window.location.search);
+            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam');
+        } catch (e) {}
+    }
+    if (!code) return;
+    code = String(code).replace(/^(room_|duel_)/i, '').trim().toUpperCase();
+    if (!code || code.length < 3) return;
+
+    if (checkAutoJoinTelegramRoom.done) return;
+    checkAutoJoinTelegramRoom.done = true;
+
+    console.log('Telegram room code detected for auto-join:', code);
+    setTimeout(() => {
+        if (menuScreen) menuScreen.classList.add('hidden');
+        if (multiMenu) multiMenu.classList.add('hidden');
+        if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
+        if (createCodeContainer) createCodeContainer.classList.add('hidden');
+        if (gameOptionsModal) gameOptionsModal.classList.add('hidden');
+        showCenterNotice(`⚔️ Telegram xonasi (${code}) ga ulanilmoqda...`);
+        socket.emit('joinGame', { profile: myProfile, code });
+    }, 450);
+}
+
 socket.on('joinError', () => {
     if (joinError) joinError.style.display = 'block';
 });
@@ -7461,8 +8801,444 @@ if (chatQuickEmojis) {
     });
 }
 
+// ==========================================
+// MODERN FEATURES: VIGNETTE, TIMER, EMOTES, AIR DROP, DAILY REWARDS & QUESTS
+// ==========================================
+
+function triggerScreenFlash(type = 'damage') {
+    const el = document.getElementById('screen-vignette');
+    if (!el) return;
+    el.className = 'screen-vignette';
+    void el.offsetWidth;
+    if (type === 'headshot') {
+        el.classList.add('vignette-headshot');
+        setTimeout(() => { if (el) el.className = 'screen-vignette'; }, 650);
+    } else {
+        el.classList.add('vignette-damage');
+        setTimeout(() => { if (el) el.className = 'screen-vignette'; }, 350);
+    }
+}
+
+let turnTimerInterval = null;
+let turnSecondsLeft = 25;
+
+function startTurnTimerUI(duration = 25) {
+    const badge = document.getElementById('turn-timer-badge');
+    const txt = document.getElementById('turn-timer-text');
+    if (!badge || !txt) return;
+    clearInterval(turnTimerInterval);
+    turnSecondsLeft = Math.max(1, Number(duration) || 25);
+    badge.classList.remove('hidden', 'timer-warning');
+    txt.innerText = turnSecondsLeft;
+
+    turnTimerInterval = setInterval(() => {
+        turnSecondsLeft--;
+        if (turnSecondsLeft < 0) {
+            clearInterval(turnTimerInterval);
+            turnSecondsLeft = 0;
+        }
+        txt.innerText = turnSecondsLeft;
+        if (turnSecondsLeft <= 5) {
+            badge.classList.add('timer-warning');
+            playSfx('click');
+        } else {
+            badge.classList.remove('timer-warning');
+        }
+    }, 1000);
+}
+
+function stopTurnTimerUI() {
+    clearInterval(turnTimerInterval);
+    const badge = document.getElementById('turn-timer-badge');
+    if (badge) badge.classList.add('hidden');
+}
+
+function initEmotesUI() {
+    const btn = document.getElementById('btn-toggle-emote');
+    const picker = document.getElementById('emote-picker');
+    if (!btn || !picker) return;
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        picker.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.emote-choice').forEach(choice => {
+        choice.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const emoji = choice.getAttribute('data-emote');
+            picker.classList.add('hidden');
+            if (!emoji) return;
+
+            if (gameMode === 'multi') {
+                socket.emit('sendEmote', { emote: emoji });
+            }
+            spawnEmoteBubble(myPlayerIndex, emoji);
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (picker && !picker.classList.contains('hidden') && !e.target.closest('#emote-picker') && !e.target.closest('#btn-toggle-emote')) {
+            picker.classList.add('hidden');
+        }
+    });
+}
+
+function spawnEmoteBubble(playerIndex, emoji) {
+    const container = document.getElementById('bubble-container');
+    if (!container) return;
+    const model = modelForPlayer(playerIndex);
+    if (!model) return;
+
+    const v = model.position.clone();
+    const modelHeight = model.userData?.planeMesh?.geometry?.parameters?.height || 430;
+    v.y += modelHeight + 30;
+    v.project(camera);
+
+    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(v.y * 0.5) + 0.5) * window.innerHeight;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'speech-bubble';
+    bubble.innerText = emoji;
+    bubble.style.left = `${Math.round(x)}px`;
+    bubble.style.top = `${Math.round(y)}px`;
+
+    container.appendChild(bubble);
+    playSfx('click');
+    setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+    }, 2600);
+}
+
+let airDropCrates = [];
+let turnsSinceLastCrate = 0;
+
+function spawnAirDropCrate() {
+    const group = new THREE.Group();
+    const chuteGeo = new THREE.SphereGeometry(35, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+    const chuteMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+    const chuteMesh = new THREE.Mesh(chuteGeo, chuteMat);
+    chuteMesh.position.y = 40;
+    group.add(chuteMesh);
+
+    const boxGeo = new THREE.BoxGeometry(40, 40, 40);
+    const boxMat = new THREE.MeshBasicMaterial({ color: 0xb45309 });
+    const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+    boxMesh.position.y = 0;
+    group.add(boxMesh);
+
+    const x = (Math.random() - 0.5) * 850;
+    const y = 820;
+    group.position.set(x, y, 10);
+    scene.add(group);
+
+    const crateObj = {
+        group,
+        boxMesh,
+        chuteMesh,
+        x,
+        y,
+        vy: -35,
+        alive: true
+    };
+    airDropCrates.push(crateObj);
+    showCenterNotice("🪂 AIR DROP SANDIQ TUSHYAPTI!", 2200);
+}
+
+function updateAirDropCrates(dt) {
+    for (let i = airDropCrates.length - 1; i >= 0; i--) {
+        const c = airDropCrates[i];
+        if (!c.alive) continue;
+        c.y += c.vy * dt;
+        c.group.position.y = c.y;
+        c.group.rotation.z = Math.sin(performance.now() * 0.003) * 0.12;
+        if (c.y <= ground.position.y + 110) {
+            c.y = ground.position.y + 110;
+            c.group.position.y = c.y;
+            c.chuteMesh.visible = false;
+        }
+    }
+}
+
+function checkAirDropCrateHit() {
+    if (!spear || !spear.active) return false;
+    for (let i = 0; i < airDropCrates.length; i++) {
+        const c = airDropCrates[i];
+        if (c.alive && Math.abs(spear.x - c.x) < 55 && Math.abs(spear.y - c.y) < 55) {
+            c.alive = false;
+            scene.remove(c.group);
+            spawnParticles(c.x, c.y, 35, true);
+            playSfx('break');
+
+            const shooter = spear.playerIndex;
+            const rewardTypes = ['hp', 'shield', 'double', 'fire', 'score'];
+            const chosen = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
+
+            if (chosen === 'hp') {
+                if (shooter === 0) myHealth = Math.min(100, myHealth + 30);
+                else enemyHealth = Math.min(100, enemyHealth + 30);
+                updateHealthUI();
+                showDamageText(c.x, c.y + 60, "🎁 +30 HP!", true, true);
+            } else if (chosen === 'shield') {
+                setShieldForPlayer(shooter, shieldForPlayer(shooter) + 2);
+                showDamageText(c.x, c.y + 60, "🎁 +2 QALQON!", true, true);
+            } else if (chosen === 'double') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.doubleSpears = (myProfile.doubleSpears || 0) + 1;
+                    saveProfile();
+                    updateSuperUI();
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 QO'SH NAYZA!", true, true);
+            } else if (chosen === 'fire') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.fireSpears = (myProfile.fireSpears || 0) + 1;
+                    saveProfile();
+                    updateSuperUI();
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 OLOVLI NAYZA!", true, true);
+            } else {
+                if (shooter === myPlayerIndex) addScore(300);
+                showDamageText(c.x, c.y + 60, "🎁 +300 BALL!", true, true);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+const DAILY_REWARDS_DATA = [
+    { day: 1, title: '1-kun', rewardText: '200 Ball', icon: '🪙', type: 'score', amount: 200 },
+    { day: 2, title: '2-kun', rewardText: '+1 Qalqon', icon: '🛡️', type: 'shield', amount: 1 },
+    { day: 3, title: '3-kun', rewardText: '400 Ball', icon: '🪙', type: 'score', amount: 400 },
+    { day: 4, title: '4-kun', rewardText: '+1 Qo\'sh nayza', icon: '⚔️', type: 'double', amount: 1 },
+    { day: 5, title: '5-kun', rewardText: '+1 Artileriya', icon: '💣', type: 'artillery', amount: 1 },
+    { day: 6, title: '6-kun', rewardText: '800 Ball', icon: '🪙', type: 'score', amount: 800 },
+    { day: 7, title: '7-kun', rewardText: '+1 Super Kuch', icon: '🗡️', type: 'super', amount: 1 }
+];
+
+function getDailyState() {
+    const raw = localStorage.getItem('kamonboz_daily_state');
+    try {
+        return raw ? JSON.parse(raw) : { currentDay: 1, lastClaimDate: '' };
+    } catch {
+        return { currentDay: 1, lastClaimDate: '' };
+    }
+}
+
+function checkDailyAutoPopup() {
+    // Logindan oldin kunlik bonus modalini avtomatik ochmaymiz
+    if (!isUserLoggedIn()) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const state = getDailyState();
+    if (state.lastClaimDate !== today) {
+        setTimeout(() => {
+            renderDailyRewards();
+            const modal = document.getElementById('daily-rewards-modal');
+            if (modal && gameMode === 'menu') modal.classList.remove('hidden');
+        }, 1200);
+    }
+}
+
+function renderDailyRewards() {
+    const grid = document.getElementById('daily-rewards-grid');
+    const btnClaim = document.getElementById('btn-claim-daily');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const state = getDailyState();
+    const loggedIn = isUserLoggedIn();
+    const canClaim = loggedIn && (state.lastClaimDate !== today);
+
+    DAILY_REWARDS_DATA.forEach(d => {
+        const card = document.createElement('div');
+        const isCurrent = d.day === state.currentDay;
+        const isClaimed = d.day < state.currentDay || (!canClaim && isCurrent && state.lastClaimDate === today);
+
+        card.className = `daily-reward-card ${isCurrent && canClaim ? 'active' : ''} ${isClaimed ? 'claimed' : ''}`;
+        card.innerHTML = `
+            <div class="daily-day-title">${d.title}</div>
+            <div class="daily-reward-icon">${d.icon}</div>
+            <div class="daily-reward-val">${d.rewardText}</div>
+        `;
+        grid.appendChild(card);
+    });
+
+    if (btnClaim) {
+        if (!loggedIn) {
+            btnClaim.removeAttribute('disabled');
+            btnClaim.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            btnClaim.innerText = "🔒 Bonus olish uchun tizimga kiring";
+        } else if (canClaim) {
+            btnClaim.removeAttribute('disabled');
+            btnClaim.style.background = '';
+            btnClaim.innerText = `${state.currentDay}-kun sovg'asini olish!`;
+        } else {
+            btnClaim.setAttribute('disabled', 'true');
+            btnClaim.style.background = '';
+            btnClaim.innerText = "Bugungi sovg'a olingan!";
+        }
+    }
+}
+
+function claimDailyReward() {
+    if (!isUserLoggedIn()) {
+        showCenterNotice("🔒 Kunlik bonusni olish uchun avval tizimga kiring!", 2400);
+        const modal = document.getElementById('daily-rewards-modal');
+        if (modal) modal.classList.add('hidden');
+        if (authModal) authModal.classList.remove('hidden');
+        return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const state = getDailyState();
+    if (state.lastClaimDate === today) return;
+
+    const reward = DAILY_REWARDS_DATA.find(d => d.day === state.currentDay) || DAILY_REWARDS_DATA[0];
+    if (reward.type === 'score') addScore(reward.amount);
+    else if (reward.type === 'shield') myProfile.walls = (myProfile.walls || 0) + reward.amount;
+    else if (reward.type === 'double') myProfile.doubleSpears = (myProfile.doubleSpears || 0) + reward.amount;
+    else if (reward.type === 'artillery') { artilleryCount += reward.amount; myProfile.artillery = artilleryCount; }
+    else if (reward.type === 'super') { mySuper += reward.amount; myProfile.superPowers = mySuper; }
+
+    saveProfile();
+    updateSuperUI();
+
+    state.lastClaimDate = today;
+    state.currentDay = state.currentDay >= 7 ? 1 : state.currentDay + 1;
+    localStorage.setItem('kamonboz_daily_state', JSON.stringify(state));
+
+    spawnConfetti();
+    renderDailyRewards();
+    showCenterNotice(`Tabriklaymiz! ${reward.rewardText} berildi!`, 2500);
+}
+
+function initDailyRewards() {
+    const btnDailyRewards = document.getElementById('btn-daily-rewards');
+    const modal = document.getElementById('daily-rewards-modal');
+    const btnClose = document.getElementById('btn-close-daily');
+    const btnClaim = document.getElementById('btn-claim-daily');
+
+    if (btnDailyRewards && modal) {
+        btnDailyRewards.addEventListener('click', () => {
+            renderDailyRewards();
+            modal.classList.remove('hidden');
+        });
+    }
+    if (btnClose && modal) {
+        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+    if (btnClaim) {
+        btnClaim.addEventListener('click', claimDailyReward);
+    }
+    checkDailyAutoPopup();
+}
+
+const DEFAULT_QUESTS = [
+    { id: 'headshot', title: '2 ta boshga aniq zarba ber', target: 2, current: 0, reward: 250, claimed: false },
+    { id: 'crow', title: '1 ta qarg\'ani urib tushir', target: 1, current: 0, reward: 150, claimed: false },
+    { id: 'win', title: '1 ta jangda g\'alaba qozon', target: 1, current: 0, reward: 300, claimed: false }
+];
+
+function getQuestsState() {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = localStorage.getItem('kamonboz_daily_quests');
+    try {
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (parsed && parsed.date === today && Array.isArray(parsed.quests)) return parsed;
+    } catch {}
+    const fresh = { date: today, quests: JSON.parse(JSON.stringify(DEFAULT_QUESTS)) };
+    localStorage.setItem('kamonboz_daily_quests', JSON.stringify(fresh));
+    return fresh;
+}
+
+function saveQuestsState(state) {
+    localStorage.setItem('kamonboz_daily_quests', JSON.stringify(state));
+}
+
+function checkQuestProgress(type, amount = 1, showNotice = true) {
+    const state = getQuestsState();
+    let updated = false;
+    state.quests.forEach(q => {
+        if (q.id === type && !q.claimed) {
+            q.current = Math.min(q.target, q.current + amount);
+            updated = true;
+            // Qarg'ani urganda umuman yozuv chiqmasligi uchun type !== 'crow' va showNotice tekshiriladi
+            if (q.current >= q.target && showNotice && type !== 'crow') {
+                showCenterNotice(`🎯 Vazifa bajarildi: ${q.title}!`, 2200);
+            }
+        }
+    });
+    if (updated) saveQuestsState(state);
+}
+
+function renderDailyQuests() {
+    const list = document.getElementById('daily-quests-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const state = getQuestsState();
+
+    state.quests.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'quest-item';
+        const pct = Math.min(100, Math.round((q.current / q.target) * 100));
+        const canClaim = q.current >= q.target && !q.claimed;
+
+        item.innerHTML = `
+            <div class="quest-info">
+                <div class="quest-title">${q.title} (${q.current}/${q.target})</div>
+                <div class="quest-reward">🪙 +${q.reward} Ball</div>
+                <div class="quest-progress-bg">
+                    <div class="quest-progress-fill" style="width: ${pct}%"></div>
+                </div>
+            </div>
+            <button class="quest-claim-btn" ${canClaim ? '' : 'disabled'}>
+                ${q.claimed ? 'Olingan' : (canClaim ? 'Olish' : `${pct}%`)}
+            </button>
+        `;
+
+        if (canClaim) {
+            const btn = item.querySelector('.quest-claim-btn');
+            btn.addEventListener('click', () => {
+                q.claimed = true;
+                addScore(q.reward);
+                saveProfile();
+                saveQuestsState(state);
+                spawnConfetti();
+                renderDailyQuests();
+                showCenterNotice(`+${q.reward} Ball qo'shildi!`, 2000);
+            });
+        }
+        list.appendChild(item);
+    });
+}
+
+function initDailyQuests() {
+    const btn = document.getElementById('btn-daily-quests');
+    const modal = document.getElementById('daily-quests-modal');
+    const btnClose = document.getElementById('btn-close-quests');
+
+    if (btn && modal) {
+        btn.addEventListener('click', () => {
+            renderDailyQuests();
+            modal.classList.remove('hidden');
+        });
+    }
+    if (btnClose && modal) {
+        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+}
+
 // Artillery functionality initialization
 document.addEventListener('DOMContentLoaded', () => {
+    initDailyRewards();
+    initDailyQuests();
+    initEmotesUI();
+    if (typeof checkAutoJoinTelegramRoom === 'function') checkAutoJoinTelegramRoom();
     btnArtillery = document.getElementById('artillery-button');
     artilleryCountText = document.getElementById('artillery-count');
     

@@ -32,5 +32,14 @@
     "wins": 4,
     "games": 10,
     "updatedAt": 1777650361588
+  },
+  {
+    "name": "Ibrohim",
+    "flag": "🇺🇿",
+    "phone": "998812345678",
+    "score": 520,
+    "wins": 0,
+    "games": 1,
+    "updatedAt": 1794045297359
   }
 ]

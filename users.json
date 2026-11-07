@@ -109,5 +109,24 @@
     "doubleSpears": 0,
     "walls": 0,
     "updatedAt": 1777650361589
+  },
+  {
+    "id": "1793970089267",
+    "name": "Ibrohim",
+    "phone": "998812345678",
+    "age": 28,
+    "score": 510,
+    "wins": 0,
+    "games": 1,
+    "campaignLevel": 100,
+    "superPowers": 5,
+    "doubleSpears": 0,
+    "walls": 0,
+    "artillery": 0,
+    "crowhunt": 0,
+    "fireSpears": 0,
+    "passwordHash": "ec96bb29ffb1a370e4f2c4c6487dce983899403555239098753378ca84ca46c4",
+    "createdAt": 1793970089267,
+    "updatedAt": 1794045297360
   }
 ]

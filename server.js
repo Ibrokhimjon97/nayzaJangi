@@ -26,6 +26,7 @@ app.use((req, res, next) => {
     }
     next();
 });
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const multer = require('multer');
@@ -71,7 +72,7 @@ app.post('/api/models/delete', express.json(), (req, res) => {
                 uniqueFiles.forEach(filePath => {
                     const absolutePath = path.join(__dirname, 'public', filePath);
                     if (fs.existsSync(absolutePath)) {
-                        try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting texture file:', err); }
+                        try { fs.unlinkSync(absolutePath); } catch (err) { console.error('Error deleting texture file:', err); }
                     }
                 });
             }
@@ -79,7 +80,7 @@ app.post('/api/models/delete', express.json(), (req, res) => {
             if (modelToDelete.bgMusic) {
                 const absolutePath = path.join(__dirname, 'public', modelToDelete.bgMusic);
                 if (fs.existsSync(absolutePath)) {
-                    try { fs.unlinkSync(absolutePath); } catch(err) { console.error('Error deleting music file:', err); }
+                    try { fs.unlinkSync(absolutePath); } catch (err) { console.error('Error deleting music file:', err); }
                 }
             }
         }
@@ -113,26 +114,26 @@ app.post('/api/models/update', upload.fields([
         const models = loadCustomModels();
         const modelIndex = models.findIndex(m => m.id === id);
         if (modelIndex === -1) return res.status(404).json({ ok: false, error: 'Model topilmadi' });
-        
+
         const files = req.files || {};
         const oldModel = models[modelIndex];
-        
+
         if (req.body.name) oldModel.name = req.body.name;
-        
+
         oldModel.settings = oldModel.settings || {};
         if (req.body.width !== undefined) oldModel.settings.width = Number(req.body.width);
         if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
         if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
         if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
         if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
-        
+
         const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'celebrate'];
         fileNames.forEach(fn => {
             if (files[fn] && files[fn][0]) {
                 oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
             }
         });
-        
+
         if (files.bgMusic && files.bgMusic[0]) {
             oldModel.bgMusic = 'custom_models/' + files.bgMusic[0].filename;
         }
@@ -227,8 +228,18 @@ function loadLeaderboard() {
     }
 }
 
+function safeWriteJsonSync(filePath, data) {
+    const tempPath = `${filePath}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    try {
+        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8');
+        fs.renameSync(tempPath, filePath);
+    } catch {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    }
+}
+
 function saveLeaderboard(entries) {
-    fs.writeFileSync(leaderboardDbPath, JSON.stringify(entries, null, 2), 'utf8');
+    safeWriteJsonSync(leaderboardDbPath, entries);
 }
 
 function normalizeEntry(body) {
@@ -255,7 +266,7 @@ function loadUsers() {
 }
 
 function saveUsers(users) {
-    fs.writeFileSync(usersDbPath, JSON.stringify(users, null, 2), 'utf8');
+    safeWriteJsonSync(usersDbPath, users);
 }
 
 function ensureLegacyBonus(users) {
@@ -287,12 +298,25 @@ function ensureLegacyBonus(users) {
 // One-time migration at startup: legacy accounts get minimum 500 score.
 ensureLegacyBonus(loadUsers());
 
-function hashPassword(password) {
-    return crypto.createHash('sha256').update(String(password || '')).digest('hex');
+const PASSWORD_SALT = 'kamonboz_v2_salt_secure_2026';
+
+function hashPassword(password, salt = PASSWORD_SALT) {
+    return crypto.createHash('sha256').update(String(password || '') + ':' + salt).digest('hex');
+}
+
+function verifyPassword(inputPassword, storedHash) {
+    if (!storedHash) return false;
+    // 1. Check with current v2 salt
+    if (storedHash === hashPassword(inputPassword, PASSWORD_SALT)) return true;
+    // 2. Fallback to legacy unsalted hash for existing accounts
+    const legacy = crypto.createHash('sha256').update(String(inputPassword || '')).digest('hex');
+    return legacy === storedHash;
 }
 
 function normalizePhone(phone) {
-    const digits = String(phone || '').replace(/\D/g, '');
+    const raw = String(phone || '').trim();
+    if (raw.startsWith('tg_')) return raw;
+    const digits = raw.replace(/\D/g, '');
     if (!digits) return '';
     if (digits.length === 9) return `998${digits}`;
     if (digits.length === 12 && digits.startsWith('998')) return digits;
@@ -319,10 +343,17 @@ function toPublicUser(user) {
 }
 
 function findUserIndexByPhone(users, phone) {
-    const phoneNorm = normalizePhone(phone || '');
+    const raw = String(phone || '').trim();
+    if (!raw) return -1;
+    if (raw.startsWith('tg_')) {
+        const tgId = raw.replace('tg_', '');
+        return (users || []).findIndex((u) => u?.phone === raw || String(u?.tgId) === tgId);
+    }
+    const phoneNorm = normalizePhone(raw);
     if (!phoneNorm) return -1;
     const phoneTail = phoneNorm.slice(-9);
     return (users || []).findIndex((u) => {
+        if (String(u?.phone || '').startsWith('tg_')) return false;
         const storedNorm = normalizePhone(u?.phone || '');
         if (storedNorm) return storedNorm === phoneNorm;
         const rawTail = String(u?.phone || '').replace(/\D/g, '').slice(-9);
@@ -554,9 +585,14 @@ app.post('/api/auth/login', (req, res) => {
     const users = ensureLegacyBonus(loadUsers());
     const userIdx = findUserIndexByPhone(users, phone);
     const user = userIdx >= 0 ? users[userIdx] : null;
-    if (!user || user.passwordHash !== hashPassword(password)) {
+    if (!user || !verifyPassword(password, user.passwordHash)) {
         res.status(401).json({ ok: false, error: 'invalid_credentials' });
         return;
+    }
+    // Upgrade legacy unsalted hash to salted hash transparently
+    if (user.passwordHash !== hashPassword(password)) {
+        user.passwordHash = hashPassword(password);
+        saveUsers(users);
     }
     res.json({ ok: true, user: toPublicUser(user) });
 });
@@ -564,6 +600,9 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/reset-password', (req, res) => {
     const phone = normalizePhone(req.body?.phone || '');
     const newPassword = String(req.body?.newPassword || '');
+    const age = Number(req.body?.age || 0);
+    const oldPassword = String(req.body?.oldPassword || '');
+
     if (phone.length !== 12 || newPassword.length < 4) {
         res.status(400).json({ ok: false, error: 'invalid_payload' });
         return;
@@ -574,14 +613,25 @@ app.post('/api/auth/reset-password', (req, res) => {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
     }
+    const user = users[idx];
+    // Security challenge: must know old password OR the registered account age
+    const passedOldPass = oldPassword && verifyPassword(oldPassword, user.passwordHash);
+    const passedAge = age && Number(user.age) === age;
+
+    if (!passedOldPass && !passedAge) {
+        res.status(403).json({ ok: false, error: 'security_check_failed', message: "Eski parol yoki ro'yxatdan o'tgan yoshingiz tasdiqlanmadi!" });
+        return;
+    }
+
     users[idx].passwordHash = hashPassword(newPassword);
     saveUsers(users);
     res.json({ ok: true });
 });
 
 app.get('/api/auth/user', (req, res) => {
-    const phone = normalizePhone(req.query.phone || '');
-    if (phone.length !== 12) {
+    const raw = String(req.query.phone || '').trim();
+    const phone = normalizePhone(raw);
+    if (!phone || (!phone.startsWith('tg_') && phone.length !== 12)) {
         res.status(404).json({ ok: false, error: 'user_not_found' });
         return;
     }
@@ -595,12 +645,116 @@ app.get('/api/auth/user', (req, res) => {
     res.json({ ok: true, user: toPublicUser(user) });
 });
 
+app.post('/api/auth/telegram', (req, res) => {
+    const tgUser = req.body?.user;
+    if (!tgUser || !tgUser.id) {
+        return res.status(400).json({ ok: false, error: 'missing_tg_user' });
+    }
+    const tgId = String(tgUser.id);
+    const phone = 'tg_' + tgId;
+    const name = ([tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Jangchi').slice(0, 30);
+
+    const users = ensureLegacyBonus(loadUsers());
+    let idx = users.findIndex(u => u.phone === phone || String(u.tgId) === tgId);
+
+    if (idx === -1) {
+        const newUser = {
+            id: String(Date.now()),
+            tgId,
+            name,
+            phone,
+            username: tgUser.username || '',
+            age: 20,
+            score: 500,
+            wins: 0,
+            games: 0,
+            campaignLevel: 1,
+            superPowers: 5,
+            doubleSpears: 2,
+            walls: 2,
+            artillery: 1,
+            crowhunt: 1,
+            fireSpears: 2,
+            createdAt: Date.now()
+        };
+        users.push(newUser);
+        saveUsers(users);
+        idx = users.length - 1;
+        console.log(`[Telegram Auth] Yangi Telegram o'yinchisi avtomatik ro'yxatdan o'tdi: ${name} (TG ID: ${tgId})`);
+    } else {
+        if (name && (!users[idx].name || users[idx].name === 'Player' || users[idx].name === "Noma'lum")) {
+            users[idx].name = name;
+            saveUsers(users);
+        }
+    }
+    res.json({ ok: true, user: toPublicUser(users[idx]) });
+});
+
 const waitingQueue = [];
 const rooms = {};
 const roomsByCode = {};
 const onlineByPlayerId = new Map();
 const pendingFriendInvites = new Map();
 const pendingFriendAddRequests = new Map();
+
+const TURN_TIMEOUT_SECONDS = 25;
+
+function clearRoomTurnTimer(roomName) {
+    const room = rooms[roomName];
+    if (room && room.turnTimer) {
+        clearTimeout(room.turnTimer);
+        room.turnTimer = null;
+    }
+}
+
+function startRoomTurnTimer(roomName) {
+    const room = rooms[roomName];
+    if (!room || room.gameOver) return;
+    clearRoomTurnTimer(roomName);
+
+    io.to(roomName).emit('turnTimerStart', {
+        duration: TURN_TIMEOUT_SECONDS,
+        turnIndex: room.turnIndex
+    });
+
+    room.turnTimer = setTimeout(() => {
+        handleRoomTurnTimeout(roomName);
+    }, TURN_TIMEOUT_SECONDS * 1000);
+}
+
+function handleRoomTurnTimeout(roomName) {
+    const room = rooms[roomName];
+    if (!room || room.gameOver) return;
+    if (room.inFlight) return; // Projectile mid-air, wait
+
+    room.consecutiveTimeouts = room.consecutiveTimeouts || [0, 0];
+    room.consecutiveTimeouts[room.turnIndex] = (room.consecutiveTimeouts[room.turnIndex] || 0) + 1;
+
+    // AFK limit (3 turns missed = forfeit)
+    if (room.consecutiveTimeouts[room.turnIndex] >= 3) {
+        room.gameOver = true;
+        clearRoomTurnTimer(roomName);
+        const winnerIndex = room.turnIndex === 0 ? 1 : 0;
+        io.to(roomName).emit('gameOver', { winnerIndex, reason: 'forfeit_afk' });
+        return;
+    }
+
+    const skippedTurnIndex = room.turnIndex;
+    room.turnIndex = room.turnIndex === 0 ? 1 : 0;
+    room.wind = generateWind();
+
+    io.to(roomName).emit('turnTimedOut', {
+        skippedTurnIndex,
+        nextTurnIndex: room.turnIndex,
+        wind: room.wind
+    });
+    io.to(roomName).emit('nextTurn', {
+        turnIndex: room.turnIndex,
+        wind: room.wind
+    });
+
+    startRoomTurnTimer(roomName);
+}
 
 function removeFromWaitingQueue(socketId) {
     const idx = waitingQueue.findIndex((s) => s && s.id === socketId);
@@ -613,7 +767,11 @@ function generateWind() {
 }
 
 function getRandomMap() {
-    const maps = ['field', 'castle', 'desert', 'winter', 'mountain'];
+    const maps = [
+        'field', 'castle', 'desert', 'winter', 'mountain',
+        'samarkand', 'bukhara', 'istanbul', 'oasis', 'canyon', 'volcano',
+        'registan', 'sakura', 'taiga', 'citadel'
+    ];
     return maps[Math.floor(Math.random() * maps.length)];
 }
 
@@ -684,6 +842,7 @@ io.on('connection', (socket) => {
         };
         console.log('Sending gameStart to player2, roomName:', roomName);
         player2.emit('gameStart', gameStartData2);
+        startRoomTurnTimer(roomName);
     }
 
     function bindOnlineProfile(profile) {
@@ -720,16 +879,16 @@ io.on('connection', (socket) => {
         const { profile, code } = data;
         socket.profile = profile || { name: "O'yinchi", flag: "🏳️", avatar: "👤" };
         bindOnlineProfile(socket.profile);
-        
+
         if (roomsByCode[code]) {
             const roomData = roomsByCode[code];
             const player1 = roomData.player1;
             const player2 = socket;
             const roomName = roomData.roomName;
-            
+
             // pre-fill room with options so startGame can read it
             rooms[roomName] = { options: roomData.options };
-            
+
             delete roomsByCode[code];
             player2.join(roomName);
             startGame(player1, player2, roomName);
@@ -907,6 +1066,9 @@ io.on('connection', (socket) => {
         const currentPlayerId = room.players[room.turnIndex];
         if (socket.id !== currentPlayerId) return;
 
+        clearRoomTurnTimer(roomName);
+        if (room.consecutiveTimeouts) room.consecutiveTimeouts[room.turnIndex] = 0;
+
         io.to(roomName).emit('spearThrown', {
             playerIndex: room.turnIndex,
             angle: angle,
@@ -945,6 +1107,7 @@ io.on('connection', (socket) => {
             nextTurn: room.turnIndex,
             wind: room.wind
         });
+        startRoomTurnTimer(roomName);
     });
 
     socket.on('defenseState', (data) => {
@@ -1043,6 +1206,7 @@ io.on('connection', (socket) => {
             turnIndex: room.turnIndex,
             wind: room.wind
         });
+        startRoomTurnTimer(roomName);
     });
 
     socket.on('throwComplete', (data) => {
@@ -1059,7 +1223,9 @@ io.on('connection', (socket) => {
             if (!payload || !payload.hitOpponent) return;
             let targetIndex = payload.targetIndex !== undefined ? payload.targetIndex : (room.turnIndex === 0 ? 1 : 0);
             const hitZone = payload.hitZone || 'body';
-            const baseDamage = Number(payload.damage) || 0;
+            // Anti-cheat: clamp client-reported damage to legitimate physics bounds
+            const maxAllowed = payload.isArtillery ? 75 : (hitZone === 'head' ? 55 : (hitZone === 'leg' ? 25 : 40));
+            const baseDamage = Math.max(0, Math.min(Number(payload.damage) || 0, maxAllowed));
             const defending = room.defending && room.defending[targetIndex];
             const ducking = room.ducking && room.ducking[targetIndex];
             let appliedDamage = baseDamage;
@@ -1120,6 +1286,7 @@ io.on('connection', (socket) => {
             });
             if (room.health[targetIndex] <= 0) {
                 room.gameOver = true;
+                clearRoomTurnTimer(roomName);
                 io.to(roomName).emit('gameOver', { winnerIndex: room.turnIndex });
                 return true;
             }
@@ -1143,6 +1310,7 @@ io.on('connection', (socket) => {
             turnIndex: room.turnIndex,
             wind: room.wind
         });
+        startRoomTurnTimer(roomName);
     });
 
     socket.on('entityHit', (data) => {
@@ -1150,7 +1318,7 @@ io.on('connection', (socket) => {
         const room = rooms[roomName];
         if (!room || room.gameOver || !room.inFlight) return;
         if (socket.id !== room.players[room.turnIndex]) return;
-        if(roomName) {
+        if (roomName) {
             socket.to(roomName).emit('entityHit', data);
         }
         // Switch turn like groundHit
@@ -1161,13 +1329,27 @@ io.on('connection', (socket) => {
             turnIndex: room.turnIndex,
             wind: room.wind
         });
+        startRoomTurnTimer(roomName);
     });
 
     socket.on('chatMessage', (msg) => {
         const roomName = socket.roomId;
-        if(roomName) {
+        if (roomName) {
             io.to(roomName).emit('chatMessage', { senderId: socket.id, msg: msg });
         }
+    });
+
+    socket.on('sendEmote', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || !roomName) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1) return;
+        io.to(roomName).emit('playerEmote', {
+            playerIndex,
+            emote: String(data?.emote || '👍').slice(0, 10),
+            emoteId: String(data?.emoteId || '')
+        });
     });
 
     // Revansh so'rovi
@@ -1194,6 +1376,7 @@ io.on('connection', (socket) => {
         }
 
         // Xonani qayta ishga tushirish
+        clearRoomTurnTimer(roomName);
         room.gameOver = false;
         room.turnIndex = 0;
         room.wind = generateWind();
@@ -1220,6 +1403,7 @@ io.on('connection', (socket) => {
         const roomName = data?.roomName || socket.roomId;
         const room = rooms[roomName];
         if (!room || !room.players) return;
+        clearRoomTurnTimer(roomName);
         // Raqibga rad etildi xabari
         const opponentId = room.players.find(id => id !== socket.id);
         if (opponentId) {
@@ -1245,6 +1429,7 @@ io.on('connection', (socket) => {
 
         const roomName = socket.roomId;
         if (roomName && rooms[roomName]) {
+            clearRoomTurnTimer(roomName);
             io.to(roomName).emit('opponentDisconnected');
             delete rooms[roomName];
         }
@@ -1254,6 +1439,12 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
+    try {
+        const { startTelegramBot } = require('./telegramBot');
+        startTelegramBot();
+    } catch (e) {
+        console.error('Telegram bot startup error:', e.message);
+    }
 });
 
 // Force redeploy 1397934648782924301
