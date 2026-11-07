@@ -788,7 +788,7 @@ body, html {
 
 #music-toggle-btn {
     position: absolute;
-    left: max(var(--menu-left-safe), clamp(92px, 11vw, 132px));
+    left: max(calc(var(--menu-left-safe) + 72px), clamp(78px, 9.5vw, 110px));
     bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
     z-index: 126;
     width: clamp(40px, 5.5vw, 50px);
@@ -1231,9 +1231,22 @@ body, html {
     #music-toggle-btn {
         left: max(var(--menu-left-safe), 64px);
         bottom: max(var(--menu-bottom-safe), 6px);
-        width: 40px;
-        height: 40px;
+        width: 38px;
+        height: 38px;
         font-size: 0.95rem;
+    }
+
+    .emote-btn {
+        left: max(var(--menu-left-safe), 108px);
+        bottom: max(var(--menu-bottom-safe), 6px);
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+    }
+
+    .emote-picker {
+        left: 80px;
+        bottom: 50px;
     }
 
     #btn-toggle-chat {
@@ -1313,6 +1326,14 @@ body, html {
         width: 36px;
         height: 36px;
         font-size: 0.88rem;
+    }
+
+    .emote-btn {
+        left: max(var(--menu-left-safe), 96px);
+        bottom: max(var(--menu-bottom-safe), 5px);
+        width: 36px;
+        height: 36px;
+        font-size: 0.95rem;
     }
 
     .super-btn {
@@ -1569,12 +1590,20 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* Ability cluster feels like single action bar */
-.shield-btn, .super-btn, .duck-btn, .double-btn {
+.shield-btn, .super-btn, .duck-btn, .double-btn, .wall-btn, .crow-btn, .artillery-btn, .fire-btn {
     bottom: clamp(10px, 2.2vh, 22px);
 }
 
-.wall-btn {
-    bottom: clamp(10px, 2.2vh, 22px);
+.shield-btn {
+    right: clamp(10px, 2vw, 24px);
+}
+
+.super-btn {
+    right: clamp(68px, 11vw, 102px);
+}
+
+.duck-btn {
+    right: clamp(126px, 19vw, 176px);
 }
 
 .double-btn {
@@ -1585,16 +1614,16 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     right: clamp(242px, 35vw, 320px);
 }
 
-.duck-btn {
-    right: clamp(126px, 19vw, 176px);
+.crow-btn {
+    right: clamp(300px, 43vw, 394px);
 }
 
-.super-btn {
-    right: clamp(68px, 11vw, 102px);
+.artillery-btn {
+    right: clamp(358px, 51vw, 468px);
 }
 
-.shield-btn {
-    right: clamp(10px, 2vw, 24px);
+.fire-btn {
+    right: clamp(416px, 59vw, 542px);
 }
 
 .shield-btn::before,
@@ -1815,15 +1844,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     visibility: visible;
 }
 
-/* --- Olov nayza tugmasi (ikkinchi qatorda, qalqon ustida) --- */
+/* --- Olov nayza tugmasi (artilleriya tugmasi yonida) --- */
 .fire-btn {
     position: absolute;
-    bottom: clamp(64px, 11vh, 92px);
-    right: clamp(10px, 2vw, 24px);
+    bottom: clamp(10px, 2.2vh, 22px);
+    right: clamp(416px, 59vw, 542px);
     z-index: 100;
-    width: clamp(46px, 8.5vw, 62px);
-    height: clamp(46px, 8.5vw, 62px);
-    font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+    width: clamp(48px, 9vw, 66px);
+    height: clamp(48px, 9vw, 66px);
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
     border-color: rgba(234, 88, 12, 0.8);
     background: radial-gradient(circle at 30% 30%, rgba(254, 215, 170, 0.28), rgba(124, 45, 18, 0.92));
 }
@@ -1849,8 +1878,8 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     .fire-btn {
         width: 42px;
         height: 42px;
-        right: 8px;
-        bottom: 56px;
+        right: 344px;
+        bottom: 8px;
         font-size: 1.05rem;
     }
 }
@@ -1936,6 +1965,14 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 #btn-multi {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 6px 0 #075985, 0 14px 26px rgba(2, 132, 199, 0.5) !important;
+}
+#btn-daily-rewards {
+    background: linear-gradient(180deg, #fbbf24, #d97706) !important;
+    box-shadow: 0 6px 0 #92400e, 0 14px 26px rgba(217, 119, 6, 0.5) !important;
+}
+#btn-daily-quests {
+    background: linear-gradient(180deg, #22d3ee, #0891b2) !important;
+    box-shadow: 0 6px 0 #0e7490, 0 14px 26px rgba(8, 145, 178, 0.5) !important;
 }
 #btn-profile {
     background: linear-gradient(180deg, #2dd4bf, #0d9488) !important;
@@ -2387,15 +2424,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 /* === Emote System === */
 .emote-btn {
     position: absolute;
-    bottom: 20px;
-    left: 75px;
-    z-index: 100;
-    font-size: 1.25rem;
+    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
+    left: max(calc(var(--menu-left-safe) + 124px), clamp(130px, 16vw, 168px));
+    z-index: 126;
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
     background: rgba(30, 41, 59, 0.85);
     border: 2px solid #8b5cf6;
     border-radius: 50%;
-    width: 48px;
-    height: 48px;
+    width: clamp(40px, 5.5vw, 50px);
+    height: clamp(40px, 5.5vw, 50px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2408,9 +2445,9 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 .emote-picker {
     position: absolute;
-    bottom: 78px;
-    left: 60px;
-    z-index: 110;
+    bottom: calc(max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px)) + clamp(50px, 6.5vh, 66px));
+    left: max(calc(var(--menu-left-safe) + 90px), clamp(96px, 12vw, 134px));
+    z-index: 130;
     display: flex;
     gap: 8px;
     background: rgba(15, 23, 42, 0.95);
@@ -2641,28 +2678,28 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     }
 
     /* 2-qator (yuqoriroqda) */
-    .fire-btn {
+    .wall-btn {
         bottom: 62px !important;
         right: 12px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .wall-btn {
+    .crow-btn {
         bottom: 62px !important;
         right: 62px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .crow-btn {
+    .artillery-btn {
         bottom: 62px !important;
         right: 112px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .artillery-btn {
+    .fire-btn {
         bottom: 62px !important;
         right: 162px !important;
         width: 44px !important;

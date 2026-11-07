@@ -7640,13 +7640,53 @@ function applyLanguage() {
     updateCampaignUI();
 }
 
-// Universal Safe Modal Management with Ghost Click Shield
+// Universal Safe Modal Management with Ghost Click Shield & Full Modal Isolation
+let lastModalActionTime = 0;
+function safeModalAction(fn) {
+    return function(e) {
+        const now = Date.now();
+        if (now - lastModalActionTime < 380) {
+            if (e) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            }
+            return;
+        }
+        lastModalActionTime = now;
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        fn(e);
+    };
+}
+
+const ALL_MODAL_IDS = [
+    'daily-quests-modal',
+    'daily-rewards-modal',
+    'profile-modal',
+    'settings-modal',
+    'shop-modal',
+    'about-modal',
+    'rating-modal',
+    'help-modal',
+    'multi-menu',
+    'single-mode-modal',
+    'level-select-modal',
+    'game-options-modal'
+];
+
 function closeModalSafely(modalEl, e) {
     if (e) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         if (typeof e.stopPropagation === 'function') e.stopPropagation();
     }
     if (modalEl) modalEl.classList.add('hidden');
+    // Ensure all other modals are closed too so nothing remains stranded
+    for (const id of ALL_MODAL_IDS) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    }
     if (menuScreen) {
         menuScreen.classList.remove('hidden');
         // Prevent delayed mobile touch click from triggering underlying menu buttons
@@ -7663,7 +7703,21 @@ function openModalSafely(modalEl, e) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         if (typeof e.stopPropagation === 'function') e.stopPropagation();
     }
-    if (modalEl) modalEl.classList.remove('hidden');
+    // HIDE ALL OTHER MODALS TO GUARANTEE ONLY ONE MODAL IS ACTIVE
+    for (const id of ALL_MODAL_IDS) {
+        const el = document.getElementById(id);
+        if (el && el !== modalEl) {
+            el.classList.add('hidden');
+        }
+    }
+    if (modalEl) {
+        modalEl.classList.remove('hidden');
+        // Shield the newly opened modal from any ghost clicks
+        modalEl.style.pointerEvents = 'none';
+        setTimeout(() => {
+            if (modalEl) modalEl.style.pointerEvents = '';
+        }, 320);
+    }
     if (menuScreen) menuScreen.classList.add('hidden');
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
 }
@@ -7713,16 +7767,17 @@ function openProfileSettingsModal(e) {
 }
 
 if (btnProfile) {
-    btnProfile.addEventListener('click', openProfileSettingsModal);
-    btnProfile.addEventListener('touchend', openProfileSettingsModal, { passive: false });
+    const safeOpenProfile = safeModalAction(openProfileSettingsModal);
+    btnProfile.addEventListener('click', safeOpenProfile);
+    btnProfile.addEventListener('touchend', safeOpenProfile, { passive: false });
 }
 
 if (btnSettings) {
-    const handleOpenSettings = (e) => {
+    const handleOpenSettings = safeModalAction((e) => {
         const selectLang = document.getElementById('select-lang');
         if (selectLang) selectLang.value = myProfile.lang;
         openModalSafely(settingsModal, e);
-    };
+    });
     btnSettings.addEventListener('click', handleOpenSettings);
     btnSettings.addEventListener('touchend', handleOpenSettings, { passive: false });
 }
@@ -7764,12 +7819,13 @@ function handleSaveSettings(e) {
 }
 
 if (btnSaveSettings) {
-    btnSaveSettings.addEventListener('click', handleSaveSettings);
-    btnSaveSettings.addEventListener('touchend', handleSaveSettings, { passive: false });
+    const safeSaveSettings = safeModalAction(handleSaveSettings);
+    btnSaveSettings.addEventListener('click', safeSaveSettings);
+    btnSaveSettings.addEventListener('touchend', safeSaveSettings, { passive: false });
 }
 
 if (btnCloseSettingsX) {
-    const handleCloseSettingsX = (e) => closeModalSafely(settingsModal, e);
+    const handleCloseSettingsX = safeModalAction((e) => closeModalSafely(settingsModal, e));
     btnCloseSettingsX.addEventListener('click', handleCloseSettingsX);
     btnCloseSettingsX.addEventListener('touchend', handleCloseSettingsX, { passive: false });
 }
@@ -7802,12 +7858,13 @@ function handleSaveProfile(e) {
 }
 
 if (btnSaveProfile) {
-    btnSaveProfile.addEventListener('click', handleSaveProfile);
-    btnSaveProfile.addEventListener('touchend', handleSaveProfile, { passive: false });
+    const safeSaveProfile = safeModalAction(handleSaveProfile);
+    btnSaveProfile.addEventListener('click', safeSaveProfile);
+    btnSaveProfile.addEventListener('touchend', safeSaveProfile, { passive: false });
 }
 
 if (btnCloseProfileX) {
-    const handleCloseProfileX = (e) => closeModalSafely(profileModal, e);
+    const handleCloseProfileX = safeModalAction((e) => closeModalSafely(profileModal, e));
     btnCloseProfileX.addEventListener('click', handleCloseProfileX);
     btnCloseProfileX.addEventListener('touchend', handleCloseProfileX, { passive: false });
 }
@@ -7837,38 +7894,42 @@ if (btnCloseHelpX && helpModal) {
 }
 
 if (btnShop && shopModal) {
-    const handleOpenShop = (e) => {
+    const handleOpenShop = safeModalAction((e) => {
         updateSuperUI();
         openModalSafely(shopModal, e);
-    };
+    });
     btnShop.addEventListener('click', handleOpenShop);
     btnShop.addEventListener('touchend', handleOpenShop, { passive: false });
 }
 
 if (btnCloseShop && shopModal) {
-    btnCloseShop.addEventListener('click', (e) => closeModalSafely(shopModal, e));
-    btnCloseShop.addEventListener('touchend', (e) => closeModalSafely(shopModal, e), { passive: false });
+    const handleCloseShop = safeModalAction((e) => closeModalSafely(shopModal, e));
+    btnCloseShop.addEventListener('click', handleCloseShop);
+    btnCloseShop.addEventListener('touchend', handleCloseShop, { passive: false });
 }
 
 if (btnCloseShopX && shopModal) {
-    btnCloseShopX.addEventListener('click', (e) => closeModalSafely(shopModal, e));
-    btnCloseShopX.addEventListener('touchend', (e) => closeModalSafely(shopModal, e), { passive: false });
+    const handleCloseShopX = safeModalAction((e) => closeModalSafely(shopModal, e));
+    btnCloseShopX.addEventListener('click', handleCloseShopX);
+    btnCloseShopX.addEventListener('touchend', handleCloseShopX, { passive: false });
 }
 
 if (btnAbout && aboutModal) {
-    const handleOpenAbout = (e) => openModalSafely(aboutModal, e);
+    const handleOpenAbout = safeModalAction((e) => openModalSafely(aboutModal, e));
     btnAbout.addEventListener('click', handleOpenAbout);
     btnAbout.addEventListener('touchend', handleOpenAbout, { passive: false });
 }
 
 if (btnCloseAbout && aboutModal) {
-    btnCloseAbout.addEventListener('click', (e) => closeModalSafely(aboutModal, e));
-    btnCloseAbout.addEventListener('touchend', (e) => closeModalSafely(aboutModal, e), { passive: false });
+    const handleCloseAbout = safeModalAction((e) => closeModalSafely(aboutModal, e));
+    btnCloseAbout.addEventListener('click', handleCloseAbout);
+    btnCloseAbout.addEventListener('touchend', handleCloseAbout, { passive: false });
 }
 
 if (btnCloseAboutX && aboutModal) {
-    btnCloseAboutX.addEventListener('click', (e) => closeModalSafely(aboutModal, e));
-    btnCloseAboutX.addEventListener('touchend', (e) => closeModalSafely(aboutModal, e), { passive: false });
+    const handleCloseAboutX = safeModalAction((e) => closeModalSafely(aboutModal, e));
+    btnCloseAboutX.addEventListener('click', handleCloseAboutX);
+    btnCloseAboutX.addEventListener('touchend', handleCloseAboutX, { passive: false });
 }
 
 async function copyDonateValue(value, btnEl) {
@@ -8164,24 +8225,34 @@ async function renderLeaderboard() {
     }
 }
 
-btnRating.addEventListener('click', () => {
-    const statScoreEl = document.getElementById('stat-score');
-    const score = Number(myStats.score || 0);
-    statScoreEl.innerText = score < 0 ? `Qarz: ${score}` : String(score);
-    statScoreEl.style.color = score < 0 ? '#ef4444' : '#f59e0b';
-    document.getElementById('stat-games').innerText = myStats.games;
-    document.getElementById('stat-wins').innerText = myStats.wins;
-    renderLeaderboard();
-    openModalSafely(ratingModal);
-});
+if (btnRating) {
+    const handleOpenRating = safeModalAction((e) => {
+        const statScoreEl = document.getElementById('stat-score');
+        const score = Number(myStats.score || 0);
+        if (statScoreEl) {
+            statScoreEl.innerText = score < 0 ? `Qarz: ${score}` : String(score);
+            statScoreEl.style.color = score < 0 ? '#ef4444' : '#f59e0b';
+        }
+        const statGamesEl = document.getElementById('stat-games');
+        if (statGamesEl) statGamesEl.innerText = myStats.games;
+        const statWinsEl = document.getElementById('stat-wins');
+        if (statWinsEl) statWinsEl.innerText = myStats.wins;
+        renderLeaderboard();
+        openModalSafely(ratingModal, e);
+    });
+    btnRating.addEventListener('click', handleOpenRating);
+    btnRating.addEventListener('touchend', handleOpenRating, { passive: false });
+}
 
 if (btnCloseRating) {
-    btnCloseRating.addEventListener('click', (e) => closeModalSafely(ratingModal, e));
-    btnCloseRating.addEventListener('touchend', (e) => closeModalSafely(ratingModal, e), { passive: false });
+    const handleCloseRating = safeModalAction((e) => closeModalSafely(ratingModal, e));
+    btnCloseRating.addEventListener('click', handleCloseRating);
+    btnCloseRating.addEventListener('touchend', handleCloseRating, { passive: false });
 }
 if (btnCloseRatingX) {
-    btnCloseRatingX.addEventListener('click', (e) => closeModalSafely(ratingModal, e));
-    btnCloseRatingX.addEventListener('touchend', (e) => closeModalSafely(ratingModal, e), { passive: false });
+    const handleCloseRatingX = safeModalAction((e) => closeModalSafely(ratingModal, e));
+    btnCloseRatingX.addEventListener('click', handleCloseRatingX);
+    btnCloseRatingX.addEventListener('touchend', handleCloseRatingX, { passive: false });
 }
 
 if (btnResetCampaign) {
@@ -8412,11 +8483,10 @@ document.addEventListener('click', (e) => {
 
 // Missing Event Listeners
 if(document.getElementById('btn-single')) {
-    document.getElementById('btn-single').addEventListener('click', () => {
+    const handleSingle = safeModalAction((e) => {
         if(typeof initAudio === 'function') initAudio();
         if (singleModeModal) {
-            singleModeModal.classList.remove('hidden');
-            menuScreen.classList.add('hidden');
+            openModalSafely(singleModeModal, e);
             return;
         }
         const level = Math.max(1, singleCampaignLevel);
@@ -8424,6 +8494,8 @@ if(document.getElementById('btn-single')) {
         gameMode = 'single';
         startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
     });
+    document.getElementById('btn-single').addEventListener('click', handleSingle);
+    document.getElementById('btn-single').addEventListener('touchend', handleSingle, { passive: false });
 }
 
 if (btnSingleContinue) {
@@ -8521,14 +8593,15 @@ function renderLevelGrid() {
 }
 
 if(document.getElementById('btn-multi')) {
-    document.getElementById('btn-multi').addEventListener('click', () => {
+    const handleMulti = safeModalAction((e) => {
         if(typeof initAudio === 'function') initAudio();
         clearRandomWaitTimer();
-        multiMenu.classList.remove('hidden');
+        openModalSafely(multiMenu, e);
         renderFriendsList();
         socket.emit('friendsPresence', { ids: myFriends.map((f) => f.playerId) });
-        menuScreen.classList.add('hidden');
     });
+    document.getElementById('btn-multi').addEventListener('click', handleMulti);
+    document.getElementById('btn-multi').addEventListener('touchend', handleMulti, { passive: false });
 }
 
 const btnMultiCreate = document.getElementById('btn-multi-create');
@@ -9244,44 +9317,26 @@ function initDailyRewards() {
     const btnCloseX = document.getElementById('btn-close-rewards-x');
     const btnClaim = document.getElementById('btn-claim-daily');
 
-    function openModal(e) {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
+    const handleOpen = safeModalAction((e) => {
         renderDailyRewards();
-        if (modal) modal.classList.remove('hidden');
-        if (menuScreen) menuScreen.classList.add('hidden');
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    }
+        openModalSafely(modal, e);
+    });
 
-    function closeModal(e) {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
-        if (modal) modal.classList.add('hidden');
-        if (menuScreen) {
-            menuScreen.classList.remove('hidden');
-            menuScreen.style.pointerEvents = 'none';
-            setTimeout(() => {
-                if (menuScreen) menuScreen.style.pointerEvents = '';
-            }, 350);
-        }
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    }
+    const handleClose = safeModalAction((e) => {
+        closeModalSafely(modal, e);
+    });
 
     if (btnDailyRewards && modal) {
-        btnDailyRewards.addEventListener('click', openModal);
-        btnDailyRewards.addEventListener('touchend', (e) => openModal(e), { passive: false });
+        btnDailyRewards.addEventListener('click', handleOpen);
+        btnDailyRewards.addEventListener('touchend', handleOpen, { passive: false });
     }
     if (btnClose && modal) {
-        btnClose.addEventListener('click', closeModal);
-        btnClose.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+        btnClose.addEventListener('click', handleClose);
+        btnClose.addEventListener('touchend', handleClose, { passive: false });
     }
     if (btnCloseX && modal) {
-        btnCloseX.addEventListener('click', closeModal);
-        btnCloseX.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+        btnCloseX.addEventListener('click', handleClose);
+        btnCloseX.addEventListener('touchend', handleClose, { passive: false });
     }
     if (btnClaim) {
         btnClaim.addEventListener('click', claimDailyReward);
@@ -9374,44 +9429,26 @@ function initDailyQuests() {
     const btnClose = document.getElementById('btn-close-quests');
     const btnCloseX = document.getElementById('btn-close-quests-x');
 
-    function openModal(e) {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
+    const handleOpen = safeModalAction((e) => {
         renderDailyQuests();
-        if (modal) modal.classList.remove('hidden');
-        if (menuScreen) menuScreen.classList.add('hidden');
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    }
+        openModalSafely(modal, e);
+    });
 
-    function closeModal(e) {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
-        if (modal) modal.classList.add('hidden');
-        if (menuScreen) {
-            menuScreen.classList.remove('hidden');
-            menuScreen.style.pointerEvents = 'none';
-            setTimeout(() => {
-                if (menuScreen) menuScreen.style.pointerEvents = '';
-            }, 350);
-        }
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    }
+    const handleClose = safeModalAction((e) => {
+        closeModalSafely(modal, e);
+    });
 
     if (btn && modal) {
-        btn.addEventListener('click', openModal);
-        btn.addEventListener('touchend', (e) => openModal(e), { passive: false });
+        btn.addEventListener('click', handleOpen);
+        btn.addEventListener('touchend', handleOpen, { passive: false });
     }
     if (btnClose && modal) {
-        btnClose.addEventListener('click', closeModal);
-        btnClose.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+        btnClose.addEventListener('click', handleClose);
+        btnClose.addEventListener('touchend', handleClose, { passive: false });
     }
     if (btnCloseX && modal) {
-        btnCloseX.addEventListener('click', closeModal);
-        btnCloseX.addEventListener('touchend', (e) => closeModal(e), { passive: false });
+        btnCloseX.addEventListener('click', handleClose);
+        btnCloseX.addEventListener('touchend', handleClose, { passive: false });
     }
 }
 
