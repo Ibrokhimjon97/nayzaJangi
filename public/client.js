@@ -9524,15 +9524,24 @@ async function autoLoginTelegramUser() {
     saveProfile();
 
     try {
+        const clientProgress = {
+            score: Number(myStats.score || 0),
+            wins: Number(myStats.wins || 0),
+            games: Number(myStats.games || 0),
+            campaignLevel: Number(localStorage.getItem('nayza_single_level') || singleCampaignLevel || 1),
+            superPowers: Number(myProfile.superPowers || 0),
+            doubleSpears: Number(myProfile.doubleSpears || 0),
+            walls: Number(myProfile.walls || 0)
+        };
         const res = await fetch(`${API_BASE}/api/auth/telegram`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: tgUser })
+            body: JSON.stringify({ user: tgUser, clientProgress })
         });
         const data = await res.json().catch(() => ({}));
         if (data && data.ok && data.user) {
             applyAuthedUser(data.user);
-            console.log('[Telegram Auth] Avtomatik login bajarildi:', data.user.name);
+            console.log('[Telegram Auth] Avtomatik login bajarildi:', data.user.name, 'Ball:', myStats.score);
             return true;
         }
     } catch (err) {
@@ -9615,19 +9624,31 @@ function applyAuthedUser(user) {
     const userPhoneStr = String(user.phone || '');
     myProfile.phone = userPhoneStr.startsWith('tg_') ? userPhoneStr : userPhoneStr.replace(/\D/g, '').slice(-15);
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
-    if (Number.isFinite(Number(user.score))) myStats.score = Number(user.score);
-    if (Number.isFinite(Number(user.wins))) myStats.wins = Math.max(0, Number(user.wins));
-    if (Number.isFinite(Number(user.games))) myStats.games = Math.max(0, Number(user.games));
+    
+    // O'yinchining to'plagan ballari va progressi: har safar yangidan 500 bo'lib qolmasligi uchun lokal va serverdagi eng kattasini olamiz
+    const localScore = Number(myStats.score || 0);
+    const serverScore = Number.isFinite(Number(user.score)) ? Number(user.score) : 0;
+    myStats.score = Math.max(localScore, serverScore);
+    myProfile.score = myStats.score;
+
+    const localWins = Number(myStats.wins || 0);
+    const serverWins = Number.isFinite(Number(user.wins)) ? Number(user.wins) : 0;
+    myStats.wins = Math.max(localWins, serverWins);
+
+    const localGames = Number(myStats.games || 0);
+    const serverGames = Number.isFinite(Number(user.games)) ? Number(user.games) : 0;
+    myStats.games = Math.max(localGames, serverGames);
+
     if (user.photoUrl) myProfile.photoUrl = user.photoUrl;
-    if (Number.isFinite(Number(user.losses))) myStats.losses = Math.max(0, Number(user.losses));
-    if (Number.isFinite(Number(user.forfeits))) myStats.forfeits = Math.max(0, Number(user.forfeits));
+    if (Number.isFinite(Number(user.losses))) myStats.losses = Math.max(Number(myStats.losses || 0), Number(user.losses));
+    if (Number.isFinite(Number(user.forfeits))) myStats.forfeits = Math.max(Number(myStats.forfeits || 0), Number(user.forfeits));
     if (Array.isArray(user.friends)) myFriends = user.friends;
-    if (Number.isFinite(Number(user.superPowers))) myProfile.superPowers = Math.max(0, Number(user.superPowers));
-    if (Number.isFinite(Number(user.doubleSpears))) myProfile.doubleSpears = Math.max(0, Number(user.doubleSpears));
-    if (Number.isFinite(Number(user.walls))) myProfile.walls = Math.max(0, Number(user.walls));
-    if (Number.isFinite(Number(user.artillery))) myProfile.artillery = Math.max(0, Number(user.artillery));
-    if (Number.isFinite(Number(user.crowhunt))) myProfile.crowhunt = Math.max(0, Number(user.crowhunt));
-    if (Number.isFinite(Number(user.fireSpears))) myProfile.fireSpears = Math.max(0, Number(user.fireSpears));
+    if (Number.isFinite(Number(user.superPowers))) myProfile.superPowers = Math.max(Number(myProfile.superPowers || 0), Number(user.superPowers));
+    if (Number.isFinite(Number(user.doubleSpears))) myProfile.doubleSpears = Math.max(Number(myProfile.doubleSpears || 0), Number(user.doubleSpears));
+    if (Number.isFinite(Number(user.walls))) myProfile.walls = Math.max(Number(myProfile.walls || 0), Number(user.walls));
+    if (Number.isFinite(Number(user.artillery))) myProfile.artillery = Math.max(Number(myProfile.artillery || 0), Number(user.artillery));
+    if (Number.isFinite(Number(user.crowhunt))) myProfile.crowhunt = Math.max(Number(myProfile.crowhunt || 0), Number(user.crowhunt));
+    if (Number.isFinite(Number(user.fireSpears))) myProfile.fireSpears = Math.max(Number(myProfile.fireSpears || 0), Number(user.fireSpears));
     const localCampaignLevel = Math.max(1, Number(localStorage.getItem('nayza_single_level') || singleCampaignLevel || 1));
     if (Number.isFinite(Number(user.campaignLevel))) {
         // Never downgrade campaign progress from stale auth cache/server lag.
@@ -9784,7 +9805,10 @@ function saveStats() {
 function maybeApplyLegacy500Bonus(allowSync = false) {
     if (legacyBonusApplied) return;
     const currentScore = Number(myStats.score || 0);
-    if (currentScore >= 500) {
+    const hasGames = Number(myStats.games || 0) > 0;
+    // Faqat yangi kirgan (0 o'yin va 0 ball) o'yinchiga boshlang'ich 500 ball beriladi.
+    // Eski to'plangan ballar va o'yinlar aslo 500 ga qayta tushib qolmaydi!
+    if (currentScore >= 500 || hasGames) {
         legacyBonusApplied = true;
         localStorage.setItem(LEGACY_BONUS_KEY, '1');
         return;

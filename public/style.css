@@ -5604,54 +5604,55 @@ body.mobile-landscape .coin-3d {
     }
 }
 
-/* Mobil Portret (@media max-width: 600px and min-height: 521px) */
+/* Mobil Portret faqat force-landscape yo'q bo'lganda */
 @media screen and (max-width: 600px) and (min-height: 521px) {
-    .char-select-modal {
+    body:not(.force-landscape):not(.mobile-landscape) .char-select-modal {
         width: 95vw !important;
         height: auto !important;
         max-height: 88vh !important;
         padding: 12px 10px 12px !important;
     }
 
-    .char-select-header {
+    body:not(.force-landscape):not(.mobile-landscape) .char-select-header {
         margin-bottom: 6px !important;
     }
 
-    .char-select-header h2 {
+    body:not(.force-landscape):not(.mobile-landscape) .char-select-header h2 {
         font-size: 1.15rem !important;
         margin-bottom: 2px !important;
     }
 
-    .char-select-subtitle {
+    body:not(.force-landscape):not(.mobile-landscape) .char-select-subtitle {
         font-size: 0.78rem !important;
     }
 
-    .char-roster-grid {
+    body:not(.force-landscape):not(.mobile-landscape) .char-roster-grid {
         max-height: 52vh !important;
         gap: 8px !important;
         padding: 6px 4px !important;
         margin-bottom: 8px !important;
     }
 
-    .char-card {
+    body:not(.force-landscape):not(.mobile-landscape) .char-card {
         flex: 0 1 calc(50% - 10px) !important;
         max-width: 155px !important;
         padding: 6px 5px !important;
     }
 
-    .char-card-avatar-wrap {
+    body:not(.force-landscape):not(.mobile-landscape) .char-card-avatar-wrap {
         height: 80px !important;
         margin-top: 6px !important;
         margin-bottom: 4px !important;
     }
 
-    .char-card-img {
+    body:not(.force-landscape):not(.mobile-landscape) .char-card-img {
         max-height: 76px !important;
     }
 
-    .char-card-name {
+    body:not(.force-landscape):not(.mobile-landscape) .char-card-name {
         font-size: 0.80rem !important;
     }
+}
 
     .char-select-actions {
         margin-top: 8px !important;
@@ -7593,4 +7594,148 @@ textarea,
     .lang-nav-btn {
         display: none !important;
     }
+}
+
+/* =================================================================
+   QAHRAMON TANLASH MODALI: ONLAYN VA KAMPANIYA UCHUN QAT'IY EKRA NGA MOSLASHUV
+   ================================================================= */
+body.force-landscape .char-select-modal,
+body.force-landscape #character-select-modal,
+body.mobile-landscape .char-select-modal,
+body.mobile-landscape #character-select-modal,
+@media (orientation: landscape) and (max-height: 650px) {
+    .char-select-modal,
+    #character-select-modal {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: min(94%, 680px) !important;
+        max-width: min(94%, 680px) !important;
+        height: min(92%, 350px) !important;
+        max-height: min(92%, 350px) !important;
+        padding: 6px 14px 8px !important;
+        border-radius: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        z-index: 500 !important;
+    }
+}
+
+body.force-landscape .char-select-modal,
+body.force-landscape #character-select-modal,
+body.mobile-landscape .char-select-modal,
+body.mobile-landscape #character-select-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(94%, 680px) !important;
+    max-width: min(94%, 680px) !important;
+    height: min(92%, 350px) !important;
+    max-height: min(92%, 350px) !important;
+    padding: 6px 14px 8px !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    z-index: 500 !important;
+}
+
+body.force-landscape .char-select-header,
+body.mobile-landscape .char-select-header {
+    flex-shrink: 0 !important;
+    margin-bottom: 2px !important;
+    text-align: center !important;
+}
+
+body.force-landscape .char-select-header h2,
+body.mobile-landscape .char-select-header h2 {
+    font-size: 1.02rem !important;
+    margin: 0 0 2px !important;
+}
+
+body.force-landscape .char-select-subtitle,
+body.mobile-landscape .char-select-subtitle {
+    display: none !important;
+}
+
+body.force-landscape .char-roster-grid,
+body.force-landscape #char-select-roster,
+body.mobile-landscape .char-roster-grid,
+body.mobile-landscape #char-select-roster {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 4px 6px !important;
+    margin: 2px 0 6px !important;
+    max-height: calc(100% - 46px) !important;
+}
+
+body.force-landscape .char-card,
+body.mobile-landscape .char-card {
+    flex: 0 0 115px !important;
+    width: 115px !important;
+    min-width: 115px !important;
+    max-width: 115px !important;
+    padding: 4px 6px 6px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+body.force-landscape .char-card-avatar-wrap,
+body.mobile-landscape .char-card-avatar-wrap {
+    height: 58px !important;
+    width: 58px !important;
+    margin: 2px auto !important;
+}
+
+body.force-landscape .char-card-img,
+body.mobile-landscape .char-card-img {
+    max-height: 54px !important;
+    max-width: 54px !important;
+    object-fit: contain !important;
+}
+
+body.force-landscape .char-card-name,
+body.mobile-landscape .char-card-name {
+    font-size: 0.78rem !important;
+    margin-top: 2px !important;
+    line-height: 1.1 !important;
+}
+
+body.force-landscape .char-select-actions,
+body.mobile-landscape .char-select-actions {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-top: 2px !important;
+}
+
+body.force-landscape .char-confirm-btn,
+body.force-landscape .char-cancel-btn,
+body.mobile-landscape .char-confirm-btn,
+body.mobile-landscape .char-cancel-btn {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 4px 14px !important;
+    font-size: 0.84rem !important;
+    margin: 0 !important;
 }

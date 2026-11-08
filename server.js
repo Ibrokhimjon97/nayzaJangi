@@ -279,7 +279,10 @@ function normalizeEntry(body) {
     return {
         name: String(body?.name || 'Jangchi').slice(0, 30),
         flag: String(body?.flag || '🏳️').slice(0, 8),
-        phone: String(body?.phone || '').replace(/\D/g, '').slice(-15),
+        phone: (() => {
+            const rawP = String(body?.phone || '').trim();
+            return rawP.startsWith('tg_') ? rawP : rawP.replace(/\D/g, '').slice(-15);
+        })(),
         photoUrl: String(body?.photoUrl || ''),
         score: Number(body?.score) || 0,
         wins: wins,
@@ -708,6 +711,8 @@ app.post('/api/auth/telegram', async (req, res) => {
     const name = ([tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Jangchi').slice(0, 30);
     let photoUrl = tgUser.photo_url || '';
 
+    const clientProgress = req.body?.clientProgress || {};
+
     if (!photoUrl) {
         try {
             const { getTelegramUserPhotoUrl } = require('./telegramBot');
@@ -727,16 +732,16 @@ app.post('/api/auth/telegram', async (req, res) => {
             photoUrl,
             username: tgUser.username || '',
             age: 20,
-            score: 500,
-            wins: 0,
-            losses: 0,
-            forfeits: 0,
-            games: 0,
+            score: Math.max(500, Number(clientProgress.score) || 500),
+            wins: Math.max(0, Number(clientProgress.wins) || 0),
+            losses: Math.max(0, Number(clientProgress.losses) || 0),
+            forfeits: Math.max(0, Number(clientProgress.forfeits) || 0),
+            games: Math.max(0, Number(clientProgress.games) || 0),
             friends: [],
-            campaignLevel: 1,
-            superPowers: 5,
-            doubleSpears: 2,
-            walls: 2,
+            campaignLevel: Math.max(1, Number(clientProgress.campaignLevel) || 1),
+            superPowers: Number.isFinite(Number(clientProgress.superPowers)) ? Math.max(0, Number(clientProgress.superPowers)) : 5,
+            doubleSpears: Number.isFinite(Number(clientProgress.doubleSpears)) ? Math.max(0, Number(clientProgress.doubleSpears)) : 2,
+            walls: Number.isFinite(Number(clientProgress.walls)) ? Math.max(0, Number(clientProgress.walls)) : 2,
             artillery: 1,
             crowhunt: 1,
             fireSpears: 2,
@@ -745,7 +750,7 @@ app.post('/api/auth/telegram', async (req, res) => {
         users.push(newUser);
         saveUsers(users);
         idx = users.length - 1;
-        console.log(`[Telegram Auth] Yangi Telegram o'yinchisi avtomatik ro'yxatdan o'tdi: ${name} (TG ID: ${tgId})`);
+        console.log(`[Telegram Auth] Yangi Telegram o'yinchisi avtomatik ro'yxatdan o'tdi: ${name} (TG ID: ${tgId}, score: ${newUser.score})`);
     } else {
         let changed = false;
         if (name && (!users[idx].name || users[idx].name === 'Player' || users[idx].name === "Noma'lum")) {
@@ -754,6 +759,23 @@ app.post('/api/auth/telegram', async (req, res) => {
         }
         if (photoUrl && users[idx].photoUrl !== photoUrl) {
             users[idx].photoUrl = photoUrl;
+            changed = true;
+        }
+        // Saqlangan progressni sinxronlashtirish: agar mijozda yuqoriroq ball/g'alaba/level bo'lsa, eskisini o'chirmasdan eng yuqorisini saqlash
+        if (Number.isFinite(Number(clientProgress.score)) && Number(clientProgress.score) > Number(users[idx].score || 0)) {
+            users[idx].score = Number(clientProgress.score);
+            changed = true;
+        }
+        if (Number.isFinite(Number(clientProgress.wins)) && Number(clientProgress.wins) > Number(users[idx].wins || 0)) {
+            users[idx].wins = Number(clientProgress.wins);
+            changed = true;
+        }
+        if (Number.isFinite(Number(clientProgress.games)) && Number(clientProgress.games) > Number(users[idx].games || 0)) {
+            users[idx].games = Number(clientProgress.games);
+            changed = true;
+        }
+        if (Number.isFinite(Number(clientProgress.campaignLevel)) && Number(clientProgress.campaignLevel) > Number(users[idx].campaignLevel || 1)) {
+            users[idx].campaignLevel = Number(clientProgress.campaignLevel);
             changed = true;
         }
         if (changed) saveUsers(users);
