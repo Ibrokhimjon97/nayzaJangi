@@ -66,18 +66,32 @@ body.force-landscape .modal-panel .primary-btn {
 }
 
 body.force-landscape .hud {
-    padding: 4px 8px !important;
-    padding-top: max(6px, env(safe-area-inset-top, 0px)) !important;
-    align-items: start !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: 4px !important;
+    width: auto !important;
+    max-width: 96vw !important;
+    padding: 2px 6px !important;
+    z-index: 120 !important;
 }
 
-body.force-landscape .hud #p1-info {
-    margin-top: 36px !important;
+body.force-landscape .hud #p1-info,
+body.force-landscape .hud #p2-info {
+    margin-top: 0 !important;
+    padding: 4px 8px !important;
+    min-width: 90px !important;
+    max-width: 140px !important;
+    border-radius: 8px !important;
 }
 
 body.force-landscape .hud .wind-indicator {
     margin-top: 0 !important;
-    top: 4px !important;
+    top: auto !important;
     padding: 3px 8px !important;
     border-radius: 8px !important;
     min-width: 60px !important;
@@ -86,10 +100,10 @@ body.force-landscape .hud .wind-indicator {
 body.force-landscape #in-game-menu-btn {
     top: 6px !important;
     bottom: auto !important;
-    left: 88px !important;
-    min-width: 52px !important;
+    left: 56px !important;
+    min-width: 48px !important;
     height: 32px !important;
-    padding: 4px 8px !important;
+    padding: 4px 6px !important;
     font-size: 0.72rem !important;
     z-index: 130 !important;
 }
@@ -97,18 +111,29 @@ body.force-landscape #in-game-menu-btn {
 body.force-landscape #btn-in-game-back {
     top: 6px !important;
     bottom: auto !important;
-    left: 148px !important;
-    min-width: 54px !important;
+    left: 110px !important;
+    min-width: 50px !important;
     height: 32px !important;
-    padding: 4px 8px !important;
+    padding: 4px 6px !important;
     font-size: 0.72rem !important;
+    z-index: 130 !important;
+}
+
+/* Ovoz tugmasi yuqoriga - Ortga tugmasi yoniga ko'chirildi */
+body.force-landscape #music-toggle-btn {
+    top: 6px !important;
+    bottom: auto !important;
+    left: 166px !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.95rem !important;
     z-index: 130 !important;
 }
 
 body.force-landscape #btn-toggle-chat {
     top: 6px !important;
     bottom: auto !important;
-    left: 210px !important;
+    left: 204px !important;
     width: 32px !important;
     height: 32px !important;
     font-size: 1.05rem !important;
@@ -122,15 +147,7 @@ body.force-landscape #btn-toggle-chat {
 body.force-landscape #chat-container {
     top: 44px !important;
     bottom: auto !important;
-    left: 88px !important;
-}
-
-body.force-landscape #music-toggle-btn {
-    left: 36px !important;
-    bottom: clamp(6px, 1.5vh, 12px) !important;
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 1rem !important;
+    left: 56px !important;
 }
 
 body.force-landscape .emote-btn {
@@ -162,15 +179,41 @@ body.force-landscape .fire-btn {
     bottom: clamp(6px, 1.5vh, 12px) !important;
 }
 
-body.force-landscape .shield-btn { right: 10px !important; }
-body.force-landscape .super-btn { right: 62px !important; }
-body.force-landscape .duck-btn { right: 114px !important; }
-body.force-landscape .jump-btn { right: 166px !important; }
-body.force-landscape .double-btn { right: 218px !important; }
-body.force-landscape .wall-btn { right: 270px !important; }
-body.force-landscape .crow-btn { right: 322px !important; }
-body.force-landscape .artillery-btn { right: 374px !important; }
-body.force-landscape .fire-btn { right: 426px !important; }
+body.force-landscape .shield-btn {
+    right: 10px !important;
+}
+
+body.force-landscape .super-btn {
+    right: 62px !important;
+}
+
+body.force-landscape .duck-btn {
+    right: 114px !important;
+}
+
+body.force-landscape .jump-btn {
+    right: 166px !important;
+}
+
+body.force-landscape .double-btn {
+    right: 218px !important;
+}
+
+body.force-landscape .wall-btn {
+    right: 270px !important;
+}
+
+body.force-landscape .crow-btn {
+    right: 322px !important;
+}
+
+body.force-landscape .artillery-btn {
+    right: 374px !important;
+}
+
+body.force-landscape .fire-btn {
+    right: 426px !important;
+}
 
 :root {
     --menu-left-safe: max(8px, env(safe-area-inset-left));
@@ -1174,15 +1217,29 @@ body.force-landscape .fire-btn { right: 426px !important; }
     }
 
     .hud {
-        padding: 4px 8px !important;
-        padding-top: 6px !important;
-        align-items: start !important;
-        grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr);
-        column-gap: 4px;
+        position: absolute !important;
+        top: 6px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: auto !important;
+        max-width: 96vw !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 2px 6px !important;
+        z-index: 120 !important;
     }
 
-    .hud #p1-info {
-        margin-top: 36px !important;
+    .hud #p1-info,
+    .hud #p2-info {
+        margin-top: 0 !important;
+        padding: 4px 8px !important;
+        min-width: 88px !important;
+        max-width: 140px !important;
+        border-radius: 8px !important;
     }
 
     .hud .wind-indicator {
@@ -1341,10 +1398,21 @@ body.force-landscape .fire-btn { right: 426px !important; }
         z-index: 130 !important;
     }
 
+    /* Ovoz va Chat tugmalari yuqori headerda Ortga tugmasi yonida */
+    #music-toggle-btn {
+        top: 6px !important;
+        bottom: auto !important;
+        left: 208px !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.95rem !important;
+        z-index: 130 !important;
+    }
+
     #btn-toggle-chat {
         top: 6px !important;
         bottom: auto !important;
-        left: 210px !important;
+        left: 246px !important;
         width: 32px !important;
         height: 32px !important;
         font-size: 1.05rem !important;
@@ -1359,15 +1427,6 @@ body.force-landscape .fire-btn { right: 426px !important; }
         top: 44px !important;
         bottom: auto !important;
         left: 88px !important;
-    }
-
-    /* Pastki chap tomondagi tugmalar landshaftda: Musiqa, Emote (chap burchakdan o'ngroqqa surilgan) */
-    #music-toggle-btn {
-        left: 36px !important;
-        bottom: clamp(6px, 1.5vh, 12px) !important;
-        width: 38px !important;
-        height: 38px !important;
-        font-size: 1rem !important;
     }
 
     .emote-btn {
@@ -1631,10 +1690,20 @@ screen and (max-height: 390px) {
         z-index: 130 !important;
     }
 
+    #music-toggle-btn {
+        top: 6px !important;
+        bottom: auto !important;
+        left: 198px !important;
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.95rem !important;
+        z-index: 130 !important;
+    }
+
     #btn-toggle-chat {
         top: 6px !important;
         bottom: auto !important;
-        left: 200px !important;
+        left: 234px !important;
         width: 30px !important;
         height: 30px !important;
         font-size: 0.95rem !important;
@@ -1643,14 +1712,6 @@ screen and (max-height: 390px) {
         align-items: center !important;
         justify-content: center !important;
         border-radius: 8px !important;
-    }
-
-    #music-toggle-btn {
-        left: 36px !important;
-        bottom: 6px !important;
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 0.95rem !important;
     }
 
     .emote-btn {
@@ -1691,15 +1752,25 @@ screen and (max-height: 390px) {
 @media screen and (max-width: 520px),
 screen and (max-height: 340px) {
     .hud {
-        grid-template-columns: minmax(0, 1.05fr) minmax(48px, auto) minmax(0, 1.05fr);
-        padding: 4px 5px;
-        padding-top: 6px !important;
-        align-items: start !important;
-        column-gap: 2px;
+        position: absolute !important;
+        top: 4px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: auto !important;
+        max-width: 96vw !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding: 2px 4px !important;
+        z-index: 120 !important;
     }
 
-    .hud #p1-info {
-        margin-top: 36px !important;
+    .hud #p1-info,
+    .hud #p2-info {
+        margin-top: 0 !important;
     }
 
     .player-info {
@@ -1755,11 +1826,21 @@ screen and (max-height: 340px) {
         z-index: 130 !important;
     }
 
+    #music-toggle-btn {
+        top: 5px !important;
+        bottom: auto !important;
+        left: 186px !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.88rem !important;
+        z-index: 130 !important;
+    }
+
     #btn-toggle-chat {
         width: 28px !important;
         height: 28px !important;
         font-size: 0.9rem !important;
-        left: 190px !important;
+        left: 218px !important;
         top: 5px !important;
         bottom: auto !important;
         z-index: 130 !important;
@@ -1767,14 +1848,6 @@ screen and (max-height: 340px) {
         align-items: center !important;
         justify-content: center !important;
         border-radius: 6px !important;
-    }
-
-    #music-toggle-btn {
-        left: 32px !important;
-        bottom: 5px !important;
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 0.88rem !important;
     }
 
     .emote-btn {
@@ -3578,8 +3651,338 @@ body.force-landscape #level-grid {
         max-height: 94vh !important;
         padding: 10px 14px !important;
     }
+
     #level-grid {
         max-height: 180px !important;
         gap: 6px !important;
     }
+}
+
+/* ============================================================
+   LEVEL BONUS MYSTERY CHEST MODAL (v66)
+   ============================================================ */
+.bonus-chest-panel {
+    max-width: min(92vw, 540px) !important;
+    text-align: center !important;
+    padding: 20px 22px !important;
+    border: 2px solid rgba(245, 158, 11, 0.45) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 25px rgba(245, 158, 11, 0.25) !important;
+    border-radius: 18px !important;
+    background: linear-gradient(160deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98)) !important;
+}
+
+.bonus-chests-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    margin: 14px 0 !important;
+}
+
+.bonus-chest-card {
+    flex: 1 1 0;
+    max-width: 150px;
+    background: linear-gradient(145deg, rgba(51, 65, 85, 0.75), rgba(30, 41, 59, 0.9));
+    border: 2px solid rgba(148, 163, 184, 0.25);
+    border-radius: 14px;
+    padding: 16px 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.bonus-chest-card:hover {
+    transform: translateY(-5px) scale(1.04);
+    border-color: #f59e0b;
+    box-shadow: 0 8px 22px rgba(245, 158, 11, 0.35);
+}
+
+.bonus-chest-card:active {
+    transform: scale(0.96);
+}
+
+.chest-closed-icon {
+    font-size: 2.8rem;
+    line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+    transition: transform 0.3s ease;
+    animation: chestIdleFloat 2.6s ease-in-out infinite;
+}
+
+@keyframes chestIdleFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+.chest-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-top: 10px;
+}
+
+.bonus-chest-card.opening {
+    border-color: #10b981 !important;
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(15, 23, 42, 0.95)) !important;
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.6) !important;
+    transform: scale(1.08) !important;
+    animation: chestPopOpen 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes chestPopOpen {
+    0% {
+        transform: scale(0.9);
+    }
+
+    50% {
+        transform: scale(1.15) rotate(-3deg);
+    }
+
+    100% {
+        transform: scale(1.08) rotate(0);
+    }
+}
+
+.chest-reward-icon {
+    font-size: 2.8rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 14px rgba(245, 158, 11, 0.8));
+    animation: rewardBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes rewardBounceIn {
+    0% {
+        transform: scale(0) translateY(20px);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.25) translateY(-8px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.chest-reward-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #22c55e;
+    margin-top: 8px;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.bonus-chest-card.revealed-other {
+    opacity: 0.65;
+    pointer-events: none;
+    transform: scale(0.95);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+.bonus-reveal-notice {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #34d399;
+    font-weight: 700;
+    font-size: 0.92rem;
+    animation: fadeIn 0.3s ease;
+}
+
+body.force-landscape .bonus-chest-panel {
+    max-height: min(86vw, 340px) !important;
+    padding: 12px 16px !important;
+}
+
+body.force-landscape .bonus-chests-row {
+    margin: 8px 0 !important;
+    gap: 10px !important;
+}
+
+body.force-landscape .bonus-chest-card {
+    padding: 10px 6px !important;
+}
+
+body.force-landscape .chest-closed-icon,
+body.force-landscape .chest-reward-icon {
+    font-size: 2rem !important;
+}
+
+body.force-landscape .chest-title,
+body.force-landscape .chest-reward-title {
+    font-size: 0.78rem !important;
+}
+
+/* ============================================================
+   CUSTOM IN-DOM SELECT DROPDOWN (Rotates seamlessly in landscape)
+   ============================================================ */
+.custom-select-wrap {
+    position: relative;
+    width: 100%;
+    margin-bottom: 14px;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.custom-select-trigger {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    background: #334155;
+    color: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 8px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+    transition: background 0.16s, border-color 0.16s, box-shadow 0.16s;
+}
+
+.custom-select-trigger:hover,
+.custom-select-trigger.open {
+    background: #3e526c;
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.custom-select-trigger-text {
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 6px;
+}
+
+.custom-select-trigger-arrow {
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+
+.custom-select-trigger.open .custom-select-trigger-arrow {
+    transform: rotate(180deg);
+    color: #38bdf8;
+}
+
+.custom-select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: linear-gradient(160deg, #1e293b, #0f172a);
+    border: 1px solid #475569;
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    max-height: 190px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 9999;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+.custom-select-item {
+    padding: 8px 12px;
+    font-size: 0.92rem;
+    color: #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-select-item:hover,
+.custom-select-item.selected {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+body.force-landscape .custom-select-wrap {
+    margin-bottom: 10px;
+}
+
+body.force-landscape .custom-select-trigger {
+    padding: 6px 10px;
+    font-size: 0.86rem;
+}
+
+body.force-landscape .custom-select-menu {
+    max-height: 140px;
+}
+
+body.force-landscape .custom-select-item {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+}
+
+/* ============================================================
+   HUD PLAYER VS ENEMY SIDE ACCENTS & TAGS
+   ============================================================ */
+.hud-role-tag {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 3px;
+    letter-spacing: 0.3px;
+}
+
+.player-info.hud-side-player {
+    border-color: rgba(34, 197, 94, 0.55) !important;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25) !important;
+}
+
+.player-info.hud-side-player h2 {
+    color: #4ade80 !important;
+}
+
+.player-info.hud-side-player .hud-role-tag {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.player-info.hud-side-enemy {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2) !important;
+}
+
+.player-info.hud-side-enemy h2 {
+    color: #f87171 !important;
+}
+
+.player-info.hud-side-enemy .hud-role-tag {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
 }

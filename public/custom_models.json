@@ -53,5 +53,35 @@
       "facesLeft": true
     },
     "weaponType": "spear"
+  },
+  {
+    "id": "custom_1794125558681",
+    "name": "Kamonchi qiz",
+    "textures": {
+      "shieldIdle": "custom_models/1794125558665-39560564.png",
+      "shieldAim": "custom_models/1794125558666-295247229.png",
+      "shieldDuck": "custom_models/1794125558667-291785840.png",
+      "shieldDefend": "custom_models/1794125558668-165785121.png",
+      "shieldHurt": "custom_models/1794125558669-281151343.png",
+      "shieldBreak": "custom_models/1794125558670-981774227.png",
+      "noShieldIdle": "custom_models/1794125558672-183326707.png",
+      "noShieldAim": "custom_models/1794125558673-912895632.png",
+      "noShieldDuck": "custom_models/1794125558673-803772340.png",
+      "noShieldDefend": "custom_models/1794125558674-224049467.png",
+      "noShieldHurt": "custom_models/1794125558675-370691010.png",
+      "shieldAfterShot": "custom_models/1794125558671-744462011.png",
+      "noShieldAfterShot": "custom_models/1794125558671-744462011.png",
+      "shieldJump": "custom_models/1794125558672-916781883.png",
+      "noShieldJump": "custom_models/1794125558675-873412463.png",
+      "celebrate": "custom_models/1794125558676-266533224.png"
+    },
+    "weaponType": "bow",
+    "bgMusic": "custom_models/1794125558676-98367961.mp3",
+    "settings": {
+      "width": 440,
+      "height": 435,
+      "offsetY": 0,
+      "offsetX": 0
+    }
   }
 ]

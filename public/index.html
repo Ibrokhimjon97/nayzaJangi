@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=65">
+    <link rel="stylesheet" href="style.css?v=67">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -80,779 +80,829 @@
                 transform: translateY(-60px) scale(1);
             }
         }
-
     </style>
 </head>
 
 <body>
     <div id="game-app-root">
         <div id="canvas-container"></div>
-    <!-- Menyu/auth fonidagi to'liq ekran wallpaper (canvas ustida, UI ostida) -->
-    <div id="menu-wallpaper"></div>
-    <!-- Kirish intro ekrani (wallpaper) -->
-    <div id="intro-screen">
-        <div id="intro-overlay"></div>
-        <div id="intro-content">
-            <div class="intro-loader-bar">
-                <div class="intro-loader-fill"></div>
-            </div>
-            <button id="btn-intro-start" class="primary-btn">Boshlash</button>
-            <div id="intro-hint">Ekranga teging</div>
-        </div>
-    </div>
-    <div id="ui-layer">
-        <div id="auth-modal" class="screen panel center-panel hidden">
-            <h2>Ro'yxatdan o'tish / Kirish</h2>
-            <div style="text-align:left; margin-top:10px;">
-                <div class="auth-tabs">
-                    <button id="auth-tab-login" class="primary-btn auth-tab-btn active">Kirish</button>
-                    <button id="auth-tab-register" class="primary-btn auth-tab-btn">Ro'yxatdan o'tish</button>
+        <!-- Menyu/auth fonidagi to'liq ekran wallpaper (canvas ustida, UI ostida) -->
+        <div id="menu-wallpaper"></div>
+        <!-- Kirish intro ekrani (wallpaper) -->
+        <div id="intro-screen">
+            <div id="intro-overlay"></div>
+            <div id="intro-content">
+                <div class="intro-loader-bar">
+                    <div class="intro-loader-fill"></div>
                 </div>
-                <div id="auth-login-section">
-                    <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
-                    <input id="auth-phone" type="tel" placeholder="998901234567"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <label style="display:block; margin-bottom:5px;">Parol</label>
-                    <input id="auth-password" type="password" placeholder="Parol"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <button id="btn-auth-login" class="primary-btn" style="background:#0ea5e9;">Kirish</button>
-                </div>
-                <div id="auth-register-section" class="hidden">
-                    <label style="display:block; margin-bottom:5px;">Ism</label>
-                    <input id="auth-name" type="text" placeholder="Ismingiz"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;"
-                        maxlength="30">
-                    <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
-                    <input id="auth-register-phone" type="tel" placeholder="998901234567"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <label style="display:block; margin-bottom:5px;">Yosh</label>
-                    <input id="auth-age" type="number" min="7" max="99" placeholder="18"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <label style="display:block; margin-bottom:5px;">Parol</label>
-                    <input id="auth-register-password" type="password" placeholder="Parol (kamida 4 belgi)"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <button id="btn-auth-register" class="primary-btn" style="background:#10b981;">Ro'yxatdan
-                        o'tish</button>
-                </div>
-                <hr style="border-color:rgba(148,163,184,0.3); margin:10px 0;">
-                <button id="btn-forgot-toggle" class="auth-link-btn">Parolni unutdingizmi?</button>
-                <div id="forgot-section" class="hidden" style="margin-top:8px;">
-                    <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
-                    <input id="reset-phone" type="tel" placeholder="998901234567"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:8px;">
-                    <label style="display:block; margin-bottom:5px;">Yangi parol</label>
-                    <input id="reset-password" type="password" placeholder="Yangi parol"
-                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
-                    <button id="btn-auth-reset" class="primary-btn" style="background:#f59e0b;">Yangi parol
-                        saqlash</button>
-                </div>
-                <div id="auth-status" style="min-height:18px; margin-top:8px; font-size:0.82rem; color:#94a3b8;"></div>
-                <button id="btn-guest-play" class="primary-btn" style="background:#475569; margin-top:10px;">🎮 Mehmon sifatida o'ynash</button>
+                <button id="btn-intro-start" class="primary-btn">Boshlash</button>
+                <div id="intro-hint">Ekranga teging</div>
             </div>
         </div>
-        <div id="menu-screen" class="screen panel center-panel">
-            <h1>Nayza Jangi</h1>
-            <div id="campaign-progress-panel"
-                style="margin-bottom: 12px; text-align: left; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                    <span id="txt-campaign-stage" style="font-size:0.9rem; color:#94a3b8;">Kampaniya bosqichi</span>
-                    <b id="campaign-level-text" style="color:#22c55e;">Lv.1</b>
+        <div id="ui-layer">
+            <div id="auth-modal" class="screen panel center-panel hidden">
+                <h2>Ro'yxatdan o'tish / Kirish</h2>
+                <div style="text-align:left; margin-top:10px;">
+                    <div class="auth-tabs">
+                        <button id="auth-tab-login" class="primary-btn auth-tab-btn active">Kirish</button>
+                        <button id="auth-tab-register" class="primary-btn auth-tab-btn">Ro'yxatdan o'tish</button>
+                    </div>
+                    <div id="auth-login-section">
+                        <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
+                        <input id="auth-phone" type="tel" placeholder="998901234567"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:5px;">Parol</label>
+                        <input id="auth-password" type="password" placeholder="Parol"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <button id="btn-auth-login" class="primary-btn" style="background:#0ea5e9;">Kirish</button>
+                    </div>
+                    <div id="auth-register-section" class="hidden">
+                        <label style="display:block; margin-bottom:5px;">Ism</label>
+                        <input id="auth-name" type="text" placeholder="Ismingiz"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;"
+                            maxlength="30">
+                        <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
+                        <input id="auth-register-phone" type="tel" placeholder="998901234567"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:5px;">Yosh</label>
+                        <input id="auth-age" type="number" min="7" max="99" placeholder="18"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:5px;">Parol</label>
+                        <input id="auth-register-password" type="password" placeholder="Parol (kamida 4 belgi)"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <button id="btn-auth-register" class="primary-btn" style="background:#10b981;">Ro'yxatdan
+                            o'tish</button>
+                    </div>
+                    <hr style="border-color:rgba(148,163,184,0.3); margin:10px 0;">
+                    <button id="btn-forgot-toggle" class="auth-link-btn">Parolni unutdingizmi?</button>
+                    <div id="forgot-section" class="hidden" style="margin-top:8px;">
+                        <label style="display:block; margin-bottom:5px;">Telefon raqam</label>
+                        <input id="reset-phone" type="tel" placeholder="998901234567"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:8px;">
+                        <label style="display:block; margin-bottom:5px;">Yangi parol</label>
+                        <input id="reset-password" type="password" placeholder="Yangi parol"
+                            style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px;">
+                        <button id="btn-auth-reset" class="primary-btn" style="background:#f59e0b;">Yangi parol
+                            saqlash</button>
+                    </div>
+                    <div id="auth-status" style="min-height:18px; margin-top:8px; font-size:0.82rem; color:#94a3b8;">
+                    </div>
+                    <button id="btn-guest-play" class="primary-btn" style="background:#475569; margin-top:10px;">🎮
+                        Mehmon sifatida o'ynash</button>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
-                    <span id="txt-menu-score" style="font-size:0.86rem; color:#94a3b8;">Ball / Liga</span>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span id="menu-tier-badge"
-                            style="font-size:0.78rem; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.12); color:#d97706;">🥉
-                            Bronza</span>
-                        <b id="menu-score-text" style="color:#fbbf24;">0</b>
+            </div>
+            <div id="menu-screen" class="screen panel center-panel">
+                <h1>Nayza Jangi</h1>
+                <div id="campaign-progress-panel"
+                    style="margin-bottom: 12px; text-align: left; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <span id="txt-campaign-stage" style="font-size:0.9rem; color:#94a3b8;">Kampaniya bosqichi</span>
+                        <b id="campaign-level-text" style="color:#22c55e;">Lv.1</b>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
+                        <span id="txt-menu-score" style="font-size:0.86rem; color:#94a3b8;">Ball / Liga</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span id="menu-tier-badge"
+                                style="font-size:0.78rem; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.12); color:#d97706;">🥉
+                                Bronza</span>
+                            <b id="menu-score-text" style="color:#fbbf24;">0</b>
+                        </div>
                     </div>
                 </div>
+                <button id="btn-single" class="primary-btn">Yakkalik o'yin (Kompyuterga qarshi)</button>
+                <button id="btn-multi" class="primary-btn">Onlayn (Haqiqiy raqibga qarshi)</button>
+                <button id="btn-daily-rewards" class="primary-btn"
+                    style="background: linear-gradient(135deg, #f59e0b, #d97706);">🎁 Kunlik Sovg'alar</button>
+                <button id="btn-daily-quests" class="primary-btn"
+                    style="background: linear-gradient(135deg, #06b6d4, #0891b2);">🎯 Vazifalar (Kvestlar)</button>
+                <button id="btn-profile" class="primary-btn" style="background:#0f766e;">Profil</button>
+                <button id="btn-about" class="primary-btn" style="background:#0ea5e9;">O'yin haqida</button>
+                <button id="btn-settings" class="primary-btn" style="background: #4b5563;">Sozlamalar</button>
+                <button id="btn-shop" class="primary-btn" style="background: #7c3aed;">Do'kon</button>
+                <button id="btn-rating" class="primary-btn" style="background: #f59e0b; color: #fff;">Reyting</button>
+                <button id="btn-logout" class="primary-btn"
+                    style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Akkauntdan chiqish</button>
             </div>
-            <button id="btn-single" class="primary-btn">Yakkalik o'yin (Kompyuterga qarshi)</button>
-            <button id="btn-multi" class="primary-btn">Onlayn (Haqiqiy raqibga qarshi)</button>
-            <button id="btn-daily-rewards" class="primary-btn"
-                style="background: linear-gradient(135deg, #f59e0b, #d97706);">🎁 Kunlik Sovg'alar</button>
-            <button id="btn-daily-quests" class="primary-btn"
-                style="background: linear-gradient(135deg, #06b6d4, #0891b2);">🎯 Vazifalar (Kvestlar)</button>
-            <button id="btn-profile" class="primary-btn" style="background:#0f766e;">Profil</button>
-            <button id="btn-about" class="primary-btn" style="background:#0ea5e9;">O'yin haqida</button>
-            <button id="btn-settings" class="primary-btn" style="background: #4b5563;">Sozlamalar</button>
-            <button id="btn-shop" class="primary-btn" style="background: #7c3aed;">Do'kon</button>
-            <button id="btn-rating" class="primary-btn" style="background: #f59e0b; color: #fff;">Reyting</button>
-            <button id="btn-logout" class="primary-btn"
-                style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Akkauntdan chiqish</button>
-        </div>
 
-        <!-- Multi Menu Modal -->
-        <div id="multi-menu" class="screen hidden panel center-panel">
-            <h2 id="txt-multi-title">Onlayn O'yin</h2>
-            <br>
-            <button id="btn-multi-create" class="primary-btn">O'yin yaratish</button>
-            <div id="create-code-container" class="hidden" style="margin-bottom: 15px;">
-                <p>Do'stingizga shu kodni bering:</p>
-                <h3 id="create-code" style="letter-spacing: 5px; color: #f59e0b; font-size: 2rem;">1234</h3>
-                <button id="btn-share-tg" class="primary-btn"
-                    style="background: linear-gradient(135deg, #0088cc, #00a8e8); margin: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <path
-                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-                    </svg>
-                    <span>📲 Telegramda do'stni chaqirish</span>
+            <!-- Multi Menu Modal -->
+            <div id="multi-menu" class="screen hidden panel center-panel">
+                <h2 id="txt-multi-title">Onlayn O'yin</h2>
+                <br>
+                <button id="btn-multi-create" class="primary-btn">O'yin yaratish</button>
+                <div id="create-code-container" class="hidden" style="margin-bottom: 15px;">
+                    <p>Do'stingizga shu kodni bering:</p>
+                    <h3 id="create-code" style="letter-spacing: 5px; color: #f59e0b; font-size: 2rem;">1234</h3>
+                    <button id="btn-share-tg" class="primary-btn"
+                        style="background: linear-gradient(135deg, #0088cc, #00a8e8); margin: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                        </svg>
+                        <span>📲 Telegramda do'stni chaqirish</span>
+                    </button>
+                    <div class="loader" style="margin: 10px auto; width: 30px; height: 30px; border-width: 3px;"></div>
+                    <p style="font-size: 0.8rem; color: #94a3b8;">Kutilyapti...</p>
+                </div>
+
+                <button id="btn-multi-join-show" class="primary-btn">O'yinga qo'shilish</button>
+                <div id="join-code-container" class="hidden" style="margin-bottom: 15px;">
+                    <input type="text" id="input-join-code" placeholder="KOD" maxlength="4"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px; text-align: center; letter-spacing: 5px; font-size: 1.5rem;">
+                    <button id="btn-multi-join" class="primary-btn" style="background: #10b981;">Qo'shilish</button>
+                    <p id="join-error" style="color: #ef4444; font-size: 0.8rem; display: none;">O'yin topilmadi!</p>
+                </div>
+
+                <button id="btn-multi-random" class="primary-btn" style="background: #8b5cf6;">Tasodifiy raqib</button>
+                <div id="friends-panel"
+                    style="margin-top:12px; text-align:left; background: rgba(0,0,0,0.2); border-radius:10px; padding:10px;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                        <b id="txt-friends-title">Do'stlar</b>
+                        <button id="btn-refresh-friends" class="primary-btn"
+                            style="padding:6px 10px; font-size:0.75rem; background:#334155;">Yangilash</button>
+                    </div>
+                    <div id="friends-list" style="max-height:170px; overflow-y:auto; font-size:0.9rem; color:#cbd5e1;">
+                        Do'stlar yo'q.</div>
+                </div>
+                <button id="btn-multi-back" class="primary-btn"
+                    style="background: #475569; margin-top: 10px;">Orqaga</button>
+            </div>
+
+            <div id="single-mode-modal" class="screen hidden panel center-panel">
+                <h2>Yakkalik o'yin</h2>
+                <div style="margin-top:10px; color:#94a3b8; font-size:0.95rem;">Tanlang:</div>
+                <button id="btn-single-continue" class="primary-btn" style="margin-top:12px;">Avvalgi levelni davom
+                    etish</button>
+                <button id="btn-single-select-level" class="primary-btn"
+                    style="background:#8b5cf6; margin-top:8px;">Level
+                    tanlash</button>
+                <button id="btn-single-new" class="primary-btn" style="background:#0ea5e9; margin-top:8px;">Yangi o'yin
+                    boshlash</button>
+                <button id="btn-single-cancel" class="primary-btn" style="background:#475569; margin-top:8px;">Bekor
+                    qilish</button>
+            </div>
+
+            <div id="level-select-modal" class="screen hidden panel center-panel">
+                <h2>Level tanlash</h2>
+                <div id="level-grid" data-scrollable="true"></div>
+                <button id="btn-level-select-cancel" class="primary-btn"
+                    style="background:#475569; margin-top:15px;">Bekor
+                    qilish</button>
+            </div>
+
+            <div id="friend-invite-modal" class="screen hidden panel center-panel">
+                <h2 id="friend-invite-title">Chaqiruv</h2>
+                <p id="friend-invite-text" style="margin:10px 0 14px; color:#cbd5e1;">Do'stingiz sizni o'yinga chaqirdi.
+                </p>
+                <button id="btn-friend-invite-accept" class="primary-btn" style="background:#10b981;">Ha,
+                    qo'shilaman</button>
+                <button id="btn-friend-invite-decline" class="primary-btn"
+                    style="background:#475569; margin-top:8px;">Yo'q</button>
+            </div>
+
+            <div id="friend-add-modal" class="screen hidden panel center-panel">
+                <h2 id="friend-add-title">Do'stlik so'rovi</h2>
+                <p id="friend-add-text" style="margin:10px 0 14px; color:#cbd5e1;">Sizga do'stlik so'rovi yuborildi.</p>
+                <button id="btn-friend-add-accept" class="primary-btn" style="background:#10b981;">Qabul qilish</button>
+                <button id="btn-friend-add-decline" class="primary-btn" style="background:#475569; margin-top:8px;">Rad
+                    etish</button>
+            </div>
+
+            <div id="about-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-about-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2 id="txt-about-title">O'yin haqida</h2>
+                <div style="text-align:left; color:#cbd5e1; font-size:0.95rem; line-height:1.5;">
+                    <div><b>Muallif:</b> To'raboyev Ibrohimjon Bahtiyor o'g'li</div>
+                    <div
+                        style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                        <span><b>Donate (Humo):</b> <span id="donate-humo">9860010123943010</span></span>
+                        <button id="btn-copy-humo" class="primary-btn copy-icon-btn"
+                            style="padding:6px 10px; font-size:0.75rem; min-height:auto;"
+                            aria-label="Humo raqamini nusxalash">📋</button>
+                    </div>
+                    <div
+                        style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                        <span><b>Donate (Visa):</b> <span id="donate-visa">4916990300521363</span></span>
+                        <button id="btn-copy-visa" class="primary-btn copy-icon-btn"
+                            style="padding:6px 10px; font-size:0.75rem; min-height:auto;"
+                            aria-label="Visa raqamini nusxalash">📋</button>
+                    </div>
+                </div>
+                <button id="btn-close-about" class="primary-btn" style="margin-top:14px;">Yopish</button>
+            </div>
+
+            <!-- Daily Rewards Modal -->
+            <div id="daily-rewards-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-rewards-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2>🎁 Kunlik Kirish Sovg'alari</h2>
+                <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Har kuni kiring va bepul resurslarni
+                    oling!</p>
+                <div id="daily-rewards-grid" class="daily-rewards-grid">
+                    <!-- Dynamically rendered -->
+                </div>
+                <button id="btn-claim-daily" class="primary-btn"
+                    style="background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px;">Sovg'ani
+                    olish</button>
+                <button id="btn-close-daily" class="primary-btn"
+                    style="background: #475569; margin-top: 8px;">Yopish</button>
+            </div>
+
+            <!-- Daily Quests Modal -->
+            <div id="daily-quests-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-quests-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2>🎯 Kunlik Vazifalar</h2>
+                <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Vazifalarni bajaring va ballar
+                    ishlang!
+                </p>
+                <div id="daily-quests-list" class="quest-list">
+                    <!-- Dynamically rendered -->
+                </div>
+                <button id="btn-close-quests" class="primary-btn"
+                    style="background: #475569; margin-top: 10px;">Yopish</button>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settings-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-settings-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2 id="txt-settings-title">Sozlamalar</h2>
+                <div style="margin: 15px 0; text-align: left;">
+                    <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
+                    <select id="select-lang"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
+                        <option value="uz">O'zbekcha</option>
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                        <option value="tg">Тоҷикӣ</option>
+                        <option value="ky">Кыргызча</option>
+                        <option value="kk">Қазақша</option>
+                        <option value="tr">Türkçe</option>
+                        <option value="az">Azərbaycanca</option>
+                    </select>
+                    <label id="txt-settings-music-volume" for="settings-music-volume"
+                        style="display:block; margin-bottom:5px;">Fon musiqa balandligi:</label>
+                    <input id="settings-music-volume" type="range" min="0" max="1" step="0.01" value="0.4"
+                        style="width:100%; margin-bottom:12px;">
+
+                    <label id="txt-settings-sfx-volume" for="settings-sfx-volume"
+                        style="display:block; margin-bottom:5px;">Maxsus effektlar (SFX) balandligi:</label>
+                    <input id="settings-sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8"
+                        style="width:100%; margin-bottom:12px;">
+
+                    <label id="txt-settings-music-track" for="settings-music-track"
+                        style="display:block; margin-bottom:5px;">Fon musiqasi:</label>
+                    <select id="settings-music-track"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
+                        <option value="music.mp3">Arabian</option>
+                        <option value="jumongsound.mp3">Jumong</option>
+                    </select>
+                    <button id="btn-open-help" class="primary-btn" style="background:#2563eb;">Yordam</button>
+                </div>
+                <button id="btn-save-settings" class="primary-btn">Saqlash</button>
+            </div>
+
+            <!-- Profile Modal -->
+            <div id="profile-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-profile-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2 id="txt-profile-title">Profil</h2>
+                <div style="margin: 15px 0; text-align: left;">
+                    <label id="txt-name-lbl" style="display:block; margin-bottom:5px;">Ism:</label>
+                    <input type="text" id="input-name" placeholder="Ismingiz..."
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;"
+                        maxlength="15">
+
+                    <label id="txt-avatar-lbl" style="display:block; margin-bottom:5px;">Avatar (Rasm):</label>
+                    <select id="select-avatar"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.5rem;">
+                        <option value="👤">👤</option>
+                        <option value="🥷">🥷</option>
+                        <option value="🧙‍♂️">🧙‍♂️</option>
+                        <option value="🧛‍♂️">🧛‍♂️</option>
+                        <option value="👽">👽</option>
+                        <option value="🤖">🤖</option>
+                        <option value="🐵">🐵</option>
+                        <option value="🦁">🦁</option>
+                    </select>
+
+                    <label id="txt-spear-lbl" style="display:block; margin-bottom:5px;">Nayza modeli:</label>
+                    <select id="select-spear-model"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
+                        <option value="0">Yog'och nayza</option>
+                        <option value="1">Nayza 3</option>
+                    </select>
+
+                    <label id="txt-country-lbl" style="display:block; margin-bottom:5px;">Davlat:</label>
+                    <select id="select-country"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.5rem;">
+                        <option value="🇺🇿">🇺🇿 O'zbekiston</option>
+                        <option value="🇷🇺">🇷🇺 Rossiya</option>
+                        <option value="🇺🇸">🇺🇸 AQSh</option>
+                        <option value="🇰🇿">🇰🇿 Qozog'iston</option>
+                        <option value="🇹🇷">🇹🇷 Turkiya</option>
+                        <option value="🌎">🌎 Boshqa</option>
+                    </select>
+
+                    <label id="txt-char-lbl" style="display:block; margin-bottom:5px;">Jangchi Modeli:</label>
+                    <select id="select-char-type"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:5px; font-size:1.1rem;">
+                        <option value="2">Usmonli jangchisi - kamonlik</option>
+                        <option value="3">Usmonli jangchisi - nayzalik</option>
+                    </select>
+                    <button id="btn-create-custom-model" type="button" class="primary-btn"
+                        style="background:#8b5cf6; margin-bottom:15px; padding:6px 10px; font-size:0.85rem;"
+                        onclick="window.location.href='/model_creator.html'">+ Yangi model yaratish</button>
+
+                    <label style="display:block; margin-bottom:5px;">Sizning ID:</label>
+                    <input id="player-id-readonly" type="text" readonly
+                        style="width:100%; padding:8px; border-radius:5px; background:#1e293b; color:#86efac; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px; font-weight:700; letter-spacing:2px;">
+                    <label style="display:block; margin-bottom:5px;">Do'st ID qo'shish:</label>
+                    <div style="display:flex; gap:8px; margin-bottom:15px;">
+                        <input id="input-friend-id" type="text" maxlength="5" placeholder="12345"
+                            style="flex:1; padding:8px; border-radius:5px; background:#334155; color:white; border:none;">
+                        <button id="btn-add-friend-id" class="primary-btn"
+                            style="padding:8px 10px; font-size:0.8rem; background:#0ea5e9;">Qo'shish</button>
+                    </div>
+                    <div id="friend-id-status"
+                        style="min-height:18px; margin:-8px 0 10px; font-size:0.8rem; color:#94a3b8;"></div>
+                </div>
+                <button id="btn-save-profile" class="primary-btn">Saqlash</button>
+            </div>
+
+            <!-- Help Modal -->
+            <div id="help-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-help-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2>Yordam va yo'riqnoma</h2>
+                <div style="margin: 12px 0; text-align: left; line-height: 1.6; color:#dbeafe; font-size:0.95rem;">
+                    <p><b>O'yin haqida:</b> Nayza Jangi - navbat asosida o'ynaladigan duel o'yini. Har navbatda mo'ljal
+                        va
+                        kuchni tanlab nayza otasiz.</p>
+                    <p><b>Qanday o'ynaladi:</b> Ekranda tortib mo'ljalga oling, kuchni belgilang va qo'yib yuboring.
+                        Shamol
+                        yo'nalishi o'q trayektoriyasiga ta'sir qiladi.</p>
+                    <p><b>Tugmalar vazifasi:</b></p>
+                    <p>🛡️ <b>Qalqon</b> - himoya holatini yoqadi, qalqon zarbani kamaytiradi.</p>
+                    <p>🗡️ <b>Super</b> - raqib nayzasi uchayotganda maxsus himoya ishlatadi.</p>
+                    <p>🧎 <b>Boshni egish</b> - bosib turganda askar o'tiradi va boshga kelgan zarbadan qochadi.</p>
+                    <p>⚔️ <b>Qo'sh nayza</b> - aktiv holatda bir otishda 2 ta nayza uchadi.</p>
+                    <p><b>Profil:</b> Ism, avatar, davlat va jangchi modelini Profil bo'limida o'zgartirasiz.</p>
+                    <p><b>Reyting:</b> Ball, o'yinlar va g'alabalar serverda saqlanadi.</p>
+                </div>
+                <button id="btn-close-help" class="primary-btn" style="background:#475569;">Yopish</button>
+            </div>
+
+            <div id="shop-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-shop-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2>Do'kon</h2>
+                <div class="shop-balance">Balans: <b id="shop-score-text">0</b> ball</div>
+                <div style="margin: 15px 0; text-align: left;">
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span class="shop-item-title">🗡️ Super kuch</span>
+                            <b id="super-count-settings">5</b>
+                        </div>
+                        <div class="shop-item-desc">Raqib o'qiga qarshi super himoya ishlatadi.</div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                            <span>Narx:</span>
+                            <b id="super-buy-cost">75</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-super-max">max 99</span></div>
+                        <button id="btn-buy-super" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0ea5e9;">+1 Super kuch
+                            sotib
+                            olish</button>
+                    </div>
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span class="shop-item-title">⚔️ Qo'sh nayza</span>
+                            <b id="double-count-settings">0</b>
+                        </div>
+                        <div class="shop-item-desc">Aktiv holatda bir otishda ikkita nayza uchadi.</div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                            <span>Narx (1 dona):</span>
+                            <b id="double-buy-cost">110</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-double-max">Soni: 0</span></div>
+                        <button id="btn-buy-double" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qo'sh nayza
+                            sotib olish</button>
+                    </div>
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span class="shop-item-title">🔥 Olov nayza</span>
+                            <b id="fire-count-settings">0</b>
+                        </div>
+                        <div class="shop-item-desc">Yonayotgan nayza otadi: tegganda qo'shimcha kuydirish zarari (+60%).
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                            <span>Narx (1 dona):</span>
+                            <b id="fire-buy-cost">140</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-fire-max">Soni: 0</span></div>
+                        <button id="btn-buy-fire" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ea580c;">+1 Olov nayza
+                            sotib
+                            olish</button>
+                    </div>
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span class="shop-item-title">🧱 Tahta devor</span>
+                            <b id="wall-count-settings">0</b>
+                        </div>
+                        <div class="shop-item-desc">5 ta nayzani to'sadi. O'yinda joyini surib o'zgartirsa bo'ladi.
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+                            <span>Narx (1 dona):</span>
+                            <b id="wall-buy-cost">250</b>
+                        </div>
+                        <div class="shop-meta"><span id="shop-wall-max">Soni: 0</span></div>
+                        <button id="btn-buy-wall" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0f766e;">+1 Tahta devor
+                            sotib olish</button>
+                    </div>
+
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <span class="shop-item-title">💣 Artileriya</span>
+                        </div>
+                        <div class="shop-item-desc">Bir marta o'q uzadi, devorni yakson qiladi yoki dushmanga 50% zarar
+                            yetkazadi.</div>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
+                            <div class="shop-price">
+                                <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
+                                <b id="artillery-buy-cost">250</b>
+                            </div>
+                            <div class="shop-meta"><span id="shop-artillery-max">Soni: 0</span></div>
+                        </div>
+                        <button id="btn-buy-artillery" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ef4444;">+1 Artileriya
+                            sotib
+                            olish</button>
+                    </div>
+
+                    <div class="shop-item">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <span class="shop-item-title">🐦 Qush ovlash</span>
+                        </div>
+                        <div class="shop-item-desc">Osmon bo'ylab uchayotgan qarg'alarni ovlash funksiyasi.</div>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
+                            <div class="shop-price">
+                                <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
+                                <b id="crowhunt-buy-cost">150</b>
+                            </div>
+                            <div class="shop-meta"><span id="shop-crowhunt-max">Soni: 0</span></div>
+                        </div>
+                        <button id="btn-buy-crowhunt" class="primary-btn shop-buy-btn"
+                            style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qush ovlash
+                            sotib olish</button>
+                    </div>
+                </div>
+                <button id="btn-close-shop" class="primary-btn" style="background:#475569;">Yopish</button>
+            </div>
+
+            <!-- Rating Modal -->
+            <div id="rating-modal" class="screen hidden panel center-panel">
+                <button type="button" id="btn-close-rating-x" class="modal-close-x" aria-label="Yopish">✕</button>
+                <h2 id="txt-rating-title">Sizning Reytingingiz</h2>
+                <div style="margin: 20px 0; font-size: 1.2rem; text-align: left; line-height: 1.8;">
+                    <p>🏆 <span id="txt-score-lbl">Ball:</span> <b id="stat-score" style="color: #f59e0b;">0</b></p>
+                    <p>⚔️ <span id="txt-games-lbl">O'yinlar:</span> <b id="stat-games">0</b></p>
+                    <p>✅ <span id="txt-wins-lbl">G'alabalar:</span> <b id="stat-wins" style="color: #10b981;">0</b></p>
+                </div>
+                <div id="leaderboard-list"
+                    style="margin: 8px 0 14px; text-align: left; max-height: 220px; overflow-y: auto; font-size: 0.95rem; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px;">
+                    Reyting yuklanmoqda...
+                </div>
+                <button id="btn-close-rating" class="primary-btn" style="background: #475569;">Yopish</button>
+            </div>
+
+            <div id="waiting-screen" class="screen hidden center-panel panel"
+                style="background: rgba(17, 24, 39, 0.95);">
+                <h1>Raqib qidirilmoqda...</h1>
+                <div class="loader" style="margin: 20px auto;"></div>
+                <button id="btn-cancel-multi" class="primary-btn" style="margin-top: 20px;">Bekor qilish</button>
+            </div>
+
+            <!-- Create Game Options Modal -->
+            <div id="game-options-modal" class="screen hidden panel center-panel">
+                <h2 id="txt-options-title">O'yin Sozlamalari</h2>
+                <div id="game-options-fields" style="margin: 15px 0; text-align: left;">
+                    <label id="txt-map-lbl" style="display:block; margin-bottom:5px;">Maydon (Xarita):</label>
+                    <select id="select-map"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.1rem;">
+                        <option id="opt-map-registan" value="registan">🏛️ Registon Ansambli</option>
+                        <option id="opt-map-sakura" value="sakura">🌸 Sakura Vodiysi</option>
+                        <option id="opt-map-taiga" value="taiga">🌲 Tumanli Tayga</option>
+                        <option id="opt-map-citadel" value="citadel">⚔️ Qadimiy Qasr</option>
+                        <option id="opt-map-field" value="field">🌿 Yashil Dala</option>
+                        <option id="opt-map-castle" value="castle">🏰 Qal'a</option>
+                        <option id="opt-map-desert" value="desert">🏜️ Cho'l</option>
+                        <option id="opt-map-winter" value="winter">❄️ Qish</option>
+                        <option id="opt-map-mountain" value="mountain">⛰️ Tog'</option>
+                        <option id="opt-map-samarkand" value="samarkand">🕌 Samarqand</option>
+                        <option id="opt-map-bukhara" value="bukhara">🕌 Buxoro</option>
+                        <option id="opt-map-istanbul" value="istanbul">🕌 Istanbul</option>
+                        <option id="opt-map-oasis" value="oasis">🌴 Voha</option>
+                        <option id="opt-map-canyon" value="canyon">🏜️ Kanyon</option>
+                        <option id="opt-map-volcano" value="volcano">🌋 Vulqon</option>
+                    </select>
+
+                    <label id="txt-weather-lbl" style="display:block; margin-bottom:5px;">Ob-havo:</label>
+                    <select id="select-weather"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
+                        <option id="opt-weather-sunny" value="sunny">☀️ Quyoshli</option>
+                        <option id="opt-weather-night" value="night">🌙 Tun</option>
+                        <option id="opt-weather-rain" value="rain">🌧️ Yomg'ir</option>
+                        <option id="opt-weather-storm" value="storm">⛈️ Jala</option>
+                        <option id="opt-weather-snow" value="snow">❄️ Qor</option>
+                    </select>
+
+                    <label style="display:flex; align-items:center; gap:10px; margin-bottom:15px; cursor:pointer;">
+                        <input type="checkbox" id="check-birds" style="width:20px; height:20px; cursor:pointer;">
+                        <span id="txt-birds-lbl">Havoda Uchuvchi Qushlar (To'siq)</span>
+                    </label>
+
+
+                    <label id="difficulty-wrap"
+                        style="display:block; margin-top: 8px; margin-bottom:5px;">Qiyinlik:</label>
+                    <select id="select-difficulty"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
+                        <option id="opt-diff-easy" value="easy">Oson</option>
+                        <option id="opt-diff-normal" value="normal" selected>O'rtacha</option>
+                        <option id="opt-diff-hard" value="hard">Qiyin</option>
+                    </select>
+
+                    <label id="txt-char-opt-lbl" style="display:block; margin-bottom:5px;">Jangchi modeli:</label>
+                    <select id="select-char-type-options"
+                        style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
+                        <option value="2">Usmonli jangchisi - kamonlik</option>
+                        <option value="3">Usmonli jangchisi - nayzalik</option>
+                    </select>
+
+                </div>
+                <button id="btn-confirm-create" class="primary-btn" style="background: #10b981;">O'yinni
+                    Yaratish</button>
+                <button id="btn-cancel-options" class="primary-btn" style="background: #475569; margin-top:10px;">Bekor
+                    qilish</button>
+            </div>
+
+            <div id="game-screen" class="screen hidden" style="pointer-events: none;">
+
+                <!-- Chat Toggle Button -->
+                <button id="btn-toggle-chat" class="icon-btn hidden"
+                    style="pointer-events: auto; position: absolute; z-index: 130;">
+                    💬
+                    <span id="chat-badge" class="chat-badge hidden">0</span>
                 </button>
-                <div class="loader" style="margin: 10px auto; width: 30px; height: 30px; border-width: 3px;"></div>
-                <p style="font-size: 0.8rem; color: #94a3b8;">Kutilyapti...</p>
-            </div>
 
-            <button id="btn-multi-join-show" class="primary-btn">O'yinga qo'shilish</button>
-            <div id="join-code-container" class="hidden" style="margin-bottom: 15px;">
-                <input type="text" id="input-join-code" placeholder="KOD" maxlength="4"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:10px; text-align: center; letter-spacing: 5px; font-size: 1.5rem;">
-                <button id="btn-multi-join" class="primary-btn" style="background: #10b981;">Qo'shilish</button>
-                <p id="join-error" style="color: #ef4444; font-size: 0.8rem; display: none;">O'yin topilmadi!</p>
-            </div>
-
-            <button id="btn-multi-random" class="primary-btn" style="background: #8b5cf6;">Tasodifiy raqib</button>
-            <div id="friends-panel"
-                style="margin-top:12px; text-align:left; background: rgba(0,0,0,0.2); border-radius:10px; padding:10px;">
-                <div
-                    style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-                    <b id="txt-friends-title">Do'stlar</b>
-                    <button id="btn-refresh-friends" class="primary-btn"
-                        style="padding:6px 10px; font-size:0.75rem; background:#334155;">Yangilash</button>
-                </div>
-                <div id="friends-list" style="max-height:170px; overflow-y:auto; font-size:0.9rem; color:#cbd5e1;">
-                    Do'stlar yo'q.</div>
-            </div>
-            <button id="btn-multi-back" class="primary-btn"
-                style="background: #475569; margin-top: 10px;">Orqaga</button>
-        </div>
-
-        <div id="single-mode-modal" class="screen hidden panel center-panel">
-            <h2>Yakkalik o'yin</h2>
-            <div style="margin-top:10px; color:#94a3b8; font-size:0.95rem;">Tanlang:</div>
-            <button id="btn-single-continue" class="primary-btn" style="margin-top:12px;">Avvalgi levelni davom
-                etish</button>
-            <button id="btn-single-select-level" class="primary-btn" style="background:#8b5cf6; margin-top:8px;">Level
-                tanlash</button>
-            <button id="btn-single-new" class="primary-btn" style="background:#0ea5e9; margin-top:8px;">Yangi o'yin
-                boshlash</button>
-            <button id="btn-single-cancel" class="primary-btn" style="background:#475569; margin-top:8px;">Bekor
-                qilish</button>
-        </div>
-
-        <div id="level-select-modal" class="screen hidden panel center-panel">
-            <h2>Level tanlash</h2>
-            <div id="level-grid" data-scrollable="true"></div>
-            <button id="btn-level-select-cancel" class="primary-btn" style="background:#475569; margin-top:15px;">Bekor
-                qilish</button>
-        </div>
-
-        <div id="friend-invite-modal" class="screen hidden panel center-panel">
-            <h2 id="friend-invite-title">Chaqiruv</h2>
-            <p id="friend-invite-text" style="margin:10px 0 14px; color:#cbd5e1;">Do'stingiz sizni o'yinga chaqirdi.</p>
-            <button id="btn-friend-invite-accept" class="primary-btn" style="background:#10b981;">Ha,
-                qo'shilaman</button>
-            <button id="btn-friend-invite-decline" class="primary-btn"
-                style="background:#475569; margin-top:8px;">Yo'q</button>
-        </div>
-
-        <div id="friend-add-modal" class="screen hidden panel center-panel">
-            <h2 id="friend-add-title">Do'stlik so'rovi</h2>
-            <p id="friend-add-text" style="margin:10px 0 14px; color:#cbd5e1;">Sizga do'stlik so'rovi yuborildi.</p>
-            <button id="btn-friend-add-accept" class="primary-btn" style="background:#10b981;">Qabul qilish</button>
-            <button id="btn-friend-add-decline" class="primary-btn" style="background:#475569; margin-top:8px;">Rad
-                etish</button>
-        </div>
-
-        <div id="about-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-about-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2 id="txt-about-title">O'yin haqida</h2>
-            <div style="text-align:left; color:#cbd5e1; font-size:0.95rem; line-height:1.5;">
-                <div><b>Muallif:</b> To'raboyev Ibrohimjon Bahtiyor o'g'li</div>
-                <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <span><b>Donate (Humo):</b> <span id="donate-humo">9860010123943010</span></span>
-                    <button id="btn-copy-humo" class="primary-btn copy-icon-btn"
-                        style="padding:6px 10px; font-size:0.75rem; min-height:auto;"
-                        aria-label="Humo raqamini nusxalash">📋</button>
-                </div>
-                <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <span><b>Donate (Visa):</b> <span id="donate-visa">4916990300521363</span></span>
-                    <button id="btn-copy-visa" class="primary-btn copy-icon-btn"
-                        style="padding:6px 10px; font-size:0.75rem; min-height:auto;"
-                        aria-label="Visa raqamini nusxalash">📋</button>
-                </div>
-            </div>
-            <button id="btn-close-about" class="primary-btn" style="margin-top:14px;">Yopish</button>
-        </div>
-
-        <!-- Daily Rewards Modal -->
-        <div id="daily-rewards-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-rewards-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2>🎁 Kunlik Kirish Sovg'alari</h2>
-            <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Har kuni kiring va bepul resurslarni
-                oling!</p>
-            <div id="daily-rewards-grid" class="daily-rewards-grid">
-                <!-- Dynamically rendered -->
-            </div>
-            <button id="btn-claim-daily" class="primary-btn"
-                style="background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px;">Sovg'ani olish</button>
-            <button id="btn-close-daily" class="primary-btn"
-                style="background: #475569; margin-top: 8px;">Yopish</button>
-        </div>
-
-        <!-- Daily Quests Modal -->
-        <div id="daily-quests-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-quests-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2>🎯 Kunlik Vazifalar</h2>
-            <p style="color: #94a3b8; font-size: 0.88rem; margin: 4px 0 10px;">Vazifalarni bajaring va ballar ishlang!
-            </p>
-            <div id="daily-quests-list" class="quest-list">
-                <!-- Dynamically rendered -->
-            </div>
-            <button id="btn-close-quests" class="primary-btn"
-                style="background: #475569; margin-top: 10px;">Yopish</button>
-        </div>
-
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-settings-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2 id="txt-settings-title">Sozlamalar</h2>
-            <div style="margin: 15px 0; text-align: left;">
-                <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
-                <select id="select-lang"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
-                    <option value="uz">O'zbekcha</option>
-                    <option value="ru">Русский</option>
-                    <option value="en">English</option>
-                    <option value="tg">Тоҷикӣ</option>
-                    <option value="ky">Кыргызча</option>
-                    <option value="kk">Қазақша</option>
-                    <option value="tr">Türkçe</option>
-                    <option value="az">Azərbaycanca</option>
-                </select>
-                <label id="txt-settings-music-volume" for="settings-music-volume"
-                    style="display:block; margin-bottom:5px;">Fon musiqa balandligi:</label>
-                <input id="settings-music-volume" type="range" min="0" max="1" step="0.01" value="0.4"
-                    style="width:100%; margin-bottom:12px;">
-
-                <label id="txt-settings-sfx-volume" for="settings-sfx-volume"
-                    style="display:block; margin-bottom:5px;">Maxsus effektlar (SFX) balandligi:</label>
-                <input id="settings-sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8"
-                    style="width:100%; margin-bottom:12px;">
-
-                <label id="txt-settings-music-track" for="settings-music-track"
-                    style="display:block; margin-bottom:5px;">Fon musiqasi:</label>
-                <select id="settings-music-track"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
-                    <option value="music.mp3">Arabian</option>
-                    <option value="jumongsound.mp3">Jumong</option>
-                </select>
-                <button id="btn-open-help" class="primary-btn" style="background:#2563eb;">Yordam</button>
-            </div>
-            <button id="btn-save-settings" class="primary-btn">Saqlash</button>
-        </div>
-
-        <!-- Profile Modal -->
-        <div id="profile-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-profile-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2 id="txt-profile-title">Profil</h2>
-            <div style="margin: 15px 0; text-align: left;">
-                <label id="txt-name-lbl" style="display:block; margin-bottom:5px;">Ism:</label>
-                <input type="text" id="input-name" placeholder="Ismingiz..."
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;"
-                    maxlength="15">
-
-                <label id="txt-avatar-lbl" style="display:block; margin-bottom:5px;">Avatar (Rasm):</label>
-                <select id="select-avatar"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.5rem;">
-                    <option value="👤">👤</option>
-                    <option value="🥷">🥷</option>
-                    <option value="🧙‍♂️">🧙‍♂️</option>
-                    <option value="🧛‍♂️">🧛‍♂️</option>
-                    <option value="👽">👽</option>
-                    <option value="🤖">🤖</option>
-                    <option value="🐵">🐵</option>
-                    <option value="🦁">🦁</option>
-                </select>
-
-                <label id="txt-spear-lbl" style="display:block; margin-bottom:5px;">Nayza modeli:</label>
-                <select id="select-spear-model"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
-                    <option value="0">Yog'och nayza</option>
-                    <option value="1">Nayza 3</option>
-                </select>
-
-                <label id="txt-country-lbl" style="display:block; margin-bottom:5px;">Davlat:</label>
-                <select id="select-country"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.5rem;">
-                    <option value="🇺🇿">🇺🇿 O'zbekiston</option>
-                    <option value="🇷🇺">🇷🇺 Rossiya</option>
-                    <option value="🇺🇸">🇺🇸 AQSh</option>
-                    <option value="🇰🇿">🇰🇿 Qozog'iston</option>
-                    <option value="🇹🇷">🇹🇷 Turkiya</option>
-                    <option value="🌎">🌎 Boshqa</option>
-                </select>
-
-                <label id="txt-char-lbl" style="display:block; margin-bottom:5px;">Jangchi Modeli:</label>
-                <select id="select-char-type"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:5px; font-size:1.1rem;">
-                    <option value="2">Usmonli jangchisi - kamonlik</option>
-                    <option value="3">Usmonli jangchisi - nayzalik</option>
-                </select>
-                <button id="btn-create-custom-model" type="button" class="primary-btn"
-                    style="background:#8b5cf6; margin-bottom:15px; padding:6px 10px; font-size:0.85rem;"
-                    onclick="window.location.href='/model_creator.html'">+ Yangi model yaratish</button>
-
-                <label style="display:block; margin-bottom:5px;">Sizning ID:</label>
-                <input id="player-id-readonly" type="text" readonly
-                    style="width:100%; padding:8px; border-radius:5px; background:#1e293b; color:#86efac; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px; font-weight:700; letter-spacing:2px;">
-                <label style="display:block; margin-bottom:5px;">Do'st ID qo'shish:</label>
-                <div style="display:flex; gap:8px; margin-bottom:15px;">
-                    <input id="input-friend-id" type="text" maxlength="5" placeholder="12345"
-                        style="flex:1; padding:8px; border-radius:5px; background:#334155; color:white; border:none;">
-                    <button id="btn-add-friend-id" class="primary-btn"
-                        style="padding:8px 10px; font-size:0.8rem; background:#0ea5e9;">Qo'shish</button>
-                </div>
-                <div id="friend-id-status"
-                    style="min-height:18px; margin:-8px 0 10px; font-size:0.8rem; color:#94a3b8;"></div>
-            </div>
-            <button id="btn-save-profile" class="primary-btn">Saqlash</button>
-        </div>
-
-        <!-- Help Modal -->
-        <div id="help-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-help-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2>Yordam va yo'riqnoma</h2>
-            <div style="margin: 12px 0; text-align: left; line-height: 1.6; color:#dbeafe; font-size:0.95rem;">
-                <p><b>O'yin haqida:</b> Nayza Jangi - navbat asosida o'ynaladigan duel o'yini. Har navbatda mo'ljal va
-                    kuchni tanlab nayza otasiz.</p>
-                <p><b>Qanday o'ynaladi:</b> Ekranda tortib mo'ljalga oling, kuchni belgilang va qo'yib yuboring. Shamol
-                    yo'nalishi o'q trayektoriyasiga ta'sir qiladi.</p>
-                <p><b>Tugmalar vazifasi:</b></p>
-                <p>🛡️ <b>Qalqon</b> - himoya holatini yoqadi, qalqon zarbani kamaytiradi.</p>
-                <p>🗡️ <b>Super</b> - raqib nayzasi uchayotganda maxsus himoya ishlatadi.</p>
-                <p>🧎 <b>Boshni egish</b> - bosib turganda askar o'tiradi va boshga kelgan zarbadan qochadi.</p>
-                <p>⚔️ <b>Qo'sh nayza</b> - aktiv holatda bir otishda 2 ta nayza uchadi.</p>
-                <p><b>Profil:</b> Ism, avatar, davlat va jangchi modelini Profil bo'limida o'zgartirasiz.</p>
-                <p><b>Reyting:</b> Ball, o'yinlar va g'alabalar serverda saqlanadi.</p>
-            </div>
-            <button id="btn-close-help" class="primary-btn" style="background:#475569;">Yopish</button>
-        </div>
-
-        <div id="shop-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-shop-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2>Do'kon</h2>
-            <div class="shop-balance">Balans: <b id="shop-score-text">0</b> ball</div>
-            <div style="margin: 15px 0; text-align: left;">
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span class="shop-item-title">🗡️ Super kuch</span>
-                        <b id="super-count-settings">5</b>
-                    </div>
-                    <div class="shop-item-desc">Raqib o'qiga qarshi super himoya ishlatadi.</div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
-                        <span>Narx:</span>
-                        <b id="super-buy-cost">75</b>
-                    </div>
-                    <div class="shop-meta"><span id="shop-super-max">max 99</span></div>
-                    <button id="btn-buy-super" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0ea5e9;">+1 Super kuch sotib
-                        olish</button>
-                </div>
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span class="shop-item-title">⚔️ Qo'sh nayza</span>
-                        <b id="double-count-settings">0</b>
-                    </div>
-                    <div class="shop-item-desc">Aktiv holatda bir otishda ikkita nayza uchadi.</div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
-                        <span>Narx (1 dona):</span>
-                        <b id="double-buy-cost">110</b>
-                    </div>
-                    <div class="shop-meta"><span id="shop-double-max">Soni: 0</span></div>
-                    <button id="btn-buy-double" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qo'sh nayza
-                        sotib olish</button>
-                </div>
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span class="shop-item-title">🔥 Olov nayza</span>
-                        <b id="fire-count-settings">0</b>
-                    </div>
-                    <div class="shop-item-desc">Yonayotgan nayza otadi: tegganda qo'shimcha kuydirish zarari (+60%).
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
-                        <span>Narx (1 dona):</span>
-                        <b id="fire-buy-cost">140</b>
-                    </div>
-                    <div class="shop-meta"><span id="shop-fire-max">Soni: 0</span></div>
-                    <button id="btn-buy-fire" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ea580c;">+1 Olov nayza sotib
-                        olish</button>
-                </div>
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span class="shop-item-title">🧱 Tahta devor</span>
-                        <b id="wall-count-settings">0</b>
-                    </div>
-                    <div class="shop-item-desc">5 ta nayzani to'sadi. O'yinda joyini surib o'zgartirsa bo'ladi.</div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
-                        <span>Narx (1 dona):</span>
-                        <b id="wall-buy-cost">250</b>
-                    </div>
-                    <div class="shop-meta"><span id="shop-wall-max">Soni: 0</span></div>
-                    <button id="btn-buy-wall" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#0f766e;">+1 Tahta devor
-                        sotib olish</button>
+                <!-- Emote Toggle Button & Picker -->
+                <button id="btn-toggle-emote" class="icon-btn emote-btn" style="pointer-events: auto;"
+                    aria-label="Reaksiya / Stiker">
+                    🎭
+                </button>
+                <div id="emote-picker" class="emote-picker hidden" style="pointer-events: auto;">
+                    <button type="button" class="emote-choice" data-emote="😂">😂</button>
+                    <button type="button" class="emote-choice" data-emote="😡">😡</button>
+                    <button type="button" class="emote-choice" data-emote="🎯">🎯</button>
+                    <button type="button" class="emote-choice" data-emote="🛡️">🛡️</button>
+                    <button type="button" class="emote-choice" data-emote="😱">😱</button>
+                    <button type="button" class="emote-choice" data-emote="🔥">🔥</button>
                 </div>
 
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <span class="shop-item-title">💣 Artileriya</span>
+                <!-- Turn Countdown Timer Badge -->
+                <div id="turn-timer-badge" class="turn-timer-badge hidden"><span class="timer-icon">⏳</span><span
+                        id="turn-timer-text">25</span>s</div>
+
+                <button id="shield-button" class="icon-btn shield-btn" style="pointer-events: auto;"
+                    aria-label="Qalqon bilan himoyalanish">
+                    🛡️
+                    <span id="shield-count" class="shield-count">5</span>
+                </button>
+                <button id="super-button" class="icon-btn super-btn" style="pointer-events: auto;"
+                    aria-label="Super kuch nayzasi">
+                    🗡️
+                    <span id="super-count" class="shield-count">5</span>
+                </button>
+                <button id="duck-button" class="icon-btn duck-btn" style="pointer-events: auto;"
+                    aria-label="Boshni egib himoyalanish">
+                    🗿
+                </button>
+                <button id="jump-button" class="icon-btn jump-btn" style="pointer-events: auto;" aria-label="Sakrash">
+                    🤾
+                </button>
+                <button id="double-button" class="icon-btn double-btn" style="pointer-events: auto;"
+                    aria-label="Qo'sh nayzani yoqish">
+                    ⚔️
+                    <span id="double-count" class="shield-count">0</span>
+                </button>
+                <button id="fire-button" class="icon-btn fire-btn" style="pointer-events: auto;"
+                    aria-label="Olov nayzani yoqish">
+                    🔥
+                    <span id="fire-count" class="shield-count">0</span>
+                </button>
+                <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;"
+                    aria-label="Tahta devor qo'yish yoki surish">
+                    🧱
+                    <span id="wall-count" class="shield-count">0</span>
+                </button>
+                <button id="crow-button" class="icon-btn crow-btn" style="pointer-events: auto;"
+                    aria-label="Qarg'alarni otish">
+                    🐦
+                    <span id="crow-count" class="shield-count">3</span>
+                </button>
+                <button id="artillery-button" class="icon-btn artillery-btn hidden"
+                    style="pointer-events: auto; display:none;" aria-label="Artileriya otish">
+                    💣
+                    <span id="artillery-count" class="shield-count">0</span>
+                </button>
+                <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>
+                <button id="btn-in-game-back" class="primary-btn in-game-back-btn" style="pointer-events: auto;">⬅
+                    Ortga</button>
+                <button id="music-toggle-btn" class="icon-btn" style="pointer-events: auto;"
+                    aria-label="Musiqani yoqish yoki o'chirish">🔊</button>
+
+                <!-- Chat Box -->
+                <div id="chat-container" class="chat-container hidden" style="pointer-events: auto; bottom: 80px;">
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div id="chat-quick-emojis" class="chat-quick-emojis">
+                        <button type="button" class="chat-emoji-btn" data-emoji="👍">👍</button>
+                        <button type="button" class="chat-emoji-btn" data-emoji="🔥 Zo'r!">🔥 Zo'r!</button>
+                        <button type="button" class="chat-emoji-btn" data-emoji="👏">👏</button>
+                        <button type="button" class="chat-emoji-btn" data-emoji="🤝">🤝</button>
+                        <button type="button" class="chat-emoji-btn" data-emoji="💪">💪</button>
+                        <button type="button" class="chat-emoji-btn" data-emoji="😅">😅</button>
                     </div>
-                    <div class="shop-item-desc">Bir marta o'q uzadi, devorni yakson qiladi yoki dushmanga 50% zarar
-                        yetkazadi.</div>
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
-                        <div class="shop-price">
-                            <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
-                            <b id="artillery-buy-cost">250</b>
+                    <form id="chat-form" class="chat-form">
+                        <input type="text" id="chat-input" placeholder="Xabar yozing..." autocomplete="off">
+                        <button type="submit">↗</button>
+                    </form>
+                </div>
+
+                <!-- In-Game Menu Modal -->
+                <div id="in-game-modal" class="modal-overlay hidden" style="pointer-events: auto;">
+                    <div class="panel center-panel modal-panel">
+                        <h2 id="txt-ig-menu-title">Menyu</h2>
+                        <br>
+                        <button id="btn-resume" class="primary-btn">O'yinga qaytish</button>
+                        <button id="btn-toggle-sound" class="primary-btn">Sozlamalar(ovoz)</button>
+                        <button id="btn-add-friend" class="primary-btn" style="background:#2563eb;">Do'stga
+                            qo'shish</button>
+                        <div id="sound-settings-panel" class="hidden"
+                            style="text-align:left; margin: 10px 0 14px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px;">
+                            <label id="txt-music-volume" for="music-volume"
+                                style="display:block; font-size:0.85rem; margin-bottom:6px;">Fon musiqa
+                                balandligi</label>
+                            <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4"
+                                style="width:100%;">
+                            <label
+                                style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.85rem;">
+                                <input id="music-mute" type="checkbox">
+                                <span id="txt-music-mute">Ovozni o'chirish</span>
+                            </label>
+                            <label for="sfx-volume" style="display:block; font-size:0.85rem; margin:10px 0 6px;">SFX
+                                balandligi</label>
+                            <input id="sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8"
+                                style="width:100%;">
+                            <label
+                                style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.85rem;">
+                                <input id="sfx-mute" type="checkbox">
+                                SFX o'chirish
+                            </label>
+                            <label for="in-game-music-track"
+                                style="display:block; font-size:0.85rem; margin:10px 0 6px;">Fon musiqasi</label>
+                            <select id="in-game-music-track"
+                                style="width:100%; padding:8px; border-radius:8px; background:#334155; color:white; border:none;">
+                                <option value="music.mp3">Arabian</option>
+                                <option value="jumongsound.mp3">Jumong</option>
+                            </select>
                         </div>
-                        <div class="shop-meta"><span id="shop-artillery-max">Soni: 0</span></div>
+                        <button id="btn-exit-menu" class="primary-btn"
+                            style="background: linear-gradient(135deg, #ef4444, #dc2626);">Asosiy Menyu</button>
                     </div>
-                    <button id="btn-buy-artillery" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#ef4444;">+1 Artileriya sotib
-                        olish</button>
                 </div>
 
-                <div class="shop-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <span class="shop-item-title">🐦 Qush ovlash</span>
-                    </div>
-                    <div class="shop-item-desc">Osmon bo'ylab uchayotgan qarg'alarni ovlash funksiyasi.</div>
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; margin-bottom:10px;">
-                        <div class="shop-price">
-                            <span style="font-size:1.2rem; margin-right:5px;">🪙</span>
-                            <b id="crowhunt-buy-cost">150</b>
+                <div class="hud" style="pointer-events: auto;">
+                    <div class="player-info" id="p1-info">
+                        <h2 style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+                            <span id="p1-flag"></span>
+                            <span id="p1-name">1-O'yinchi (Chap)</span>
+                            <span id="p1-role-tag" class="hud-role-tag"></span>
+                        </h2>
+                        <p class="status">Kutilyapti...</p>
+                        <div class="health-bar-container">
+                            <div id="p1-health" class="health-bar-fill"></div>
                         </div>
-                        <div class="shop-meta"><span id="shop-crowhunt-max">Soni: 0</span></div>
                     </div>
-                    <button id="btn-buy-crowhunt" class="primary-btn shop-buy-btn"
-                        style="width:100%; padding:8px 10px; font-size:0.85rem; background:#8b5cf6;">+1 Qush ovlash
-                        sotib olish</button>
-                </div>
-            </div>
-            <button id="btn-close-shop" class="primary-btn" style="background:#475569;">Yopish</button>
-        </div>
-
-        <!-- Rating Modal -->
-        <div id="rating-modal" class="screen hidden panel center-panel">
-            <button type="button" id="btn-close-rating-x" class="modal-close-x" aria-label="Yopish">✕</button>
-            <h2 id="txt-rating-title">Sizning Reytingingiz</h2>
-            <div style="margin: 20px 0; font-size: 1.2rem; text-align: left; line-height: 1.8;">
-                <p>🏆 <span id="txt-score-lbl">Ball:</span> <b id="stat-score" style="color: #f59e0b;">0</b></p>
-                <p>⚔️ <span id="txt-games-lbl">O'yinlar:</span> <b id="stat-games">0</b></p>
-                <p>✅ <span id="txt-wins-lbl">G'alabalar:</span> <b id="stat-wins" style="color: #10b981;">0</b></p>
-            </div>
-            <div id="leaderboard-list"
-                style="margin: 8px 0 14px; text-align: left; max-height: 220px; overflow-y: auto; font-size: 0.95rem; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px;">
-                Reyting yuklanmoqda...
-            </div>
-            <button id="btn-close-rating" class="primary-btn" style="background: #475569;">Yopish</button>
-        </div>
-
-        <div id="waiting-screen" class="screen hidden center-panel panel" style="background: rgba(17, 24, 39, 0.95);">
-            <h1>Raqib qidirilmoqda...</h1>
-            <div class="loader" style="margin: 20px auto;"></div>
-            <button id="btn-cancel-multi" class="primary-btn" style="margin-top: 20px;">Bekor qilish</button>
-        </div>
-
-        <!-- Create Game Options Modal -->
-        <div id="game-options-modal" class="screen hidden panel center-panel">
-            <h2 id="txt-options-title">O'yin Sozlamalari</h2>
-            <div id="game-options-fields" style="margin: 15px 0; text-align: left;">
-                <label id="txt-map-lbl" style="display:block; margin-bottom:5px;">Maydon (Xarita):</label>
-                <select id="select-map"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1.1rem;">
-                    <option id="opt-map-registan" value="registan">🏛️ Registon Ansambli</option>
-                    <option id="opt-map-sakura" value="sakura">🌸 Sakura Vodiysi</option>
-                    <option id="opt-map-taiga" value="taiga">🌲 Tumanli Tayga</option>
-                    <option id="opt-map-citadel" value="citadel">⚔️ Qadimiy Qasr</option>
-                    <option id="opt-map-field" value="field">🌿 Yashil Dala</option>
-                    <option id="opt-map-castle" value="castle">🏰 Qal'a</option>
-                    <option id="opt-map-desert" value="desert">🏜️ Cho'l</option>
-                    <option id="opt-map-winter" value="winter">❄️ Qish</option>
-                    <option id="opt-map-mountain" value="mountain">⛰️ Tog'</option>
-                    <option id="opt-map-samarkand" value="samarkand">🕌 Samarqand</option>
-                    <option id="opt-map-bukhara" value="bukhara">🕌 Buxoro</option>
-                    <option id="opt-map-istanbul" value="istanbul">🕌 Istanbul</option>
-                    <option id="opt-map-oasis" value="oasis">🌴 Voha</option>
-                    <option id="opt-map-canyon" value="canyon">🏜️ Kanyon</option>
-                    <option id="opt-map-volcano" value="volcano">🌋 Vulqon</option>
-                </select>
-
-                <label id="txt-weather-lbl" style="display:block; margin-bottom:5px;">Ob-havo:</label>
-                <select id="select-weather"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
-                    <option id="opt-weather-sunny" value="sunny">☀️ Quyoshli</option>
-                    <option id="opt-weather-night" value="night">🌙 Tun</option>
-                    <option id="opt-weather-rain" value="rain">🌧️ Yomg'ir</option>
-                    <option id="opt-weather-storm" value="storm">⛈️ Jala</option>
-                    <option id="opt-weather-snow" value="snow">❄️ Qor</option>
-                </select>
-
-                <label style="display:flex; align-items:center; gap:10px; margin-bottom:15px; cursor:pointer;">
-                    <input type="checkbox" id="check-birds" style="width:20px; height:20px; cursor:pointer;">
-                    <span id="txt-birds-lbl">Havoda Uchuvchi Qushlar (To'siq)</span>
-                </label>
-
-
-                <label id="difficulty-wrap" style="display:block; margin-top: 8px; margin-bottom:5px;">Qiyinlik:</label>
-                <select id="select-difficulty"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
-                    <option id="opt-diff-easy" value="easy">Oson</option>
-                    <option id="opt-diff-normal" value="normal" selected>O'rtacha</option>
-                    <option id="opt-diff-hard" value="hard">Qiyin</option>
-                </select>
-
-                <label id="txt-char-opt-lbl" style="display:block; margin-bottom:5px;">Jangchi modeli:</label>
-                <select id="select-char-type-options"
-                    style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px; font-size:1rem;">
-                    <option value="2">Usmonli jangchisi - kamonlik</option>
-                    <option value="3">Usmonli jangchisi - nayzalik</option>
-                </select>
-
-            </div>
-            <button id="btn-confirm-create" class="primary-btn" style="background: #10b981;">O'yinni Yaratish</button>
-            <button id="btn-cancel-options" class="primary-btn" style="background: #475569; margin-top:10px;">Bekor
-                qilish</button>
-        </div>
-
-        <div id="game-screen" class="screen hidden" style="pointer-events: none;">
-
-            <!-- Chat Toggle Button -->
-            <button id="btn-toggle-chat" class="icon-btn hidden"
-                style="pointer-events: auto; position: absolute; z-index: 130;">
-                💬
-                <span id="chat-badge" class="chat-badge hidden">0</span>
-            </button>
-
-            <!-- Emote Toggle Button & Picker -->
-            <button id="btn-toggle-emote" class="icon-btn emote-btn" style="pointer-events: auto;"
-                aria-label="Reaksiya / Stiker">
-                🎭
-            </button>
-            <div id="emote-picker" class="emote-picker hidden" style="pointer-events: auto;">
-                <button type="button" class="emote-choice" data-emote="😂">😂</button>
-                <button type="button" class="emote-choice" data-emote="😡">😡</button>
-                <button type="button" class="emote-choice" data-emote="🎯">🎯</button>
-                <button type="button" class="emote-choice" data-emote="🛡️">🛡️</button>
-                <button type="button" class="emote-choice" data-emote="😱">😱</button>
-                <button type="button" class="emote-choice" data-emote="🔥">🔥</button>
-            </div>
-
-            <!-- Turn Countdown Timer Badge -->
-            <div id="turn-timer-badge" class="turn-timer-badge hidden"><span class="timer-icon">⏳</span><span
-                    id="turn-timer-text">25</span>s</div>
-
-            <button id="shield-button" class="icon-btn shield-btn" style="pointer-events: auto;"
-                aria-label="Qalqon bilan himoyalanish">
-                🛡️
-                <span id="shield-count" class="shield-count">5</span>
-            </button>
-            <button id="super-button" class="icon-btn super-btn" style="pointer-events: auto;"
-                aria-label="Super kuch nayzasi">
-                🗡️
-                <span id="super-count" class="shield-count">5</span>
-            </button>
-            <button id="duck-button" class="icon-btn duck-btn" style="pointer-events: auto;"
-                aria-label="Boshni egib himoyalanish">
-                🗿
-            </button>
-            <button id="jump-button" class="icon-btn jump-btn" style="pointer-events: auto;"
-                aria-label="Sakrash">
-                🤾
-            </button>
-            <button id="double-button" class="icon-btn double-btn" style="pointer-events: auto;"
-                aria-label="Qo'sh nayzani yoqish">
-                ⚔️
-                <span id="double-count" class="shield-count">0</span>
-            </button>
-            <button id="fire-button" class="icon-btn fire-btn" style="pointer-events: auto;"
-                aria-label="Olov nayzani yoqish">
-                🔥
-                <span id="fire-count" class="shield-count">0</span>
-            </button>
-            <button id="wall-button" class="icon-btn wall-btn" style="pointer-events: auto;"
-                aria-label="Tahta devor qo'yish yoki surish">
-                🧱
-                <span id="wall-count" class="shield-count">0</span>
-            </button>
-            <button id="crow-button" class="icon-btn crow-btn" style="pointer-events: auto;"
-                aria-label="Qarg'alarni otish">
-                🐦
-                <span id="crow-count" class="shield-count">3</span>
-            </button>
-            <button id="artillery-button" class="icon-btn artillery-btn hidden"
-                style="pointer-events: auto; display:none;" aria-label="Artileriya otish">
-                💣
-                <span id="artillery-count" class="shield-count">0</span>
-            </button>
-            <button id="in-game-menu-btn" class="primary-btn" style="pointer-events: auto;">Menyu</button>
-            <button id="btn-in-game-back" class="primary-btn in-game-back-btn" style="pointer-events: auto;">⬅ Ortga</button>
-            <button id="music-toggle-btn" class="icon-btn" style="pointer-events: auto;"
-                aria-label="Musiqani yoqish yoki o'chirish">🔊</button>
-
-            <!-- Chat Box -->
-            <div id="chat-container" class="chat-container hidden" style="pointer-events: auto; bottom: 80px;">
-                <div id="chat-messages" class="chat-messages"></div>
-                <div id="chat-quick-emojis" class="chat-quick-emojis">
-                    <button type="button" class="chat-emoji-btn" data-emoji="👍">👍</button>
-                    <button type="button" class="chat-emoji-btn" data-emoji="🔥 Zo'r!">🔥 Zo'r!</button>
-                    <button type="button" class="chat-emoji-btn" data-emoji="👏">👏</button>
-                    <button type="button" class="chat-emoji-btn" data-emoji="🤝">🤝</button>
-                    <button type="button" class="chat-emoji-btn" data-emoji="💪">💪</button>
-                    <button type="button" class="chat-emoji-btn" data-emoji="😅">😅</button>
-                </div>
-                <form id="chat-form" class="chat-form">
-                    <input type="text" id="chat-input" placeholder="Xabar yozing..." autocomplete="off">
-                    <button type="submit">↗</button>
-                </form>
-            </div>
-
-            <!-- In-Game Menu Modal -->
-            <div id="in-game-modal" class="modal-overlay hidden" style="pointer-events: auto;">
-                <div class="panel center-panel modal-panel">
-                    <h2 id="txt-ig-menu-title">Menyu</h2>
-                    <br>
-                    <button id="btn-resume" class="primary-btn">O'yinga qaytish</button>
-                    <button id="btn-toggle-sound" class="primary-btn">Sozlamalar(ovoz)</button>
-                    <button id="btn-add-friend" class="primary-btn" style="background:#2563eb;">Do'stga
-                        qo'shish</button>
-                    <div id="sound-settings-panel" class="hidden"
-                        style="text-align:left; margin: 10px 0 14px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px;">
-                        <label id="txt-music-volume" for="music-volume"
-                            style="display:block; font-size:0.85rem; margin-bottom:6px;">Fon musiqa balandligi</label>
-                        <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4"
-                            style="width:100%;">
-                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.85rem;">
-                            <input id="music-mute" type="checkbox">
-                            <span id="txt-music-mute">Ovozni o'chirish</span>
-                        </label>
-                        <label for="sfx-volume" style="display:block; font-size:0.85rem; margin:10px 0 6px;">SFX
-                            balandligi</label>
-                        <input id="sfx-volume" type="range" min="0" max="1" step="0.01" value="0.8" style="width:100%;">
-                        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.85rem;">
-                            <input id="sfx-mute" type="checkbox">
-                            SFX o'chirish
-                        </label>
-                        <label for="in-game-music-track"
-                            style="display:block; font-size:0.85rem; margin:10px 0 6px;">Fon musiqasi</label>
-                        <select id="in-game-music-track"
-                            style="width:100%; padding:8px; border-radius:8px; background:#334155; color:white; border:none;">
-                            <option value="music.mp3">Arabian</option>
-                            <option value="jumongsound.mp3">Jumong</option>
-                        </select>
+                    <div class="wind-indicator panel">
+                        <span id="txt-wind">SHAMOL</span>
+                        <h3 id="wind-text">0</h3>
+                        <div id="hud-score" class="hud-score">Ball: 0</div>
+                        <div class="wind-arrow-container">
+                            <div id="wind-arrow">➔</div>
+                        </div>
+                        <div id="level-badge" style="font-size: 0.75rem; color: #a7f3d0; margin-top: 2px;">Daraja 1
+                        </div>
                     </div>
-                    <button id="btn-exit-menu" class="primary-btn"
-                        style="background: linear-gradient(135deg, #ef4444, #dc2626);">Asosiy Menyu</button>
-                </div>
-            </div>
-
-            <div class="hud" style="pointer-events: auto;">
-                <div class="player-info" id="p1-info">
-                    <h2 style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-                        <span id="p1-flag"></span>
-                        <span id="p1-name">1-O'yinchi (Chap)</span>
-                    </h2>
-                    <p class="status">Kutilyapti...</p>
-                    <div class="health-bar-container">
-                        <div id="p1-health" class="health-bar-fill"></div>
+                    <div class="player-info" id="p2-info">
+                        <h2 style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+                            <span id="p2-flag"></span>
+                            <span id="p2-name">2-O'yinchi (O'ng)</span>
+                            <span id="p2-role-tag" class="hud-role-tag"></span>
+                        </h2>
+                        <p class="status">Kutilyapti...</p>
+                        <div class="health-bar-container">
+                            <div id="p2-health" class="health-bar-fill"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="wind-indicator panel">
-                    <span id="txt-wind">SHAMOL</span>
-                    <h3 id="wind-text">0</h3>
-                    <div id="hud-score" class="hud-score">Ball: 0</div>
-                    <div class="wind-arrow-container">
-                        <div id="wind-arrow">➔</div>
-                    </div>
-                    <div id="level-badge" style="font-size: 0.75rem; color: #a7f3d0; margin-top: 2px;">Daraja 1</div>
+
+                <!-- Raqib resurslari paneli (qalqon, super, qo'sh nayza soni) -->
+                <div id="enemy-resources" class="enemy-resources-panel hidden">
+                    <div class="res-item">🛡️<span id="enemy-res-shield" class="res-count">5</span></div>
+                    <div class="res-item">🗡️<span id="enemy-res-super" class="res-count">5</span></div>
+                    <div class="res-item">⚔️<span id="enemy-res-double" class="res-count">0</span></div>
+                    <div class="res-item">🧱<span id="enemy-res-wall" class="res-count">0</span></div>
                 </div>
-                <div class="player-info" id="p2-info">
-                    <h2 style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-                        <span id="p2-flag"></span>
-                        <span id="p2-name">2-O'yinchi (O'ng)</span>
-                    </h2>
-                    <p class="status">Kutilyapti...</p>
-                    <div class="health-bar-container">
-                        <div id="p2-health" class="health-bar-fill"></div>
+
+                <!-- Har bir level boshida Bepul Bonus Sandiq Modali -->
+                <div id="level-bonus-chest-modal" class="modal-overlay hidden" style="pointer-events: auto; z-index: 9999;">
+                    <div class="panel center-panel modal-panel bonus-chest-panel">
+                        <h2 style="font-size: 1.35rem; color: #f59e0b; margin-bottom: 4px; text-shadow: 0 0 12px rgba(245,158,11,0.5);">🎁 Bepul Bonus Kuch!</h2>
+                        <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0 0 14px;">Sandiqlardan birini tanlang va ushbu level uchun maxsus bepul kuchga ega bo'ling!</p>
+                        
+                        <div class="bonus-chests-row" id="bonus-chests-row">
+                            <!-- 3 ta sandiq JS orqali generatsiya qilinadi -->
+                        </div>
+
+                        <div id="bonus-reveal-notice" class="bonus-reveal-notice hidden"></div>
+
+                        <button type="button" id="btn-skip-bonus-chest" class="primary-btn" style="background: #334155; margin-top: 14px; font-size: 0.85rem; padding: 6px 16px; width: auto; min-height: 36px;">O'tkazib yuborish ➔</button>
                     </div>
+                </div>
+
+                <div class="controls panel" id="controls-panel" style="pointer-events: auto;">
+                    <h3 id="turn-indicator">Sizning navbatingiz!</h3>
+                    <p style="font-size: 0.9rem; color: #cbd5e1; text-align: center;">Ekranda barmog'ingiz/sichqoncha
+                        bilan
+                        tortib mo'ljalga oling va kuchni belgilang.<br>Nayzani otish uchun qo'yib yuboring!</p>
                 </div>
             </div>
 
-            <!-- Raqib resurslari paneli (qalqon, super, qo'sh nayza soni) -->
-            <div id="enemy-resources" class="enemy-resources-panel hidden">
-                <div class="res-item">🛡️<span id="enemy-res-shield" class="res-count">5</span></div>
-                <div class="res-item">🗡️<span id="enemy-res-super" class="res-count">5</span></div>
-                <div class="res-item">⚔️<span id="enemy-res-double" class="res-count">0</span></div>
-                <div class="res-item">🧱<span id="enemy-res-wall" class="res-count">0</span></div>
+            <div id="game-over-screen" class="screen hidden panel center-panel">
+                <h1 id="winner-text">O'yinchi Yutdi!</h1>
+                <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
+                <button id="rematch-btn" class="primary-btn hidden"
+                    style="background: #8b5cf6; margin-top: 8px;">Revansh</button>
+                <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">Bosh
+                    menyu</button>
             </div>
 
-            <div class="controls panel" id="controls-panel" style="pointer-events: auto;">
-                <h3 id="turn-indicator">Sizning navbatingiz!</h3>
-                <p style="font-size: 0.9rem; color: #cbd5e1; text-align: center;">Ekranda barmog'ingiz/sichqoncha bilan
-                    tortib mo'ljalga oling va kuchni belgilang.<br>Nayzani otish uchun qo'yib yuboring!</p>
+            <div id="rematch-modal" class="screen hidden panel center-panel">
+                <h2 id="rematch-title">Revansh</h2>
+                <p id="rematch-text" style="margin:10px 0 14px; color:#cbd5e1;">Raqibingiz revansh taklif qilmoqda,
+                    qayta
+                    o'ynaysizmi?</p>
+                <button id="btn-rematch-accept" class="primary-btn" style="background:#10b981;">Ha, o'ynayman</button>
+                <button id="btn-rematch-decline" class="primary-btn"
+                    style="background:#475569; margin-top:8px;">Yo'q</button>
+            </div>
+
+            <div id="disconnect-screen" class="screen hidden panel center-panel">
+                <h1>Raqib o'yinni tark etdi</h1>
+                <button id="btn-disconnect-home" class="primary-btn">Bosh menyuga qaytish</button>
+            </div>
+
+            <!-- Screen Flash Vignette & Floating Emote Bubbles -->
+            <div id="screen-vignette" class="screen-vignette"></div>
+            <div id="bubble-container"
+                style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 200;">
+            </div>
+
+            <!-- Damage text container -->
+            <div id="damage-container"
+                style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 1;">
             </div>
         </div>
-
-        <div id="game-over-screen" class="screen hidden panel center-panel">
-            <h1 id="winner-text">O'yinchi Yutdi!</h1>
-            <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
-            <button id="rematch-btn" class="primary-btn hidden"
-                style="background: #8b5cf6; margin-top: 8px;">Revansh</button>
-            <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">Bosh menyu</button>
-        </div>
-
-        <div id="rematch-modal" class="screen hidden panel center-panel">
-            <h2 id="rematch-title">Revansh</h2>
-            <p id="rematch-text" style="margin:10px 0 14px; color:#cbd5e1;">Raqibingiz revansh taklif qilmoqda, qayta
-                o'ynaysizmi?</p>
-            <button id="btn-rematch-accept" class="primary-btn" style="background:#10b981;">Ha, o'ynayman</button>
-            <button id="btn-rematch-decline" class="primary-btn"
-                style="background:#475569; margin-top:8px;">Yo'q</button>
-        </div>
-
-        <div id="disconnect-screen" class="screen hidden panel center-panel">
-            <h1>Raqib o'yinni tark etdi</h1>
-            <button id="btn-disconnect-home" class="primary-btn">Bosh menyuga qaytish</button>
-        </div>
-
-        <!-- Screen Flash Vignette & Floating Emote Bubbles -->
-        <div id="screen-vignette" class="screen-vignette"></div>
-        <div id="bubble-container"
-            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 200;">
-        </div>
-
-        <!-- Damage text container -->
-        <div id="damage-container"
-            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 1;">
-        </div>
-    </div>
     </div>
 
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=65"></script>
+    <script src="client.js?v=67"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {
             const el = document.documentElement;
-            if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
-            else if (el.mozRequestFullScreen) el.mozRequestFullScreen().catch(()=>{});
+            if (el.requestFullscreen) el.requestFullscreen().catch(()=> {} ) ;
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=> {} ) ;
+            else if (el.mozRequestFullScreen) el.mozRequestFullScreen().catch(()=> {} ) ;
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
                     window.Telegram.WebApp.expand();
@@ -860,10 +910,10 @@
                     if (typeof window.Telegram.WebApp.lockOrientation === 'function') window.Telegram.WebApp.lockOrientation('landscape');
                 }
                 if (screen.orientation && typeof screen.orientation.lock === 'function') {
-                    screen.orientation.lock('landscape').catch(()=>{});
+                    screen.orientation.lock('landscape').catch(()=> {} ) ;
                 }
             } catch (_) {}
-        }
+         }
         document.addEventListener('touchstart', tryFullscreenAndLandscape, { passive: true });
         document.addEventListener('click', tryFullscreenAndLandscape, { passive: true });
         tryFullscreenAndLandscape();

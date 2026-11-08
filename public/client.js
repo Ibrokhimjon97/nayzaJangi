@@ -229,6 +229,9 @@ async function fetchCustomModels() {
             if (s1) s1.value = String(myProfile.charType);
             if (s2) s2.value = String(myProfile.charType);
         }
+        if (typeof setupCustomDropdown === 'function') {
+            setupCustomDropdown('select-char-type-options');
+        }
         
         data.forEach(m => {
             const raw = m.textures || {};
@@ -748,7 +751,7 @@ const sunSpriteMat = new THREE.SpriteMaterial({
 });
 const sunSprite = new THREE.Sprite(sunSpriteMat);
 sunSprite.scale.set(900, 900, 1);
-sunSprite.position.set(-1400, 760, -900);
+sunSprite.position.set(-1400, 1100, -900);
 scene.add(sunSprite);
 
 // Tun uchun yulduzlar (statik nuqtalar)
@@ -2100,20 +2103,21 @@ function buildMap(mapType, weather = 'sunny') {
             sunSprite.material.map = makeRadialGlowTexture('#eaf2ff', '#9fb6dd');
             sunSprite.material.opacity = 0.85;
             sunSprite.scale.set(560, 560, 1);
-            sunSprite.position.set(1300, 820, -900);
+            sunSprite.position.set(1300, 1150, -900);
         } else if (weather === 'storm' || weather === 'rain') {
             sunSprite.material.opacity = 0.18;
             sunSprite.scale.set(700, 700, 1);
+            sunSprite.position.set(-1400, 1100, -900);
         } else if (weather === 'snow') {
             sunSprite.material.map = makeRadialGlowTexture('#ffffff', '#cfe6ff');
             sunSprite.material.opacity = 0.7;
             sunSprite.scale.set(820, 820, 1);
-            sunSprite.position.set(-1400, 760, -900);
+            sunSprite.position.set(-1400, 1100, -900);
         } else {
             sunSprite.material.map = makeRadialGlowTexture('#fff6cf', '#ffd36b');
             sunSprite.material.opacity = 0.92;
             sunSprite.scale.set(900, 900, 1);
-            sunSprite.position.set(-1400, 760, -900);
+            sunSprite.position.set(-1400, 1100, -900);
         }
         sunSprite.material.needsUpdate = true;
         sunSprite.userData.baseScale = sunSprite.scale.x;
@@ -2326,8 +2330,8 @@ function spawnEntities(options) {
         });
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.position.set(
-            (Math.random() - 0.5) * 4000,
-            400 + Math.random() * 300,
+            (Math.random() - 0.5) * 5500,
+            850 + Math.random() * 450,
             -200 - Math.random() * 300
         );
         cloud.userData = { vx: (Math.random() - 0.5) * 15 };
@@ -2342,8 +2346,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            // Qushlar osmonda (350-900 balandlikda) ko'rinadigan zonada uchadi
-            bird.position.set((seededRandom() - 0.5) * 3200, 350 + seededRandom() * 550, -30 + seededRandom() * 60);
+            // Qushlar osmonda (520-1140 balandlikda) ko'rinadigan erkin zonada uchadi
+            bird.position.set((seededRandom() - 0.5) * 3600, 520 + seededRandom() * 620, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -2986,7 +2990,7 @@ function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
 let baseZoom = 1;
 let screenShake = 0;
 let cameraTargetX = 0;
-let cameraTargetY = 0;
+let cameraTargetY = 400;
 
 function isPortraitMode() {
     const vp = getAppViewport();
@@ -2996,11 +3000,20 @@ function isPortraitMode() {
 
 function getFocusCameraTarget(turnIndex) {
     const isPortrait = isPortraitMode();
-    // Default holat: Jang maydoni markazda (x=0) joylashadi.
-    // Albomda ham, portret rejimida ham o'yinchining oyoqlari pastdagi buttonlar ustida turishi uchun centerY to'g'rilanadi.
+    const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const p3OffsetExtra = (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) ? (pos3Offset / 2) : 0;
     const centerX = p3OffsetExtra;
-    const centerY = isPortrait ? 60 : 150;
+
+    const groundSurfaceY = ground.position.y + 100;
+    const effectiveZoom = Math.max(0.1, baseZoom || 0.4);
+    const visibleH = frustumSize / effectiveZoom;
+
+    // Kompyuter versiyada ekranning pastki qismidagi katta bo'sh havorang/qora zona to'liq yopilishi uchun:
+    // Sahna (yer yuzasi va jangchilar oyoqlari) pastdagi tugmalar ustiga tushiriladi (ekranning pastki ~8% qismida).
+    const centerY = isPortrait 
+        ? 60 
+        : (isMobileView ? (groundSurfaceY + visibleH * 0.36) : (groundSurfaceY + visibleH * 0.42));
+
     return {
         x: centerX,
         y: centerY,
@@ -3045,6 +3058,8 @@ function updateCameraBounds() {
         camera.zoom = camFocus.zoom;
         camera.position.x = camFocus.x;
         camera.position.y = camFocus.y;
+        cameraTargetX = camFocus.x;
+        cameraTargetY = camFocus.y;
         camera.updateProjectionMatrix();
     }
 }
@@ -4725,6 +4740,147 @@ function getPointerPos(e) {
     return { x: cx, y: cy };
 }
 
+// Har bir level boshlanishida bepul bonus kuch tanlash modali
+function showLevelBonusChestModal() {
+    const modal = document.getElementById('level-bonus-chest-modal');
+    const container = document.getElementById('bonus-chests-row');
+    const notice = document.getElementById('bonus-reveal-notice');
+    const btnSkip = document.getElementById('btn-skip-bonus-chest');
+    if (!modal || !container) return;
+
+    // Har bir level uchun 3 ta bepul kuch:
+    // 1) Qush urib tushiradigan o'q (crowhunt)
+    // 2) Qo'sh nayza (doubleSpears)
+    // 3) Himoya devori (walls)
+    const bonusRewards = [
+        {
+            id: 'crow',
+            name: "Qush O'qi",
+            icon: '🦅',
+            desc: "Osmondagi qarg'alarni urib tushiradi",
+            grant: () => {
+                myProfile.crowhunt = (Number(myProfile.crowhunt) || 0) + 1;
+                myCrow = myProfile.crowhunt;
+            }
+        },
+        {
+            id: 'double',
+            name: "Qo'sh Nayza",
+            icon: '⚔️',
+            desc: "Bir zarbada 2 ta nayza otadi",
+            grant: () => {
+                myProfile.doubleSpears = (Number(myProfile.doubleSpears) || 0) + 1;
+            }
+        },
+        {
+            id: 'wall',
+            name: "Himoya Devori",
+            icon: '🧱',
+            desc: "Raqib o'qidan himoya to'sig'i",
+            grant: () => {
+                myProfile.walls = (Number(myProfile.walls) || 0) + 1;
+            }
+        }
+    ];
+
+    // Tasodifiy 3 ta sandiqqa aralashtirib taqsimlaymiz
+    const shuffled = bonusRewards.slice().sort(() => Math.random() - 0.5);
+
+    container.innerHTML = '';
+    if (notice) {
+        notice.classList.add('hidden');
+        notice.innerHTML = '';
+    }
+
+    let hasChosen = false;
+
+    shuffled.forEach((reward, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bonus-chest-card';
+        card.dataset.index = idx;
+
+        card.innerHTML = `
+            <div class="chest-box-wrapper">
+                <div class="chest-closed-icon">🎁</div>
+                <div class="chest-reward-icon hidden">${reward.icon}</div>
+            </div>
+            <div class="chest-title">Sandiq ${idx + 1}</div>
+            <div class="chest-reward-title hidden">+1 ${reward.name}</div>
+        `;
+
+        const pickChest = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (hasChosen) return;
+            hasChosen = true;
+
+            // Tanlangan sandiq animatsiyasi
+            card.classList.add('opening');
+            const closedIcon = card.querySelector('.chest-closed-icon');
+            const rewardIcon = card.querySelector('.chest-reward-icon');
+            const titleEl = card.querySelector('.chest-title');
+            const rewardTitle = card.querySelector('.chest-reward-title');
+
+            if (closedIcon) closedIcon.classList.add('hidden');
+            if (rewardIcon) rewardIcon.classList.remove('hidden');
+            if (titleEl) titleEl.classList.add('hidden');
+            if (rewardTitle) rewardTitle.classList.remove('hidden');
+
+            // Kuchni o'yinchiga qo'shish
+            reward.grant();
+            saveProfile();
+            updateShopAndItemButtons();
+            playSfx('woodHit', 0.8);
+            if (typeof triggerHaptic === 'function') triggerHaptic('success');
+
+            if (notice) {
+                notice.innerHTML = `Tabriklaymiz! Sizga <b>+1 ${reward.name} ${reward.icon}</b> bepul berildi!`;
+                notice.classList.remove('hidden');
+            }
+
+            // Qolgan sandiqlarni ham ochib ko'rsatamiz
+            setTimeout(() => {
+                container.querySelectorAll('.bonus-chest-card').forEach((otherCard, oIdx) => {
+                    if (otherCard !== card) {
+                        otherCard.classList.add('revealed-other');
+                        const oReward = shuffled[oIdx];
+                        const oClosed = otherCard.querySelector('.chest-closed-icon');
+                        const oRewardIcon = otherCard.querySelector('.chest-reward-icon');
+                        const oTitle = otherCard.querySelector('.chest-title');
+                        const oRewardTitle = otherCard.querySelector('.chest-reward-title');
+
+                        if (oClosed) oClosed.classList.add('hidden');
+                        if (oRewardIcon) oRewardIcon.classList.remove('hidden');
+                        if (oTitle) oTitle.classList.add('hidden');
+                        if (oRewardTitle) oRewardTitle.classList.remove('hidden');
+                    }
+                });
+            }, 300);
+
+            // 1.3 soniyadan so'ng modal yopiladi va jang boshlanadi
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                showCenterNotice(`+1 ${reward.name} ${reward.icon} qo'shildi!`, 2200);
+            }, 1300);
+        };
+
+        card.addEventListener('click', pickChest);
+        card.addEventListener('touchend', pickChest, { passive: false });
+        container.appendChild(card);
+    });
+
+    if (btnSkip) {
+        btnSkip.onclick = (e) => {
+            if (e) e.preventDefault();
+            modal.classList.add('hidden');
+        };
+    }
+
+    modal.classList.remove('hidden');
+}
+
 // Game Logic
 function startSinglePlayer(opts) {
     if (authModal) authModal.classList.add('hidden');
@@ -4828,6 +4984,15 @@ function startSinglePlayer(opts) {
     }
     applySoldierWeatherTone();
     updateCameraBounds();
+    const camFocus = getFocusCameraTarget(myPlayerIndex);
+    cameraState = 'static';
+    cameraTargetX = camFocus.x;
+    cameraTargetY = camFocus.y;
+    cameraZoomTarget = camFocus.zoom;
+    camera.position.x = camFocus.x;
+    camera.position.y = camFocus.y;
+    camera.zoom = camFocus.zoom;
+    camera.updateProjectionMatrix();
     
     myHealth = 100;
     enemyHealth = 100;
@@ -4872,6 +5037,7 @@ function startSinglePlayer(opts) {
         p1Name.innerText = (translations[myProfile.lang].singleBtn.includes("Kompyuter") ? "Kompyuter" : "PC") + ` (Lv.${level})`;
         document.getElementById('p1-flag').innerText = "🤖";
     }
+    applyHudSideRoles();
     prevTurnIndex = -2;
     updateCampaignUI();
     setTimeout(() => { if (typeof checkDailyAutoPopup === 'function') checkDailyAutoPopup(); }, 500);
@@ -4881,6 +5047,8 @@ function startSinglePlayer(opts) {
         lastTime = performance.now();
         requestAnimationFrame(gameLoop);
     }
+    // Har bir level boshlanishida 3 ta sandiqdan 1 ta bepul bonus kuch taklif qilinadi
+    showLevelBonusChestModal();
 }
 
 function generateWind() {
@@ -6123,6 +6291,16 @@ socket.on('gameStart', (data) => {
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
     applySoldierWeatherTone();
+    updateCameraBounds();
+    const camFocus = getFocusCameraTarget(myPlayerIndex);
+    cameraState = 'static';
+    cameraTargetX = camFocus.x;
+    cameraTargetY = camFocus.y;
+    cameraZoomTarget = camFocus.zoom;
+    camera.position.x = camFocus.x;
+    camera.position.y = camFocus.y;
+    camera.zoom = camFocus.zoom;
+    camera.updateProjectionMatrix();
     
     if (myPlayerIndex === 0) {
         p1Name.innerText = myProfile.name;
@@ -6135,6 +6313,7 @@ socket.on('gameStart', (data) => {
         p1Name.innerText = data.opponentProfile ? data.opponentProfile.name : "Raqib";
         document.getElementById('p1-flag').innerText = data.opponentProfile ? data.opponentProfile.flag : "🏳️";
     }
+    applyHudSideRoles();
     currentOpponentProfile = data.opponentProfile || null;
     
     myHealth = data.health[myPlayerIndex];
@@ -6484,7 +6663,8 @@ function showGameOver(winnerIndex, data) {
     
     cameraState = 'target';
     cameraTargetX = winnerIndex === 0 ? p1Model.position.x : p2Model.position.x;
-    cameraTargetY = -200;
+    const camFocus = getFocusCameraTarget(winnerIndex);
+    cameraTargetY = camFocus.y;
     cameraZoomTarget = baseZoom * 1.5;
 
     // G'alaba qozonganda bayram konfetti effekti.
@@ -6624,6 +6804,7 @@ function updateTurn(turnIndex, wind) {
 
     p1Info.classList.toggle('active', turnIndex === 0);
     p2Info.classList.toggle('active', turnIndex === 1);
+    applyHudSideRoles();
     p1Info.querySelector('.status').innerText = turnIndex === 0 ? "O'z navbatida" : "Kutmoqda";
     p2Info.querySelector('.status').innerText = turnIndex === 1 ? "O'z navbatida" : "Kutmoqda";
 
@@ -7306,8 +7487,8 @@ function gameLoop(now) {
     // Cloud animation
     clouds.forEach(cloud => {
         cloud.position.x += cloud.userData.vx * dt;
-        if (cloud.position.x > 2000) cloud.position.x = -2000;
-        if (cloud.position.x < -2000) cloud.position.x = 2000;
+        if (cloud.position.x > 3200) cloud.position.x = -3200;
+        if (cloud.position.x < -3200) cloud.position.x = 3200;
     });
 
     // Decorative tree sway reacts to weather/wind.
@@ -8347,6 +8528,164 @@ function safeModalAction(fn) {
         fn(e);
     };
 }
+
+// O'yinchi va raqib joylashuviga qarab HUD health barlarini moslash
+function applyHudSideRoles() {
+    if (!p1Info || !p2Info) return;
+    const p1Tag = document.getElementById('p1-role-tag');
+    const p2Tag = document.getElementById('p2-role-tag');
+    if (myPlayerIndex === 0) {
+        p1Info.classList.add('hud-side-player');
+        p1Info.classList.remove('hud-side-enemy');
+        p2Info.classList.add('hud-side-enemy');
+        p2Info.classList.remove('hud-side-player');
+        if (p1Tag) p1Tag.innerText = " (Siz)";
+        if (p2Tag) p2Tag.innerText = " (Raqib)";
+    } else {
+        p2Info.classList.add('hud-side-player');
+        p2Info.classList.remove('hud-side-enemy');
+        p1Info.classList.add('hud-side-enemy');
+        p1Info.classList.remove('hud-side-player');
+        if (p1Tag) p1Tag.innerText = " (Raqib)";
+        if (p2Tag) p2Tag.innerText = " (Siz)";
+    }
+}
+
+// Landshaft rejimida mobil brauzerda ham to'g'ri (albom) ochiluvchi Custom Select Dropdown
+function setupCustomDropdown(selectId) {
+    const sel = typeof selectId === 'string' ? document.getElementById(selectId) : selectId;
+    if (!sel || sel.tagName !== 'SELECT') return null;
+
+    let wrap = sel.nextElementSibling;
+    if (wrap && wrap.classList && wrap.classList.contains('custom-select-wrap')) {
+        refreshCustomDropdown(sel, wrap);
+        return wrap;
+    }
+
+    wrap = document.createElement('div');
+    wrap.className = 'custom-select-wrap';
+    if (sel.id) wrap.id = 'custom-wrap-' + sel.id;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-select-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+
+    const triggerText = document.createElement('span');
+    triggerText.className = 'custom-select-trigger-text';
+
+    const triggerArrow = document.createElement('span');
+    triggerArrow.className = 'custom-select-trigger-arrow';
+    triggerArrow.innerHTML = '&#9662;';
+
+    trigger.appendChild(triggerText);
+    trigger.appendChild(triggerArrow);
+
+    const menu = document.createElement('div');
+    menu.className = 'custom-select-menu hidden';
+    menu.dataset.scrollable = 'true';
+    menu.setAttribute('role', 'listbox');
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+
+    sel.style.display = 'none';
+    sel.parentNode.insertBefore(wrap, sel.nextSibling);
+
+    const handleTriggerClick = safeModalAction((e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        const isCurrentlyHidden = menu.classList.contains('hidden');
+        document.querySelectorAll('.custom-select-menu').forEach(m => {
+            if (m !== menu) m.classList.add('hidden');
+        });
+        document.querySelectorAll('.custom-select-trigger').forEach(t => {
+            if (t !== trigger) t.classList.remove('open');
+        });
+
+        if (isCurrentlyHidden) {
+            refreshCustomDropdown(sel, wrap);
+            menu.classList.remove('hidden');
+            trigger.classList.add('open');
+            const activeItem = menu.querySelector('.custom-select-item.selected');
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest' });
+            }
+        } else {
+            menu.classList.add('hidden');
+            trigger.classList.remove('open');
+        }
+    });
+
+    trigger.addEventListener('click', handleTriggerClick);
+    trigger.addEventListener('touchend', handleTriggerClick, { passive: false });
+
+    sel.addEventListener('change', () => {
+        refreshCustomDropdown(sel, wrap);
+    });
+
+    refreshCustomDropdown(sel, wrap);
+    return wrap;
+}
+
+function refreshCustomDropdown(sel, wrap) {
+    if (!sel || !wrap) return;
+    const triggerText = wrap.querySelector('.custom-select-trigger-text');
+    const menu = wrap.querySelector('.custom-select-menu');
+    if (!menu || !triggerText) return;
+
+    menu.innerHTML = '';
+    const selectedValue = sel.value;
+    let selectedLabel = '';
+
+    Array.from(sel.options).forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'custom-select-item';
+        item.dataset.value = opt.value;
+        item.setAttribute('role', 'option');
+        item.innerText = opt.text;
+
+        const isSelected = (opt.value === selectedValue) || (!selectedValue && opt.selected);
+        if (isSelected) {
+            item.classList.add('selected');
+            selectedLabel = opt.text;
+        }
+
+        const handleItemSelect = safeModalAction((e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            sel.value = opt.value;
+            triggerText.innerText = opt.text;
+            menu.querySelectorAll('.custom-select-item').forEach(it => it.classList.remove('selected'));
+            item.classList.add('selected');
+            menu.classList.add('hidden');
+            const trig = wrap.querySelector('.custom-select-trigger');
+            if (trig) trig.classList.remove('open');
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        item.addEventListener('click', handleItemSelect);
+        item.addEventListener('touchend', handleItemSelect, { passive: false });
+
+        menu.appendChild(item);
+    });
+
+    if (!selectedLabel && sel.options.length > 0) {
+        selectedLabel = sel.options[0].text;
+    }
+    triggerText.innerText = selectedLabel || 'Tanlang...';
+}
+
+document.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest || !e.target.closest('.custom-select-wrap')) {
+        document.querySelectorAll('.custom-select-menu').forEach(m => m.classList.add('hidden'));
+        document.querySelectorAll('.custom-select-trigger').forEach(t => t.classList.remove('open'));
+    }
+}, { passive: true });
 
 const ALL_MODAL_IDS = [
     'daily-quests-modal',
@@ -9443,7 +9782,15 @@ if (btnMultiCreate) {
         if (gameOptionsFields) gameOptionsFields.style.display = 'block';
         if (difficultyWrap) difficultyWrap.style.display = 'none';
         if (selectDifficulty) selectDifficulty.style.display = 'none';
+        const diffWrap = document.getElementById('custom-wrap-select-difficulty');
+        if (diffWrap) diffWrap.style.display = 'none';
+
         if (selectCharTypeOptions) selectCharTypeOptions.value = String(myProfile.charType || 2);
+        ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) setupCustomDropdown(el);
+        });
+
         gameOptionsModal.classList.remove('hidden');
         multiMenu.classList.add('hidden');
     });
@@ -9507,6 +9854,8 @@ if (btnCancelOptions) {
         gameOptionsModal.classList.add('hidden');
         if (difficultyWrap) difficultyWrap.style.display = 'block';
         if (selectDifficulty) selectDifficulty.style.display = 'block';
+        const diffWrap = document.getElementById('custom-wrap-select-difficulty');
+        if (diffWrap) diffWrap.style.display = 'block';
         if (gameOptionsTargetMode === 'multiCreate' || gameOptionsTargetMode === 'multiRandom') {
             multiMenu.classList.remove('hidden');
             menuScreen.classList.add('hidden');
@@ -9528,6 +9877,8 @@ if (btnConfirmCreate) {
         gameOptionsModal.classList.add('hidden');
         if (difficultyWrap) difficultyWrap.style.display = 'block';
         if (selectDifficulty) selectDifficulty.style.display = 'block';
+        const diffWrap = document.getElementById('custom-wrap-select-difficulty');
+        if (diffWrap) diffWrap.style.display = 'block';
 
         if (gameOptionsTargetMode === 'single') {
             aiDifficulty = difficulty;
@@ -10716,6 +11067,10 @@ function _runPageInits() {
     initDailyRewards();
     initDailyQuests();
     initEmotesUI();
+    ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) setupCustomDropdown(el);
+    });
     if (typeof checkAutoJoinTelegramRoom === 'function') checkAutoJoinTelegramRoom();
     
     btnArtillery = document.getElementById('artillery-button');
