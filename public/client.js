@@ -42,7 +42,11 @@ if (tg) {
         tg.ready();
         tg.expand();
         if (typeof tg.requestFullscreen === 'function') {
-            tg.requestFullscreen();
+            try {
+                if (typeof tg.isVersionAtLeast === 'function' ? tg.isVersionAtLeast('8.0') : false) {
+                    tg.requestFullscreen();
+                }
+            } catch (_) {}
         }
         if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#111827');
         if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0b0f19');
@@ -7832,6 +7836,7 @@ const btnSaveProfile = document.getElementById('btn-save-profile');
 const btnCloseProfileX = document.getElementById('btn-close-profile-x');
 const btnCloseShopX = document.getElementById('btn-close-shop-x');
 const btnCloseRatingX = document.getElementById('btn-close-rating-x');
+const btnCloseAboutX = document.getElementById('btn-close-about-x');
 
 function openProfileSettingsModal(e) {
     if (e) {
