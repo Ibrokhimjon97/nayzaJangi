@@ -5505,6 +5505,15 @@ function showLevelBonusChestModal() {
 function startSinglePlayer(opts) {
     if (authModal) authModal.classList.add('hidden');
     if (singleModeModal) singleModeModal.classList.add('hidden');
+    if (levelSelectModal) levelSelectModal.classList.add('hidden');
+    if (charSelectModal) charSelectModal.classList.add('hidden');
+    if (multiMenu) multiMenu.classList.add('hidden');
+    if (typeof ALL_MODAL_IDS !== 'undefined') {
+        for (const id of ALL_MODAL_IDS) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+    }
     const introEl = document.getElementById('intro-screen');
     if (introEl) {
         introEl.classList.add('hide');
@@ -10111,8 +10120,18 @@ function openCharacterSelectModal(options = {}) {
     openModalSafely(charSelectModal);
 }
 
+let isCharSelectTransitioning = false;
+
 if (btnCharSelectConfirm) {
-    const handleCharConfirm = safeModalAction((e) => {
+    const handleCharConfirm = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        if (isCharSelectTransitioning) return;
+        isCharSelectTransitioning = true;
+        setTimeout(() => { isCharSelectTransitioning = false; }, 400);
+
         if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
             myProfile.charType = selectedCharRosterId;
             saveProfile();
@@ -10138,19 +10157,34 @@ if (btnCharSelectConfirm) {
 
         if (charSelectModal) charSelectModal.classList.add('hidden');
 
+        // Mobil va desktopda bexosdan ostidagi tugmalarni bosib yuborishdan himoya (ghost-click shield)
+        const ghostShield = document.createElement('div');
+        ghostShield.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999999;background:transparent;pointer-events:all;';
+        document.body.appendChild(ghostShield);
+        setTimeout(() => {
+            if (ghostShield.parentNode) ghostShield.parentNode.removeChild(ghostShield);
+        }, 380);
+
         if (typeof pendingCharSelectCallback === 'function') {
             const cb = pendingCharSelectCallback;
             pendingCharSelectCallback = null;
             pendingCharSelectCancel = null;
             cb(myProfile.charType);
         }
-    });
+    };
     btnCharSelectConfirm.addEventListener('click', handleCharConfirm);
-    btnCharSelectConfirm.addEventListener('touchend', handleCharConfirm, { passive: false });
+    btnCharSelectConfirm.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleCharConfirm(e);
+    }, { passive: false });
 }
 
 if (btnCharSelectCancel) {
-    const handleCharCancel = safeModalAction((e) => {
+    const handleCharCancel = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (charSelectModal) charSelectModal.classList.add('hidden');
         if (typeof pendingCharSelectCancel === 'function') {
             const onCancel = pendingCharSelectCancel;
@@ -10160,9 +10194,12 @@ if (btnCharSelectCancel) {
         } else {
             if (menuScreen) menuScreen.classList.remove('hidden');
         }
-    });
+    };
     btnCharSelectCancel.addEventListener('click', handleCharCancel);
-    btnCharSelectCancel.addEventListener('touchend', handleCharCancel, { passive: false });
+    btnCharSelectCancel.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleCharCancel(e);
+    }, { passive: false });
 }
 
 function openProfileSettingsModal(e) {
@@ -10993,16 +11030,23 @@ document.addEventListener('click', (e) => {
 
 // Missing Event Listeners
 if (document.getElementById('btn-single')) {
-    const handleSingle = safeModalAction((e) => {
-        if (typeof initAudio === 'function') initAudio();
-        if (singleModeModal) {
-            openModalSafely(singleModeModal, e);
-            return;
+    const handleSingle = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
+        if (typeof initAudio === 'function') initAudio();
         openCharacterSelectModal({
             onConfirm: () => {
-                const level = Math.max(1, singleCampaignLevel);
-                aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
+                singleCampaignLevel = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || '1', 10));
+                for (const id of ALL_MODAL_IDS) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                }
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                if (singleModeModal) singleModeModal.classList.add('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
+                aiDifficulty = singleCampaignLevel < 6 ? 'easy' : singleCampaignLevel < 15 ? 'normal' : 'hard';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
@@ -11010,16 +11054,29 @@ if (document.getElementById('btn-single')) {
                 if (menuScreen) menuScreen.classList.remove('hidden');
             }
         });
-    });
-    document.getElementById('btn-single').addEventListener('click', handleSingle);
-    document.getElementById('btn-single').addEventListener('touchend', handleSingle, { passive: false });
+    };
+    const btnSingle = document.getElementById('btn-single');
+    btnSingle.addEventListener('click', handleSingle);
+    btnSingle.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleSingle(e);
+    }, { passive: false });
 }
 
 if (btnSingleContinue) {
-    const handleContinue = safeModalAction((e) => {
+    const handleContinue = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         openCharacterSelectModal({
             onConfirm: () => {
+                for (const id of ALL_MODAL_IDS) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                }
                 if (singleModeModal) singleModeModal.classList.add('hidden');
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
                 if (menuScreen) menuScreen.classList.add('hidden');
                 const level = Math.max(1, singleCampaignLevel);
                 aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
@@ -11030,19 +11087,31 @@ if (btnSingleContinue) {
                 if (singleModeModal) singleModeModal.classList.remove('hidden');
             }
         });
-    });
+    };
     btnSingleContinue.addEventListener('click', handleContinue);
-    btnSingleContinue.addEventListener('touchend', handleContinue, { passive: false });
+    btnSingleContinue.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleContinue(e);
+    }, { passive: false });
 }
 
 if (btnSingleNew) {
-    const handleNew = safeModalAction((e) => {
+    const handleNew = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         openCharacterSelectModal({
             onConfirm: () => {
                 singleCampaignLevel = 1;
                 localStorage.setItem('nayza_single_level', '1');
                 updateCampaignUI();
+                for (const id of ALL_MODAL_IDS) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                }
                 if (singleModeModal) singleModeModal.classList.add('hidden');
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
                 if (menuScreen) menuScreen.classList.add('hidden');
                 aiDifficulty = 'easy';
                 gameMode = 'single';
@@ -11052,9 +11121,12 @@ if (btnSingleNew) {
                 if (singleModeModal) singleModeModal.classList.remove('hidden');
             }
         });
-    });
+    };
     btnSingleNew.addEventListener('click', handleNew);
-    btnSingleNew.addEventListener('touchend', handleNew, { passive: false });
+    btnSingleNew.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleNew(e);
+    }, { passive: false });
 }
 
 if (btnSingleCancel) {
@@ -11119,14 +11191,24 @@ function renderLevelGrid() {
                 : 'linear-gradient(135deg, #10b981, #059669)');
         levelBtn.innerHTML = `<span style="font-size:1rem;font-weight:800;">${i}</span><span style="font-size:0.72rem;opacity:0.9;">${emoji}${isBoss ? '⚔️' : ''}</span>`;
         levelBtn.title = `Level ${i}${isBoss ? ' (2 dushman)' : ''}`;
-        const handleLevelPick = safeModalAction((e) => {
+        const handleLevelPick = (e) => {
+            if (e) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            }
             openCharacterSelectModal({
                 onConfirm: () => {
                     singleCampaignLevel = i;
+                    localStorage.setItem('nayza_single_level', String(i));
+                    if (typeof updateCampaignUI === 'function') updateCampaignUI();
+                    for (const id of ALL_MODAL_IDS) {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.add('hidden');
+                    }
                     if (levelSelectModal) levelSelectModal.classList.add('hidden');
                     if (singleModeModal) singleModeModal.classList.add('hidden');
-                    menuScreen.classList.add('hidden');
-                    aiDifficulty = 'easy';
+                    if (menuScreen) menuScreen.classList.add('hidden');
+                    aiDifficulty = i < 6 ? 'easy' : i < 15 ? 'normal' : 'hard';
                     gameMode = 'single';
                     startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
                 },
@@ -11134,9 +11216,12 @@ function renderLevelGrid() {
                     if (levelSelectModal) levelSelectModal.classList.remove('hidden');
                 }
             });
-        });
+        };
         levelBtn.addEventListener('click', handleLevelPick);
-        levelBtn.addEventListener('touchend', handleLevelPick, { passive: false });
+        levelBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleLevelPick(e);
+        }, { passive: false });
 
         levelGrid.appendChild(levelBtn);
     }
@@ -11166,52 +11251,72 @@ const inputJoinCode = document.getElementById('input-join-code');
 const joinError = document.getElementById('join-error');
 
 if (btnMultiCreate) {
-    const handleMultiCreate = safeModalAction((e) => {
+    const handleMultiCreate = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         openCharacterSelectModal({
             onConfirm: () => {
                 gameOptionsTargetMode = 'multiCreate';
-                if (gameOptionsFields) gameOptionsFields.style.display = 'block';
-                if (difficultyWrap) difficultyWrap.style.display = 'none';
-                if (selectDifficulty) selectDifficulty.style.display = 'none';
-                const diffWrap = document.getElementById('custom-wrap-select-difficulty');
-                if (diffWrap) diffWrap.style.display = 'none';
-
-                if (selectCharTypeOptions) selectCharTypeOptions.value = String(myProfile.charType || 2);
-                ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options'].forEach(id => {
+                for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
-                    if (el) setupCustomDropdown(el);
-                });
+                    if (el && id !== 'multi-menu') el.classList.add('hidden');
+                }
+                if (multiMenu) multiMenu.classList.remove('hidden');
+                if (createCodeContainer) createCodeContainer.classList.remove('hidden');
+                if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
+                if (joinError) joinError.style.display = 'none';
 
-                if (gameOptionsModal) gameOptionsModal.classList.remove('hidden');
-                if (multiMenu) multiMenu.classList.add('hidden');
+                const randomMaps = ['field', 'castle', 'registan', 'samarkand', 'bukhara', 'citadel', 'desert'];
+                const autoMap = randomMaps[Math.floor(Math.random() * randomMaps.length)];
+                socket.emit('createGame', {
+                    profile: myProfile,
+                    options: { map: autoMap, weather: 'sunny', birds: true, birdCount: 20, animals: false, charType: myProfile.charType }
+                });
             },
             onCancel: () => {
                 if (multiMenu) multiMenu.classList.remove('hidden');
             }
         });
-    });
+    };
     btnMultiCreate.addEventListener('click', handleMultiCreate);
-    btnMultiCreate.addEventListener('touchend', handleMultiCreate, { passive: false });
+    btnMultiCreate.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleMultiCreate(e);
+    }, { passive: false });
 }
 
 if (btnMultiRandom) {
-    const handleMultiRandom = safeModalAction((e) => {
+    const handleMultiRandom = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         openCharacterSelectModal({
             onConfirm: () => {
                 gameOptionsTargetMode = 'multiRandom';
                 if (joinError) joinError.style.display = 'none';
-                socket.emit('findGame', { profile: myProfile, options: null });
+                for (const id of ALL_MODAL_IDS) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                }
+                if (multiMenu) multiMenu.classList.add('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
                 if (waitingScreen) waitingScreen.classList.remove('hidden');
                 startRandomWaitTimer();
-                if (multiMenu) multiMenu.classList.add('hidden');
+                socket.emit('findGame', { profile: myProfile, options: null });
             },
             onCancel: () => {
                 if (multiMenu) multiMenu.classList.remove('hidden');
             }
         });
-    });
+    };
     btnMultiRandom.addEventListener('click', handleMultiRandom);
-    btnMultiRandom.addEventListener('touchend', handleMultiRandom, { passive: false });
+    btnMultiRandom.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleMultiRandom(e);
+    }, { passive: false });
 }
 
 if (btnMultiJoinShow) {
@@ -11224,7 +11329,11 @@ if (btnMultiJoinShow) {
 }
 
 if (btnMultiJoin) {
-    const handleMultiJoin = safeModalAction((e) => {
+    const handleMultiJoin = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (!socket || !socket.connected) {
             if (joinError) {
                 joinError.innerText = "Serverga ulanilmadi. Internetni tekshiring va qayta urinib ko'ring.";
@@ -11237,15 +11346,25 @@ if (btnMultiJoin) {
 
         openCharacterSelectModal({
             onConfirm: () => {
+                for (const id of ALL_MODAL_IDS) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                }
+                if (multiMenu) multiMenu.classList.add('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
+                if (waitingScreen) waitingScreen.classList.remove('hidden');
                 socket.emit('joinGame', { profile: myProfile, code });
             },
             onCancel: () => {
                 if (multiMenu) multiMenu.classList.remove('hidden');
             }
         });
-    });
+    };
     btnMultiJoin.addEventListener('click', handleMultiJoin);
-    btnMultiJoin.addEventListener('touchend', handleMultiJoin, { passive: false });
+    btnMultiJoin.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleMultiJoin(e);
+    }, { passive: false });
 }
 
 if (btnMultiBack) {
