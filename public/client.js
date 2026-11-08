@@ -3823,6 +3823,7 @@ function applyDamageToTarget(targetIndex, damage) {
                 if (myModel.userData.planeMesh && myModel.userData.planeMesh.material) {
                     myModel.userData.planeMesh.material.opacity = 0.45;
                 }
+                knockDownModel(myModel);
             }
         }
     } else if (p3Model && targetIndex === 2) {
@@ -3835,6 +3836,7 @@ function applyDamageToTarget(targetIndex, damage) {
                 if (p3Model.userData.planeMesh && p3Model.userData.planeMesh.material) {
                     p3Model.userData.planeMesh.material.opacity = 0.45;
                 }
+                knockDownModel(p3Model);
             }
         }
     } else {
@@ -3848,6 +3850,7 @@ function applyDamageToTarget(targetIndex, damage) {
                 if (primaryEnemy.userData.planeMesh && primaryEnemy.userData.planeMesh.material) {
                     primaryEnemy.userData.planeMesh.material.opacity = 0.45;
                 }
+                knockDownModel(primaryEnemy);
             }
         }
     }
@@ -4600,9 +4603,15 @@ function updateHealthUI() {
         if (p3Container && p3Bar) {
             p3Container.style.display = '';
             p3Bar.style.width = Math.max(0, enemy2Health) + '%';
-            if (enemy2Health < 30) p3Bar.style.background = '#ef4444';
-            else if (enemy2Health < 60) p3Bar.style.background = '#f59e0b';
-            else p3Bar.style.background = '#10b981';
+            if (enemy2Health <= 0) {
+                p3Container.style.opacity = '0.35';
+                p3Bar.style.background = '#64748b';
+            } else {
+                p3Container.style.opacity = '1';
+                if (enemy2Health < 30) p3Bar.style.background = '#ef4444';
+                else if (enemy2Health < 60) p3Bar.style.background = '#f59e0b';
+                else p3Bar.style.background = '#10b981';
+            }
         }
     } else if (p3Container) {
         p3Container.style.display = 'none';
@@ -4907,8 +4916,21 @@ function knockDownModel(model) {
             screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
 
             // Agar joni tugagan bo'lsa (o'lgan bo'lsa):
-            // Shu yotgan holatida qoladi, o'rnidan qaytib turmaydi! O'yin tugaydi!
+            // Halok bo'lgan raqib yerga yotgach, 500ms dan so'ng silliq yo'qolib (fade-out) g'oyib bo'ladi:
             if (isDead) {
+                setTimeout(() => {
+                    let fadeStep = 12;
+                    const fadeInterval = setInterval(() => {
+                        fadeStep--;
+                        if (model.userData && model.userData.planeMesh && model.userData.planeMesh.material) {
+                            model.userData.planeMesh.material.opacity = Math.max(0, (fadeStep / 12) * 0.45);
+                        }
+                        if (fadeStep <= 0) {
+                            clearInterval(fadeInterval);
+                            model.visible = false;
+                        }
+                    }, 35);
+                }, 500);
                 return;
             }
 
@@ -6412,7 +6434,7 @@ function simulateDoubleSpearHit() {
         for (let idx = 0; idx < targets.length; idx++) {
             if (idx === shot.shooterIndex) continue;
             const m = targets[idx];
-            if (!m || m.userData.isKnockedDown) continue;
+            if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
             const h = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
             if (Math.abs(x - m.position.x) < 55 && y > m.position.y + 30 && y < m.position.y + h) {
                 const relY = y - m.position.y;
@@ -7966,7 +7988,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         }
     }
     applySpearVisualStyle(isSpearmanThrow, isArtillery);
-    const spearScale = isArtillery ? 2.5 : (isSpearmanThrow ? 1.9 : 1);
+    const spearScale = isArtillery ? 2.5 : (isSpearmanThrow ? 1.15 : 1);
     spearGroup.scale.setScalar(spearScale);
     secondarySpearGroup.scale.setScalar(spearScale);
     spearGroup.position.set(startX, startY, 0);
@@ -8011,8 +8033,9 @@ function getWallHitOwnerIndex() {
     const states = [wallStates[0], wallStates[1]];
     for (const wall of states) {
         if (!wall || !wall.active || !wall.mesh) continue;
-        // Owner's own projectile should pass through their wall.
-        if (Number(spear.playerIndex) === Number(wall.ownerIndex)) continue;
+        // O'z jamoasining (ittifoqchilarining) o'qlari o'z devoridan bemalol o'tishi kerak.
+        // Raqib o'z devorini o'zi nayza bilan buza olmaydi!
+        if (areAllies(Number(spear.playerIndex), Number(wall.ownerIndex))) continue;
         const halfW = Number(wall.mesh.userData.wallWidth || 280) / 2;
         const halfH = Number(wall.mesh.userData.wallHeight || 460) / 2;
         if (Math.abs(spear.x - wall.x) <= halfW && Math.abs(spear.y - wall.mesh.position.y) <= halfH) {
@@ -8064,7 +8087,8 @@ function getWallHitOwnerIndexForPos(posX, posY, shooterIndex) {
     const states = [wallStates[0], wallStates[1]];
     for (const wall of states) {
         if (!wall || !wall.active || !wall.mesh) continue;
-        if (Number(shooterIndex) === Number(wall.ownerIndex)) continue;
+        // O'z jamoasining (ittifoqchilarining) o'qlari o'z devoridan bemalol o'tadi
+        if (areAllies(Number(shooterIndex), Number(wall.ownerIndex))) continue;
         const halfW = Number(wall.mesh.userData.wallWidth || 280) / 2;
         const halfH = Number(wall.mesh.userData.wallHeight || 460) / 2;
         if (Math.abs(posX - wall.x) <= halfW && Math.abs(posY - wall.mesh.position.y) <= halfH) {
@@ -8159,7 +8183,7 @@ function lineSegmentIntersectsAABB(x0, y0, x1, y1, minX, maxX, minY, maxY) {
 
 function getPlayerBoundingBox(playerIndex) {
     const m = modelForPlayer(playerIndex);
-    if (!m || !m.userData || m.userData.isKnockedDown) return null;
+    if (!m || !m.userData || !m.visible || m.userData.isDead || m.userData.isKnockedDown) return null;
 
     const isDucking = isDuckActiveForPlayer(playerIndex);
     const isJumping = isJumpActiveForPlayer(playerIndex);
@@ -8221,7 +8245,7 @@ function checkSecondarySpearCollision() {
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
-        if (!m || m.userData.isKnockedDown) continue;
+        if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
         if (i === secondarySpear.playerIndex) continue;
         if (areAllies(i, secondarySpear.playerIndex)) continue;
 
@@ -8341,7 +8365,7 @@ function checkCollision() {
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
-        if (!m || m.userData.isKnockedDown) continue;
+        if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
         if (i !== spear.playerIndex && areAllies(i, spear.playerIndex)) continue;
 
         const box = getPlayerBoundingBox(i);

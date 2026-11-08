@@ -4772,7 +4772,8 @@ body.force-landscape .custom-select-item {
     transform: translate(-50%, -50%) !important;
     max-width: 720px !important;
     width: 95vw !important;
-    max-height: 90vh !important;
+    height: auto !important;
+    max-height: 92vh !important;
     padding: 16px 20px 18px !important;
     background: radial-gradient(circle at 50% 15%, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99)) !important;
     border: 1.5px solid rgba(148, 163, 184, 0.3) !important;
@@ -5002,7 +5003,7 @@ body.force-landscape .custom-select-item {
 .char-select-actions {
     display: flex;
     gap: 10px;
-    margin-top: auto;
+    margin-top: 14px !important;
     flex-shrink: 0;
 }
 
@@ -5099,6 +5100,7 @@ body.force-landscape .custom-select-item {
 @media screen and (max-width: 600px) and (min-height: 521px) {
     .char-select-modal {
         width: 95vw !important;
+        height: auto !important;
         max-height: 88vh !important;
         padding: 14px 12px 14px !important;
     }
@@ -5374,10 +5376,12 @@ body.force-landscape .custom-select-item {
 .menu-cards-carousel::-webkit-scrollbar {
     height: 6px;
 }
+
 .menu-cards-carousel::-webkit-scrollbar-thumb {
     background: rgba(245, 158, 11, 0.45);
     border-radius: 999px;
 }
+
 .menu-cards-carousel::-webkit-scrollbar-track {
     background: transparent;
 }
@@ -5440,13 +5444,47 @@ body.force-landscape .custom-select-item {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.badge-gold { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
-.badge-cyan { background: rgba(6, 182, 212, 0.25); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.5); }
-.badge-amber { background: rgba(217, 119, 6, 0.25); color: #fde68a; border: 1px solid rgba(217, 119, 6, 0.5); }
-.badge-emerald { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.5); }
-.badge-purple { background: rgba(147, 51, 234, 0.25); color: #d8b4fe; border: 1px solid rgba(147, 51, 234, 0.5); }
-.badge-yellow { background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.5); }
-.badge-blue { background: rgba(59, 130, 246, 0.25); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.5); }
+.badge-gold {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.badge-cyan {
+    background: rgba(6, 182, 212, 0.25);
+    color: #22d3ee;
+    border: 1px solid rgba(6, 182, 212, 0.5);
+}
+
+.badge-amber {
+    background: rgba(217, 119, 6, 0.25);
+    color: #fde68a;
+    border: 1px solid rgba(217, 119, 6, 0.5);
+}
+
+.badge-emerald {
+    background: rgba(16, 185, 129, 0.25);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.badge-purple {
+    background: rgba(147, 51, 234, 0.25);
+    color: #d8b4fe;
+    border: 1px solid rgba(147, 51, 234, 0.5);
+}
+
+.badge-yellow {
+    background: rgba(234, 179, 8, 0.25);
+    color: #fef08a;
+    border: 1px solid rgba(234, 179, 8, 0.5);
+}
+
+.badge-blue {
+    background: rgba(59, 130, 246, 0.25);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+}
 
 /* Card Ikonka qutisi */
 .menu-card-icon-box {
@@ -5465,13 +5503,40 @@ body.force-landscape .custom-select-item {
     transform: scale(1.12) rotate(4deg);
 }
 
-.icon-gold { background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.6)); border: 1px solid #f59e0b; }
-.icon-cyan { background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(8, 145, 178, 0.6)); border: 1px solid #06b6d4; }
-.icon-amber { background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(180, 83, 9, 0.6)); border: 1px solid #f59e0b; }
-.icon-emerald { background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.6)); border: 1px solid #10b981; }
-.icon-purple { background: linear-gradient(135deg, rgba(147, 51, 234, 0.35), rgba(109, 40, 217, 0.6)); border: 1px solid #9333ea; }
-.icon-yellow { background: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(202, 138, 4, 0.6)); border: 1px solid #eab308; }
-.icon-blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(29, 78, 216, 0.6)); border: 1px solid #3b82f6; }
+.icon-gold {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.6));
+    border: 1px solid #f59e0b;
+}
+
+.icon-cyan {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(8, 145, 178, 0.6));
+    border: 1px solid #06b6d4;
+}
+
+.icon-amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(180, 83, 9, 0.6));
+    border: 1px solid #f59e0b;
+}
+
+.icon-emerald {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.6));
+    border: 1px solid #10b981;
+}
+
+.icon-purple {
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.35), rgba(109, 40, 217, 0.6));
+    border: 1px solid #9333ea;
+}
+
+.icon-yellow {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(202, 138, 4, 0.6));
+    border: 1px solid #eab308;
+}
+
+.icon-blue {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(29, 78, 216, 0.6));
+    border: 1px solid #3b82f6;
+}
 
 .menu-card-emoji {
     font-size: 2rem;
@@ -5513,13 +5578,40 @@ body.force-landscape .custom-select-item {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
 }
 
-.btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff !important; }
-.btn-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2) !important; color: #fff !important; }
-.btn-amber { background: linear-gradient(135deg, #f59e0b, #b45309) !important; color: #fff !important; }
-.btn-emerald { background: linear-gradient(135deg, #10b981, #047857) !important; color: #fff !important; }
-.btn-purple { background: linear-gradient(135deg, #9333ea, #7e22ce) !important; color: #fff !important; }
-.btn-yellow { background: linear-gradient(135deg, #eab308, #ca8a04) !important; color: #78350f !important; }
-.btn-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important; color: #fff !important; }
+.btn-gold {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #fff !important;
+}
+
+.btn-cyan {
+    background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+    color: #fff !important;
+}
+
+.btn-amber {
+    background: linear-gradient(135deg, #f59e0b, #b45309) !important;
+    color: #fff !important;
+}
+
+.btn-emerald {
+    background: linear-gradient(135deg, #10b981, #047857) !important;
+    color: #fff !important;
+}
+
+.btn-purple {
+    background: linear-gradient(135deg, #9333ea, #7e22ce) !important;
+    color: #fff !important;
+}
+
+.btn-yellow {
+    background: linear-gradient(135deg, #eab308, #ca8a04) !important;
+    color: #78350f !important;
+}
+
+.btn-blue {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    color: #fff !important;
+}
 
 /* Indikator nuqtalari */
 .menu-carousel-dots {
@@ -5912,23 +6004,27 @@ body.force-landscape .custom-select-item {
     color: #fda4af;
     border: 1px solid rgba(244, 63, 94, 0.45);
 }
+
 .icon-rose {
     background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(190, 18, 60, 0.2));
     border: 1px solid rgba(244, 63, 94, 0.5);
     box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);
 }
+
 .btn-rose {
     background: linear-gradient(135deg, #f43f5e, #be123c) !important;
     color: #fff !important;
     box-shadow: 0 4px 16px rgba(244, 63, 94, 0.4) !important;
 }
+
 .btn-rose:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(244, 63, 94, 0.6) !important;
 }
 
 /* Pulsing Badge for Duel Invites */
-.duel-count-pill, .badge-pill {
+.duel-count-pill,
+.badge-pill {
     background: #ef4444;
     color: #ffffff;
     font-size: 0.72rem;
@@ -5941,8 +6037,17 @@ body.force-landscape .custom-select-item {
 }
 
 @keyframes pulseBadge {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(239, 68, 68, 0.7); }
-    50% { transform: scale(1.15); box-shadow: 0 0 14px rgba(239, 68, 68, 1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+    }
+
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 14px rgba(239, 68, 68, 1);
+    }
 }
 
 /* Avatar Circle in Header */
@@ -5958,6 +6063,7 @@ body.force-landscape .custom-select-item {
 .leaderboard-search-wrap {
     width: 100%;
 }
+
 .leaderboard-search-input {
     width: 100%;
     padding: 9px 14px;
@@ -5970,10 +6076,12 @@ body.force-landscape .custom-select-item {
     transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
 }
+
 .leaderboard-search-input:focus {
     border-color: #38bdf8;
     box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
+
 .leaderboard-item-row {
     cursor: pointer;
     padding: 8px 10px;
@@ -5987,6 +6095,7 @@ body.force-landscape .custom-select-item {
     background: rgba(30, 41, 59, 0.4);
     border: 1px solid rgba(148, 163, 184, 0.12);
 }
+
 .leaderboard-item-row:hover {
     background: rgba(56, 189, 248, 0.16);
     transform: translateX(3px);
@@ -6001,6 +6110,7 @@ body.force-landscape .custom-select-item {
     border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     padding-bottom: 8px;
 }
+
 .duel-tab-btn {
     flex: 1;
     padding: 8px 12px;
@@ -6013,12 +6123,14 @@ body.force-landscape .custom-select-item {
     cursor: pointer;
     transition: all 0.2s;
 }
+
 .duel-tab-btn.active {
     background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(190, 18, 60, 0.25));
     color: #fff;
     border: 1px solid rgba(244, 63, 94, 0.5);
     box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
 }
+
 .tab-badge {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
@@ -6027,6 +6139,7 @@ body.force-landscape .custom-select-item {
     border-radius: 10px;
     margin-left: 4px;
 }
+
 .duel-invites-list {
     max-height: 290px;
     overflow-y: auto;
@@ -6037,12 +6150,14 @@ body.force-landscape .custom-select-item {
     gap: 10px;
     padding: 4px;
 }
+
 .empty-invites-hint {
     color: #94a3b8;
     font-size: 0.92rem;
     margin: 20px 0;
     text-align: center;
 }
+
 .duel-invite-card {
     background: rgba(15, 23, 42, 0.65);
     border: 1px solid rgba(148, 163, 184, 0.2);
@@ -6053,16 +6168,19 @@ body.force-landscape .custom-select-item {
     gap: 8px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
+
 .invite-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
+
 .invite-user-left {
     display: flex;
     align-items: center;
     gap: 10px;
 }
+
 .invite-avatar {
     width: 40px;
     height: 40px;
@@ -6075,20 +6193,24 @@ body.force-landscape .custom-select-item {
     font-size: 1.3rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
+
 .invite-user-name {
     font-weight: 700;
     font-size: 0.98rem;
     color: #f8fafc;
 }
+
 .invite-meta {
     font-size: 0.78rem;
     color: #94a3b8;
 }
+
 .invite-actions {
     display: flex;
     gap: 8px;
     margin-top: 4px;
 }
+
 .invite-actions .primary-btn {
     padding: 6px 12px !important;
     font-size: 0.82rem !important;
@@ -6102,6 +6224,7 @@ body.force-landscape .custom-select-item {
     gap: 8px;
     margin-bottom: 12px;
 }
+
 .schedule-time-preset {
     padding: 9px 8px;
     background: rgba(30, 41, 59, 0.7);
@@ -6113,12 +6236,15 @@ body.force-landscape .custom-select-item {
     cursor: pointer;
     transition: all 0.2s;
 }
-.schedule-time-preset:hover, .schedule-time-preset.active {
+
+.schedule-time-preset:hover,
+.schedule-time-preset.active {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.25));
     border-color: #10b981;
     color: #fff;
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
 }
+
 .schedule-time-input {
     width: 100%;
     padding: 9px 12px;
@@ -6135,6 +6261,7 @@ body.force-landscape .custom-select-item {
     max-width: 440px !important;
     width: 92vw !important;
 }
+
 .player-profile-header {
     display: flex;
     align-items: center;
@@ -6142,6 +6269,7 @@ body.force-landscape .custom-select-item {
     margin-bottom: 16px;
     text-align: left;
 }
+
 .player-profile-avatar-wrap {
     width: 68px;
     height: 68px;
@@ -6155,30 +6283,36 @@ body.force-landscape .custom-select-item {
     box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
     flex-shrink: 0;
 }
+
 .player-profile-avatar-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
+
 .player-profile-avatar-emoji {
     font-size: 2.2rem;
 }
+
 .player-profile-name {
     font-size: 1.35rem;
     font-weight: 800;
     margin: 0 0 6px 0;
     color: #f8fafc;
 }
+
 .player-profile-badges {
     display: flex;
     gap: 6px;
 }
+
 .player-profile-stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin-bottom: 18px;
 }
+
 .profile-stat-box {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.18);
@@ -6187,6 +6321,7 @@ body.force-landscape .custom-select-item {
     text-align: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
 .profile-stat-label {
     display: block;
     font-size: 0.74rem;
@@ -6195,19 +6330,23 @@ body.force-landscape .custom-select-item {
     letter-spacing: 0.5px;
     margin-bottom: 4px;
 }
+
 .profile-stat-val {
     font-size: 1.25rem;
     font-weight: 800;
     color: #f8fafc;
 }
+
 .player-profile-actions {
     display: flex;
     gap: 10px;
 }
+
 .player-profile-actions .btn-challenge {
     background: linear-gradient(135deg, #f43f5e, #be123c) !important;
     flex: 1;
 }
+
 .player-profile-actions .btn-add-friend {
     background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
     flex: 1;
@@ -6232,26 +6371,38 @@ body.force-landscape .custom-select-item {
     -webkit-backdrop-filter: blur(12px);
     animation: fadeInDown 0.3s ease;
 }
+
 .duel-waiting-forfeit-banner .pulse-icon {
     font-size: 1.4rem;
     animation: pulseBadge 1.2s infinite;
 }
+
 .duel-waiting-forfeit-banner .waiting-text-group {
     display: flex;
     flex-direction: column;
     text-align: left;
 }
+
 .duel-waiting-forfeit-banner b {
     font-size: 0.88rem;
     color: #fbbf24;
 }
+
 .duel-waiting-forfeit-banner span {
     font-size: 0.78rem;
     color: #e2e8f0;
 }
+
 @keyframes fadeInDown {
-    from { opacity: 0; transform: translate(-50%, -15px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 /* ============================================================
@@ -6292,8 +6443,15 @@ body.force-landscape .custom-select-item {
 }
 
 @keyframes bounceSlow {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
 }
 
 .lang-modal-header h2 {
@@ -6366,7 +6524,8 @@ body.force-landscape .custom-select-item {
     user-select: none;
 }
 
-.lang-card:hover, .lang-card:active {
+.lang-card:hover,
+.lang-card:active {
     transform: translateY(-4px) scale(1.03);
     border-color: #f59e0b;
     box-shadow: 0 14px 30px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -6466,25 +6625,31 @@ body.force-landscape .custom-select-item {
         padding: 16px 12px 18px !important;
         border-radius: 18px !important;
     }
+
     .lang-card {
         flex: 0 0 118px;
         padding: 10px 8px 10px;
         border-radius: 14px;
     }
+
     .lang-card-flag {
         font-size: 2.2rem;
     }
+
     .lang-card-name {
         font-size: 0.9rem;
     }
+
     .lang-card-desc {
         font-size: 0.68rem;
     }
+
     .lang-card-btn {
         min-height: 32px !important;
         height: 32px !important;
         font-size: 0.75rem !important;
     }
+
     .lang-nav-btn {
         display: none !important;
     }
