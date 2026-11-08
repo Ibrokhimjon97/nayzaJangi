@@ -4394,7 +4394,7 @@ function handleStart(e) {
     const target = e && e.target;
     const hasClosest = target && typeof target.closest === 'function';
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
-    if (isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) return;
+    if (isCoinTossActive || isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) return;
     if (gameMode === 'single' && singleShotLocked) return;
     if (isPointerOnMyWall(e)) {
         isWallPlacementMode = true;
@@ -6283,6 +6283,285 @@ socket.on('chatMessage', (data) => {
     }
 });
 
+// =========================================================
+// ONLAYN MULTIPLAYER QUR'A TASHLASH (COIN TOSS) TIZIMI
+// =========================================================
+let isCoinTossActive = false;
+let myCoinChoice = null;
+let coinTossTimerInterval = null;
+
+function playCoinFlipSound() {
+    try {
+        if (!audioCtx) initAudio();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        // O'tkir jarangdor metall tanga ovozi (ketma-ket 4 ta garmonika)
+        for (let i = 0; i < 4; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            const baseFreq = 2200 + i * 440;
+            osc.frequency.setValueAtTime(baseFreq, now + i * 0.07);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + i * 0.07 + 0.12);
+
+            gain.gain.setValueAtTime(0.25 * sfxVolume, now + i * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.22);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.07);
+            osc.stop(now + i * 0.07 + 0.25);
+        }
+    } catch (_) {}
+}
+
+function playCoinLandSound() {
+    try {
+        if (!audioCtx) initAudio();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1600, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.25);
+
+        gain.gain.setValueAtTime(0.4 * sfxVolume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+    } catch (_) {}
+}
+
+function initCoinTossUI() {
+    const btnRasm = document.getElementById('btn-coin-rasm');
+    const btnRaqam = document.getElementById('btn-coin-raqam');
+
+    const handleChoice = (choice) => {
+        if (!isCoinTossActive || myCoinChoice) return;
+        myCoinChoice = choice;
+        playSfx('button', 0.9);
+
+        if (btnRasm) btnRasm.classList.add('disabled');
+        if (btnRaqam) btnRaqam.classList.add('disabled');
+        const selectedBtn = choice === 'rasm' ? btnRasm : btnRaqam;
+        if (selectedBtn) selectedBtn.classList.add('selected-by-me');
+        const badge = document.getElementById(choice === 'rasm' ? 'badge-coin-rasm' : 'badge-coin-raqam');
+        if (badge) {
+            badge.className = 'coin-choice-badge badge-me';
+            badge.innerText = 'Siz tanladingiz';
+        }
+
+        const statusEl = document.getElementById('coin-status-text');
+        if (statusEl) {
+            statusEl.innerText = `Siz "${choice === 'rasm' ? 'Rasm' : 'Raqam'}"ni tanladingiz. Qur'a tashlanmoqda...`;
+        }
+
+        socket.emit('coinChoice', { choice: choice });
+    };
+
+    if (btnRasm) {
+        btnRasm.addEventListener('click', () => handleChoice('rasm'));
+        btnRasm.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleChoice('rasm');
+        }, { passive: false });
+    }
+
+    if (btnRaqam) {
+        btnRaqam.addEventListener('click', () => handleChoice('raqam'));
+        btnRaqam.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleChoice('raqam');
+        }, { passive: false });
+    }
+}
+
+function showCoinTossModal(gameStartData) {
+    const modal = document.getElementById('coin-toss-modal');
+    if (!modal) return;
+
+    isCoinTossActive = true;
+    myCoinChoice = null;
+
+    if (coinTossTimerInterval) {
+        clearInterval(coinTossTimerInterval);
+        coinTossTimerInterval = null;
+    }
+
+    const btnRasm = document.getElementById('btn-coin-rasm');
+    const btnRaqam = document.getElementById('btn-coin-raqam');
+    const badgeRasm = document.getElementById('badge-coin-rasm');
+    const badgeRaqam = document.getElementById('badge-coin-raqam');
+    const timerBar = document.getElementById('coin-timer-bar');
+    const statusText = document.getElementById('coin-status-text');
+    const stageWrap = document.getElementById('coin-stage-wrap');
+    const coin3d = document.getElementById('coin-3d-element');
+    const resultBanner = document.getElementById('coin-result-banner');
+    const choiceContainer = document.getElementById('coin-choice-container');
+    const timerWrap = document.getElementById('coin-timer-bar-wrap');
+
+    // UI tozalash
+    if (btnRasm) btnRasm.className = 'coin-choice-btn';
+    if (btnRaqam) btnRaqam.className = 'coin-choice-btn';
+    if (badgeRasm) { badgeRasm.className = 'coin-choice-badge'; badgeRasm.innerText = ''; }
+    if (badgeRaqam) { badgeRaqam.className = 'coin-choice-badge'; badgeRaqam.innerText = ''; }
+    if (choiceContainer) choiceContainer.classList.remove('hidden');
+    if (timerWrap) timerWrap.classList.remove('hidden');
+    if (stageWrap) {
+        stageWrap.classList.add('hidden');
+        stageWrap.classList.remove('is-flipping');
+    }
+    if (coin3d) {
+        coin3d.className = 'coin-3d';
+    }
+    if (resultBanner) {
+        resultBanner.className = 'coin-result-banner hidden';
+    }
+    if (statusText) {
+        statusText.innerText = "Tomonlardan birini tanlang (qolgan tomon raqibga o'tadi)...";
+    }
+
+    // 7.5 soniyalik animatsiyali taymer
+    let timeLeftMs = 7500;
+    const stepMs = 50;
+    if (timerBar) timerBar.style.width = '100%';
+    coinTossTimerInterval = setInterval(() => {
+        timeLeftMs -= stepMs;
+        const pct = Math.max(0, (timeLeftMs / 7500) * 100);
+        if (timerBar) timerBar.style.width = pct + '%';
+        if (timeLeftMs <= 0) {
+            clearInterval(coinTossTimerInterval);
+            coinTossTimerInterval = null;
+        }
+    }, stepMs);
+
+    modal.classList.remove('hidden');
+}
+
+function hideCoinTossModal() {
+    isCoinTossActive = false;
+    myCoinChoice = null;
+    if (coinTossTimerInterval) {
+        clearInterval(coinTossTimerInterval);
+        coinTossTimerInterval = null;
+    }
+    const modal = document.getElementById('coin-toss-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function handleCoinFlipStart(data) {
+    if (coinTossTimerInterval) {
+        clearInterval(coinTossTimerInterval);
+        coinTossTimerInterval = null;
+    }
+
+    const timerWrap = document.getElementById('coin-timer-bar-wrap');
+    if (timerWrap) timerWrap.classList.add('hidden');
+
+    const btnRasm = document.getElementById('btn-coin-rasm');
+    const btnRaqam = document.getElementById('btn-coin-raqam');
+    const badgeRasm = document.getElementById('badge-coin-rasm');
+    const badgeRaqam = document.getElementById('badge-coin-raqam');
+    const statusText = document.getElementById('coin-status-text');
+    const stageWrap = document.getElementById('coin-stage-wrap');
+    const coin3d = document.getElementById('coin-3d-element');
+    const resultBanner = document.getElementById('coin-result-banner');
+    const resultTitle = document.getElementById('coin-result-title');
+    const resultSub = document.getElementById('coin-result-subtitle');
+
+    if (btnRasm) btnRasm.classList.add('disabled');
+    if (btnRaqam) btnRaqam.classList.add('disabled');
+
+    const myChoice = (data.choices && data.choices[myPlayerIndex]) || (myPlayerIndex === 0 ? 'rasm' : 'raqam');
+    const oppChoice = (data.choices && data.choices[myPlayerIndex === 0 ? 1 : 0]) || (myChoice === 'rasm' ? 'raqam' : 'rasm');
+    const iWon = (data.winnerIndex === myPlayerIndex);
+    const oppName = (currentOpponentProfile && currentOpponentProfile.name) || "Raqib";
+
+    // Tugmalarda kim qaysi tomonni olganini ko'rsatish
+    const myBtn = myChoice === 'rasm' ? btnRasm : btnRaqam;
+    const myBadge = myChoice === 'rasm' ? badgeRasm : badgeRaqam;
+    const oppBtn = oppChoice === 'rasm' ? btnRasm : btnRaqam;
+    const oppBadge = oppChoice === 'rasm' ? badgeRasm : badgeRaqam;
+
+    if (myBtn) {
+        myBtn.classList.remove('selected-by-opponent');
+        myBtn.classList.add('selected-by-me');
+    }
+    if (myBadge) {
+        myBadge.className = 'coin-choice-badge badge-me';
+        myBadge.innerText = 'Sizning tomoningiz';
+    }
+
+    if (oppBtn) {
+        oppBtn.classList.remove('selected-by-me');
+        oppBtn.classList.add('selected-by-opponent');
+    }
+    if (oppBadge) {
+        oppBadge.className = 'coin-choice-badge badge-opp';
+        oppBadge.innerText = 'Raqib tomoni';
+    }
+
+    // Status matni: kim birinchi tanlaganini tushuntirish
+    if (statusText) {
+        if (data.firstChooser === myPlayerIndex) {
+            statusText.innerText = `Siz birinchi bo'lib "${myChoice === 'rasm' ? 'Rasm' : 'Raqam'}"ni tanladingiz!`;
+        } else if (data.firstChooser !== null && data.firstChooser !== undefined) {
+            statusText.innerText = `${oppName} birinchi bo'lib "${oppChoice === 'rasm' ? 'Rasm' : 'Raqam'}"ni tanladi. Sizga esa "${myChoice === 'rasm' ? 'Rasm' : 'Raqam'}" biriktirildi!`;
+        } else {
+            statusText.innerText = `Qur'a tashlanmoqda...`;
+        }
+    }
+
+    // 3D Tangani ko'rsatish va aylantirish
+    if (stageWrap) {
+        stageWrap.classList.remove('hidden');
+        stageWrap.classList.add('is-flipping');
+    }
+
+    playCoinFlipSound();
+
+    if (coin3d) {
+        coin3d.className = 'coin-3d ' + (data.result === 'rasm' ? 'flipping-to-rasm' : 'flipping-to-raqam');
+    }
+
+    // 3.2 soniyadan so'ng tanga tushganda natijani ko'rsatamiz
+    setTimeout(() => {
+        if (stageWrap) stageWrap.classList.remove('is-flipping');
+        playCoinLandSound();
+
+        if (resultBanner && resultTitle && resultSub) {
+            resultBanner.className = 'coin-result-banner ' + (iWon ? 'win-banner' : 'lose-banner');
+            const resultLabel = data.result === 'rasm' ? '👑 RASM' : '🔢 RAQAM';
+            if (iWon) {
+                resultTitle.innerHTML = `🎉 Tanga <strong>${resultLabel}</strong> tushdi — Siz yutdingiz!`;
+                resultSub.innerText = `Birinchi zarba huquqi sizda! O'q uzishga tayyorlaning!`;
+            } else {
+                resultTitle.innerHTML = `⚔️ Tanga <strong>${resultLabel}</strong> tushdi — ${oppName} yutdi!`;
+                resultSub.innerText = `Birinchi zarbani ${oppName} boshlaydi. Himoyada bo'ling!`;
+            }
+        }
+    }, 3200);
+}
+
+socket.on('coinFlipStart', (data) => {
+    handleCoinFlipStart(data);
+});
+
+socket.on('coinFlipComplete', (data) => {
+    hideCoinTossModal();
+    updateTurn(data.turnIndex, data.wind);
+});
+
 socket.on('gameStart', (data) => {
     console.log('gameStart data:', JSON.stringify(data));
     console.log('data.roomName:', data.roomName);
@@ -6371,7 +6650,12 @@ socket.on('gameStart', (data) => {
     removeWall(1);
     updateSuperUI();
     prevTurnIndex = -2;
-    updateTurn(data.turnIndex, data.wind);
+    if (data.hasCoinToss) {
+        currentTurnIndex = -1;
+        showCoinTossModal(data);
+    } else {
+        updateTurn(data.turnIndex, data.wind);
+    }
     
     if(!isLooping) {
         isLooping = true;
@@ -6559,10 +6843,12 @@ socket.on('entityHit', (data) => {
 });
 
 socket.on('gameOver', (data) => {
+    hideCoinTossModal();
     setTimeout(() => showGameOver(data.winnerIndex, data), 1200);
 });
 
 socket.on('opponentDisconnected', () => {
+    hideCoinTossModal();
     if(gameMode === 'multi') {
         disconnectScreen.classList.remove('hidden');
         gameScreen.classList.add('hidden');
@@ -11110,6 +11396,7 @@ function _runPageInits() {
     initDailyRewards();
     initDailyQuests();
     initEmotesUI();
+    initCoinTossUI();
     ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options'].forEach(id => {
         const el = document.getElementById(id);
         if (el) setupCustomDropdown(el);

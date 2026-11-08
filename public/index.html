@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=68">
+    <link rel="stylesheet" href="style.css?v=69">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -847,6 +847,68 @@
                     </div>
                 </div>
 
+                <!-- Onlayn Qur'a Tashlash Modali (Birinchi o'q uzishni aniqlash) -->
+                <div id="coin-toss-modal" class="modal-overlay hidden" style="pointer-events: auto; z-index: 10002;">
+                    <div class="panel center-panel modal-panel coin-toss-panel">
+                        <div class="coin-toss-header">
+                            <span class="coin-badge-icon">🪙</span>
+                            <h2>Birinchi zarba uchun Qur'a!</h2>
+                        </div>
+                        
+                        <p class="coin-toss-rules" id="coin-toss-rules-text">
+                            <strong>Qur'a shartlari:</strong> Birinchi o'q uzish huquqini aniqlash uchun tanga tashlanadi. O'zingizga ma'qul tomonni tanlang: <strong>Rasm</strong> yoki <strong>Raqam</strong>. Agar ikkalangiz ham bir xil tomonni tanlasangiz, kim <em>birinchi</em> tanlagan bo'lsa o'shanga biriktiriladi va ikkinchi tomon raqibga avtomatik o'tadi!
+                        </p>
+
+                        <!-- Tanlov tugmalari bloki -->
+                        <div class="coin-choice-container" id="coin-choice-container">
+                            <div class="coin-choice-btn" id="btn-coin-rasm" data-choice="rasm">
+                                <div class="coin-choice-face-icon">👑</div>
+                                <div class="coin-choice-title">Rasm</div>
+                                <div class="coin-choice-desc">Bosh / Gerb</div>
+                                <div class="coin-choice-badge" id="badge-coin-rasm"></div>
+                            </div>
+
+                            <div class="coin-choice-btn" id="btn-coin-raqam" data-choice="raqam">
+                                <div class="coin-choice-face-icon">🔢</div>
+                                <div class="coin-choice-title">Raqam</div>
+                                <div class="coin-choice-desc">Qiymat / Son</div>
+                                <div class="coin-choice-badge" id="badge-coin-raqam"></div>
+                            </div>
+                        </div>
+
+                        <!-- Vaqt taymeri -->
+                        <div class="coin-timer-bar-wrap" id="coin-timer-bar-wrap">
+                            <div class="coin-timer-bar" id="coin-timer-bar"></div>
+                        </div>
+                        <div class="coin-status-text" id="coin-status-text">Tomonlardan birini tanlang...</div>
+
+                        <!-- 3D Tanga aylanish maydoni -->
+                        <div class="coin-stage-wrap hidden" id="coin-stage-wrap">
+                            <div class="coin-3d" id="coin-3d-element">
+                                <div class="coin-side coin-side-front">
+                                    <div class="coin-inner-ring">
+                                        <span class="coin-inner-icon">👑</span>
+                                        <span class="coin-inner-label">RASM</span>
+                                    </div>
+                                </div>
+                                <div class="coin-side coin-side-back">
+                                    <div class="coin-inner-ring">
+                                        <span class="coin-inner-icon">🔢</span>
+                                        <span class="coin-inner-label">RAQAM</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="coin-shadow" id="coin-shadow"></div>
+                        </div>
+
+                        <!-- Natija va g'olib ko'rsatuvchi banner -->
+                        <div class="coin-result-banner hidden" id="coin-result-banner">
+                            <div class="coin-result-title" id="coin-result-title"></div>
+                            <div class="coin-result-subtitle" id="coin-result-subtitle"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="controls panel" id="controls-panel" style="pointer-events: auto;">
                     <h3 id="turn-indicator">Sizning navbatingiz!</h3>
                     <p style="font-size: 0.9rem; color: #cbd5e1; text-align: center;">Ekranda barmog'ingiz/sichqoncha
@@ -895,7 +957,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=68"></script>
+    <script src="client.js?v=69"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {

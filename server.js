@@ -715,6 +715,63 @@ function clearRoomTurnTimer(roomName) {
     }
 }
 
+function clearCoinTossTimer(roomName) {
+    const room = rooms[roomName];
+    if (room && room.coinToss && room.coinToss.timer) {
+        clearTimeout(room.coinToss.timer);
+        room.coinToss.timer = null;
+    }
+}
+
+function executeCoinToss(roomName) {
+    const room = rooms[roomName];
+    if (!room || !room.coinToss || !room.coinToss.active || room.coinToss.flipping) return;
+    room.coinToss.flipping = true;
+    clearCoinTossTimer(roomName);
+
+    // Agar hech kim tanlamagan bo'lsa (masalan vaqt tugaganda)
+    if (room.coinToss.choices[0] === null && room.coinToss.choices[1] === null) {
+        const randChoice = Math.random() < 0.5 ? 'rasm' : 'raqam';
+        room.coinToss.choices[0] = randChoice;
+        room.coinToss.choices[1] = randChoice === 'rasm' ? 'raqam' : 'rasm';
+        room.coinToss.firstChooser = 0;
+    } else if (room.coinToss.choices[0] === null) {
+        room.coinToss.choices[0] = room.coinToss.choices[1] === 'rasm' ? 'raqam' : 'rasm';
+    } else if (room.coinToss.choices[1] === null) {
+        room.coinToss.choices[1] = room.coinToss.choices[0] === 'rasm' ? 'raqam' : 'rasm';
+    }
+
+    // Tanga tashlash natijasi: 50% rasm, 50% raqam
+    const result = Math.random() < 0.5 ? 'rasm' : 'raqam';
+    room.coinToss.result = result;
+
+    // G'olib o'yinchi indexini aniqlash:
+    const winnerIndex = (room.coinToss.choices[0] === result) ? 0 : 1;
+    room.coinToss.winnerIndex = winnerIndex;
+    room.turnIndex = winnerIndex; // G'olib o'yinchi birinchi o'q uzadi
+
+    console.log(`[Coin Toss] Room ${roomName}: choices=${JSON.stringify(room.coinToss.choices)}, result=${result}, winner=${winnerIndex}`);
+
+    io.to(roomName).emit('coinFlipStart', {
+        choices: room.coinToss.choices,
+        firstChooser: room.coinToss.firstChooser,
+        result: result,
+        winnerIndex: winnerIndex
+    });
+
+    // Animatsiya tugagach (3.8 soniya), rasmiy ravishda o'yinni boshlash
+    setTimeout(() => {
+        if (!room || room.gameOver) return;
+        room.coinToss.active = false;
+        io.to(roomName).emit('coinFlipComplete', {
+            winnerIndex: room.turnIndex,
+            turnIndex: room.turnIndex,
+            wind: room.wind
+        });
+        startRoomTurnTimer(roomName);
+    }, 3800);
+}
+
 function startRoomTurnTimer(roomName) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
@@ -791,7 +848,7 @@ io.on('connection', (socket) => {
 
         rooms[roomName] = {
             players: [player1.id, player2.id],
-            turnIndex: 0,
+            turnIndex: -1, // Qur'a tashlanmaguncha kutiladi
             wind: generateWind(),
             gameOver: false,
             health: [100, 100],
@@ -808,7 +865,16 @@ io.on('connection', (socket) => {
             ducking: [false, false],
             jumping: [false, false],
             inFlight: false,
-            options: existingOptions
+            options: existingOptions,
+            coinToss: {
+                active: true,
+                choices: [null, null],
+                firstChooser: null,
+                flipping: false,
+                result: null,
+                winnerIndex: null,
+                timer: null
+            }
         };
 
         player1.roomId = roomName;
@@ -816,7 +882,8 @@ io.on('connection', (socket) => {
 
         const gameStartData1 = {
             playerIndex: 0,
-            turnIndex: 0,
+            turnIndex: -1,
+            hasCoinToss: true,
             wind: rooms[roomName].wind,
             opponentId: player2.id,
             opponentProfile: player2.profile,
@@ -832,7 +899,8 @@ io.on('connection', (socket) => {
 
         const gameStartData2 = {
             playerIndex: 1,
-            turnIndex: 0,
+            turnIndex: -1,
+            hasCoinToss: true,
             wind: rooms[roomName].wind,
             opponentId: player1.id,
             opponentProfile: player1.profile,
@@ -845,8 +913,37 @@ io.on('connection', (socket) => {
         };
         console.log('Sending gameStart to player2, roomName:', roomName);
         player2.emit('gameStart', gameStartData2);
-        startRoomTurnTimer(roomName);
+
+        // Turn timer qur'a natijasidan so'ng startRoomTurnTimer orqali ishga tushadi.
+        // Agar o'yinchilar 7.5 soniya davomida tanlamasa, avtomatik qur'a tashlanadi:
+        rooms[roomName].coinToss.timer = setTimeout(() => {
+            executeCoinToss(roomName);
+        }, 7500);
     }
+
+    socket.on('coinChoice', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || !room.coinToss || !room.coinToss.active || room.coinToss.flipping) return;
+
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1) return;
+
+        const choice = (data && data.choice === 'raqam') ? 'raqam' : 'rasm';
+        const otherIndex = playerIndex === 0 ? 1 : 0;
+        const otherChoice = (choice === 'rasm') ? 'raqam' : 'rasm';
+
+        // Agar hali hech kim tanlamagan bo'lsa:
+        if (room.coinToss.choices[0] === null && room.coinToss.choices[1] === null) {
+            room.coinToss.choices[playerIndex] = choice;
+            room.coinToss.choices[otherIndex] = otherChoice;
+            room.coinToss.firstChooser = playerIndex;
+            executeCoinToss(roomName);
+        } else if (room.coinToss.choices[playerIndex] === null) {
+            // Birinchi o'yinchi avvalroq tanlagan bo'lsa, qolgan tomon unga biriktiriladi
+            executeCoinToss(roomName);
+        }
+    });
 
     function bindOnlineProfile(profile) {
         if (!profile || !profile.playerId) return;
@@ -1462,6 +1559,7 @@ io.on('connection', (socket) => {
         const room = rooms[roomName];
         if (!room || !room.players) return;
         clearRoomTurnTimer(roomName);
+        clearCoinTossTimer(roomName);
         // Raqibga rad etildi xabari
         const opponentId = room.players.find(id => id !== socket.id);
         if (opponentId) {
@@ -1488,6 +1586,7 @@ io.on('connection', (socket) => {
         const roomName = socket.roomId;
         if (roomName && rooms[roomName]) {
             clearRoomTurnTimer(roomName);
+            clearCoinTossTimer(roomName);
             io.to(roomName).emit('opponentDisconnected');
             delete rooms[roomName];
         }
