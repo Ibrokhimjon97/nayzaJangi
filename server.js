@@ -822,16 +822,28 @@ app.get('/api/player-profile/:id', (req, res) => {
 // ========================================================
 app.get('/api/duel-invites', (req, res) => {
     const playerId = String(req.query.playerId || '').trim();
-    if (!playerId) return res.json({ ok: true, incoming: [], outgoing: [], pendingCount: 0 });
+    const phone = String(req.query.phone || '').trim();
+    const name = String(req.query.name || '').trim();
+    const tgId = String(req.query.tgId || '').trim();
+
+    if (!playerId && !phone && !name && !tgId) return res.json({ ok: true, incoming: [], outgoing: [], pendingCount: 0 });
 
     const allInvites = loadDuelInvites();
-    const incoming = allInvites.filter(inv =>
-        (inv.toPlayerId === playerId || inv.toPhone === playerId || (inv.toTgId && inv.toTgId === playerId)) &&
-        inv.status !== 'cancelled'
-    );
-    const outgoing = allInvites.filter(inv =>
-        inv.fromPlayerId === playerId || inv.fromPhone === playerId || (inv.fromTgId && inv.fromTgId === playerId)
-    );
+    const incoming = allInvites.filter(inv => {
+        if (inv.status === 'cancelled') return false;
+        const matchesPlayerId = playerId && (inv.toPlayerId === playerId || inv.toPhone === playerId || inv.toTgId === playerId || inv.toName === playerId);
+        const matchesPhone = phone && (inv.toPhone === phone || inv.toPlayerId === phone);
+        const matchesTgId = tgId && (inv.toTgId === tgId || inv.toPlayerId === tgId);
+        const matchesName = name && (inv.toName && inv.toName.toLowerCase() === name.toLowerCase());
+        return Boolean(matchesPlayerId || matchesPhone || matchesTgId || matchesName);
+    });
+    const outgoing = allInvites.filter(inv => {
+        const matchesPlayerId = playerId && (inv.fromPlayerId === playerId || inv.fromPhone === playerId || inv.fromTgId === playerId || inv.fromName === playerId);
+        const matchesPhone = phone && (inv.fromPhone === phone || inv.fromPlayerId === phone);
+        const matchesTgId = tgId && (inv.fromTgId === tgId || inv.fromPlayerId === tgId);
+        const matchesName = name && (inv.fromName && inv.fromName.toLowerCase() === name.toLowerCase());
+        return Boolean(matchesPlayerId || matchesPhone || matchesTgId || matchesName);
+    });
 
     const pendingCount = incoming.filter(inv => inv.status === 'pending').length;
     res.json({ ok: true, incoming, outgoing, pendingCount });
@@ -1659,16 +1671,26 @@ io.on('connection', (socket) => {
 
     // Duel takliflarini socket orqali olish va yuborish
     socket.on('getDuelInvites', () => {
-        const myId = String(socket.profile?.playerId || socket.profile?.phone || '');
-        if (!myId) return;
+        const myId = String(socket.profile?.playerId || '');
+        const myPhone = String(socket.profile?.phone || '');
+        const myName = String(socket.profile?.name || '');
+        const myTgId = String(socket.profile?.tgId || '');
+        if (!myId && !myPhone && !myName && !myTgId) return;
+
         const allInvites = loadDuelInvites();
-        const incoming = allInvites.filter(inv =>
-            (inv.toPlayerId === myId || inv.toPhone === myId || (inv.toTgId && inv.toTgId === myId)) &&
-            inv.status !== 'cancelled'
-        );
-        const outgoing = allInvites.filter(inv =>
-            inv.fromPlayerId === myId || inv.fromPhone === myId || (inv.fromTgId && inv.fromTgId === myId)
-        );
+        const incoming = allInvites.filter(inv => {
+            if (inv.status === 'cancelled') return false;
+            return (myId && (inv.toPlayerId === myId || inv.toPhone === myId || inv.toTgId === myId || inv.toName === myId)) ||
+                   (myPhone && (inv.toPhone === myPhone || inv.toPlayerId === myPhone)) ||
+                   (myTgId && (inv.toTgId === myTgId || inv.toPlayerId === myTgId)) ||
+                   (myName && inv.toName && inv.toName.toLowerCase() === myName.toLowerCase());
+        });
+        const outgoing = allInvites.filter(inv => {
+            return (myId && (inv.fromPlayerId === myId || inv.fromPhone === myId || inv.fromTgId === myId || inv.fromName === myId)) ||
+                   (myPhone && (inv.fromPhone === myPhone || inv.fromPlayerId === myPhone)) ||
+                   (myTgId && (inv.fromTgId === myTgId || inv.fromPlayerId === myTgId)) ||
+                   (myName && inv.fromName && inv.fromName.toLowerCase() === myName.toLowerCase());
+        });
         const pendingCount = incoming.filter(inv => inv.status === 'pending').length;
         socket.emit('duelInvitesData', { incoming, outgoing, pendingCount });
     });

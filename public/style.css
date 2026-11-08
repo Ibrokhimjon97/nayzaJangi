@@ -72,7 +72,7 @@ body.mobile-landscape #menu-screen.menu-carousel-screen:not(.hidden) {
     max-width: 98% !important;
     height: 96% !important;
     max-height: 96% !important;
-    padding: 6px 10px 8px !important;
+    padding: 6px 10px 32px !important;
     border-radius: 16px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -176,15 +176,15 @@ body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card {
     flex: none !important;
     width: 100% !important;
     height: auto !important;
-    min-height: 72px !important;
-    max-height: 88px !important;
-    padding: 6px 8px 6px !important;
+    min-height: 96px !important;
+    max-height: none !important;
+    padding: 6px 8px 10px !important;
     border-radius: 12px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 2px !important;
+    gap: 4px !important;
     box-sizing: border-box !important;
     touch-action: pan-y !important;
 }
@@ -6222,15 +6222,15 @@ body.force-landscape .custom-select-item {
         flex: none !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 72px !important;
-        max-height: 88px !important;
-        padding: 6px 8px 6px !important;
+        min-height: 96px !important;
+        max-height: none !important;
+        padding: 6px 8px 10px !important;
         border-radius: 12px !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: space-between !important;
-        gap: 2px !important;
+        gap: 4px !important;
         box-sizing: border-box !important;
         touch-action: pan-y !important;
     }
@@ -6866,6 +6866,46 @@ body.mobile-landscape #duel-invites-modal #btn-close-invites-bottom {
 .player-profile-screen {
     max-width: 440px !important;
     width: 92vw !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+}
+
+@media (orientation: landscape) and (max-height: 560px),
+(max-height: 520px),
+body.force-landscape .player-profile-screen,
+body.mobile-landscape .player-profile-screen {
+    max-height: 94vh !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    padding: 10px 14px 24px !important;
+}
+
+/* Barcha modallarda barmoq bilan erkin scroll qilish */
+.center-panel,
+.modal-panel,
+.player-profile-screen,
+#rating-modal,
+#settings-modal,
+#shop-modal,
+#about-modal,
+#help-modal,
+#auth-modal {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+}
+
+.center-panel:not(.char-select-modal) *,
+.modal-panel:not(.char-select-modal) *,
+.player-profile-screen * {
+    touch-action: pan-y !important;
+}
+
+button, input, select, textarea, .primary-btn, .icon-btn {
+    touch-action: manipulation !important;
 }
 
 .player-profile-header {

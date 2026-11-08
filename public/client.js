@@ -471,13 +471,21 @@ function initAudio() {
 
 function applySelectedMusicTrack() {
     if (!bgMusicAudio) return;
+    if (musicMuted) {
+        try { bgMusicAudio.pause(); } catch (_) { }
+        return;
+    }
     const currentSrc = String(bgMusicAudio.src || '');
-    if (currentSrc.endsWith(selectedMusicTrack)) return;
+    if (currentSrc.endsWith(selectedMusicTrack)) {
+        bgMusicAudio.volume = musicVolume;
+        try { bgMusicAudio.play().catch(() => { }); } catch (_) { }
+        return;
+    }
     bgMusicAudio.src = selectedMusicTrack;
     bgMusicAudio.loop = true;
     bgMusicAudio.preload = 'auto';
-    bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-    bgMusicAudio.play().catch(() => { });
+    bgMusicAudio.volume = musicVolume;
+    try { bgMusicAudio.play().catch(() => { }); } catch (_) { }
     preloadAllSfx();
 }
 
@@ -630,10 +638,20 @@ function applyMusicSettings() {
     if (settingsSfxVolumeInput) settingsSfxVolumeInput.value = String(sfxVolume);
     if (settingsMusicTrackSelect) settingsMusicTrackSelect.value = selectedMusicTrack;
     if (inGameMusicTrackSelect) inGameMusicTrackSelect.value = selectedMusicTrack;
-    if (bgMusicAudio) bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     if (btnVolMute) btnVolMute.innerText = musicMuted ? '🔇' : '🔊';
     if (btnMusicToggle) btnMusicToggle.innerText = musicMuted ? '🔇' : '🔊';
-    applySelectedMusicTrack();
+
+    if (bgMusicAudio) {
+        if (musicMuted) {
+            try { bgMusicAudio.pause(); } catch (_) { }
+        } else {
+            bgMusicAudio.volume = musicVolume;
+            try { bgMusicAudio.play().catch(() => { }); } catch (_) { }
+        }
+    }
+    if (!musicMuted) {
+        applySelectedMusicTrack();
+    }
 }
 
 // Three.js Setup (Cinematic)
@@ -5558,7 +5576,8 @@ function showLevelBonusChestModal(onStartBattle) {
             // Kuchni o'yinchiga qo'shish
             reward.grant();
             saveProfile();
-            updateShopAndItemButtons();
+            if (typeof updateShopUI === 'function') updateShopUI();
+            if (typeof updateSuperUI === 'function') updateSuperUI();
             playSfx('woodHit', 0.8);
             if (typeof triggerHaptic === 'function') triggerHaptic('success');
 
@@ -6948,20 +6967,26 @@ if (btnVolUp) {
     });
 }
 if (btnVolMute) {
-    btnVolMute.addEventListener('click', () => {
+    const handleVolMute = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         musicMuted = !musicMuted;
         applyMusicSettings();
         saveMusicSettings();
-    });
+    };
+    btnVolMute.addEventListener('click', handleVolMute);
+    btnVolMute.addEventListener('touchend', handleVolMute, { passive: false });
 }
 
 applyMusicSettings();
 if (btnMusicToggle) {
-    btnMusicToggle.addEventListener('click', () => {
+    const handleMusicToggle = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         musicMuted = !musicMuted;
         applyMusicSettings();
         saveMusicSettings();
-    });
+    };
+    btnMusicToggle.addEventListener('click', handleMusicToggle);
+    btnMusicToggle.addEventListener('touchend', handleMusicToggle, { passive: false });
 }
 function returnToMainMenu() {
     isPaused = false;
@@ -11609,14 +11634,13 @@ function renderCharacterSelectRoster(activeId) {
                 touchStartY = e.touches[0].clientY;
             }
             hasMoved = false;
-            e.stopPropagation();
         }, { passive: true });
 
         card.addEventListener('touchmove', (e) => {
             if (e.touches && e.touches[0]) {
                 const dx = Math.abs(e.touches[0].clientX - touchStartX);
                 const dy = Math.abs(e.touches[0].clientY - touchStartY);
-                if (dx > 8 || dy > 8) {
+                if (dx > 6 || dy > 6) {
                     hasMoved = true;
                 }
             }
@@ -11626,10 +11650,35 @@ function renderCharacterSelectRoster(activeId) {
             if (hasMoved) return;
             onSelect(e);
         }, { passive: false });
-        card.addEventListener('click', onSelect);
+        card.addEventListener('click', (e) => {
+            if (hasMoved) return;
+            onSelect(e);
+        });
 
         charSelectRoster.appendChild(card);
     });
+
+    // Barmoq va sichqoncha bilan ro'yxatni erkin surib ko'rish (Drag to scroll)
+    if (!charSelectRoster.dataset.dragBound) {
+        charSelectRoster.dataset.dragBound = 'true';
+        let isRosterDown = false;
+        let rosterStartX = 0;
+        let rosterScrollLeft = 0;
+
+        charSelectRoster.addEventListener('mousedown', (e) => {
+            isRosterDown = true;
+            rosterStartX = e.pageX - charSelectRoster.offsetLeft;
+            rosterScrollLeft = charSelectRoster.scrollLeft;
+        });
+        window.addEventListener('mouseup', () => { isRosterDown = false; });
+        charSelectRoster.addEventListener('mousemove', (e) => {
+            if (!isRosterDown) return;
+            e.preventDefault();
+            const x = e.pageX - charSelectRoster.offsetLeft;
+            const walk = (x - rosterStartX) * 1.5;
+            charSelectRoster.scrollLeft = rosterScrollLeft - walk;
+        });
+    }
 
     requestAnimationFrame(() => {
         const selCard = charSelectRoster.querySelector('.char-card.selected');
@@ -13399,14 +13448,23 @@ if (document.getElementById('btn-send-chat')) {
     });
 }
 if (chatQuickEmojis) {
-    chatQuickEmojis.addEventListener('click', (e) => {
+    const handleQuickEmoji = (e) => {
         const btn = e.target && e.target.closest ? e.target.closest('.chat-emoji-btn') : null;
-        if (!btn || gameMode !== 'multi') return;
+        if (!btn) return;
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         const msg = String(btn.dataset.emoji || '').trim();
         if (!msg) return;
-        socket.emit('chatMessage', msg);
+        if (gameMode === 'multi' && typeof socket !== 'undefined' && socket) {
+            socket.emit('chatMessage', msg);
+        }
         addChatMessage(msg, true);
-    });
+        spawnEmoteBubble(myPlayerIndex, msg);
+    };
+    chatQuickEmojis.addEventListener('click', handleQuickEmoji);
+    chatQuickEmojis.addEventListener('touchend', handleQuickEmoji, { passive: false });
 }
 
 // ==========================================
@@ -13466,25 +13524,33 @@ function initEmotesUI() {
     const picker = document.getElementById('emote-picker');
     if (!btn || !picker) return;
 
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        picker.classList.toggle('hidden');
-    });
-
-    document.querySelectorAll('.emote-choice').forEach(choice => {
-        choice.addEventListener('click', (e) => {
+    const togglePicker = (e) => {
+        if (e) {
             e.preventDefault();
             e.stopPropagation();
+        }
+        picker.classList.toggle('hidden');
+    };
+    btn.addEventListener('click', togglePicker);
+    btn.addEventListener('touchend', togglePicker, { passive: false });
+
+    document.querySelectorAll('.emote-choice').forEach(choice => {
+        const sendThisEmote = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const emoji = choice.getAttribute('data-emote');
             picker.classList.add('hidden');
             if (!emoji) return;
 
-            if (gameMode === 'multi') {
+            if (gameMode === 'multi' && typeof socket !== 'undefined' && socket) {
                 socket.emit('sendEmote', { emote: emoji });
             }
             spawnEmoteBubble(myPlayerIndex, emoji);
-        });
+        };
+        choice.addEventListener('click', sendThisEmote);
+        choice.addEventListener('touchend', sendThisEmote, { passive: false });
     });
 
     document.addEventListener('click', (e) => {
@@ -14422,10 +14488,17 @@ let activeProfileTarget = null;
 let duelWaitingTimerInterval = null;
 
 async function fetchDuelInvites() {
-    const myId = myProfile.playerId || myProfile.phone;
-    if (!myId) return;
+    const myId = myProfile.playerId || myProfile.phone || '';
+    if (!myId && !myProfile.name) return;
     try {
-        const res = await fetch(`${API_BASE}/api/duel-invites?playerId=${encodeURIComponent(myId)}`);
+        const params = new URLSearchParams();
+        if (myProfile.playerId) params.append('playerId', myProfile.playerId);
+        if (myProfile.phone) params.append('phone', myProfile.phone);
+        if (myProfile.name) params.append('name', myProfile.name);
+        const tgId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : (myProfile.tgId || '');
+        if (tgId) params.append('tgId', tgId);
+
+        const res = await fetch(`${API_BASE}/api/duel-invites?${params.toString()}`);
         const data = await res.json().catch(() => ({}));
         if (data && data.ok) {
             updateDuelInvitesBadge(data.pendingCount || 0);
