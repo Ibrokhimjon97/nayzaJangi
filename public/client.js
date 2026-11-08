@@ -2812,6 +2812,12 @@ function createSoldier(isP1, charType = 0) {
     if (group.userData.isOttomanUnit && !cOffsetX) planeMesh.position.x = 0;
     group.userData.planeMesh = planeMesh;
     group.userData.basePlaneY = planeHeight / 2;
+    group.userData.planeWidth = planeWidth;
+    group.userData.planeHeight = planeHeight;
+    group.userData.baseWidth = cWidth;
+    group.userData.baseHeight = cHeight;
+    group.userData.facesLeft = facesLeft;
+    group.userData.shouldFlip = shouldFlip;
     planeMesh.castShadow = true;
     group.userData.torso.add(planeMesh); // attach to torso so breath animation works
     group.add(group.userData.torso);
@@ -2909,11 +2915,7 @@ function setSoldierVisual(model, state) {
     model.userData.visualState = targetState;
 
     if (model.userData.planeMesh && model.userData.basePlaneY) {
-        if (model.userData.isOttomanSpearman && targetState === 'duck') {
-            model.userData.planeMesh.position.y = model.userData.basePlaneY + 45;
-        } else {
-            model.userData.planeMesh.position.y = model.userData.basePlaneY;
-        }
+        model.userData.planeMesh.position.y = model.userData.basePlaneY;
     }
 
     if (!model.userData.isOttomanUnit) {
@@ -3566,6 +3568,7 @@ let myDefenseActive = false;
 let enemyDefenseActive = false;
 let myDuckActive = false;
 let enemyDuckActive = false;
+let p3DuckActive = false;
 let myJumpActive = false;
 let enemyJumpActive = false;
 let p3JumpActive = false;
@@ -3846,7 +3849,10 @@ function isDefenseActiveForPlayer(index) {
 }
 
 function isDuckActiveForPlayer(index) {
-    return index === myPlayerIndex ? myDuckActive : enemyDuckActive;
+    if (index === myPlayerIndex) return myDuckActive;
+    if (index === 1) return enemyDuckActive;
+    if (index === 2) return p3DuckActive;
+    return false;
 }
 
 function isJumpActiveForPlayer(index) {
@@ -4160,76 +4166,16 @@ function resetJumpStates() {
     });
 }
 
-function createDuckHeadPngDataUrl() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 96;
-    canvas.height = 96;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    ctx.clearRect(0, 0, 96, 96);
-    const skin = ctx.createLinearGradient(0, 22, 0, 84);
-    skin.addColorStop(0, '#f8fafc');
-    skin.addColorStop(1, '#dbeafe');
-    const helm = ctx.createLinearGradient(0, 8, 0, 46);
-    helm.addColorStop(0, '#fbbf24');
-    helm.addColorStop(1, '#b45309');
-    const visor = ctx.createLinearGradient(0, 22, 0, 46);
-    visor.addColorStop(0, '#334155');
-    visor.addColorStop(1, '#0f172a');
-
-    // Neck/shoulder base.
-    ctx.fillStyle = skin;
-    ctx.beginPath();
-    ctx.roundRect(24, 54, 48, 30, 14);
-    ctx.fill();
-
-    // Head.
-    ctx.beginPath();
-    ctx.arc(48, 37, 19, 0, Math.PI * 2);
-    ctx.fillStyle = skin;
-    ctx.fill();
-
-    // Helmet dome.
-    ctx.beginPath();
-    ctx.arc(48, 30, 22, Math.PI, 0);
-    ctx.closePath();
-    ctx.fillStyle = helm;
-    ctx.fill();
-
-    // Helmet side flaps.
-    ctx.fillStyle = '#92400e';
-    ctx.beginPath();
-    ctx.roundRect(26, 31, 7, 18, 4);
-    ctx.roundRect(63, 31, 7, 18, 4);
-    ctx.fill();
-
-    // Visor stripe.
-    ctx.beginPath();
-    ctx.roundRect(32, 26, 32, 8, 4);
-    ctx.fillStyle = visor;
-    ctx.fill();
-
-    // Eyes.
-    ctx.fillStyle = '#e2e8f0';
-    ctx.beginPath();
-    ctx.arc(41, 38, 2.6, 0, Math.PI * 2);
-    ctx.arc(55, 38, 2.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Mouth.
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(48, 45, 6.5, 0.15, Math.PI - 0.15);
-    ctx.stroke();
-
-    // Helmet shine.
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(43, 24, 7, Math.PI * 1.1, Math.PI * 1.8);
-    ctx.stroke();
-    return canvas.toDataURL('image/png');
+function getDuckCrouchSvg() {
+    return `<svg viewBox="0 0 48 48" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" class="duck-svg-icon">
+        <path d="M5 43H43" stroke="rgba(255,255,255,0.75)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M5 11L37 11M30 7L38 11L30 15" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="21" cy="20" r="4.5" fill="#f8fafc"/>
+        <path d="M21 24.5L25 32.5" stroke="#f8fafc" stroke-width="4.2" stroke-linecap="round"/>
+        <path d="M25 32.5L15 36.5L9 43" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M25 32.5L31 37.5L33 43" stroke="#cbd5e1" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 28L17 34" stroke="#94a3b8" stroke-width="3.2" stroke-linecap="round"/>
+    </svg>`;
 }
 
 function setModelActionState(model, state, durationMs = 700) {
@@ -5230,10 +5176,7 @@ if (crowButton) {
 }
 
 if (duckButton) {
-    const duckIcon = createDuckHeadPngDataUrl();
-    if (duckIcon) {
-        duckButton.innerHTML = `<img src="${duckIcon}" alt="Boshni egish" class="duck-icon">`;
-    }
+    duckButton.innerHTML = getDuckCrouchSvg();
     const pressDuck = (e) => {
         if (e) {
             e.preventDefault();
@@ -6254,28 +6197,21 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
     let hitZone = 'body';
 
     const targetModel = modelForPlayer(targetIndex);
-    const modelHeight = targetModel?.userData?.planeMesh?.geometry?.parameters?.height || 430;
-    const headThreshold = modelHeight * 0.8;
-    const legThreshold = modelHeight * 0.34;
-    const duckAvoidThreshold = modelHeight * 0.55;
+    const baseHeight = targetModel?.userData?.planeHeight || targetModel?.userData?.planeMesh?.geometry?.parameters?.height || 430;
+    const isDucking = isDuckActiveForPlayer(targetIndex);
+    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
+    const headThreshold = effectiveHeight * 0.72;
+    const legThreshold = effectiveHeight * 0.28;
 
-    if (relativeY > headThreshold) {
+    if (relativeY >= headThreshold) {
         damage = 40;
         msg = "🎯 HEADSHOT! -40";
         isCrit = true;
         hitZone = 'head';
-    } else if (relativeY < legThreshold) {
+    } else if (relativeY <= legThreshold) {
         damage = 15;
         msg = "OYOQQA! -15";
         hitZone = 'leg';
-    }
-
-    if (isDuckActiveForPlayer(targetIndex) && relativeY >= duckAvoidThreshold) {
-        return { damage: 0, msg: "BOSHNI EGIB QUTULDI!", isCrit: false, hitZone: 'head', isShieldHit: false, shieldActiveBlock: false, shieldlessDefense: false, duckDodged: true };
-    }
-
-    if (isJumpActiveForPlayer(targetIndex) && (relativeY <= legThreshold || hitZone === 'leg')) {
-        return { damage: 0, msg: "SAKRAB QUTULDI! 🤾", isCrit: false, hitZone: 'leg', isShieldHit: false, shieldActiveBlock: false, shieldlessDefense: false, jumpDodged: true };
     }
 
     const hasShield = shieldForPlayer(targetIndex) > 0 && !targetModel.userData.shieldBroken;
@@ -7849,6 +7785,8 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     spear = {
         x: startX,
         y: startY,
+        prevX: startX,
+        prevY: startY,
         vx: vx,
         vy: power * Math.sin(rad),
         active: true,
@@ -7886,6 +7824,8 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         secondarySpear = {
             x: startX,
             y: startY + 12,
+            prevX: startX,
+            prevY: startY + 12,
             vx: svx,
             vy: shot.power * Math.sin(shotRad),
             active: true,
@@ -8028,6 +7968,77 @@ function applySecondarySpearHit(targetIndex, hitX, hitY) {
     }
 }
 
+function lineSegmentIntersectsAABB(x0, y0, x1, y1, minX, maxX, minY, maxY) {
+    if (Math.max(x0, x1) < minX || Math.min(x0, x1) > maxX) return false;
+    if (Math.max(y0, y1) < minY || Math.min(y0, y1) > maxY) return false;
+    if (x0 >= minX && x0 <= maxX && y0 >= minY && y0 <= maxY) return true;
+    if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY) return true;
+
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    let tmin = 0, tmax = 1;
+
+    if (Math.abs(dx) > 1e-7) {
+        let t1 = (minX - x0) / dx;
+        let t2 = (maxX - x0) / dx;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        tmin = Math.max(tmin, t1);
+        tmax = Math.min(tmax, t2);
+        if (tmin > tmax) return false;
+    }
+
+    if (Math.abs(dy) > 1e-7) {
+        let t1 = (minY - y0) / dy;
+        let t2 = (maxY - y0) / dy;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        tmin = Math.max(tmin, t1);
+        tmax = Math.min(tmax, t2);
+        if (tmin > tmax) return false;
+    }
+
+    return tmin <= tmax && tmax >= 0 && tmin <= 1;
+}
+
+function getPlayerBoundingBox(playerIndex) {
+    const m = modelForPlayer(playerIndex);
+    if (!m || !m.userData || m.userData.isKnockedDown) return null;
+
+    const isDucking = isDuckActiveForPlayer(playerIndex);
+    const isJumping = isJumpActiveForPlayer(playerIndex);
+
+    const baseHeight = m.userData.planeHeight || m.userData?.planeMesh?.geometry?.parameters?.height || (m.userData.isOttomanUnit ? 430 : 480);
+    const baseWidth = m.userData.planeWidth || m.userData?.planeMesh?.geometry?.parameters?.width || (m.userData.isOttomanSpearman ? 640 : (m.userData.isOttomanUnit ? 560 : 360));
+
+    // When ducking/crouching, the warrior lowers down to ~52% of base standing height
+    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
+
+    // Body width: central silhouette of the sprite. When ducking, warrior is compact (~18% narrower)
+    const widthFactor = m.userData.isCustomModel ? 0.44 : 0.36;
+    const halfWidth = (baseWidth * widthFactor) * (isDucking ? 0.82 : 1.0);
+
+    // Feet Y elevation (m.position.y dynamically tracks ground or airborne jump height!)
+    const minY = m.position.y;
+    const maxY = m.position.y + effectiveHeight;
+
+    const minX = m.position.x - halfWidth;
+    const maxX = m.position.x + halfWidth;
+
+    return {
+        model: m,
+        playerIndex,
+        isDucking,
+        isJumping,
+        baseHeight,
+        baseWidth,
+        effectiveHeight,
+        halfWidth,
+        minX,
+        maxX,
+        minY,
+        maxY
+    };
+}
+
 function checkSecondarySpearCollision() {
     if (!secondarySpear || !secondarySpear.active) return;
     
@@ -8048,7 +8059,7 @@ function checkSecondarySpearCollision() {
         return;
     }
     
-    // Raqib modellari bilan to'qnashuv
+    // Raqib modellari bilan to'qnashuv - aniq fizik geometriya (bo'y, en, o'tirish va sakrash)
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
@@ -8056,18 +8067,14 @@ function checkSecondarySpearCollision() {
         if (i === secondarySpear.playerIndex) continue;
         if (areAllies(i, secondarySpear.playerIndex)) continue;
         
-        const modelHeight = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
-        const hitTopY = m.position.y + modelHeight;
-        const hitBottomY = m.position.y + 30;
-        const relativeY = secondarySpear.y - m.position.y;
-        
-        if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
-        if (isJumpActiveForPlayer(i) && relativeY < modelHeight * 0.34) continue;
-        
-        if (Math.abs(secondarySpear.x - m.position.x) < 65 &&
-            secondarySpear.y > hitBottomY &&
-            secondarySpear.y < hitTopY) {
-            
+        const box = getPlayerBoundingBox(i);
+        if (!box) continue;
+
+        const pX = (secondarySpear.prevX !== undefined) ? secondarySpear.prevX : secondarySpear.x;
+        const pY = (secondarySpear.prevY !== undefined) ? secondarySpear.prevY : secondarySpear.y;
+
+        const isHit = lineSegmentIntersectsAABB(pX, pY, secondarySpear.x, secondarySpear.y, box.minX, box.maxX, box.minY, box.maxY);
+        if (isHit) {
             const hitX = secondarySpear.x;
             const hitY = secondarySpear.y;
             secondarySpear.active = false;
@@ -8176,22 +8183,19 @@ function checkCollision() {
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
-        if (m.userData.isKnockedDown) continue;
-        const modelHeight = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
-        const hitTopY = m.position.y + modelHeight;
-        const hitBottomY = m.position.y + 30;
-        const relativeY = spear.y - m.position.y;
-        if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
-        if (isJumpActiveForPlayer(i) && relativeY < modelHeight * 0.34) continue;
-        // Ittifoqchini (bir tomondagi raqibni) o'qi/nayzasi urmaydi - dushmanlar
-        // bir-birining jonini kamaytirmaydi (50+ levelda ikki dushman).
+        if (!m || m.userData.isKnockedDown) continue;
         if (i !== spear.playerIndex && areAllies(i, spear.playerIndex)) continue;
-        if (Math.abs(spear.x - m.position.x) < 55 &&
-            spear.y > hitBottomY && 
-            spear.y < hitTopY) {
-            
+
+        const box = getPlayerBoundingBox(i);
+        if (!box) continue;
+
+        const pX = (spear.prevX !== undefined) ? spear.prevX : spear.x;
+        const pY = (spear.prevY !== undefined) ? spear.prevY : spear.y;
+
+        const isHit = lineSegmentIntersectsAABB(pX, pY, spear.x, spear.y, box.minX, box.maxX, box.minY, box.maxY);
+        if (isHit) {
             if (i === spear.playerIndex && spear.vy > 0) continue;
-            
+
             spear.active = false;
             const isSuicide = (i === spear.playerIndex);
             finishAnimation(true, i, spear.x, spear.y, null, isSuicide);
@@ -8309,21 +8313,34 @@ function gameLoop(now) {
         }
     }
 
-    // Breathing Animation - mayin, tabiiy va modelni haddan ziyod cho'zib yubormaydigan nafas olish
+    // Breathing & Ducking scale/position (yerga kirmaslik va eni cho'zilib ketmasligi)
     const breath = Math.sin(now * 0.002) * 0.005 + 1;
-    const duckOffset = -62;
-    const p1Duck = isDuckActiveForPlayer(0);
-    const p2Duck = isDuckActiveForPlayer(1);
-    const p3Duck = p3Model ? isDuckActiveForPlayer(2) : false;
-    const p1ArcherDuck = p1Model?.userData?.isOttomanArcher && p1Duck;
-    const p2ArcherDuck = p2Model?.userData?.isOttomanArcher && p2Duck;
-    const p3ArcherDuck = p3Model?.userData?.isOttomanArcher && p3Duck;
-    p1Model.userData.torso.scale.y = (p1Model.userData.isKnockedDown || p1Model.userData.visualState === 'hurt') ? 1 : (p1ArcherDuck ? Math.max(0.74, breath - 0.22) : (p1Duck ? Math.max(0.86, breath - 0.12) : breath));
-    p2Model.userData.torso.scale.y = (p2Model.userData.isKnockedDown || p2Model.userData.visualState === 'hurt') ? 1 : (p2ArcherDuck ? Math.max(0.74, breath - 0.22) : (p2Duck ? Math.max(0.86, breath - 0.12) : breath));
-    if (p3Model) p3Model.userData.torso.scale.y = (p3Model.userData.isKnockedDown || p3Model.userData.visualState === 'hurt') ? 1 : (p3ArcherDuck ? Math.max(0.74, breath - 0.22) : (p3Duck ? Math.max(0.86, breath - 0.12) : breath));
-    p1Model.userData.torso.position.y = p1ArcherDuck ? -34 : (p1Duck ? duckOffset : 0);
-    p2Model.userData.torso.position.y = p2ArcherDuck ? -34 : (p2Duck ? duckOffset : 0);
-    if (p3Model) p3Model.userData.torso.position.y = p3ArcherDuck ? -34 : (p3Duck ? duckOffset : 0);
+    const activeModels = [p1Model, p2Model];
+    if (p3Model) activeModels.push(p3Model);
+
+    activeModels.forEach((mod, idx) => {
+        if (!mod || !mod.userData || !mod.userData.torso) return;
+        const isDuck = isDuckActiveForPlayer(idx);
+        const isDown = mod.userData.isKnockedDown || mod.userData.visualState === 'hurt';
+
+        if (isDown) {
+            mod.userData.torso.scale.set(1, 1, 1);
+            mod.userData.torso.position.y = 0;
+            return;
+        }
+
+        if (isDuck) {
+            // O'tirganda: bo'yi pastayadi, eni ixcham bo'ladi (katta bo'lib cho'zilmaydi),
+            // va eng muhimi: oyoqlari qat'iy yer sathida turadi (yer ostiga kirmaydi)
+            mod.userData.torso.scale.y = 0.72;
+            mod.userData.torso.scale.x = 0.82;
+            mod.userData.torso.position.y = 0;
+        } else {
+            mod.userData.torso.scale.y = breath;
+            mod.userData.torso.scale.x = 1.0;
+            mod.userData.torso.position.y = 0;
+        }
+    });
     p1Model.userData.headGroup.position.y = (isDuckActiveForPlayer(0) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
     p2Model.userData.headGroup.position.y = (isDuckActiveForPlayer(1) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
     if (p3Model) p3Model.userData.headGroup.position.y = (isDuckActiveForPlayer(2) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
@@ -8492,6 +8509,8 @@ function gameLoop(now) {
     }
 
     if (isAnimating && spear && spear.active) {
+        spear.prevX = spear.x;
+        spear.prevY = spear.y;
         spear.x += spear.vx * dt;
         spear.y += spear.vy * dt;
         spear.vy -= GRAVITY * dt; 
@@ -8547,6 +8566,8 @@ function gameLoop(now) {
     }
 
     if (secondarySpear && secondarySpear.active) {
+        secondarySpear.prevX = secondarySpear.x;
+        secondarySpear.prevY = secondarySpear.y;
         secondarySpear.x += secondarySpear.vx * dt;
         secondarySpear.y += secondarySpear.vy * dt;
         secondarySpear.vy -= GRAVITY * dt;

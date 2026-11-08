@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=75">
+    <link rel="stylesheet" href="style.css?v=76">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -691,8 +691,16 @@
                     <span id="super-count" class="shield-count">5</span>
                 </button>
                 <button id="duck-button" class="icon-btn duck-btn" style="pointer-events: auto;"
-                    aria-label="Boshni egib himoyalanish">
-                    🗿
+                    aria-label="O'tirish (Cho'qqayib himoyalanish)" title="O'tirish / Cho'qqayish (Boshni egib qutulish)">
+                    <svg viewBox="0 0 48 48" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" class="duck-svg-icon">
+                        <path d="M5 43H43" stroke="rgba(255,255,255,0.75)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M5 11L37 11M30 7L38 11L30 15" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="21" cy="20" r="4.5" fill="#f8fafc"/>
+                        <path d="M21 24.5L25 32.5" stroke="#f8fafc" stroke-width="4.2" stroke-linecap="round"/>
+                        <path d="M25 32.5L15 36.5L9 43" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M25 32.5L31 37.5L33 43" stroke="#cbd5e1" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 28L17 34" stroke="#94a3b8" stroke-width="3.2" stroke-linecap="round"/>
+                    </svg>
                 </button>
                 <button id="jump-button" class="icon-btn jump-btn" style="pointer-events: auto;" aria-label="Sakrash">
                     🤾
@@ -957,7 +965,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=75"></script>
+    <script src="client.js?v=76"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {
