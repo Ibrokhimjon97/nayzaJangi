@@ -39,17 +39,17 @@ try {
 const tg = window.Telegram?.WebApp;
 if (tg) {
     try {
-        tg.ready();
-        tg.expand();
-        if (typeof tg.requestFullscreen === 'function') {
-            try {
-                if (typeof tg.isVersionAtLeast === 'function' ? tg.isVersionAtLeast('8.0') : false) {
-                    tg.requestFullscreen();
-                }
-            } catch (_) { }
+        if (typeof tg.ready === 'function') tg.ready();
+        if (typeof tg.expand === 'function') tg.expand();
+        const hasV61 = typeof tg.isVersionAtLeast === 'function' ? tg.isVersionAtLeast('6.1') : false;
+        const hasV80 = typeof tg.isVersionAtLeast === 'function' ? tg.isVersionAtLeast('8.0') : false;
+        if (hasV80 && typeof tg.requestFullscreen === 'function') {
+            try { tg.requestFullscreen(); } catch (_) { }
         }
-        if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#111827');
-        if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0b0f19');
+        if (hasV61) {
+            if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#111827');
+            if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0b0f19');
+        }
     } catch (e) {
         console.warn('Telegram WebApp init warning:', e);
     }
@@ -636,14 +636,14 @@ function makeRadialGlowTexture(innerColor = '#ffffff', outerColor = '#ffcc66') {
 }
 
 function tryLockLandscapeOrientation() {
-    if (window.Telegram && window.Telegram.WebApp) {
+    const tgApp = window.Telegram?.WebApp;
+    if (tgApp) {
         try {
-            window.Telegram.WebApp.expand();
-            if (typeof window.Telegram.WebApp.requestFullscreen === 'function') {
-                window.Telegram.WebApp.requestFullscreen();
-            }
-            if (typeof window.Telegram.WebApp.lockOrientation === 'function') {
-                window.Telegram.WebApp.lockOrientation('landscape');
+            if (typeof tgApp.expand === 'function') tgApp.expand();
+            const hasV80 = typeof tgApp.isVersionAtLeast === 'function' ? tgApp.isVersionAtLeast('8.0') : false;
+            if (hasV80) {
+                if (typeof tgApp.requestFullscreen === 'function') tgApp.requestFullscreen();
+                if (typeof tgApp.lockOrientation === 'function') tgApp.lockOrientation('landscape');
             }
         } catch (_) { }
     }
@@ -10966,7 +10966,11 @@ const ALL_MODAL_IDS = [
 ];
 
 function updateTelegramBackButton() {
-    if (!window.Telegram?.WebApp?.BackButton) return;
+    const tgApp = window.Telegram?.WebApp;
+    if (!tgApp || !tgApp.BackButton) return;
+    const hasV61 = typeof tgApp.isVersionAtLeast === 'function' ? tgApp.isVersionAtLeast('6.1') : false;
+    if (!hasV61) return;
+
     try {
         const isModalOpen = ALL_MODAL_IDS.some(id => {
             const el = document.getElementById(id);
@@ -10977,9 +10981,9 @@ function updateTelegramBackButton() {
         const isInGame = gameScreen && !gameScreen.classList.contains('hidden');
 
         if (isModalOpen || isInGameModalOpen || isInGame) {
-            window.Telegram.WebApp.BackButton.show();
+            tgApp.BackButton.show();
         } else {
-            window.Telegram.WebApp.BackButton.hide();
+            tgApp.BackButton.hide();
         }
     } catch (e) {
         console.warn('Telegram BackButton error:', e);
@@ -11023,10 +11027,14 @@ function handleGlobalBack() {
 }
 
 if (window.Telegram?.WebApp?.BackButton) {
-    try {
-        window.Telegram.WebApp.BackButton.onClick(handleGlobalBack);
-    } catch (e) {
-        console.warn('Telegram BackButton onClick error:', e);
+    const tgApp = window.Telegram.WebApp;
+    const hasV61 = typeof tgApp.isVersionAtLeast === 'function' ? tgApp.isVersionAtLeast('6.1') : false;
+    if (hasV61) {
+        try {
+            tgApp.BackButton.onClick(handleGlobalBack);
+        } catch (e) {
+            console.warn('Telegram BackButton onClick error:', e);
+        }
     }
 }
 
@@ -11215,8 +11223,11 @@ function renderCharacterSelectRoster(activeId) {
             }
         };
 
-        card.addEventListener('click', onSelect);
+        card.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
         card.addEventListener('touchend', onSelect, { passive: false });
+        card.addEventListener('click', onSelect);
 
         charSelectRoster.appendChild(card);
     });
@@ -11235,10 +11246,19 @@ function openCharacterSelectModal(options = {}) {
     isCharSelectTransitioning = false;
 
     // Disallow background touch bleed-through while modal is open
-    if (menuScreen) menuScreen.style.pointerEvents = 'none';
-    if (singleModeModal) singleModeModal.style.pointerEvents = 'none';
-    if (levelSelectModal) levelSelectModal.style.pointerEvents = 'none';
-    if (multiMenu) multiMenu.style.pointerEvents = 'none';
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.pointerEvents = 'none';
+    }
+    for (const id of ALL_MODAL_IDS) {
+        if (id !== 'character-select-modal') {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('hidden');
+                el.style.pointerEvents = 'none';
+            }
+        }
+    }
 
     const currentLang = (typeof myProfile !== 'undefined' && myProfile.lang) ? myProfile.lang : 'uz';
     const t = translations[currentLang] || translations.uz;
@@ -11310,11 +11330,20 @@ if (btnCharSelectConfirm) {
 
         if (charSelectModal) charSelectModal.classList.add('hidden');
 
-        // Restore pointer events
-        if (menuScreen) menuScreen.style.pointerEvents = '';
-        if (singleModeModal) singleModeModal.style.pointerEvents = '';
-        if (levelSelectModal) levelSelectModal.style.pointerEvents = '';
-        if (multiMenu) multiMenu.style.pointerEvents = '';
+        // Prevent ghost click pass-through on release by keeping background non-interactive for 450ms
+        const suppressGhost = (ge) => {
+            ge.preventDefault();
+            ge.stopPropagation();
+            ge.stopImmediatePropagation();
+        };
+        window.addEventListener('click', suppressGhost, { capture: true, once: true });
+        setTimeout(() => {
+            window.removeEventListener('click', suppressGhost, { capture: true });
+            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
+            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
+            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
+            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
+        }, 450);
 
         const cb = pendingCharSelectCallback;
         pendingCharSelectCallback = null;
@@ -11345,11 +11374,19 @@ if (btnCharSelectCancel) {
 
         if (charSelectModal) charSelectModal.classList.add('hidden');
 
-        // Restore pointer events
-        if (menuScreen) menuScreen.style.pointerEvents = '';
-        if (singleModeModal) singleModeModal.style.pointerEvents = '';
-        if (levelSelectModal) levelSelectModal.style.pointerEvents = '';
-        if (multiMenu) multiMenu.style.pointerEvents = '';
+        const suppressGhost = (ge) => {
+            ge.preventDefault();
+            ge.stopPropagation();
+            ge.stopImmediatePropagation();
+        };
+        window.addEventListener('click', suppressGhost, { capture: true, once: true });
+        setTimeout(() => {
+            window.removeEventListener('click', suppressGhost, { capture: true });
+            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
+            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
+            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
+            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
+        }, 450);
 
         if (typeof pendingCharSelectCancel === 'function') {
             const onCancel = pendingCharSelectCancel;
@@ -13658,6 +13695,13 @@ document.addEventListener('keydown', (e) => {
             if (grid) return grid;
             const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable], .custom-select-menu, #profile-modal, #level-select-modal, .center-panel, .modal-panel');
             if (scrollable) return scrollable;
+        }
+
+        const charModal = document.getElementById('character-select-modal');
+        if (charModal && !charModal.classList.contains('hidden') && charModal.offsetParent !== null) {
+            const roster = document.getElementById('char-select-roster');
+            if (roster) return roster;
+            return charModal;
         }
 
         const profModal = document.getElementById('profile-modal');

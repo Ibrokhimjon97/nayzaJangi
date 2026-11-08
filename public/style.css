@@ -251,6 +251,21 @@ body.force-landscape .fire-btn {
     z-index: 10001;
 }
 
+/* MUTLOQ YASHIRISH KAFOLATI (CSS SPECIFICITY FIX) */
+#menu-screen.hidden,
+#menu-screen.menu-carousel-screen.hidden,
+.menu-carousel-screen.hidden,
+.char-select-modal.hidden,
+.screen.hidden,
+.panel.hidden,
+.modal-overlay.hidden,
+.hidden {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
 .hidden {
     display: none !important;
     opacity: 0;
@@ -5080,11 +5095,42 @@ body.force-landscape .custom-select-item {
     }
 }
 
+/* Mobil Portret (@media max-width: 600px and min-height: 521px) */
+@media screen and (max-width: 600px) and (min-height: 521px) {
+    .char-select-modal {
+        width: 95vw !important;
+        max-height: 88vh !important;
+        padding: 14px 12px 14px !important;
+    }
+
+    .char-roster-grid {
+        max-height: 52vh !important;
+        gap: 8px !important;
+        padding: 6px 4px !important;
+    }
+
+    .char-card {
+        flex: 0 1 calc(50% - 10px) !important;
+        max-width: 160px !important;
+        padding: 8px 6px !important;
+    }
+
+    .char-card-avatar-wrap {
+        height: 105px !important;
+    }
+
+    .char-confirm-btn,
+    .char-cancel-btn {
+        padding: 10px 12px !important;
+        font-size: 0.95rem !important;
+    }
+}
+
 /* ==========================================================================
    1. ZAMONAVIY CARD CAROUSEL ASOSIY MENYU (AAA O'YINLAR DIZAYNIDA)
    ========================================================================== */
 
-#menu-screen.menu-carousel-screen {
+#menu-screen.menu-carousel-screen:not(.hidden) {
     width: min(96vw, 940px) !important;
     max-width: 960px !important;
     max-height: min(94vh, 640px) !important;
@@ -5573,7 +5619,7 @@ body.force-landscape .custom-select-item {
 
 /* Mobil Landshaft (@media max-height: 520px) uchun maxsus o'ta qulay va sig'adigan parametrlar */
 @media screen and (max-height: 520px) {
-    #menu-screen.menu-carousel-screen {
+    #menu-screen.menu-carousel-screen:not(.hidden) {
         width: 96vw !important;
         max-height: 94vh !important;
         padding: 8px 12px 10px !important;
@@ -5819,7 +5865,7 @@ body.force-landscape .custom-select-item {
 
 /* Mobil Portret (@media max-width: 600px and min-height: 521px) */
 @media screen and (max-width: 600px) and (min-height: 521px) {
-    #menu-screen.menu-carousel-screen {
+    #menu-screen.menu-carousel-screen:not(.hidden) {
         width: 95vw !important;
         max-height: 92vh !important;
         padding: 12px 14px 16px !important;
