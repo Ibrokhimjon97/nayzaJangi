@@ -662,6 +662,9 @@ function getAppViewport() {
         (window.matchMedia && window.matchMedia('(max-width: 950px)').matches);
     const needRotate = isMobileDevice && (winW < winH);
 
+    const isLandscapePhone = (winW >= winH && (winH <= 650 || isMobileDevice)) || (winH <= 520);
+    document.body.classList.toggle('mobile-landscape', isLandscapePhone);
+
     if (needRotate) {
         if (!document.body.classList.contains('force-landscape')) {
             document.body.classList.add('force-landscape');
@@ -13939,9 +13942,13 @@ document.addEventListener('keydown', (e) => {
 
     function getActiveScrollTarget(rawTarget) {
         if (rawTarget && typeof rawTarget.closest === 'function') {
+            // NEVER intercept horizontal carousels or their items with vertical modal drag!
+            if (rawTarget.closest('#menu-cards-carousel, .menu-carousel-wrapper, .menu-card, #lang-carousel-track, .lang-carousel-wrapper, .lang-card, .duel-invites-tabs')) {
+                return null;
+            }
             const grid = rawTarget.closest('#level-grid');
             if (grid) return grid;
-            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable], .custom-select-menu, #profile-modal, #level-select-modal, .center-panel, .modal-panel');
+            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable], .custom-select-menu, #profile-modal, #level-select-modal, .modal-panel');
             if (scrollable) return scrollable;
         }
 
@@ -13992,8 +13999,7 @@ document.addEventListener('keydown', (e) => {
             document.getElementById('daily-quests-modal'),
             document.getElementById('about-modal'),
             document.getElementById('help-modal'),
-            document.getElementById('auth-modal'),
-            document.getElementById('menu-screen')
+            document.getElementById('auth-modal')
         ];
 
         for (const p of candidatePanels) {
@@ -14023,9 +14029,14 @@ document.addEventListener('keydown', (e) => {
         const vpos = getPointerPos({ clientX, clientY });
         const dy = vpos.y - scrollStartY;
         const dx = vpos.x - scrollStartX;
-        const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (!isScrollDragging && (dist > 8 || Math.abs(dy) > 6)) {
+        // If swipe movement is primarily horizontal, cancel vertical interception so horizontal scroll works cleanly
+        if (Math.abs(dx) > Math.abs(dy) * 1.2 && !isScrollDragging) {
+            activeScrollPanel = null;
+            return;
+        }
+
+        if (!isScrollDragging && (Math.abs(dy) > 7 && Math.abs(dy) > Math.abs(dx))) {
             isScrollDragging = true;
         }
 
@@ -14208,6 +14219,64 @@ function setupMenuCarousel() {
     
     if (cards.length === 0) return;
 
+    // Gorizontal touch va scroll sozlamalari
+    carousel.style.touchAction = 'pan-x';
+    carousel.style.overflowX = 'auto';
+
+    // Desktop/pointer sichqoncha bilan tortib surish (drag-to-scroll)
+    if (!carousel._hasPointerDrag) {
+        carousel._hasPointerDrag = true;
+        let isDown = false;
+        let startX = 0;
+        let scrollStartLeft = 0;
+        let velX = 0;
+        let lastX = 0;
+        let lastTime = 0;
+
+        carousel.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (e.target && e.target.closest && e.target.closest('button')) return;
+            isDown = true;
+            startX = e.clientX;
+            scrollStartLeft = carousel.scrollLeft;
+            lastX = e.clientX;
+            lastTime = performance.now();
+            velX = 0;
+        }, { passive: true });
+
+        const endDrag = () => {
+            if (!isDown) return;
+            isDown = false;
+            if (Math.abs(velX) > 0.15) {
+                carousel.scrollBy({ left: -velX * 160, behavior: 'smooth' });
+            }
+        };
+
+        window.addEventListener('pointerup', endDrag, { passive: true });
+        window.addEventListener('pointercancel', endDrag, { passive: true });
+
+        carousel.addEventListener('pointermove', (e) => {
+            if (!isDown) return;
+            const dx = e.clientX - startX;
+            if (Math.abs(dx) > 4) {
+                carousel.scrollLeft = scrollStartLeft - dx;
+                const now = performance.now();
+                const dt = Math.max(1, now - lastTime);
+                velX = (e.clientX - lastX) / dt;
+                lastX = e.clientX;
+                lastTime = now;
+            }
+        }, { passive: true });
+
+        // Sichqoncha g'ildiragi bilan gorizontal siljitish
+        carousel.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
+                e.preventDefault();
+                carousel.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
+    }
+
     // 1. Indikator nuqtalarni yaratish
     if (dotsContainer) {
         dotsContainer.innerHTML = '';
@@ -14256,7 +14325,7 @@ function setupMenuCarousel() {
     // 3. Chap va O'ng o'q tugmalari
     const getScrollStep = () => {
         const card = cards[0];
-        return card ? (card.clientWidth + 16) : 230;
+        return card ? (card.clientWidth + 12) : 180;
     };
 
     if (prevBtn && !prevBtn._hasCarouselListener) {

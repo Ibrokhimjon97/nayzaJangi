@@ -65,13 +65,14 @@ body.force-landscape .modal-panel .primary-btn {
     padding: 6px 12px !important;
 }
 
-/* Force landscape da Card Carusel Menyu to'liq ekran bo'ylab keng yoyilishi */
-body.force-landscape #menu-screen.menu-carousel-screen:not(.hidden) {
+/* Force landscape va Mobil Albomniy/Landshaft rejimida Card Carusel Menyu to'liq ekran bo'ylab keng yoyilishi */
+body.force-landscape #menu-screen.menu-carousel-screen:not(.hidden),
+body.mobile-landscape #menu-screen.menu-carousel-screen:not(.hidden) {
     width: 98% !important;
     max-width: 98% !important;
     height: 96% !important;
     max-height: 96% !important;
-    padding: 6px 10px 4px !important;
+    padding: 4px 8px 3px !important;
     border-radius: 16px !important;
     overflow: hidden !important;
     overflow-y: hidden !important;
@@ -83,135 +84,193 @@ body.force-landscape #menu-screen.menu-carousel-screen:not(.hidden) {
     transform: translate(-50%, -50%) !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-top-bar {
-    padding: 3px 8px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-top-bar,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-top-bar {
+    padding: 2px 8px !important;
     margin-bottom: 2px !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-avatar-icon {
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 1.15rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-avatar-icon,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-avatar-icon {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 1.05rem !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-user-name {
-    font-size: 0.82rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-user-name,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-user-name {
+    font-size: 0.80rem !important;
 }
 
 body.force-landscape #menu-screen.menu-carousel-screen .menu-level-chip,
 body.force-landscape #menu-screen.menu-carousel-screen .menu-tier-chip,
-body.force-landscape #menu-screen.menu-carousel-screen .menu-score-chip {
-    font-size: 0.65rem !important;
-    padding: 1px 5px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-score-chip,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-level-chip,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-tier-chip,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-score-chip {
+    font-size: 0.62rem !important;
+    padding: 1px 4px !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-top-btn {
-    padding: 3px 6px !important;
-    font-size: 0.72rem !important;
-    border-radius: 8px !important;
-    min-height: 24px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-top-btn,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-top-btn {
+    padding: 2px 6px !important;
+    font-size: 0.70rem !important;
+    border-radius: 6px !important;
+    min-height: 22px !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-header {
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-header,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-carousel-header {
     display: flex !important;
     align-items: baseline !important;
     justify-content: center !important;
     gap: 8px !important;
-    margin: 1px 0 2px !important;
+    margin: 0 0 2px !important;
     flex-shrink: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-title {
-    font-size: 1.05rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-title,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-carousel-title {
+    font-size: 0.95rem !important;
     margin: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-subtitle {
-    font-size: 0.65rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-subtitle,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-carousel-subtitle {
+    font-size: 0.62rem !important;
     margin: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-wrapper {
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-wrapper,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-carousel-wrapper {
     flex: 1 1 auto !important;
     min-height: 0 !important;
     height: 100% !important;
-    margin: 1px 0 !important;
+    margin: 0 !important;
+    position: relative !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-cards-carousel {
-    padding: 2px 6px 4px !important;
-    gap: 12px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-cards-carousel,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-cards-carousel {
+    padding: 2px 24px 4px !important;
+    gap: 10px !important;
     height: 100% !important;
     min-height: 0 !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    scroll-snap-type: x proximity !important;
     align-items: stretch !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card {
-    flex: 0 0 clamp(160px, 24vw, 205px) !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card {
+    flex: 0 0 clamp(135px, 20vw, 180px) !important;
     height: 100% !important;
+    min-height: 0 !important;
     max-height: 100% !important;
-    padding: 6px 8px 8px !important;
-    border-radius: 14px !important;
+    padding: 5px 6px 6px !important;
+    border-radius: 12px !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 2px !important;
     box-sizing: border-box !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-badge {
-    font-size: 0.58rem !important;
-    padding: 1px 6px !important;
-    margin-bottom: 2px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-badge,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-badge {
+    font-size: 0.54rem !important;
+    padding: 1px 5px !important;
+    margin-bottom: 1px !important;
+    flex-shrink: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-icon-box {
-    width: 34px !important;
-    height: 34px !important;
-    margin-bottom: 2px !important;
-    border-radius: 10px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-icon-box,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-icon-box {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 1px 0 !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-emoji {
-    font-size: 1.15rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-emoji,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-emoji {
+    font-size: 1.05rem !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-name {
-    font-size: 0.88rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-name,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-name {
+    font-size: 0.80rem !important;
     margin: 0 0 1px !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    flex-shrink: 0 !important;
+    text-align: center !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-description {
-    font-size: 0.62rem !important;
-    line-height: 1.2 !important;
-    margin: 0 0 3px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-description,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-description {
+    font-size: 0.56rem !important;
+    line-height: 1.15 !important;
+    margin: 0 0 2px !important;
+    max-height: 22px !important;
     min-height: 0 !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
+    text-align: center !important;
+    flex: 0 1 auto !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-card-btn {
-    padding: 3px 6px !important;
-    font-size: 0.74rem !important;
-    min-height: 26px !important;
-    height: 26px !important;
-    border-radius: 7px !important;
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-btn,
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card button.primary-btn,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card-btn,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-card button.primary-btn {
+    padding: 2px 4px !important;
+    font-size: 0.68rem !important;
+    min-height: 22px !important;
+    height: 22px !important;
+    max-height: 22px !important;
+    line-height: 18px !important;
+    border-radius: 6px !important;
     margin: 0 !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-dots {
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-dots,
+body.mobile-landscape #menu-screen.menu-carousel-screen .menu-carousel-dots {
     margin-top: 1px !important;
     padding: 1px 0 !important;
+    flex-shrink: 0 !important;
 }
 
-body.force-landscape #menu-screen.menu-carousel-screen .carousel-arrow {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 1.1rem !important;
+body.force-landscape #menu-screen.menu-carousel-screen .carousel-arrow,
+body.mobile-landscape #menu-screen.menu-carousel-screen .carousel-arrow {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.95rem !important;
+    line-height: 24px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .carousel-arrow-left,
+body.mobile-landscape #menu-screen.menu-carousel-screen .carousel-arrow-left {
+    left: -4px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .carousel-arrow-right,
+body.mobile-landscape #menu-screen.menu-carousel-screen .carousel-arrow-right {
+    right: -4px !important;
 }
 
 body.force-landscape .hud {
@@ -5837,14 +5896,14 @@ body.force-landscape .custom-select-item {
 }
 
 /* Mobil Landshaft / Albomniy rejim (@media max-height: 540px yoki landscape) uchun maxsus o'ta qulay, to'liq ekran bo'ylab yoyiladigan parametrlar */
-@media screen and (orientation: landscape) and (max-height: 650px),
-screen and (max-height: 540px) {
+@media (orientation: landscape) and (max-height: 650px),
+(max-height: 540px) {
     #menu-screen.menu-carousel-screen:not(.hidden) {
         width: 98vw !important;
         max-width: 98vw !important;
         height: 96vh !important;
         max-height: 96vh !important;
-        padding: 5px 10px 4px !important;
+        padding: 4px 8px 3px !important;
         border-radius: 16px !important;
         overflow: hidden !important;
         overflow-y: hidden !important;
@@ -5857,32 +5916,32 @@ screen and (max-height: 540px) {
     }
 
     .menu-top-bar {
-        padding: 3px 8px !important;
+        padding: 2px 8px !important;
         margin-bottom: 2px !important;
     }
 
     .menu-avatar-icon {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 1.1rem !important;
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 1.05rem !important;
     }
 
     .menu-user-name {
-        font-size: 0.8rem !important;
+        font-size: 0.80rem !important;
     }
 
     .menu-level-chip,
     .menu-tier-chip,
     .menu-score-chip {
-        font-size: 0.65rem !important;
+        font-size: 0.62rem !important;
         padding: 1px 4px !important;
     }
 
     .menu-top-btn {
-        padding: 3px 6px !important;
-        font-size: 0.72rem !important;
+        padding: 2px 6px !important;
+        font-size: 0.70rem !important;
         border-radius: 6px !important;
-        min-height: 24px !important;
+        min-height: 22px !important;
     }
 
     .menu-carousel-header {
@@ -5890,17 +5949,17 @@ screen and (max-height: 540px) {
         align-items: baseline !important;
         justify-content: center !important;
         gap: 8px !important;
-        margin: 1px 0 2px !important;
+        margin: 0 0 2px !important;
         flex-shrink: 0 !important;
     }
 
     .menu-carousel-title {
-        font-size: 1.05rem !important;
+        font-size: 0.95rem !important;
         margin: 0 !important;
     }
 
     .menu-carousel-subtitle {
-        font-size: 0.65rem !important;
+        font-size: 0.62rem !important;
         margin: 0 !important;
     }
 
@@ -5908,91 +5967,117 @@ screen and (max-height: 540px) {
         flex: 1 1 auto !important;
         min-height: 0 !important;
         height: 100% !important;
-        margin: 1px 0 !important;
+        margin: 0 !important;
+        position: relative !important;
     }
 
     .menu-cards-carousel {
-        padding: 2px 6px 4px !important;
-        gap: 12px !important;
+        padding: 2px 24px 4px !important;
+        gap: 10px !important;
         height: 100% !important;
         min-height: 0 !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        scroll-snap-type: x proximity !important;
         align-items: stretch !important;
     }
 
     .menu-card {
-        flex: 0 0 clamp(160px, 24vw, 205px) !important;
+        flex: 0 0 clamp(135px, 20vw, 180px) !important;
         height: 100% !important;
+        min-height: 0 !important;
         max-height: 100% !important;
-        padding: 6px 8px 8px !important;
-        border-radius: 14px !important;
+        padding: 5px 6px 6px !important;
+        border-radius: 12px !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 2px !important;
         box-sizing: border-box !important;
     }
 
     .menu-card-badge {
-        font-size: 0.58rem !important;
-        padding: 1px 6px !important;
-        margin-bottom: 2px !important;
+        font-size: 0.54rem !important;
+        padding: 1px 5px !important;
+        margin-bottom: 1px !important;
+        flex-shrink: 0 !important;
     }
 
     .menu-card-icon-box {
-        width: 34px !important;
-        height: 34px !important;
-        margin-bottom: 2px !important;
-        border-radius: 10px !important;
+        width: 28px !important;
+        height: 28px !important;
+        margin: 1px 0 !important;
+        border-radius: 8px !important;
+        flex-shrink: 0 !important;
     }
 
     .menu-card-emoji {
-        font-size: 1.15rem !important;
+        font-size: 1.05rem !important;
     }
 
     .menu-card-name {
-        font-size: 0.88rem !important;
+        font-size: 0.80rem !important;
         margin: 0 0 1px !important;
         white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+        flex-shrink: 0 !important;
+        text-align: center !important;
     }
 
     .menu-card-description {
-        font-size: 0.62rem !important;
-        line-height: 1.2 !important;
-        margin: 0 0 3px !important;
+        font-size: 0.56rem !important;
+        line-height: 1.15 !important;
+        margin: 0 0 2px !important;
+        max-height: 22px !important;
         min-height: 0 !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 2 !important;
         -webkit-box-orient: vertical !important;
         overflow: hidden !important;
+        text-align: center !important;
+        flex: 0 1 auto !important;
     }
 
-    .menu-card-btn {
-        padding: 3px 6px !important;
-        font-size: 0.74rem !important;
-        min-height: 26px !important;
-        height: 26px !important;
-        border-radius: 7px !important;
+    .menu-card-btn,
+    .menu-card button.primary-btn {
+        padding: 2px 4px !important;
+        font-size: 0.68rem !important;
+        min-height: 22px !important;
+        height: 22px !important;
+        max-height: 22px !important;
+        line-height: 18px !important;
+        border-radius: 6px !important;
         margin: 0 !important;
+        margin-top: auto !important;
+        margin-bottom: 0 !important;
+        flex-shrink: 0 !important;
+        width: 100% !important;
     }
 
     .menu-carousel-dots {
         margin-top: 1px !important;
         padding: 1px 0 !important;
+        flex-shrink: 0 !important;
     }
 
     .carousel-arrow {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 1.1rem !important;
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 0.95rem !important;
+        line-height: 24px !important;
     }
 
     .carousel-arrow-left {
-        left: -6px !important;
+        left: -4px !important;
     }
 
     .carousel-arrow-right {
-        right: -6px !important;
+        right: -4px !important;
     }
 
     /* Barcha 7 ta modalning landshaftda sig'ishi va scroll bo'lishi */
@@ -6128,6 +6213,42 @@ screen and (max-height: 540px) {
         padding: 6px 12px !important;
         font-size: 0.88rem !important;
         margin-bottom: 6px !important;
+    }
+
+    .menu-card .menu-card-btn,
+    .menu-card button.primary-btn {
+        min-height: 22px !important;
+        height: 22px !important;
+        max-height: 22px !important;
+        padding: 2px 4px !important;
+        font-size: 0.68rem !important;
+        line-height: 18px !important;
+        margin: 0 !important;
+        margin-top: auto !important;
+        margin-bottom: 0 !important;
+        border-radius: 6px !important;
+        width: 100% !important;
+    }
+}
+
+/* O'ta ixcham landshaft ekranlar (bo'yi 360px dan kichik telefonlar) */
+@media (orientation: landscape) and (max-height: 360px),
+(max-height: 360px) {
+    #menu-screen.menu-carousel-screen .menu-carousel-header {
+        display: none !important;
+    }
+    #menu-screen.menu-carousel-screen .menu-card-description {
+        display: none !important;
+    }
+    #menu-screen.menu-carousel-screen .menu-card {
+        padding: 3px 5px 4px !important;
+    }
+    #menu-screen.menu-carousel-screen .menu-card-icon-box {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    #menu-screen.menu-carousel-screen .menu-card-emoji {
+        font-size: 0.95rem !important;
     }
 }
 
