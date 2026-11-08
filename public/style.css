@@ -44,8 +44,8 @@ body.force-landscape #game-app-root {
     overflow: hidden !important;
 }
 
-body.force-landscape #menu-screen,
-body.force-landscape .center-panel,
+body.force-landscape #menu-screen:not(.menu-carousel-screen),
+body.force-landscape .center-panel:not(.menu-carousel-screen),
 body.force-landscape .modal-panel {
     max-height: min(86vw, 360px) !important;
     max-width: min(86vh, 540px) !important;
@@ -56,13 +56,162 @@ body.force-landscape .modal-panel {
     padding-bottom: 45px !important;
 }
 
-body.force-landscape #menu-screen .primary-btn,
-body.force-landscape .center-panel .primary-btn,
+body.force-landscape #menu-screen:not(.menu-carousel-screen) .primary-btn,
+body.force-landscape .center-panel:not(.menu-carousel-screen) .primary-btn,
 body.force-landscape .modal-panel .primary-btn {
     min-height: 42px !important;
     margin-bottom: 7px !important;
     font-size: 0.92rem !important;
     padding: 6px 12px !important;
+}
+
+/* Force landscape da Card Carusel Menyu to'liq ekran bo'ylab keng yoyilishi */
+body.force-landscape #menu-screen.menu-carousel-screen:not(.hidden) {
+    width: 98% !important;
+    max-width: 98% !important;
+    height: 96% !important;
+    max-height: 96% !important;
+    padding: 6px 10px 4px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-top-bar {
+    padding: 3px 8px !important;
+    margin-bottom: 2px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-avatar-icon {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 1.15rem !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-user-name {
+    font-size: 0.82rem !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-level-chip,
+body.force-landscape #menu-screen.menu-carousel-screen .menu-tier-chip,
+body.force-landscape #menu-screen.menu-carousel-screen .menu-score-chip {
+    font-size: 0.65rem !important;
+    padding: 1px 5px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-top-btn {
+    padding: 3px 6px !important;
+    font-size: 0.72rem !important;
+    border-radius: 8px !important;
+    min-height: 24px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-header {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin: 1px 0 2px !important;
+    flex-shrink: 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-title {
+    font-size: 1.05rem !important;
+    margin: 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-subtitle {
+    font-size: 0.65rem !important;
+    margin: 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-wrapper {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    margin: 1px 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-cards-carousel {
+    padding: 2px 6px 4px !important;
+    gap: 12px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    align-items: stretch !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card {
+    flex: 0 0 clamp(160px, 24vw, 205px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 6px 8px 8px !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-badge {
+    font-size: 0.58rem !important;
+    padding: 1px 6px !important;
+    margin-bottom: 2px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-icon-box {
+    width: 34px !important;
+    height: 34px !important;
+    margin-bottom: 2px !important;
+    border-radius: 10px !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-emoji {
+    font-size: 1.15rem !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-name {
+    font-size: 0.88rem !important;
+    margin: 0 0 1px !important;
+    white-space: nowrap !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-description {
+    font-size: 0.62rem !important;
+    line-height: 1.2 !important;
+    margin: 0 0 3px !important;
+    min-height: 0 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-card-btn {
+    padding: 3px 6px !important;
+    font-size: 0.74rem !important;
+    min-height: 26px !important;
+    height: 26px !important;
+    border-radius: 7px !important;
+    margin: 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .menu-carousel-dots {
+    margin-top: 1px !important;
+    padding: 1px 0 !important;
+}
+
+body.force-landscape #menu-screen.menu-carousel-screen .carousel-arrow {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 1.1rem !important;
 }
 
 body.force-landscape .hud {
@@ -252,6 +401,8 @@ body.force-landscape .fire-btn {
 }
 
 /* MUTLOQ YASHIRISH KAFOLATI (CSS SPECIFICITY FIX) */
+html.direct-duel-active #menu-screen,
+html.direct-duel-active #menu-screen.menu-carousel-screen,
 #menu-screen.hidden,
 #menu-screen.menu-carousel-screen.hidden,
 .menu-carousel-screen.hidden,
@@ -5709,106 +5860,154 @@ body.force-landscape .custom-select-item {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Mobil Landshaft (@media max-height: 520px) uchun maxsus o'ta qulay va sig'adigan parametrlar */
-@media screen and (max-height: 520px) {
+/* Mobil Landshaft / Albomniy rejim (@media max-height: 540px yoki landscape) uchun maxsus o'ta qulay, to'liq ekran bo'ylab yoyiladigan parametrlar */
+@media screen and (orientation: landscape) and (max-height: 650px), screen and (max-height: 540px) {
     #menu-screen.menu-carousel-screen:not(.hidden) {
-        width: 96vw !important;
-        max-height: 94vh !important;
-        padding: 8px 12px 10px !important;
+        width: 98vw !important;
+        max-width: 98vw !important;
+        height: 96vh !important;
+        max-height: 96vh !important;
+        padding: 5px 10px 4px !important;
         border-radius: 16px !important;
+        overflow: hidden !important;
+        overflow-y: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
     }
 
     .menu-top-bar {
-        padding: 4px 8px !important;
-        margin-bottom: 3px !important;
+        padding: 3px 8px !important;
+        margin-bottom: 2px !important;
     }
 
     .menu-avatar-icon {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 1.25rem !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 1.1rem !important;
     }
 
     .menu-user-name {
-        font-size: 0.86rem !important;
+        font-size: 0.8rem !important;
     }
 
     .menu-level-chip,
     .menu-tier-chip,
     .menu-score-chip {
-        font-size: 0.68rem !important;
-        padding: 1px 5px !important;
+        font-size: 0.65rem !important;
+        padding: 1px 4px !important;
     }
 
     .menu-top-btn {
-        padding: 4px 8px !important;
-        font-size: 0.74rem !important;
-        border-radius: 8px !important;
+        padding: 3px 6px !important;
+        font-size: 0.72rem !important;
+        border-radius: 6px !important;
+        min-height: 24px !important;
     }
 
     .menu-carousel-header {
-        margin-bottom: 2px !important;
+        display: flex !important;
+        align-items: baseline !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        margin: 1px 0 2px !important;
+        flex-shrink: 0 !important;
     }
 
     .menu-carousel-title {
         font-size: 1.05rem !important;
+        margin: 0 !important;
     }
 
     .menu-carousel-subtitle {
         font-size: 0.65rem !important;
+        margin: 0 !important;
+    }
+
+    .menu-carousel-wrapper {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        margin: 1px 0 !important;
     }
 
     .menu-cards-carousel {
-        padding: 4px 8px 8px !important;
-        gap: 10px !important;
+        padding: 2px 6px 4px !important;
+        gap: 12px !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        align-items: stretch !important;
     }
 
     .menu-card {
-        flex: 0 0 170px !important;
-        padding: 8px 8px 8px !important;
+        flex: 0 0 clamp(160px, 24vw, 205px) !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        padding: 6px 8px 8px !important;
         border-radius: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
     }
 
     .menu-card-badge {
-        font-size: 0.6rem !important;
-        padding: 2px 6px !important;
-        margin-bottom: 4px !important;
-    }
-
-    .menu-card-icon-box {
-        width: 42px !important;
-        height: 42px !important;
-        margin-bottom: 4px !important;
-        border-radius: 12px !important;
-    }
-
-    .menu-card-emoji {
-        font-size: 1.35rem !important;
-    }
-
-    .menu-card-name {
-        font-size: 0.92rem !important;
+        font-size: 0.58rem !important;
+        padding: 1px 6px !important;
         margin-bottom: 2px !important;
     }
 
+    .menu-card-icon-box {
+        width: 34px !important;
+        height: 34px !important;
+        margin-bottom: 2px !important;
+        border-radius: 10px !important;
+    }
+
+    .menu-card-emoji {
+        font-size: 1.15rem !important;
+    }
+
+    .menu-card-name {
+        font-size: 0.88rem !important;
+        margin: 0 0 1px !important;
+        white-space: nowrap !important;
+    }
+
     .menu-card-description {
-        font-size: 0.65rem !important;
-        line-height: 1.25 !important;
-        min-height: 26px !important;
-        margin-bottom: 6px !important;
+        font-size: 0.62rem !important;
+        line-height: 1.2 !important;
+        margin: 0 0 3px !important;
+        min-height: 0 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
     }
 
     .menu-card-btn {
-        padding: 5px 8px !important;
-        font-size: 0.76rem !important;
-        min-height: 28px !important;
-        border-radius: 8px !important;
+        padding: 3px 6px !important;
+        font-size: 0.74rem !important;
+        min-height: 26px !important;
+        height: 26px !important;
+        border-radius: 7px !important;
+        margin: 0 !important;
+    }
+
+    .menu-carousel-dots {
+        margin-top: 1px !important;
+        padding: 1px 0 !important;
     }
 
     .carousel-arrow {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 1.25rem !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 1.1rem !important;
     }
 
     .carousel-arrow-left {

@@ -7189,9 +7189,24 @@ socket.on('gameStart', (data) => {
     console.log('typeof data:', typeof data);
     clearRandomWaitTimer();
     gameMode = 'multi';
+    autoJoinExecuted = true;
     waitingScreen.classList.add('hidden');
     multiMenu.classList.add('hidden');
-    menuScreen.classList.add('hidden');
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.setProperty('display', 'none', 'important');
+    }
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
+    // Barcha boshqa modallarni to'liq yashirish:
+    for (const id of ALL_MODAL_IDS) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    }
     gameScreen.classList.remove('hidden');
     updateTelegramBackButton();
     isPaused = false;
@@ -7544,7 +7559,12 @@ socket.on('rematchDeclined', () => {
     }
     setTimeout(() => {
         gameOverScreen.classList.add('hidden');
-        menuScreen.classList.remove('hidden');
+        document.documentElement.classList.remove('direct-duel-active');
+        if (menuScreen) {
+            menuScreen.style.removeProperty('display');
+            menuScreen.classList.remove('hidden');
+        }
+        autoJoinExecuted = false;
         gameMode = 'menu';
     }, 2000);
 });
@@ -7733,7 +7753,12 @@ if (menuBtn) {
         if (settingsModal) settingsModal.classList.add('hidden');
         if (profileModal) profileModal.classList.add('hidden');
         if (singleModeModal) singleModeModal.classList.add('hidden');
-        menuScreen.classList.remove('hidden');
+        document.documentElement.classList.remove('direct-duel-active');
+        if (menuScreen) {
+            menuScreen.style.removeProperty('display');
+            menuScreen.classList.remove('hidden');
+        }
+        autoJoinExecuted = false;
         gameMode = 'menu';
         updateCampaignUI();
         if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
@@ -7792,7 +7817,12 @@ if (btnRematchDecline) {
         }
         if (rematchModal) rematchModal.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
-        menuScreen.classList.remove('hidden');
+        document.documentElement.classList.remove('direct-duel-active');
+        if (menuScreen) {
+            menuScreen.style.removeProperty('display');
+            menuScreen.classList.remove('hidden');
+        }
+        autoJoinExecuted = false;
         gameMode = 'menu';
         if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     });
@@ -9023,13 +9053,93 @@ const LEGACY_BONUS_KEY = 'nayza_legacy_500_bonus_v1';
 let legacyBonusApplied = localStorage.getItem(LEGACY_BONUS_KEY) === '1';
 let authPhone = localStorage.getItem('nayza_auth_phone') || '';
 
+function getPendingUrlDuelOrRoom() {
+    try {
+        let duelRoom = null;
+        let inviteId = null;
+        let roomCode = null;
+        let view = null;
+
+        if (window.location.search) {
+            const sp = new URLSearchParams(window.location.search);
+            duelRoom = sp.get('duel_room');
+            inviteId = sp.get('invite_id');
+            roomCode = sp.get('room') || sp.get('code') || sp.get('join');
+            view = sp.get('view');
+            const startapp = sp.get('startapp') || sp.get('tgWebAppStartParam');
+            if (startapp) {
+                if (startapp.startsWith('duel_')) {
+                    const parts = startapp.slice(5).split('_');
+                    duelRoom = parts[0];
+                    if (parts[1]) inviteId = parts[1];
+                } else {
+                    roomCode = startapp;
+                }
+            }
+        }
+
+        if (window.location.hash) {
+            const hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            if (!duelRoom) duelRoom = hp.get('duel_room');
+            if (!inviteId) inviteId = hp.get('invite_id');
+            if (!roomCode) roomCode = hp.get('room') || hp.get('code') || hp.get('join');
+            if (!view) view = hp.get('view');
+            const startapp = hp.get('tgWebAppStartParam') || hp.get('startapp');
+            if (startapp) {
+                if (startapp.startsWith('duel_')) {
+                    const parts = startapp.slice(5).split('_');
+                    if (!duelRoom) duelRoom = parts[0];
+                    if (parts[1] && !inviteId) inviteId = parts[1];
+                } else if (!roomCode) {
+                    roomCode = startapp;
+                }
+            }
+        }
+
+        if (window.Telegram?.WebApp?.initDataUnsafe?.start_param) {
+            const param = window.Telegram.WebApp.initDataUnsafe.start_param;
+            if (param.startsWith('duel_')) {
+                const parts = param.slice(5).split('_');
+                if (!duelRoom) duelRoom = parts[0];
+                if (parts[1] && !inviteId) inviteId = parts[1];
+            } else if (!roomCode) {
+                roomCode = param;
+            }
+        }
+
+        return { duelRoom, inviteId, roomCode, view };
+    } catch (_) {
+        return {};
+    }
+}
+
+function isUrlDuelOrRoomJoin() {
+    const info = getPendingUrlDuelOrRoom();
+    return Boolean(info.duelRoom || info.roomCode || info.view === 'invites');
+}
+
+function shouldShowMainMenuOnAuth() {
+    if (gameMode === 'multi' || gameMode === 'single') return false;
+    if (typeof autoJoinExecuted !== 'undefined' && autoJoinExecuted) return false;
+    if (typeof gameScreen !== 'undefined' && gameScreen && !gameScreen.classList.contains('hidden')) return false;
+    if (typeof waitingScreen !== 'undefined' && waitingScreen && !waitingScreen.classList.contains('hidden')) return false;
+    if (isUrlDuelOrRoomJoin()) return false;
+    if (typeof getPendingRoomCode === 'function' && getPendingRoomCode()) return false;
+    return true;
+}
+
 async function autoLoginTelegramUser() {
     const tgUser = tg?.initDataUnsafe?.user;
     if (!tgUser || !tgUser.id) return false;
 
-    // Telegram orqali ochilgan bo'lsa darhol auth modalni yashiramiz va menyuni ko'rsatamiz
+    // Telegram orqali ochilgan bo'lsa darhol auth modalni yashiramiz
     if (authModal) authModal.classList.add('hidden');
-    if (menuScreen) menuScreen.classList.remove('hidden');
+    if (shouldShowMainMenuOnAuth()) {
+        if (menuScreen) {
+            menuScreen.style.removeProperty('display');
+            menuScreen.classList.remove('hidden');
+        }
+    }
 
     const tgName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Jangchi';
     const tgPhone = 'tg_' + tgUser.id;
@@ -9172,7 +9282,12 @@ function applyAuthedUser(user) {
     maybeApplyLegacy500Bonus(true);
     saveProfile();
     if (authModal) authModal.classList.add('hidden');
-    menuScreen.classList.remove('hidden');
+    if (shouldShowMainMenuOnAuth()) {
+        if (menuScreen) {
+            menuScreen.style.removeProperty('display');
+            menuScreen.classList.remove('hidden');
+        }
+    }
     updateCampaignUI();
 }
 
@@ -12134,21 +12249,27 @@ setInterval(updateMenuWallpaper, 350);
         dismissIntro(e);
         try { tryLockLandscapeOrientation(); } catch (_) { }
 
-        // 1. Agar Telegramdan duel uchun havola orqali kirgan bo'lsa, duelga avtomatik ulanadi:
+        // 1. Agar Telegramdan duel yoki xona havolasi orqali kirgan bo'lsa, avtomatik ulanadi:
         if (typeof checkAutoJoinTelegramRoom === 'function' && checkAutoJoinTelegramRoom()) {
             if (authModal) authModal.classList.add('hidden');
-            if (menuScreen) menuScreen.classList.add('hidden');
+            if (menuScreen) {
+                menuScreen.classList.add('hidden');
+                menuScreen.style.setProperty('display', 'none', 'important');
+            }
             return;
         }
 
-        // 2. Havolasiz oddiy kirganda: Asosiy menyu ochilishi kerak (avtomatik level boshlanmaydi!):
-        gameMode = 'menu';
-        if (authModal) authModal.classList.add('hidden');
-        if (menuScreen) {
-            menuScreen.classList.remove('hidden');
+        // 2. Havolasiz oddiy kirganda: Asosiy menyu ochilishi kerak (agar o'yinda bo'lmasa)
+        if (shouldShowMainMenuOnAuth()) {
+            gameMode = 'menu';
+            if (authModal) authModal.classList.add('hidden');
+            if (menuScreen) {
+                menuScreen.style.removeProperty('display');
+                menuScreen.classList.remove('hidden');
+            }
+            if (typeof updateCampaignUI === 'function') updateCampaignUI();
+            if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
         }
-        if (typeof updateCampaignUI === 'function') updateCampaignUI();
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     });
 
     const startBtn = document.getElementById('btn-intro-start');
@@ -12770,6 +12891,11 @@ function getPendingRoomCode() {
 
 let autoJoinExecuted = false;
 function checkAutoJoinTelegramRoom() {
+    // 1. Agar URL da duel parametri bo'lsa (masalan duel_room yoki view=invites)
+    if (typeof checkDuelUrlParams === 'function' && checkDuelUrlParams()) {
+        return true;
+    }
+
     const code = getPendingRoomCode();
     if (!code) return false;
 
@@ -12778,13 +12904,8 @@ function checkAutoJoinTelegramRoom() {
 
     if (autoJoinExecuted) return true;
 
-    // Agar socket hali serverga ulanmagan bo'lsa, connect hodisasini kutamiz
-    if (!socket || !socket.connected) {
-        console.log('[AutoJoin] Socket ulanishi kutilmoqda. Xona kodi:', code);
-        return false;
-    }
-
     autoJoinExecuted = true;
+    gameMode = 'multi';
     console.log('[AutoJoin] Xonaga avtomatik ulanmoqda:', code);
 
     // Barcha oraliq ekranlarni yashirish
@@ -12795,12 +12916,25 @@ function checkAutoJoinTelegramRoom() {
         if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
     }
     if (authModal) authModal.classList.add('hidden');
-    if (menuScreen) menuScreen.classList.add('hidden');
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.setProperty('display', 'none', 'important');
+    }
     if (multiMenu) multiMenu.classList.add('hidden');
     if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
     if (createCodeContainer) createCodeContainer.classList.add('hidden');
     if (gameOptionsModal) gameOptionsModal.classList.add('hidden');
     if (waitingScreen) waitingScreen.classList.remove('hidden');
+
+    // Agar socket hali serverga ulanmagan bo'lsa, connect hodisasini kutamiz
+    if (!socket || !socket.connected) {
+        console.log('[AutoJoin] Socket ulanishi kutilmoqda. Xona kodi:', code);
+        socket.once('connect', () => {
+            showCenterNotice(`⚔️ Taklif qilingan duelga (${code}) ulanilmoqda...`, 3000);
+            socket.emit('joinGame', { profile: myProfile, code });
+        });
+        return true;
+    }
 
     showCenterNotice(`⚔️ Taklif qilingan duelga (${code}) ulanilmoqda...`, 3000);
     socket.emit('joinGame', { profile: myProfile, code });
@@ -13967,19 +14101,22 @@ function selectLanguageChoice(lang) {
 
 function checkFirstTimeLanguageModal() {
     try {
+        if (gameMode === 'multi' || gameMode === 'single' || autoJoinExecuted || isUrlDuelOrRoomJoin()) {
+            return;
+        }
         const selected = localStorage.getItem('nayza_language_selected');
         if (!selected) {
             const langModal = document.getElementById('language-select-modal');
             if (langModal) {
                 const introScreen = document.getElementById('intro-screen');
                 if (!introScreen || introScreen.classList.contains('hide')) {
-                    openModalSafely(langModal);
+                    if (shouldShowMainMenuOnAuth()) openModalSafely(langModal);
                 } else {
                     const waitIntro = setInterval(() => {
                         const curIntro = document.getElementById('intro-screen');
                         if (!curIntro || curIntro.classList.contains('hide')) {
                             clearInterval(waitIntro);
-                            if (!localStorage.getItem('nayza_language_selected')) {
+                            if (!localStorage.getItem('nayza_language_selected') && shouldShowMainMenuOnAuth()) {
                                 openModalSafely(langModal);
                             }
                         }
@@ -14307,8 +14444,39 @@ async function cancelDuelInvite(inviteId) {
 }
 
 function joinDuelRoomDirectly(inviteId, roomName) {
+    if (!roomName) return;
+    console.log('[joinDuelRoomDirectly] Ulanmoqda:', roomName, inviteId);
+    autoJoinExecuted = true;
+    gameMode = 'multi';
+
+    // Intro ekranni butunlay o'chirish
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
+
+    // Barcha ekranlarni va asosiy menyuni mutlaqo yashirish
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-    socket.emit('joinDuelRoom', { inviteId, roomName });
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.setProperty('display', 'none', 'important');
+    }
+    if (authModal) authModal.classList.add('hidden');
+    if (multiMenu) multiMenu.classList.add('hidden');
+    if (waitingScreen) waitingScreen.classList.remove('hidden');
+
+    if (socket && socket.connected) {
+        showCenterNotice(`⚔️ Duelga (${roomName}) ulanilmoqda...`, 2500);
+        socket.emit('joinDuelRoom', { inviteId, roomName, profile: myProfile });
+    } else {
+        showCenterNotice(`⚔️ Serverga ulanmoqda...`, 2500);
+        socket.once('connect', () => {
+            showCenterNotice(`⚔️ Duelga (${roomName}) ulanilmoqda...`, 2500);
+            socket.emit('joinDuelRoom', { inviteId, roomName, profile: myProfile });
+        });
+    }
 }
 
 function showDuelWaitingBanner(data) {
@@ -14635,20 +14803,25 @@ function initDuelInvitesUI() {
 
 function checkDuelUrlParams() {
     try {
-        const sp = new URLSearchParams(window.location.search);
-        if (sp.get('view') === 'invites') {
+        const info = getPendingUrlDuelOrRoom();
+        if (info.view === 'invites') {
             const invitesModal = document.getElementById('duel-invites-modal');
             if (invitesModal) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                if (menuScreen) {
+                    menuScreen.classList.add('hidden');
+                    menuScreen.style.setProperty('display', 'none', 'important');
+                }
                 invitesModal.classList.remove('hidden');
                 fetchDuelInvites();
+                return true;
             }
-        } else if (sp.has('duel_room')) {
-            const duelRoom = sp.get('duel_room');
-            const inviteId = sp.get('invite_id');
-            joinDuelRoomDirectly(inviteId, duelRoom);
+        } else if (info.duelRoom) {
+            joinDuelRoomDirectly(info.inviteId, info.duelRoom);
+            return true;
         }
     } catch (_) {}
+    return false;
 }
 
 // Initialization logic

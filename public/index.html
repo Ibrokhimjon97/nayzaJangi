@@ -12,8 +12,18 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=90">
+    <link rel="stylesheet" href="style.css?v=91">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <script>
+        // Telegram orqali duel yoki xona havolasi bilan kirilganda menyuni oldindan yashirib qo'yish
+        try {
+            var _s = window.location.search || '';
+            var _h = window.location.hash || '';
+            if (_s.indexOf('duel_room=') !== -1 || _s.indexOf('room=') !== -1 || _s.indexOf('code=') !== -1 || _s.indexOf('startapp=') !== -1 || _h.indexOf('duel_') !== -1 || _h.indexOf('tgWebAppStartParam=') !== -1) {
+                document.documentElement.classList.add('direct-duel-active');
+            }
+        } catch (_) {}
+    </script>
     <style>
         #menu-screen p {
             margin-bottom: 20px;
@@ -1313,7 +1323,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=90"></script>
+    <script src="client.js?v=91"></script>
     <script>
         // Mobile fullscreen & auto-landscape on first user interaction
         function tryFullscreenAndLandscape() {
