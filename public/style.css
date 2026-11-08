@@ -5830,3 +5830,355 @@ body.force-landscape .custom-select-item {
         min-height: 42px !important;
     }
 }
+
+/* ========================================================
+   DUEL INVITATIONS, PLAYER PROFILE & LEADERBOARD SEARCH UI
+   ======================================================== */
+
+/* Rose (Crimson) Card Theme for Duel Invites */
+.badge-rose {
+    background: rgba(244, 63, 94, 0.18);
+    color: #fda4af;
+    border: 1px solid rgba(244, 63, 94, 0.45);
+}
+.icon-rose {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(190, 18, 60, 0.2));
+    border: 1px solid rgba(244, 63, 94, 0.5);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);
+}
+.btn-rose {
+    background: linear-gradient(135deg, #f43f5e, #be123c) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.4) !important;
+}
+.btn-rose:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.6) !important;
+}
+
+/* Pulsing Badge for Duel Invites */
+.duel-count-pill, .badge-pill {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 4px;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+    animation: pulseBadge 1.6s infinite ease-in-out;
+}
+
+@keyframes pulseBadge {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(239, 68, 68, 0.7); }
+    50% { transform: scale(1.15); box-shadow: 0 0 14px rgba(239, 68, 68, 1); }
+}
+
+/* Avatar Circle in Header */
+.avatar-img-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Leaderboard Search Input */
+.leaderboard-search-wrap {
+    width: 100%;
+}
+.leaderboard-search-input {
+    width: 100%;
+    padding: 9px 14px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+.leaderboard-search-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+.leaderboard-item-row {
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 8px;
+    transition: background 0.18s, transform 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.leaderboard-item-row:hover {
+    background: rgba(56, 189, 248, 0.16);
+    transform: translateX(3px);
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* Duel Invites Modal & Tabs */
+.duel-invites-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding-bottom: 8px;
+}
+.duel-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.6);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.duel-tab-btn.active {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(190, 18, 60, 0.25));
+    color: #fff;
+    border: 1px solid rgba(244, 63, 94, 0.5);
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+}
+.tab-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 0.72rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+.duel-invites-list {
+    max-height: 290px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px;
+}
+.empty-invites-hint {
+    color: #94a3b8;
+    font-size: 0.92rem;
+    margin: 20px 0;
+    text-align: center;
+}
+.duel-invite-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.invite-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.invite-user-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.invite-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(51, 65, 85, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.invite-user-name {
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #f8fafc;
+}
+.invite-meta {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+.invite-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+.invite-actions .primary-btn {
+    padding: 6px 12px !important;
+    font-size: 0.82rem !important;
+    border-radius: 6px !important;
+}
+
+/* Schedule Duel Modal Presets */
+.schedule-quick-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.schedule-time-preset {
+    padding: 9px 8px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.schedule-time-preset:hover, .schedule-time-preset.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.25));
+    border-color: #10b981;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+.schedule-time-input {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+/* Player Profile Modal */
+.player-profile-screen {
+    max-width: 440px !important;
+    width: 92vw !important;
+}
+.player-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+.player-profile-avatar-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(30, 41, 59, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+    flex-shrink: 0;
+}
+.player-profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.player-profile-avatar-emoji {
+    font-size: 2.2rem;
+}
+.player-profile-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    color: #f8fafc;
+}
+.player-profile-badges {
+    display: flex;
+    gap: 6px;
+}
+.player-profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.profile-stat-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.profile-stat-label {
+    display: block;
+    font-size: 0.74rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.profile-stat-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+.player-profile-actions {
+    display: flex;
+    gap: 10px;
+}
+.player-profile-actions .btn-challenge {
+    background: linear-gradient(135deg, #f43f5e, #be123c) !important;
+    flex: 1;
+}
+.player-profile-actions .btn-add-friend {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    flex: 1;
+}
+
+/* Floating Duel 2-Minute Forfeit Banner */
+.duel-waiting-forfeit-banner {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.88);
+    border: 2px solid rgba(245, 158, 11, 0.7);
+    border-radius: 999px;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45);
+    z-index: 120;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: fadeInDown 0.3s ease;
+}
+.duel-waiting-forfeit-banner .pulse-icon {
+    font-size: 1.4rem;
+    animation: pulseBadge 1.2s infinite;
+}
+.duel-waiting-forfeit-banner .waiting-text-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.duel-waiting-forfeit-banner b {
+    font-size: 0.88rem;
+    color: #fbbf24;
+}
+.duel-waiting-forfeit-banner span {
+    font-size: 0.78rem;
+    color: #e2e8f0;
+}
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translate(-50%, -15px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}

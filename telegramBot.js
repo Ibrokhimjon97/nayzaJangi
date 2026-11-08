@@ -171,10 +171,51 @@ function stopTelegramBot() {
     isPolling = false;
 }
 
+async function getTelegramUserPhotoUrl(tgId) {
+    if (!tgId) return null;
+    try {
+        const res = await apiRequest('getUserProfilePhotos', { user_id: Number(tgId), limit: 1 });
+        if (res && res.ok && res.result?.photos?.length > 0) {
+            const photoArr = res.result.photos[0];
+            const bestPhoto = photoArr[photoArr.length - 1];
+            if (bestPhoto && bestPhoto.file_id) {
+                const fileRes = await apiRequest('getFile', { file_id: bestPhoto.file_id });
+                if (fileRes && fileRes.ok && fileRes.result?.file_path) {
+                    return `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileRes.result.file_path}`;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('getTelegramUserPhotoUrl error:', err.message);
+    }
+    return null;
+}
+
+async function sendTelegramDuelAlert(chatId, text, buttonUrl, buttonText = "⚔️ O'yinga kirish") {
+    if (!chatId) return { ok: false };
+    const payload = {
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown'
+    };
+    if (buttonUrl) {
+        payload.reply_markup = {
+            inline_keyboard: [
+                [
+                    { text: buttonText, web_app: { url: buttonUrl } }
+                ]
+            ]
+        };
+    }
+    return await apiRequest('sendMessage', payload);
+}
+
 module.exports = {
     startTelegramBot,
     stopTelegramBot,
     apiRequest,
+    getTelegramUserPhotoUrl,
+    sendTelegramDuelAlert,
     BOT_TOKEN,
     GAME_URL
 };

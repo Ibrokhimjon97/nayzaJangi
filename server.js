@@ -218,12 +218,33 @@ app.post('/api/models/create', upload.fields([
 
 const leaderboardDbPath = path.join(__dirname, 'ratings.json');
 const usersDbPath = path.join(__dirname, 'users.json');
+const duelInvitesDbPath = path.join(__dirname, 'duel_invites.json');
+const avatarsDir = path.join(__dirname, 'public', 'avatars');
+if (!fs.existsSync(avatarsDir)) {
+    try { fs.mkdirSync(avatarsDir, { recursive: true }); } catch (_) {}
+}
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
 const supabase = supabaseEnabled
     ? createClient(supabaseUrl, supabaseServiceRoleKey, { auth: { persistSession: false } })
     : null;
+
+function loadDuelInvites() {
+    try {
+        if (!fs.existsSync(duelInvitesDbPath)) return [];
+        const raw = fs.readFileSync(duelInvitesDbPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveDuelInvites(invites) {
+    safeWriteJsonSync(duelInvitesDbPath, invites);
+}
 
 function loadLeaderboard() {
     try {
@@ -251,13 +272,21 @@ function saveLeaderboard(entries) {
 }
 
 function normalizeEntry(body) {
+    const games = Math.max(0, Number(body?.games) || 0);
+    const wins = Math.max(0, Number(body?.wins) || 0);
+    const forfeits = Math.max(0, Number(body?.forfeits) || 0);
+    const losses = body?.losses !== undefined ? Math.max(0, Number(body?.losses) || 0) : Math.max(0, games - wins);
     return {
         name: String(body?.name || 'Jangchi').slice(0, 30),
         flag: String(body?.flag || '🏳️').slice(0, 8),
         phone: String(body?.phone || '').replace(/\D/g, '').slice(-15),
+        photoUrl: String(body?.photoUrl || ''),
         score: Number(body?.score) || 0,
-        wins: Math.max(0, Number(body?.wins) || 0),
-        games: Math.max(0, Number(body?.games) || 0),
+        wins: wins,
+        losses: losses,
+        forfeits: forfeits,
+        games: games,
+        campaignLevel: Math.max(1, Number(body?.campaignLevel) || 1),
         updatedAt: Date.now()
     };
 }
@@ -333,14 +362,27 @@ function normalizePhone(phone) {
 }
 
 function toPublicUser(user) {
+    const games = Math.max(0, Number(user.games) || 0);
+    const wins = Math.max(0, Number(user.wins) || 0);
+    const forfeits = Math.max(0, Number(user.forfeits) || 0);
+    const losses = user.losses !== undefined ? Math.max(0, Number(user.losses) || 0) : Math.max(0, games - wins);
+    const winRate = games > 0 ? Math.round((wins / games) * 100) : 0;
     return {
+        id: user.id || user.phone,
+        playerId: user.phone || user.id,
         name: user.name,
         phone: user.phone,
+        tgId: user.tgId || '',
+        photoUrl: user.photoUrl || '',
         age: user.age,
         score: Number(user.score) || 0,
-        wins: Math.max(0, Number(user.wins) || 0),
-        games: Math.max(0, Number(user.games) || 0),
+        wins: wins,
+        losses: losses,
+        forfeits: forfeits,
+        games: games,
+        winRate: winRate,
         campaignLevel: Math.max(1, Number(user.campaignLevel) || 1),
+        friends: Array.isArray(user.friends) ? user.friends : [],
         superPowers: Math.max(0, Number(user.superPowers || 0)),
         doubleSpears: Math.max(0, Number(user.doubleSpears || 0)),
         walls: Math.max(0, Number(user.walls || 0)),
@@ -379,8 +421,11 @@ function upsertUserProgress(phone, progress = {}) {
         ...prev,
         score: Number.isFinite(Number(progress.score)) ? Number(progress.score) : Number(prev.score || 0),
         wins: Math.max(Number(prev.wins || 0), Number(progress.wins || 0)),
+        losses: Number.isFinite(Number(progress.losses)) ? Number(progress.losses) : Number(prev.losses || 0),
+        forfeits: Number.isFinite(Number(progress.forfeits)) ? Number(progress.forfeits) : Number(prev.forfeits || 0),
         games: Math.max(Number(prev.games || 0), Number(progress.games || 0)),
         campaignLevel: Math.max(Number(prev.campaignLevel || 1), Number(progress.campaignLevel || 1)),
+        photoUrl: progress.photoUrl || prev.photoUrl || '',
         superPowers: Number.isFinite(Number(progress.superPowers)) ? Math.max(0, Number(progress.superPowers)) : Math.max(0, Number(prev.superPowers || 0)),
         doubleSpears: Number.isFinite(Number(progress.doubleSpears)) ? Math.max(0, Number(progress.doubleSpears)) : Math.max(0, Number(prev.doubleSpears || 0)),
         walls: Number.isFinite(Number(progress.walls)) ? Math.max(0, Number(progress.walls)) : Math.max(0, Number(prev.walls || 0)),
@@ -653,7 +698,7 @@ app.get('/api/auth/user', (req, res) => {
     res.json({ ok: true, user: toPublicUser(user) });
 });
 
-app.post('/api/auth/telegram', (req, res) => {
+app.post('/api/auth/telegram', async (req, res) => {
     const tgUser = req.body?.user;
     if (!tgUser || !tgUser.id) {
         return res.status(400).json({ ok: false, error: 'missing_tg_user' });
@@ -661,6 +706,14 @@ app.post('/api/auth/telegram', (req, res) => {
     const tgId = String(tgUser.id);
     const phone = 'tg_' + tgId;
     const name = ([tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Jangchi').slice(0, 30);
+    let photoUrl = tgUser.photo_url || '';
+
+    if (!photoUrl) {
+        try {
+            const { getTelegramUserPhotoUrl } = require('./telegramBot');
+            photoUrl = (await getTelegramUserPhotoUrl(tgId)) || '';
+        } catch (_) {}
+    }
 
     const users = ensureLegacyBonus(loadUsers());
     let idx = users.findIndex(u => u.phone === phone || String(u.tgId) === tgId);
@@ -671,11 +724,15 @@ app.post('/api/auth/telegram', (req, res) => {
             tgId,
             name,
             phone,
+            photoUrl,
             username: tgUser.username || '',
             age: 20,
             score: 500,
             wins: 0,
+            losses: 0,
+            forfeits: 0,
             games: 0,
+            friends: [],
             campaignLevel: 1,
             superPowers: 5,
             doubleSpears: 2,
@@ -690,13 +747,389 @@ app.post('/api/auth/telegram', (req, res) => {
         idx = users.length - 1;
         console.log(`[Telegram Auth] Yangi Telegram o'yinchisi avtomatik ro'yxatdan o'tdi: ${name} (TG ID: ${tgId})`);
     } else {
+        let changed = false;
         if (name && (!users[idx].name || users[idx].name === 'Player' || users[idx].name === "Noma'lum")) {
             users[idx].name = name;
-            saveUsers(users);
+            changed = true;
         }
+        if (photoUrl && users[idx].photoUrl !== photoUrl) {
+            users[idx].photoUrl = photoUrl;
+            changed = true;
+        }
+        if (changed) saveUsers(users);
     }
     res.json({ ok: true, user: toPublicUser(users[idx]) });
 });
+
+// Proxy / Redirect to Telegram Profile Photo
+app.get('/api/telegram/avatar/:tgId', async (req, res) => {
+    const tgId = req.params.tgId;
+    if (!tgId) return res.status(400).send('Missing tgId');
+    try {
+        const { getTelegramUserPhotoUrl } = require('./telegramBot');
+        const photoUrl = await getTelegramUserPhotoUrl(tgId);
+        if (photoUrl) {
+            return res.redirect(photoUrl);
+        }
+        return res.status(404).send('No avatar');
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+});
+
+// Detailed Player Profile endpoint
+app.get('/api/player-profile/:id', (req, res) => {
+    const rawId = String(req.params.id || '').trim();
+    if (!rawId) return res.status(400).json({ ok: false, error: 'missing_id' });
+
+    const users = loadUsers();
+    let user = users.find(u => u.id === rawId || u.phone === rawId || String(u.tgId) === rawId);
+
+    if (!user) {
+        const leaderboard = loadLeaderboard();
+        const entry = leaderboard.find(e => e.phone === rawId || e.name === rawId);
+        if (entry) {
+            const games = Math.max(0, Number(entry.games) || 0);
+            const wins = Math.max(0, Number(entry.wins) || 0);
+            const forfeits = Math.max(0, Number(entry.forfeits) || 0);
+            const losses = entry.losses !== undefined ? Math.max(0, Number(entry.losses) || 0) : Math.max(0, games - wins);
+            user = {
+                id: entry.phone || entry.name,
+                name: entry.name,
+                flag: entry.flag || '🇺🇿',
+                phone: entry.phone || '',
+                photoUrl: entry.photoUrl || '',
+                score: entry.score || 0,
+                wins: wins,
+                losses: losses,
+                forfeits: forfeits,
+                games: games,
+                campaignLevel: entry.campaignLevel || 1,
+                friends: []
+            };
+        }
+    }
+
+    if (!user) {
+        return res.status(404).json({ ok: false, error: 'player_not_found' });
+    }
+
+    res.json({ ok: true, player: toPublicUser(user) });
+});
+
+// ========================================================
+// DUEL INVITATIONS (DUELGA TAKLIFLAR) API
+// ========================================================
+app.get('/api/duel-invites', (req, res) => {
+    const playerId = String(req.query.playerId || '').trim();
+    if (!playerId) return res.json({ ok: true, incoming: [], outgoing: [], pendingCount: 0 });
+
+    const allInvites = loadDuelInvites();
+    const incoming = allInvites.filter(inv =>
+        (inv.toPlayerId === playerId || inv.toPhone === playerId || (inv.toTgId && inv.toTgId === playerId)) &&
+        inv.status !== 'cancelled'
+    );
+    const outgoing = allInvites.filter(inv =>
+        inv.fromPlayerId === playerId || inv.fromPhone === playerId || (inv.fromTgId && inv.fromTgId === playerId)
+    );
+
+    const pendingCount = incoming.filter(inv => inv.status === 'pending').length;
+    res.json({ ok: true, incoming, outgoing, pendingCount });
+});
+
+app.post('/api/duel-invites/send', async (req, res) => {
+    const { fromPlayerId, fromName, fromFlag, fromPhoto, fromTgId, fromPhone,
+            toPlayerId, toName, toFlag, toPhoto, toTgId, toPhone,
+            options } = req.body || {};
+
+    if (!fromPlayerId || !toPlayerId) {
+        return res.status(400).json({ ok: false, error: 'missing_players' });
+    }
+
+    const allInvites = loadDuelInvites();
+    const inviteId = 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+    // Look up target recipient in users.json to ensure toTgId is known
+    const users = loadUsers();
+    const targetUser = users.find(u => u.id === toPlayerId || u.phone === toPlayerId || String(u.tgId) === toPlayerId);
+    const resolvedToTgId = toTgId || (targetUser ? targetUser.tgId : '');
+    const resolvedToPhoto = toPhoto || (targetUser ? targetUser.photoUrl : '');
+
+    const newInvite = {
+        id: inviteId,
+        fromPlayerId: String(fromPlayerId),
+        fromName: String(fromName || 'Jangchi'),
+        fromFlag: String(fromFlag || '🇺🇿'),
+        fromPhoto: String(fromPhoto || ''),
+        fromTgId: fromTgId ? String(fromTgId) : '',
+        fromPhone: fromPhone ? String(fromPhone) : '',
+        toPlayerId: String(toPlayerId),
+        toName: String(toName || (targetUser ? targetUser.name : 'Raqib')),
+        toFlag: String(toFlag || '🏳️'),
+        toPhoto: String(resolvedToPhoto || ''),
+        toTgId: resolvedToTgId ? String(resolvedToTgId) : '',
+        toPhone: toPhone ? String(toPhone) : (targetUser ? targetUser.phone : ''),
+        status: 'pending',
+        scheduledTime: null,
+        scheduledTimeStr: '',
+        options: options || {},
+        createdAt: Date.now(),
+        reminderSent: false,
+        roomName: `room_duel_${inviteId}`,
+        joinedPlayers: [],
+        firstJoinTime: null,
+        firstPlayerId: null,
+        winner: null,
+        forfeitedPlayer: null
+    };
+
+    allInvites.push(newInvite);
+    saveDuelInvites(allInvites);
+
+    const pendingCount = allInvites.filter(inv =>
+        (inv.toPlayerId === newInvite.toPlayerId || inv.toPhone === newInvite.toPlayerId) &&
+        inv.status === 'pending'
+    ).length;
+
+    // Real-time notification if recipient socket is online
+    const targetSocket = onlineByPlayerId.get(newInvite.toPlayerId) ||
+                         (newInvite.toPhone && onlineByPlayerId.get(newInvite.toPhone));
+    if (targetSocket) {
+        targetSocket.emit('newDuelInvite', { invite: newInvite, pendingCount });
+        targetSocket.emit('duelInvitesCount', { count: pendingCount });
+    }
+
+    // Telegram Bot notification if recipient has Telegram ID
+    if (newInvite.toTgId) {
+        try {
+            const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+            const playUrl = `${GAME_URL}?view=invites&invite_id=${newInvite.id}`;
+            await sendTelegramDuelAlert(
+                newInvite.toTgId,
+                `⚔️ *Sizga yangi Kamonboz duel taklifi keldi!*\n\n*${newInvite.fromName}* sizni jangga chorlamoqda!\nTaklifni qabul qilish va vaqtini belgilash uchun quyidagi tugmani bosing:`,
+                playUrl,
+                "⚔️ Taklifni ko'rish (Play)"
+            );
+        } catch (e) {
+            console.error('Telegram alert error on invite send:', e.message);
+        }
+    }
+
+    res.json({ ok: true, invite: newInvite, pendingCount });
+});
+
+app.post('/api/duel-invites/respond', async (req, res) => {
+    const { inviteId, accept, scheduledTime, scheduledTimeStr } = req.body || {};
+    if (!inviteId) return res.status(400).json({ ok: false, error: 'missing_invite_id' });
+
+    const allInvites = loadDuelInvites();
+    const idx = allInvites.findIndex(inv => inv.id === inviteId);
+    if (idx === -1) return res.status(404).json({ ok: false, error: 'invite_not_found' });
+
+    const invite = allInvites[idx];
+    if (accept) {
+        invite.status = 'accepted';
+        invite.scheduledTime = Number(scheduledTime) || Date.now();
+        invite.scheduledTimeStr = String(scheduledTimeStr || 'Hozir');
+
+        saveDuelInvites(allInvites);
+
+        // Telegram Bot alert to challenger (fromTgId)
+        if (invite.fromTgId) {
+            try {
+                const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                const playUrl = `${GAME_URL}?duel_room=${invite.roomName}&invite_id=${invite.id}`;
+                await sendTelegramDuelAlert(
+                    invite.fromTgId,
+                    `⚔️ *Kamonboz: Duel taklifingiz qabul qilindi!*\n\n*${invite.toName}* siz bilan jangga rozi bo'ldi!\n⏰ *Jang vaqti:* soat ${invite.scheduledTimeStr}\n\nBelgilangan vaqtda botdan eslatma boradi. O'z vaqtida kiring, kechikkan o'yinchi mag'lub deb hisoblanadi!`,
+                    playUrl,
+                    "⚔️ Jangga kirish (Play)"
+                );
+            } catch (e) {
+                console.error('Telegram alert error on accept:', e.message);
+            }
+        }
+
+        // Telegram Bot confirmation to accepter (toTgId)
+        if (invite.toTgId) {
+            try {
+                const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                const playUrl = `${GAME_URL}?duel_room=${invite.roomName}&invite_id=${invite.id}`;
+                await sendTelegramDuelAlert(
+                    invite.toTgId,
+                    `⚔️ *Duel rejalashtirildi!*\n\n*${invite.fromName}* bilan jang vaqti belgilandi:\n⏰ *Vaqti:* soat ${invite.scheduledTimeStr}\nBelgilangan vaqtda eslatma yuboramiz!`,
+                    playUrl,
+                    "⚔️ Jangga kirish (Play)"
+                );
+            } catch (_) {}
+        }
+
+        // Socket notifications
+        const fromSocket = onlineByPlayerId.get(invite.fromPlayerId) || (invite.fromPhone && onlineByPlayerId.get(invite.fromPhone));
+        if (fromSocket) {
+            fromSocket.emit('duelInviteAccepted', { invite });
+        }
+        const toSocket = onlineByPlayerId.get(invite.toPlayerId) || (invite.toPhone && onlineByPlayerId.get(invite.toPhone));
+        if (toSocket) {
+            toSocket.emit('duelInviteAccepted', { invite });
+        }
+    } else {
+        invite.status = 'declined';
+        saveDuelInvites(allInvites);
+
+        if (invite.fromTgId) {
+            try {
+                const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                await sendTelegramDuelAlert(
+                    invite.fromTgId,
+                    `❌ *${invite.toName}* sizning duel taklifingizni rad etdi.`,
+                    GAME_URL,
+                    "🏹 Bosh menyu"
+                );
+            } catch (_) {}
+        }
+
+        const fromSocket = onlineByPlayerId.get(invite.fromPlayerId) || (invite.fromPhone && onlineByPlayerId.get(invite.fromPhone));
+        if (fromSocket) {
+            fromSocket.emit('duelInviteDeclined', { invite });
+        }
+    }
+
+    res.json({ ok: true, invite });
+});
+
+app.post('/api/duel-invites/cancel', (req, res) => {
+    const { inviteId } = req.body || {};
+    if (!inviteId) return res.status(400).json({ ok: false, error: 'missing_invite_id' });
+    const allInvites = loadDuelInvites();
+    const idx = allInvites.findIndex(inv => inv.id === inviteId);
+    if (idx !== -1) {
+        allInvites[idx].status = 'cancelled';
+        saveDuelInvites(allInvites);
+    }
+    res.json({ ok: true });
+});
+
+// Scheduled Duels & 2-Minute Forfeit Monitor
+function startScheduledDuelsMonitor() {
+    setInterval(async () => {
+        try {
+            const allInvites = loadDuelInvites();
+            let changed = false;
+            const now = Date.now();
+
+            for (const inv of allInvites) {
+                if (inv.status !== 'accepted') continue;
+
+                // 1. Send scheduled duel reminder when time has arrived
+                if (!inv.reminderSent && inv.scheduledTime && now >= (inv.scheduledTime - 45000)) {
+                    inv.reminderSent = true;
+                    changed = true;
+
+                    const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                    const playUrl = `${GAME_URL}?duel_room=${inv.roomName}&invite_id=${inv.id}`;
+
+                    if (inv.fromTgId) {
+                        sendTelegramDuelAlert(
+                            inv.fromTgId,
+                            `🔔 *DUEL VAQTI KELDI!*\n\n⚔️ *${inv.fromName}* vs *${inv.toName}*\nJang maydoni tayyor! 2 daqiqa ichida jangga kiring:\nKechikkan o'yinchi mag'lub deb hisoblanadi!`,
+                            playUrl,
+                            "⚔️ Jangga kirish (Play)"
+                        ).catch(() => {});
+                    }
+
+                    if (inv.toTgId) {
+                        sendTelegramDuelAlert(
+                            inv.toTgId,
+                            `🔔 *DUEL VAQTI KELDI!*\n\n⚔️ *${inv.fromName}* vs *${inv.toName}*\nJang maydoni tayyor! 2 daqiqa ichida jangga kiring:\nKechikkan o'yinchi mag'lub deb hisoblanadi!`,
+                            playUrl,
+                            "⚔️ Jangga kirish (Play)"
+                        ).catch(() => {});
+                    }
+
+                    const s1 = onlineByPlayerId.get(inv.fromPlayerId) || (inv.fromPhone && onlineByPlayerId.get(inv.fromPhone));
+                    if (s1) s1.emit('duelTimeArrived', { invite: inv });
+                    const s2 = onlineByPlayerId.get(inv.toPlayerId) || (inv.toPhone && onlineByPlayerId.get(inv.toPhone));
+                    if (s2) s2.emit('duelTimeArrived', { invite: inv });
+                }
+
+                // 2. 2-Minute Forfeit Check:
+                if (inv.firstJoinTime && inv.status === 'accepted') {
+                    const elapsed = now - inv.firstJoinTime;
+                    const joinedCount = Array.isArray(inv.joinedPlayers) ? inv.joinedPlayers.length : 0;
+
+                    if (joinedCount === 1 && elapsed >= 120000) {
+                        inv.status = 'forfeited';
+                        const winnerId = inv.firstPlayerId;
+                        const loserId = (inv.fromPlayerId === winnerId || inv.fromPhone === winnerId)
+                            ? (inv.toPlayerId || inv.toPhone)
+                            : (inv.fromPlayerId || inv.fromPhone);
+
+                        inv.winner = winnerId;
+                        inv.forfeitedPlayer = loserId;
+                        changed = true;
+
+                        console.log(`[Duel Forfeit] Raqib 2 daqiqada kirmadi! G'olib: ${winnerId}, Dueldan qochgan: ${loserId}`);
+
+                        const users = loadUsers();
+                        const loserIdx = users.findIndex(u => u.id === loserId || u.phone === loserId || String(u.tgId) === loserId);
+                        if (loserIdx !== -1) {
+                            users[loserIdx].forfeits = (Number(users[loserIdx].forfeits) || 0) + 1;
+                            users[loserIdx].losses = (Number(users[loserIdx].losses) || 0) + 1;
+                            users[loserIdx].games = (Number(users[loserIdx].games) || 0) + 1;
+                            users[loserIdx].score = Math.max(0, (Number(users[loserIdx].score) || 0) - 30);
+                            saveUsers(users);
+                        }
+
+                        const winnerIdx = users.findIndex(u => u.id === winnerId || u.phone === winnerId || String(u.tgId) === winnerId);
+                        if (winnerIdx !== -1) {
+                            users[winnerIdx].wins = (Number(users[winnerIdx].wins) || 0) + 1;
+                            users[winnerIdx].games = (Number(users[winnerIdx].games) || 0) + 1;
+                            users[winnerIdx].score = (Number(users[winnerIdx].score) || 0) + 50;
+                            saveUsers(users);
+                        }
+
+                        const winnerSocket = onlineByPlayerId.get(winnerId);
+                        if (winnerSocket) {
+                            winnerSocket.emit('duelOpponentForfeited', {
+                                winner: true,
+                                scoreGained: 50,
+                                message: "Raqib duelga 2 daqiqa ichida kelmadi va jangdan qochdi! Sizga texnik g'alaba va +50 ball berildi!"
+                            });
+                        }
+
+                        const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                        const loserTgId = (loserId === inv.fromPlayerId || loserId === inv.fromPhone) ? inv.fromTgId : inv.toTgId;
+                        const winnerTgId = (winnerId === inv.fromPlayerId || winnerId === inv.fromPhone) ? inv.fromTgId : inv.toTgId;
+
+                        if (loserTgId) {
+                            sendTelegramDuelAlert(
+                                loserTgId,
+                                `❌ *Siz duelga o'z vaqtida (2 daqiqa ichida) kirmadingiz!*\nDueldan qochgan deb hisoblanib, -30 ball jarima berildi.`,
+                                GAME_URL,
+                                "🏹 Bosh menyu"
+                            ).catch(() => {});
+                        }
+                        if (winnerTgId) {
+                            sendTelegramDuelAlert(
+                                winnerTgId,
+                                `🏆 *Raqibingiz jangga kelmadi!*\nSizga texnik g'alaba berildi va +50 ball mukofot taqdim etildi!`,
+                                GAME_URL,
+                                "🏹 Bosh menyu"
+                            ).catch(() => {});
+                        }
+                    }
+                }
+            }
+
+            if (changed) {
+                saveDuelInvites(allInvites);
+            }
+        } catch (e) {
+            console.error('Scheduled duels monitor error:', e.message);
+        }
+    }, 10000);
+}
 
 const waitingQueue = [];
 const rooms = {};
@@ -787,6 +1220,41 @@ function startRoomTurnTimer(roomName) {
     }, TURN_TIMEOUT_SECONDS * 1000);
 }
 
+function recordGameResult(winnerSocket, loserSocket, reason) {
+    if (!winnerSocket && !loserSocket) return;
+    const winnerPhone = winnerSocket?.profile?.phone || winnerSocket?.profile?.playerId;
+    const loserPhone = loserSocket?.profile?.phone || loserSocket?.profile?.playerId;
+    const users = loadUsers();
+    let changed = false;
+
+    if (winnerPhone) {
+        const wIdx = findUserIndexByPhone(users, winnerPhone);
+        if (wIdx !== -1) {
+            users[wIdx].wins = (Number(users[wIdx].wins) || 0) + 1;
+            users[wIdx].games = (Number(users[wIdx].games) || 0) + 1;
+            users[wIdx].score = (Number(users[wIdx].score) || 0) + 40;
+            changed = true;
+        }
+    }
+
+    if (loserPhone) {
+        const lIdx = findUserIndexByPhone(users, loserPhone);
+        if (lIdx !== -1) {
+            users[lIdx].losses = (Number(users[lIdx].losses) || 0) + 1;
+            users[lIdx].games = (Number(users[lIdx].games) || 0) + 1;
+            if (reason === 'timeout_forfeit' || reason === 'opponent_left') {
+                users[lIdx].forfeits = (Number(users[lIdx].forfeits) || 0) + 1;
+                users[lIdx].score = Math.max(0, (Number(users[lIdx].score) || 0) - 25);
+            } else {
+                users[lIdx].score = Math.max(0, (Number(users[lIdx].score) || 0) - 15);
+            }
+            changed = true;
+        }
+    }
+
+    if (changed) saveUsers(users);
+}
+
 function handleRoomTurnTimeout(roomName) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
@@ -807,7 +1275,12 @@ function handleRoomTurnTimeout(roomName) {
     const timedOutIndex = room.turnIndex;
     const winnerIndex = timedOutIndex === 0 ? 1 : 0;
     const winnerId = room.players ? room.players[winnerIndex] : null;
+    const timedOutId = room.players ? room.players[timedOutIndex] : null;
     console.log(`[Turn Timeout] Room ${roomName}: Player ${timedOutIndex} timed out after 30s. Winner: Player ${winnerIndex}`);
+
+    const winnerSocket = io.sockets.sockets.get(winnerId);
+    const loserSocket = io.sockets.sockets.get(timedOutId);
+    recordGameResult(winnerSocket, loserSocket, 'timeout_forfeit');
 
     io.to(roomName).emit('gameOver', {
         winnerIndex,
@@ -1125,6 +1598,23 @@ io.on('connection', (socket) => {
                 online: true
             }
         });
+
+        // Do'stlikni users.json ga doimiy saqlash
+        try {
+            const users = loadUsers();
+            const u1 = users.find(u => u.id === toPlayerId || u.phone === toPlayerId);
+            const u2 = users.find(u => u.id === fromPlayerId || u.phone === fromPlayerId);
+            let updated = false;
+            if (u1) {
+                if (!Array.isArray(u1.friends)) u1.friends = [];
+                if (!u1.friends.includes(fromPlayerId)) { u1.friends.push(fromPlayerId); updated = true; }
+            }
+            if (u2) {
+                if (!Array.isArray(u2.friends)) u2.friends = [];
+                if (!u2.friends.includes(toPlayerId)) { u2.friends.push(toPlayerId); updated = true; }
+            }
+            if (updated) saveUsers(users);
+        } catch (_) {}
     });
 
     socket.on('inviteFriend', (payload) => {
@@ -1165,6 +1655,99 @@ io.on('connection', (socket) => {
         socket.join(roomName);
         rooms[roomName] = { options: pending.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false } };
         startGame(inviter, socket, roomName);
+    });
+
+    // Duel takliflarini socket orqali olish va yuborish
+    socket.on('getDuelInvites', () => {
+        const myId = String(socket.profile?.playerId || socket.profile?.phone || '');
+        if (!myId) return;
+        const allInvites = loadDuelInvites();
+        const incoming = allInvites.filter(inv =>
+            (inv.toPlayerId === myId || inv.toPhone === myId || (inv.toTgId && inv.toTgId === myId)) &&
+            inv.status !== 'cancelled'
+        );
+        const outgoing = allInvites.filter(inv =>
+            inv.fromPlayerId === myId || inv.fromPhone === myId || (inv.fromTgId && inv.fromTgId === myId)
+        );
+        const pendingCount = incoming.filter(inv => inv.status === 'pending').length;
+        socket.emit('duelInvitesData', { incoming, outgoing, pendingCount });
+    });
+
+    socket.on('joinDuelRoom', (payload) => {
+        const inviteId = payload?.inviteId;
+        const roomName = payload?.roomName;
+        const myId = String(socket.profile?.playerId || socket.profile?.phone || socket.id);
+
+        if (!inviteId && !roomName) return;
+
+        const allInvites = loadDuelInvites();
+        const inv = allInvites.find(i => i.id === inviteId || i.roomName === roomName);
+        if (!inv) {
+            socket.emit('duelRoomError', { message: "Duel xonasi topilmadi yoki bekor qilingan!" });
+            return;
+        }
+
+        if (inv.status === 'forfeited' || inv.status === 'completed' || inv.status === 'cancelled') {
+            socket.emit('duelRoomError', { message: `Ushbu duel allaqachon tugagan (${inv.status})!` });
+            return;
+        }
+
+        socket.join(inv.roomName);
+        socket.roomId = inv.roomName;
+        if (!Array.isArray(inv.joinedPlayers)) inv.joinedPlayers = [];
+        if (!inv.joinedPlayers.includes(myId)) {
+            inv.joinedPlayers.push(myId);
+        }
+
+        // Birinchi bo'lib kirgan o'yinchi - 120 soniyalik (2 daqiqa) kutish taymerini yoqadi
+        if (!inv.firstJoinTime) {
+            inv.firstJoinTime = Date.now();
+            inv.firstPlayerId = myId;
+            saveDuelInvites(allInvites);
+
+            socket.emit('duelWaitingOpponent', {
+                remainingSeconds: 120,
+                opponentName: (myId === inv.fromPlayerId || myId === inv.fromPhone) ? inv.toName : inv.fromName,
+                roomName: inv.roomName
+            });
+
+            // Raqibga kirish haqida signal yuborish
+            const otherPlayerId = (myId === inv.fromPlayerId || myId === inv.fromPhone) ? (inv.toPlayerId || inv.toPhone) : (inv.fromPlayerId || inv.fromPhone);
+            const otherTgId = (myId === inv.fromPlayerId || myId === inv.fromPhone) ? inv.toTgId : inv.fromTgId;
+            const otherSocket = onlineByPlayerId.get(otherPlayerId);
+            if (otherSocket) {
+                otherSocket.emit('duelOpponentJoinedRoom', {
+                    inviteId: inv.id,
+                    roomName: inv.roomName,
+                    opponentName: socket.profile?.name || "Raqib"
+                });
+            }
+            if (otherTgId) {
+                try {
+                    const { sendTelegramDuelAlert, GAME_URL } = require('./telegramBot');
+                    sendTelegramDuelAlert(
+                        otherTgId,
+                        `⚡ *Raqibingiz duel maydoniga kirdi!*\n*${socket.profile?.name || 'Raqib'}* sizni kutmoqda! 2 daqiqa ichida kiring, aks holda mag'lub deb hisoblanasiz:`,
+                        `${GAME_URL}?duel_room=${inv.roomName}&invite_id=${inv.id}`,
+                        "⚔️ Jangga kirish (Play)"
+                    ).catch(() => {});
+                } catch (_) {}
+            }
+        } else if (inv.joinedPlayers.length >= 2) {
+            // Ikkala o'yinchi ham kirdi - 2 daqiqalik forfeyt taymerini to'xtatamiz va jangni boshlaymiz!
+            inv.firstJoinTime = null;
+            saveDuelInvites(allInvites);
+
+            const roomClients = Array.from(io.sockets.adapter.rooms.get(inv.roomName) || []);
+            if (roomClients.length >= 2) {
+                const p1Socket = io.sockets.sockets.get(roomClients[0]);
+                const p2Socket = io.sockets.sockets.get(roomClients[1]);
+                if (p1Socket && p2Socket) {
+                    rooms[inv.roomName] = { options: inv.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false } };
+                    startGame(p1Socket, p2Socket, inv.roomName);
+                }
+            }
+        }
     });
 
     socket.on('cancelFind', () => {
@@ -1456,6 +2039,10 @@ io.on('connection', (socket) => {
                 clearRoomTurnTimer(roomName);
                 const winnerIndex = targetIndex === 0 ? 1 : 0;
                 const winnerId = room.players ? room.players[winnerIndex] : null;
+                const loserId = room.players ? room.players[targetIndex] : null;
+                const winnerSocket = io.sockets.sockets.get(winnerId);
+                const loserSocket = io.sockets.sockets.get(loserId);
+                recordGameResult(winnerSocket, loserSocket, 'normal');
                 io.to(roomName).emit('gameOver', {
                     winnerIndex,
                     winnerId,
@@ -1611,6 +2198,8 @@ io.on('connection', (socket) => {
                 const winnerIndex = room.players.indexOf(remainingPlayerId);
                 room.gameOver = true;
                 if (remainingPlayerId) {
+                    const winnerSocket = io.sockets.sockets.get(remainingPlayerId);
+                    recordGameResult(winnerSocket, socket, 'opponent_left');
                     io.to(remainingPlayerId).emit('gameOver', {
                         winnerIndex: winnerIndex >= 0 ? winnerIndex : 0,
                         winnerId: remainingPlayerId,
@@ -1632,6 +2221,11 @@ server.listen(PORT, () => {
         startTelegramBot();
     } catch (e) {
         console.error('Telegram bot startup error:', e.message);
+    }
+    try {
+        startScheduledDuelsMonitor();
+    } catch (e) {
+        console.error('Scheduled duels monitor start error:', e.message);
     }
     try {
         startKeepAlive();

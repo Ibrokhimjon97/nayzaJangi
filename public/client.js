@@ -3631,9 +3631,23 @@ function updateCampaignUI() {
     if (menuPlayerName && myProfile && myProfile.name) {
         menuPlayerName.innerText = myProfile.name;
     }
-    const menuAvatarIcon = document.getElementById('menu-avatar-icon');
-    if (menuAvatarIcon && myProfile && myProfile.avatar) {
-        menuAvatarIcon.innerText = myProfile.avatar;
+    const menuAvatarImg = document.getElementById('menu-avatar-img');
+    const menuAvatarFallback = document.getElementById('menu-avatar-fallback');
+    if (menuAvatarImg && menuAvatarFallback) {
+        if (myProfile.photoUrl) {
+            menuAvatarImg.src = myProfile.photoUrl;
+            menuAvatarImg.style.display = 'block';
+            menuAvatarFallback.style.display = 'none';
+        } else {
+            menuAvatarImg.style.display = 'none';
+            menuAvatarFallback.style.display = 'inline-block';
+            menuAvatarFallback.innerText = myProfile.avatar || '👤';
+        }
+    } else {
+        const menuAvatarIcon = document.getElementById('menu-avatar-icon');
+        if (menuAvatarIcon && myProfile && myProfile.avatar) {
+            menuAvatarIcon.innerText = myProfile.avatar;
+        }
     }
     const menuTierBadge = document.getElementById('menu-tier-badge');
     if (menuTierBadge) {
@@ -9064,6 +9078,10 @@ function applyAuthedUser(user) {
     if (Number.isFinite(Number(user.score))) myStats.score = Number(user.score);
     if (Number.isFinite(Number(user.wins))) myStats.wins = Math.max(0, Number(user.wins));
     if (Number.isFinite(Number(user.games))) myStats.games = Math.max(0, Number(user.games));
+    if (user.photoUrl) myProfile.photoUrl = user.photoUrl;
+    if (Number.isFinite(Number(user.losses))) myStats.losses = Math.max(0, Number(user.losses));
+    if (Number.isFinite(Number(user.forfeits))) myStats.forfeits = Math.max(0, Number(user.forfeits));
+    if (Array.isArray(user.friends)) myFriends = user.friends;
     if (Number.isFinite(Number(user.superPowers))) myProfile.superPowers = Math.max(0, Number(user.superPowers));
     if (Number.isFinite(Number(user.doubleSpears))) myProfile.doubleSpears = Math.max(0, Number(user.doubleSpears));
     if (Number.isFinite(Number(user.walls))) myProfile.walls = Math.max(0, Number(user.walls));
@@ -10571,61 +10589,82 @@ async function submitLeaderboard() {
     }
 }
 
+let currentLeaderboardRows = [];
+
 async function renderLeaderboard() {
     console.log('renderLeaderboard called, leaderboardList:', !!leaderboardList);
     if (!leaderboardList) return;
     const t = translations[myProfile.lang] || translations.en || translations.uz;
+
     const renderRows = (rows) => {
-        console.log('renderRows called with:', rows);
-        if (!Array.isArray(rows) || !rows.length) return false;
-        console.log('Leaderboard rows:', rows);
+        if (!Array.isArray(rows) || !rows.length) {
+            leaderboardList.innerHTML = '<p style="color:#94a3b8; text-align:center; padding:10px;">O\'yinchi topilmadi</p>';
+            return false;
+        }
+        currentLeaderboardRows = rows;
         leaderboardList.innerHTML = rows.map((r, idx) => {
-            console.log('Row:', idx, r);
-            // playerId bo'lmasa, phone dan foydalanamiz
-            const playerId = r.playerId || r.phone;
-            const isMe = playerId && myProfile.playerId && playerId === myProfile.playerId;
-            // Agar o'zimiz bo'lsak tugma ko'rsatmaslik, aks holda ko'rsatish (phone bo'lmasa ham)
+            const playerId = r.playerId || r.phone || r.name;
+            const isMe = playerId && myProfile.playerId && (playerId === myProfile.playerId || playerId === myProfile.phone);
             const showButton = !isMe && r.name !== myProfile.name;
-            console.log('playerId:', playerId, 'isMe:', isMe, 'showButton:', showButton);
-            const buttonHtml = showButton ? `<button class="primary-btn btn-invite-leaderboard" data-fid="${playerId}" data-fname="${r.name}" style="padding:4px 8px; font-size:0.7rem; background:#10b981;">Chaqirish</button>` : '';
-            console.log('Button HTML for', r.name, ':', buttonHtml);
-            return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
-                <span>${idx + 1}. ${r.flag || '🏳️'} ${r.name}</span>
+            const buttonHtml = showButton ? `<button class="primary-btn btn-challenge-row" data-fid="${playerId}" data-fname="${r.name}" style="padding:4px 8px; font-size:0.7rem; background:linear-gradient(135deg, #f43f5e, #be123c); border-radius:6px;">⚔️ Duel</button>` : '';
+
+            const avatarMarkup = r.photoUrl
+                ? `<img src="${r.photoUrl}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; margin-right:4px; vertical-align:middle;">`
+                : `<span style="font-size:1.05rem; margin-right:4px;">${r.flag || '🇺🇿'}</span>`;
+
+            return `<div class="leaderboard-item-row" data-fid="${playerId}" data-fname="${r.name}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; padding:6px 8px; border-radius:8px; background:rgba(30,41,59,0.45); cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="color:#94a3b8; font-size:0.8rem; min-width:18px;">#${idx + 1}</span>
+                    ${avatarMarkup}
+                    <span style="font-weight:600; color:#f8fafc;">${r.name}</span>
+                </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span><b>${r.score}</b></span>
+                    <span style="color:#fbbf24; font-weight:700;">⭐ ${r.score}</span>
                     ${buttonHtml}
                 </div>
             </div>`;
         }).join('');
 
-        // Chaqirish tugmalariga event listener qo'shish
-        leaderboardList.querySelectorAll('.btn-invite-leaderboard').forEach((el) => {
-            el.addEventListener('click', () => {
-                const toPlayerId = el.getAttribute('data-fid');
-                const toPlayerName = el.getAttribute('data-fname');
-                if (!toPlayerId) return;
+        // 1. Duelga chaqirish tugmasi
+        leaderboardList.querySelectorAll('.btn-challenge-row').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const toPlayerId = btn.getAttribute('data-fid');
+                const toPlayerName = btn.getAttribute('data-fname');
+                const targetRow = rows.find(r => (r.playerId || r.phone || r.name) === toPlayerId);
+                openPlayerProfileModal(toPlayerId, toPlayerName, targetRow || {});
+            });
+        });
 
-                const options = {
-                    map: 'field',
-                    weather: 'sunny',
-                    birds: true,
-                    birdCount: 20,
-                    animals: false,
-                    charType: myProfile.charType
-                };
-
-                socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
-
-                // Taklif yuborilgani haqida xabar
-                if (friendIdStatus) {
-                    friendIdStatus.style.color = '#3b82f6';
-                    friendIdStatus.innerText = `${toPlayerName} ga o'yin taklifi yuborildi.`;
-                }
+        // 2. Qator ustiga bosganda o'yinchi profili ochilishi
+        leaderboardList.querySelectorAll('.leaderboard-item-row').forEach((row) => {
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                const toPlayerId = row.getAttribute('data-fid');
+                const toPlayerName = row.getAttribute('data-fname');
+                const targetRow = rows.find(r => (r.playerId || r.phone || r.name) === toPlayerId);
+                openPlayerProfileModal(toPlayerId, toPlayerName, targetRow || {});
             });
         });
 
         return true;
     };
+
+    // Qidiruv inputini ulash
+    const searchInput = document.getElementById('leaderboard-search-input');
+    if (searchInput && !searchInput._hasSearchHandler) {
+        searchInput._hasSearchHandler = true;
+        searchInput.addEventListener('input', (e) => {
+            const q = (e.target.value || '').trim().toLowerCase();
+            if (!q) {
+                renderRows(currentLeaderboardRows);
+            } else {
+                const filtered = currentLeaderboardRows.filter(r => (r.name || '').toLowerCase().includes(q));
+                renderRows(filtered);
+            }
+        });
+    }
+
     let showedCached = false;
     try {
         const cachedRaw = localStorage.getItem(LEADERBOARD_CACHE_KEY);
@@ -12593,6 +12632,563 @@ function setupMenuCarousel() {
     });
 }
 
+// =========================================================
+// DUEL TAKLIFLARI, O'YINCHI PROFILI VA REJALASHTIRILGAN DUEL
+// =========================================================
+
+let activeScheduleInviteId = null;
+let activeScheduleMinutes = 0;
+let activeProfileTarget = null;
+let duelWaitingTimerInterval = null;
+
+async function fetchDuelInvites() {
+    const myId = myProfile.playerId || myProfile.phone;
+    if (!myId) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/duel-invites?playerId=${encodeURIComponent(myId)}`);
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok) {
+            updateDuelInvitesBadge(data.pendingCount || 0);
+            renderDuelInvites(data.incoming || [], data.outgoing || []);
+        }
+    } catch (e) {
+        console.warn('fetchDuelInvites error:', e);
+    }
+}
+
+function updateDuelInvitesBadge(count) {
+    const num = Number(count) || 0;
+    const txtCardCount = document.getElementById('txt-duel-invites-count');
+    const topBadge = document.getElementById('top-invites-badge');
+    const tabIncBadge = document.getElementById('tab-incoming-badge');
+
+    if (num > 0) {
+        if (txtCardCount) {
+            txtCardCount.innerText = `+${num}`;
+            txtCardCount.style.display = 'inline-block';
+        }
+        if (topBadge) {
+            topBadge.innerText = `+${num}`;
+            topBadge.style.display = 'inline-block';
+        }
+        if (tabIncBadge) tabIncBadge.innerText = String(num);
+    } else {
+        if (txtCardCount) txtCardCount.style.display = 'none';
+        if (topBadge) topBadge.style.display = 'none';
+        if (tabIncBadge) tabIncBadge.innerText = '0';
+    }
+}
+
+function renderDuelInvites(incoming, outgoing) {
+    const incContainer = document.getElementById('incoming-invites-container');
+    const outContainer = document.getElementById('outgoing-invites-container');
+    const tabIncBadge = document.getElementById('tab-incoming-badge');
+    const tabOutBadge = document.getElementById('tab-outgoing-badge');
+
+    const pendingIncoming = (incoming || []).filter(i => i.status === 'pending');
+    if (tabIncBadge) tabIncBadge.innerText = String(pendingIncoming.length);
+    if (tabOutBadge) tabOutBadge.innerText = String((outgoing || []).length);
+
+    if (incContainer) {
+        if (!incoming || !incoming.length) {
+            incContainer.innerHTML = '<p class="empty-invites-hint">Sizga kelgan yangi duel takliflari yo\'q</p>';
+        } else {
+            incContainer.innerHTML = incoming.map(inv => {
+                const isPending = inv.status === 'pending';
+                const isAccepted = inv.status === 'accepted';
+                return `<div class="duel-invite-card" data-invite-id="${inv.id}">
+                    <div class="invite-header">
+                        <div class="invite-user-left">
+                            ${inv.fromPhoto ? `<img src="${inv.fromPhoto}" class="invite-avatar">` : `<div class="invite-avatar">${inv.fromFlag || '🏹'}</div>`}
+                            <div>
+                                <div class="invite-user-name">${inv.fromName}</div>
+                                <div class="invite-meta">${isPending ? 'Sizni duelga chorladi' : `Qabul qilingan: soat ${inv.scheduledTimeStr || 'Hozir'}`}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="invite-actions">
+                        ${isPending ? `
+                            <button type="button" class="primary-btn btn-accept-duel" data-iid="${inv.id}" data-name="${inv.fromName}" style="background: linear-gradient(135deg, #10b981, #059669); flex:1;">⚔️ Qabul qilish</button>
+                            <button type="button" class="primary-btn btn-decline-duel" data-iid="${inv.id}" style="background:#ef4444; width:85px;">Rad etish</button>
+                        ` : (isAccepted ? `
+                            <button type="button" class="primary-btn btn-enter-duel" data-iid="${inv.id}" data-room="${inv.roomName}" style="background: linear-gradient(135deg, #f59e0b, #d97706); flex:1;">⚔️ Jangga kirish</button>
+                        ` : `<span style="color:#94a3b8; font-size:0.8rem;">Status: ${inv.status}</span>`)}
+                    </div>
+                </div>`;
+            }).join('');
+
+            incContainer.querySelectorAll('.btn-accept-duel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const iid = btn.getAttribute('data-iid');
+                    const name = btn.getAttribute('data-name');
+                    openScheduleDuelModal(iid, name);
+                });
+            });
+            incContainer.querySelectorAll('.btn-decline-duel').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const iid = btn.getAttribute('data-iid');
+                    await respondDuelInvite(iid, false);
+                });
+            });
+            incContainer.querySelectorAll('.btn-enter-duel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const iid = btn.getAttribute('data-iid');
+                    const room = btn.getAttribute('data-room');
+                    joinDuelRoomDirectly(iid, room);
+                });
+            });
+        }
+    }
+
+    if (outContainer) {
+        if (!outgoing || !outgoing.length) {
+            outContainer.innerHTML = '<p class="empty-invites-hint">Siz hali hech kimga duel taklifi yubormadingiz</p>';
+        } else {
+            outContainer.innerHTML = outgoing.map(inv => {
+                const isPending = inv.status === 'pending';
+                const isAccepted = inv.status === 'accepted';
+                return `<div class="duel-invite-card" data-invite-id="${inv.id}">
+                    <div class="invite-header">
+                        <div class="invite-user-left">
+                            ${inv.toPhoto ? `<img src="${inv.toPhoto}" class="invite-avatar">` : `<div class="invite-avatar">${inv.toFlag || '🏹'}</div>`}
+                            <div>
+                                <div class="invite-user-name">${inv.toName}</div>
+                                <div class="invite-meta">${isPending ? '⏳ Javob kutilmoqda...' : (isAccepted ? `✅ Qabul qilindi: soat ${inv.scheduledTimeStr || 'Hozir'}` : `Holat: ${inv.status}`)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="invite-actions">
+                        ${isPending ? `
+                            <button type="button" class="primary-btn btn-cancel-duel" data-iid="${inv.id}" style="background:#475569; flex:1;">❌ Bekor qilish</button>
+                        ` : (isAccepted ? `
+                            <button type="button" class="primary-btn btn-enter-duel" data-iid="${inv.id}" data-room="${inv.roomName}" style="background: linear-gradient(135deg, #f59e0b, #d97706); flex:1;">⚔️ Jangga kirish</button>
+                        ` : '')}
+                    </div>
+                </div>`;
+            }).join('');
+
+            outContainer.querySelectorAll('.btn-cancel-duel').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const iid = btn.getAttribute('data-iid');
+                    await cancelDuelInvite(iid);
+                });
+            });
+            outContainer.querySelectorAll('.btn-enter-duel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const iid = btn.getAttribute('data-iid');
+                    const room = btn.getAttribute('data-room');
+                    joinDuelRoomDirectly(iid, room);
+                });
+            });
+        }
+    }
+}
+
+function openScheduleDuelModal(inviteId, opponentName) {
+    activeScheduleInviteId = inviteId;
+    activeScheduleMinutes = 0;
+    const modal = document.getElementById('schedule-duel-modal');
+    if (!modal) return;
+    const subtitle = document.getElementById('txt-schedule-subtitle');
+    if (subtitle) subtitle.innerText = `${opponentName || 'Raqib'} bilan jang qachon bo'lsin?`;
+
+    // Presets reset
+    modal.querySelectorAll('.schedule-time-preset').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === 0);
+    });
+    const timeInput = document.getElementById('input-custom-schedule-time');
+    if (timeInput) timeInput.value = '';
+
+    modal.classList.remove('hidden');
+}
+
+async function respondDuelInvite(inviteId, accept, scheduledTime, scheduledTimeStr) {
+    try {
+        const res = await fetch(`${API_BASE}/api/duel-invites/respond`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                inviteId,
+                accept,
+                scheduledTime: scheduledTime || Date.now(),
+                scheduledTimeStr: scheduledTimeStr || 'Hozir'
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok) {
+            fetchDuelInvites();
+        }
+    } catch (e) {
+        console.warn('respondDuelInvite error:', e);
+    }
+}
+
+async function cancelDuelInvite(inviteId) {
+    try {
+        const res = await fetch(`${API_BASE}/api/duel-invites/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteId })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok) {
+            fetchDuelInvites();
+        }
+    } catch (e) {
+        console.warn('cancelDuelInvite error:', e);
+    }
+}
+
+function joinDuelRoomDirectly(inviteId, roomName) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    socket.emit('joinDuelRoom', { inviteId, roomName });
+}
+
+function showDuelWaitingBanner(data) {
+    const banner = document.getElementById('duel-waiting-forfeit-banner');
+    const timerText = document.getElementById('txt-duel-waiting-timer');
+    const titleText = document.getElementById('txt-duel-waiting-title');
+    if (!banner || !timerText) return;
+
+    banner.classList.remove('hidden');
+    if (titleText && data.opponentName) {
+        titleText.innerText = `${data.opponentName} jangga kutilmoqda...`;
+    }
+
+    let remaining = Number(data.remainingSeconds) || 120;
+    timerText.innerText = `Vaqt: ${remaining}s`;
+
+    if (duelWaitingTimerInterval) clearInterval(duelWaitingTimerInterval);
+    duelWaitingTimerInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(duelWaitingTimerInterval);
+            timerText.innerText = `Vaqt tugadi!`;
+        } else {
+            timerText.innerText = `Vaqt: ${remaining}s`;
+        }
+    }, 1000);
+}
+
+function handleDuelOpponentForfeited(data) {
+    if (duelWaitingTimerInterval) {
+        clearInterval(duelWaitingTimerInterval);
+        duelWaitingTimerInterval = null;
+    }
+    const banner = document.getElementById('duel-waiting-forfeit-banner');
+    if (banner) banner.classList.add('hidden');
+
+    myStats.wins = (myStats.wins || 0) + 1;
+    myStats.games = (myStats.games || 0) + 1;
+    myStats.score = (myStats.score || 0) + (data.scoreGained || 50);
+    localStorage.setItem('nayza_stats', JSON.stringify(myStats));
+    updateCampaignUI();
+
+    alert(data.message || "Raqib duel maydoniga kelmadi va jangdan qochdi! Sizga texnik g'alaba va +50 ball berildi!");
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    if (menuScreen) menuScreen.classList.remove('hidden');
+    fetchDuelInvites();
+}
+
+async function openPlayerProfileModal(playerId, playerName, preloadedData = {}) {
+    const modal = document.getElementById('player-profile-modal');
+    if (!modal) return;
+
+    activeProfileTarget = {
+        playerId,
+        name: playerName || preloadedData.name || 'Jangchi',
+        flag: preloadedData.flag || '🇺🇿',
+        photoUrl: preloadedData.photoUrl || '',
+        score: preloadedData.score || 0
+    };
+
+    document.getElementById('player-profile-name').innerText = activeProfileTarget.name;
+    const avatarImg = document.getElementById('player-profile-avatar-img');
+    const avatarFallback = document.getElementById('player-profile-avatar-fallback');
+    if (activeProfileTarget.photoUrl) {
+        avatarImg.src = activeProfileTarget.photoUrl;
+        avatarImg.style.display = 'block';
+        avatarFallback.style.display = 'none';
+    } else {
+        avatarImg.style.display = 'none';
+        avatarFallback.style.display = 'inline-block';
+        avatarFallback.innerText = activeProfileTarget.flag || '👤';
+    }
+
+    document.getElementById('player-profile-score').innerText = activeProfileTarget.score || 0;
+    document.getElementById('player-profile-games').innerText = preloadedData.games || 0;
+    document.getElementById('player-profile-wins').innerText = preloadedData.wins || 0;
+    document.getElementById('player-profile-losses').innerText = preloadedData.losses || Math.max(0, (preloadedData.games || 0) - (preloadedData.wins || 0));
+    document.getElementById('player-profile-forfeits').innerText = preloadedData.forfeits || 0;
+    const winRate = (preloadedData.games > 0) ? Math.round(((preloadedData.wins || 0) / preloadedData.games) * 100) : 0;
+    document.getElementById('player-profile-winrate').innerText = `${winRate}%`;
+
+    modal.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/player-profile/${encodeURIComponent(playerId)}`);
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok && data.player) {
+            const p = data.player;
+            activeProfileTarget.photoUrl = p.photoUrl || activeProfileTarget.photoUrl;
+            if (p.photoUrl) {
+                avatarImg.src = p.photoUrl;
+                avatarImg.style.display = 'block';
+                avatarFallback.style.display = 'none';
+            }
+            document.getElementById('player-profile-score').innerText = p.score || 0;
+            document.getElementById('player-profile-games').innerText = p.games || 0;
+            document.getElementById('player-profile-wins').innerText = p.wins || 0;
+            document.getElementById('player-profile-losses').innerText = p.losses || 0;
+            document.getElementById('player-profile-forfeits').innerText = p.forfeits || 0;
+            document.getElementById('player-profile-winrate').innerText = `${p.winRate || 0}%`;
+            document.getElementById('player-profile-level').innerText = `Lv.${p.campaignLevel || 1}`;
+
+            let tier = "🥉 Bronza";
+            if (p.score >= 3000) tier = "👑 Afsona";
+            else if (p.score >= 2000) tier = "💎 Olmos";
+            else if (p.score >= 1200) tier = "🥇 Oltin";
+            else if (p.score >= 600) tier = "🥈 Kumush";
+            document.getElementById('player-profile-tier').innerText = tier;
+        }
+    } catch (_) {}
+}
+
+async function sendDuelInviteToActiveTarget() {
+    if (!activeProfileTarget || !activeProfileTarget.playerId) return;
+    try {
+        const payload = {
+            fromPlayerId: myProfile.playerId || myProfile.phone,
+            fromName: myProfile.name,
+            fromFlag: myProfile.flag,
+            fromPhoto: myProfile.photoUrl || '',
+            fromTgId: tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '',
+            fromPhone: myProfile.phone || '',
+            toPlayerId: activeProfileTarget.playerId,
+            toName: activeProfileTarget.name,
+            toFlag: activeProfileTarget.flag,
+            toPhoto: activeProfileTarget.photoUrl || '',
+            toTgId: activeProfileTarget.tgId || '',
+            toPhone: activeProfileTarget.phone || ''
+        };
+        const res = await fetch(`${API_BASE}/api/duel-invites/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok) {
+            alert(`⚔️ ${activeProfileTarget.name} ga duel taklifi yuborildi!`);
+            const pModal = document.getElementById('player-profile-modal');
+            if (pModal) pModal.classList.add('hidden');
+            fetchDuelInvites();
+        } else {
+            alert("Taklif yuborishda xatolik yuz berdi!");
+        }
+    } catch (e) {
+        alert("Server bilan bog'lanishda xatolik!");
+    }
+}
+
+function addFriendFromActiveTarget() {
+    if (!activeProfileTarget || !activeProfileTarget.playerId) return;
+    socket.emit('lookupFriendById', {
+        friendId: activeProfileTarget.playerId,
+        profile: myProfile
+    });
+    alert(`👥 ${activeProfileTarget.name} ga do'stlik taklifi yuborildi!`);
+    const pModal = document.getElementById('player-profile-modal');
+    if (pModal) pModal.classList.add('hidden');
+}
+
+function initDuelInvitesUI() {
+    // 1. Menyu tugmalari
+    const btnDuelInvites = document.getElementById('btn-duel-invites');
+    const btnTopInvites = document.getElementById('btn-top-invites');
+    const invitesModal = document.getElementById('duel-invites-modal');
+    const closeInvitesX = document.getElementById('btn-close-invites-x');
+    const closeInvitesBtn = document.getElementById('btn-close-invites');
+
+    const openInvites = (e) => {
+        if (e) e.stopPropagation();
+        if (invitesModal) {
+            invitesModal.classList.remove('hidden');
+            fetchDuelInvites();
+        }
+    };
+    if (btnDuelInvites) btnDuelInvites.addEventListener('click', openInvites);
+    if (btnTopInvites) btnTopInvites.addEventListener('click', openInvites);
+    if (closeInvitesX) closeInvitesX.addEventListener('click', () => invitesModal && invitesModal.classList.add('hidden'));
+    if (closeInvitesBtn) closeInvitesBtn.addEventListener('click', () => invitesModal && invitesModal.classList.add('hidden'));
+
+    // 2. Tablar
+    const tabInc = document.getElementById('tab-incoming-invites');
+    const tabOut = document.getElementById('tab-outgoing-invites');
+    const incBox = document.getElementById('incoming-invites-container');
+    const outBox = document.getElementById('outgoing-invites-container');
+
+    if (tabInc && tabOut && incBox && outBox) {
+        tabInc.addEventListener('click', () => {
+            tabInc.classList.add('active');
+            tabOut.classList.remove('active');
+            incBox.classList.remove('hidden');
+            outBox.classList.add('hidden');
+        });
+        tabOut.addEventListener('click', () => {
+            tabOut.classList.add('active');
+            tabInc.classList.remove('active');
+            outBox.classList.remove('hidden');
+            incBox.classList.add('hidden');
+        });
+    }
+
+    // 3. Schedule modal buttons
+    const schedModal = document.getElementById('schedule-duel-modal');
+    const closeSchedX = document.getElementById('btn-close-schedule-x');
+    const cancelSchedBtn = document.getElementById('btn-cancel-schedule');
+    const confirmSchedBtn = document.getElementById('btn-confirm-schedule');
+
+    if (closeSchedX) closeSchedX.addEventListener('click', () => schedModal && schedModal.classList.add('hidden'));
+    if (cancelSchedBtn) cancelSchedBtn.addEventListener('click', () => schedModal && schedModal.classList.add('hidden'));
+
+    if (schedModal) {
+        schedModal.querySelectorAll('.schedule-time-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                schedModal.querySelectorAll('.schedule-time-preset').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeScheduleMinutes = Number(btn.getAttribute('data-minutes')) || 0;
+            });
+        });
+    }
+
+    if (confirmSchedBtn) {
+        confirmSchedBtn.addEventListener('click', async () => {
+            if (!activeScheduleInviteId) return;
+            const customTimeInput = document.getElementById('input-custom-schedule-time');
+            let scheduledTime = Date.now();
+            let scheduledTimeStr = 'Hozir (Darhol)';
+
+            if (customTimeInput && customTimeInput.value) {
+                scheduledTimeStr = customTimeInput.value;
+                const [hh, mm] = customTimeInput.value.split(':').map(Number);
+                const d = new Date();
+                d.setHours(hh, mm, 0, 0);
+                if (d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
+                scheduledTime = d.getTime();
+            } else if (activeScheduleMinutes > 0) {
+                scheduledTime = Date.now() + activeScheduleMinutes * 60 * 1000;
+                const d = new Date(scheduledTime);
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+                scheduledTimeStr = `${activeScheduleMinutes} daqiqadan so'ng (${hh}:${mm})`;
+            }
+
+            await respondDuelInvite(activeScheduleInviteId, true, scheduledTime, scheduledTimeStr);
+            if (schedModal) schedModal.classList.add('hidden');
+            alert(`✅ Duel qabul qilindi va vaqti soat ${scheduledTimeStr} ga belgilandi!`);
+        });
+    }
+
+    // 4. Player profile modal buttons
+    const profileModal = document.getElementById('player-profile-modal');
+    const closeProfX = document.getElementById('btn-close-player-profile-x');
+    const challengeBtn = document.getElementById('btn-profile-challenge-duel');
+    const addFriendBtn = document.getElementById('btn-profile-add-friend');
+
+    if (closeProfX) closeProfX.addEventListener('click', () => profileModal && profileModal.classList.add('hidden'));
+    if (challengeBtn) challengeBtn.addEventListener('click', sendDuelInviteToActiveTarget);
+    if (addFriendBtn) addFriendBtn.addEventListener('click', addFriendFromActiveTarget);
+
+    // 5. Socket listeners for duel invites
+    socket.on('newDuelInvite', (data) => {
+        updateDuelInvitesBadge(data?.pendingCount || 1);
+        fetchDuelInvites();
+        try { playSound('bonus'); } catch (_) {}
+    });
+
+    socket.on('duelInvitesCount', (data) => {
+        updateDuelInvitesBadge(data?.count || 0);
+    });
+
+    socket.on('duelInviteAccepted', (data) => {
+        fetchDuelInvites();
+        alert(`⚔️ ${data.invite.toName} duel taklifingizni qabul qildi!\n⏰ Vaqti: soat ${data.invite.scheduledTimeStr}`);
+    });
+
+    socket.on('duelInviteDeclined', (data) => {
+        fetchDuelInvites();
+        alert(`❌ ${data.invite.toName} duel taklifingizni rad etdi.`);
+    });
+
+    socket.on('duelTimeArrived', (data) => {
+        const inv = data.invite;
+        if (confirm(`🔔 DUEL VAQTI KELDI!\n\n⚔️ ${inv.fromName} vs ${inv.toName}\nJangga kirasizmi?`)) {
+            joinDuelRoomDirectly(inv.id, inv.roomName);
+        }
+    });
+
+    socket.on('duelWaitingOpponent', (data) => {
+        showDuelWaitingBanner(data);
+    });
+
+    socket.on('duelOpponentJoinedRoom', (data) => {
+        const banner = document.getElementById('duel-waiting-forfeit-banner');
+        if (banner) banner.classList.add('hidden');
+        if (duelWaitingTimerInterval) clearInterval(duelWaitingTimerInterval);
+    });
+
+    socket.on('duelOpponentForfeited', (data) => {
+        handleDuelOpponentForfeited(data);
+    });
+
+    socket.on('friendAddRequest', (data) => {
+        const from = data?.fromProfile;
+        if (!from) return;
+        const confirmModal = document.getElementById('friend-request-confirm-modal');
+        const msg = document.getElementById('txt-friend-confirm-msg');
+        if (confirmModal && msg) {
+            msg.innerText = `🤝 ${from.name || "Jangchi"} sizni do'stlar safiga qo'shmoqchi. Rozimisiz?`;
+            confirmModal.classList.remove('hidden');
+
+            const yesBtn = document.getElementById('btn-friend-confirm-yes');
+            const noBtn = document.getElementById('btn-friend-confirm-no');
+
+            yesBtn.onclick = () => {
+                confirmModal.classList.add('hidden');
+                socket.emit('friendAddRequestResponse', { fromPlayerId: from.playerId, accept: true });
+            };
+            noBtn.onclick = () => {
+                confirmModal.classList.add('hidden');
+                socket.emit('friendAddRequestResponse', { fromPlayerId: from.playerId, accept: false });
+            };
+        }
+    });
+}
+
+function checkDuelUrlParams() {
+    try {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get('view') === 'invites') {
+            const invitesModal = document.getElementById('duel-invites-modal');
+            if (invitesModal) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                invitesModal.classList.remove('hidden');
+                fetchDuelInvites();
+            }
+        } else if (sp.has('duel_room')) {
+            const duelRoom = sp.get('duel_room');
+            const inviteId = sp.get('invite_id');
+            joinDuelRoomDirectly(inviteId, duelRoom);
+        }
+    } catch (_) {}
+}
+
 // Initialization logic
 function _runPageInits() {
     setupMenuCarousel();
@@ -12600,6 +13196,9 @@ function _runPageInits() {
     initDailyQuests();
     initEmotesUI();
     initCoinTossUI();
+    initDuelInvitesUI();
+    fetchDuelInvites();
+    checkDuelUrlParams();
     ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options', 'select-char-type', 'select-avatar', 'select-spear-model', 'select-country'].forEach(id => {
         const el = document.getElementById(id);
         if (el) setupCustomDropdown(el);
