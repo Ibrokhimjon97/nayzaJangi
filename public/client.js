@@ -776,15 +776,39 @@ ground.position.y = -400;
 ground.receiveShadow = true;
 scene.add(ground);
 const rocks = [];
-for(let i=0; i<60; i++) {
-    const rockGeo = new THREE.DodecahedronGeometry(Math.random() * 30 + 10);
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 1 });
-    const rock = new THREE.Mesh(rockGeo, rockMat);
-    rock.position.set((Math.random() - 0.5) * 14000, -300 + Math.random()*20, (Math.random() - 0.5) * 800 - 100);
-    rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-    rock.castShadow = true; rock.receiveShadow = true;
-    scene.add(rock); rocks.push(rock);
+const groundPebbleGroup = new THREE.Group();
+groundPebbleGroup.name = 'ground-pebble-line';
+
+// Barcha xaritalarda yer sathini aniq belgilovchi kichik toshchalar (pebbles) chizig'i
+const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.95, metalness: 0.05 });
+const groundSurfaceLevelY = -300; // ground.position.y + 100
+const pebbleStep = 36;
+for (let px = -16000; px <= 16000; px += pebbleStep) {
+    const pSize = 2.4 + (Math.sin(px * 0.013) * 0.8 + 1.0) * 1.6;
+    const pebbleGeo = new THREE.DodecahedronGeometry(pSize, 0);
+    const pebble = new THREE.Mesh(pebbleGeo, pebbleMat.clone());
+    const yJitter = (Math.sin(px * 0.07) * 1.5);
+    pebble.position.set(
+        px + (Math.sin(px * 0.23) * 6),
+        groundSurfaceLevelY + yJitter,
+        15 + (Math.cos(px * 0.31) * 4)
+    );
+    pebble.scale.set(1.1, 0.65, 0.9);
+    pebble.rotation.set(Math.sin(px) * 2, Math.cos(px) * 2, 0);
+    pebble.castShadow = !MOBILE_PERF_MODE;
+    pebble.receiveShadow = true;
+    groundPebbleGroup.add(pebble);
+    rocks.push(pebble);
 }
+
+// Mayda toshlar ostidagi nozik zamin chizig'i
+const groundSeamGeo = new THREE.PlaneGeometry(36000, 3.5);
+const groundSeamMat = new THREE.MeshBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.75, depthWrite: false });
+const groundSeam = new THREE.Mesh(groundSeamGeo, groundSeamMat);
+groundSeam.name = 'ground-seam-line';
+groundSeam.position.set(0, groundSurfaceLevelY - 0.5, 14.5);
+groundPebbleGroup.add(groundSeam);
+scene.add(groundPebbleGroup);
 
 const dustGeo = new THREE.BufferGeometry();
 const dustCount = MOBILE_PERF_MODE ? 220 : 500;
@@ -2083,6 +2107,7 @@ function buildMap(mapType, weather = 'sunny') {
 
     ground.material.color.setHex(groundColor);
     rocks.forEach(r => r.material.color.setHex(rockColor));
+    if (typeof groundSeamMat !== 'undefined' && groundSeamMat) groundSeamMat.color.setHex(rockColor);
     scene.background.setHex(skyColor);
     scene.fog.color.setHex(skyColor);
     scene.fog.density = (weather === 'storm') ? 0.0004 : 0.00018;
@@ -2178,30 +2203,7 @@ function buildMap(mapType, weather = 'sunny') {
         smallTreeChance = 0.2;
     }
     const safeRadius = Math.max(1300, currentBattleDistance / 2 + 420);
-    if (mapType === 'castle') {
-        for (const side of [-1, 1]) {
-            const qala = new THREE.Mesh(
-                new THREE.PlaneGeometry(920, 660),
-                new THREE.MeshBasicMaterial({
-                    map: qalaTexture,
-                    transparent: true,
-                    side: THREE.FrontSide,
-                    alphaTest: 0.02,
-                    depthWrite: false
-                })
-            );
-            qala.position.set(
-                side * (safeRadius + 260),
-                ground.position.y + 300,
-                -280
-            );
-            if (weatherType === 'night') qala.material.color.setRGB(0.72, 0.76, 0.9);
-            else if (weatherType === 'storm') qala.material.color.setRGB(0.82, 0.86, 0.95);
-            else if (weatherType === 'snow') qala.material.color.setRGB(0.93, 0.95, 1);
-            scene.add(qala);
-            mapBackdrops.push(qala);
-        }
-    }
+    // Qal'a sahnasidagi 2D qal'a modeli foydalanuvchi so'roviga binoan olib tashlandi.
     if (mapType === 'mountain') {
         // Procedural tog' siluetlari - uzoq fonda qatlamlangan konuslar.
         const snowy = (weatherType === 'snow' || weatherType === 'winter');
@@ -4261,35 +4263,70 @@ function stickSpear(targetModel, hitX, hitY, angle) {
         scene.add(stuckSpear);
         targetModel.attach(stuckSpear);
     } else {
-        // Yerga sanchilgan nayza: o'q uchi (paykon) butunlay yer ostiga kiradi, ko'rinmasligi kerak.
-        // Faqat yer ustidagi dasta (shaft) va patlar (fletching) ko'rinishi lozim.
+        // Yerga sanchilgan nayza / kamon o'qi:
+        // O'q uchi butunlay yer ostiga kirgan bo'ladi va MUTLAQO KO'RINMAYDI.
+        // Faqat yer sathidan (groundSurfaceY) yuqoriga qaragan dasta (shaft) va patlar (fletching) ko'rinadi.
         const groundSurfaceY = ground.position.y + 100;
-        
-        // 1. O'q uchini (metall paykonni) butunlay olib tashlaymiz (remove)
-        const tipGroup = stuckSpear.getObjectByName('spear-tip-group');
-        if (tipGroup) stuckSpear.remove(tipGroup);
-        const bomb = stuckSpear.getObjectByName('spear-bomb');
-        if (bomb) stuckSpear.remove(bomb);
-        const glow = stuckSpear.getObjectByName('fire-spear-glow');
-        if (glow) stuckSpear.remove(glow);
+        const groundStuckGroup = new THREE.Group();
+        groundStuckGroup.name = 'ground-stuck-spear';
+        groundStuckGroup.position.set(hitX, groundSurfaceY, 14);
+        groundStuckGroup.rotation.z = angle;
 
-        // 2. GPU darajasida yer ostidagi har qanday qoldiqni qirqib tashlash (clipping plane)
-        const groundClipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundSurfaceY + 1);
-        stuckSpear.traverse((obj) => {
-            if (obj.isMesh && obj.material) {
-                obj.material = obj.material.clone();
-                obj.material.clippingPlanes = [groundClipPlane];
-                obj.material.clipShadows = true;
-                obj.material.needsUpdate = true;
-            }
+        // Qurol turi va miqyosi
+        const isSpearmanThrow = (spearGroup && spearGroup.scale.x > 1.2);
+        const shaftLength = isSpearmanThrow ? 115 : 95;
+        const shaftRadius = isSpearmanThrow ? 2.1 : 1.6;
+
+        // Shaft (dasta): Faqat x = 0 (yer yuzasi) dan x = -shaftLength (havodagi orqa qism) gacha cho'ziladi.
+        // Hech bir nuqtasi x > 0 (yer osti) da bo'lmaydi!
+        const shaftGeo = new THREE.CylinderGeometry(shaftRadius * 0.85, shaftRadius * 1.1, shaftLength, 10);
+        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.65, metalness: 0.08 });
+        const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
+        shaftMesh.rotation.z = Math.PI / 2;
+        shaftMesh.position.x = -shaftLength / 2;
+        groundStuckGroup.add(shaftMesh);
+
+        // Patlar (fletching): Faqat orqa uchida (havoda) joylashadi
+        const featherColor = isSpearmanThrow ? 0x7c3aed : 0xe23b3b;
+        const fMat = new THREE.MeshStandardMaterial({
+            color: featherColor,
+            roughness: 0.8,
+            metalness: 0.05,
+            side: THREE.DoubleSide
         });
+        const fShape = new THREE.Shape();
+        fShape.moveTo(0, 0);
+        fShape.quadraticCurveTo(14, 8, 26, 6);
+        fShape.quadraticCurveTo(20, 2, 18, 0);
+        fShape.quadraticCurveTo(10, -1, 0, 0);
+        const fGeo = new THREE.ShapeGeometry(fShape);
+        for (let f = 0; f < 3; f++) {
+            const fMesh = new THREE.Mesh(fGeo, fMat.clone());
+            fMesh.rotation.x = (f * Math.PI * 2) / 3;
+            fMesh.position.x = -shaftLength + 14;
+            groundStuckGroup.add(fMesh);
+        }
 
-        // 3. Pozitsiya: O'q yerga sanchilgan nuqtasidan yuqoriga qaragan holda turadi.
-        // Dastaning uchi yer ichiga kiradi (55 birlik), qolgan qismi va patlar yer ustida ko'rinadi.
-        stuckSpear.position.x = hitX - 55 * Math.cos(angle);
-        stuckSpear.position.y = groundSurfaceY - 55 * Math.sin(angle);
-        stuckSpear.position.z = 12;
-        scene.add(stuckSpear);
+        // Nock (orqa dasta uchi)
+        const nockMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(shaftRadius * 1.25, shaftRadius, 6, 8),
+            new THREE.MeshStandardMaterial({ color: 0x2a1c10, roughness: 0.85 })
+        );
+        nockMesh.rotation.z = Math.PI / 2;
+        nockMesh.position.x = -shaftLength;
+        groundStuckGroup.add(nockMesh);
+
+        // Yerga sanchilgan nuqtadagi 2 ta mayda toshcha (zarba effekti)
+        for (let p = 0; p < 2; p++) {
+            const peg = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(1.6 + Math.random() * 1.0),
+                new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.95 })
+            );
+            peg.position.set((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 3);
+            groundStuckGroup.add(peg);
+        }
+
+        scene.add(groundStuckGroup);
     }
 }
 
@@ -5305,12 +5342,12 @@ function shootCrowKillerArrow() {
         socket.emit('crowKillerShot', { count: targetCount });
     }
     
-    // Cinematic tugagandan keyin camera ni qaytarish
+    // Cinematic tugagandan keyin camera ni darhol dastlabki o'yinchi / jang maydoni ko'rinishiga qaytarish
     setTimeout(() => {
         crowKillerCinematicActive = false;
-        cameraState = 'normal';
-        cameraZoomTarget = baseZoom;
-    }, CROW_KILLER_CINEMATIC_MS);
+        crowKillerCinematicUntil = 0;
+        resetCameraAfterImpact();
+    }, 2000);
 }
 
 function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird) {
@@ -5409,6 +5446,12 @@ function updateCrowKillerArrows() {
             if (arrow.mesh) scene.remove(arrow.mesh);
             crowKillerArrows.splice(i, 1);
         }
+    }
+    // Barcha qarg'a o'qlari urib bo'lgach, kamera osmonda qolib ketmasdan jang maydoni va o'yinchiga ravon qaytadi
+    if (crowKillerCinematicActive && crowKillerArrows.length === 0) {
+        crowKillerCinematicActive = false;
+        crowKillerCinematicUntil = 0;
+        resetCameraAfterImpact();
     }
 }
 
