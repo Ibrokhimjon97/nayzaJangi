@@ -2664,7 +2664,7 @@ function applySoldierWeatherTone() {
 
 const pos1X = -1300;
 const pos2X = 1300;
-const pos3Offset = 135;
+const pos3Offset = 340; // Ikkinchi dushman bir-biriga yopishib qolmasligi uchun oradagi kengroq masofa
 
 let p1Model = createSoldier(true, 2);
 p1Model.position.x = pos1X;
@@ -4963,6 +4963,7 @@ function shootCrowKillerArrow() {
     
     targets.forEach((bird, index) => {
         setTimeout(() => {
+            if (!bird || !bird.alive || !bird.mesh) return;
             const birdMesh = bird.mesh;
             const targetX = birdMesh.position.x;
             const targetY = birdMesh.position.y;
@@ -4970,18 +4971,27 @@ function shootCrowKillerArrow() {
             // O'q trayektoriyasini hisoblash
             const dx = targetX - startX;
             const dy = targetY - startY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            const power = Math.min(distance * 2.5, 1800);
+            const power = 1600;
             
-            // Maxsus o'q otish (dushmanga zarar bermaydi)
+            // Homing o'q otish
             startCrowKillerArrowAnimation(startX, startY, angle, power, bird);
+            playSfx('throw', 0.9);
             
             // Camera target ni qarg'aga qaratish
             cameraTargetX = targetX;
             cameraTargetY = targetY;
-        }, index * 200); // Har bir o'q 200ms orqali (sekinroq)
+        }, index * 120);
     });
+    
+    // Kafolat: funksiya ishlaganda osmondagi BARCHA qarg'alar 100% yerga qulashi shart
+    setTimeout(() => {
+        targets.forEach((bird) => {
+            if (bird && bird.alive) {
+                killBird(bird);
+            }
+        });
+    }, 2000);
     
     if (gameMode === 'multi') {
         socket.emit('crowKillerShot', { count: targetCount });
@@ -5024,14 +5034,14 @@ function createCrowKillerArrow() {
     
     // O'q tanasi
     const shaftGeo = new THREE.CylinderGeometry(2, 2, 60);
-    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xff1100, emissive: 0xaa0000 });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     shaft.rotation.z = -Math.PI / 2;
     group.add(shaft);
     
     // O'q uchi
-    const tipGeo = new THREE.ConeGeometry(4, 12, 8);
-    const tipMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const tipGeo = new THREE.ConeGeometry(5, 14, 8);
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xff6600 });
     const tip = new THREE.Mesh(tipGeo, tipMat);
     tip.position.set(36, 0, 0);
     tip.rotation.z = -Math.PI / 2;
@@ -5046,41 +5056,49 @@ function updateCrowKillerArrows() {
     for (let i = crowKillerArrows.length - 1; i >= 0; i--) {
         const arrow = crowKillerArrows[i];
         if (!arrow.active) {
-            scene.remove(arrow.mesh);
+            if (arrow.mesh) scene.remove(arrow.mesh);
             crowKillerArrows.splice(i, 1);
             continue;
         }
         
-        // Fizika
-        arrow.x += arrow.vx * 0.016;
-        arrow.y += arrow.vy * 0.016;
-        arrow.vy -= 500 * 0.016; // Gravity
-        
-        arrow.mesh.position.set(arrow.x, arrow.y, 0);
-        arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx);
-        
-        // Qarg'aga urish tekshiruvi
-        if (arrow.targetBird && arrow.targetBird.alive) {
+        // Homing: Agar nishondagi qush tirik bo'lsa, o'q to'g'ridan-to'g'ri qush tomon shiddat bilan yo'naladi
+        if (arrow.targetBird && arrow.targetBird.alive && arrow.targetBird.mesh) {
             const birdMesh = arrow.targetBird.mesh;
-            const dx = arrow.x - birdMesh.position.x;
-            const dy = arrow.y - birdMesh.position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            const dx = birdMesh.position.x - arrow.x;
+            const dy = birdMesh.position.y - arrow.y;
+            const dist = Math.hypot(dx, dy);
             
-            // Distance ni oshirish - 30 dan 100 gacha
-            if (distance < 100) {
-                console.log('Qarg\'aga urildi! Distance:', distance);
-                // Qarg'ani urib tushirish
+            // Qarg'aga yaqin yetib borganda aniq urib tushirish
+            if (dist < 80) {
                 killBird(arrow.targetBird);
                 arrow.active = false;
-                scene.remove(arrow.mesh);
+                if (arrow.mesh) scene.remove(arrow.mesh);
                 crowKillerArrows.splice(i, 1);
+                continue;
             }
+            
+            // Homing boshqaruvi
+            const speed = 1650;
+            arrow.vx = (dx / dist) * speed;
+            arrow.vy = (dy / dist) * speed;
+            arrow.x += arrow.vx * 0.016;
+            arrow.y += arrow.vy * 0.016;
+        } else {
+            // Nishon allaqachon yo'q qilingan bo'lsa
+            arrow.x += arrow.vx * 0.016;
+            arrow.y += arrow.vy * 0.016;
+            arrow.vy -= 600 * 0.016;
         }
         
-        // Yerga tushsa o'chirish
-        if (arrow.y < ground.position.y) {
+        if (arrow.mesh) {
+            arrow.mesh.position.set(arrow.x, arrow.y, 0);
+            arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx);
+        }
+        
+        // Yerga tushsa yoki sahnadan chiqsa o'chirish
+        if (arrow.y < ground.position.y || arrow.x < -2800 || arrow.x > 2800) {
             arrow.active = false;
-            scene.remove(arrow.mesh);
+            if (arrow.mesh) scene.remove(arrow.mesh);
             crowKillerArrows.splice(i, 1);
         }
     }
@@ -5090,24 +5108,17 @@ function killBird(birdEntity) {
     if (!birdEntity || !birdEntity.alive) return;
     
     birdEntity.alive = false;
+    birdEntity.fallWithSpear = true;
+    playCrowSound();
     
-    // Qarg'ani qirilishi animatsiyasi
+    // Qarg'aning qulash animatsiyasi
     const birdMesh = birdEntity.mesh;
-    birdMesh.rotation.z = Math.PI / 2;
+    if (birdMesh) {
+        birdMesh.rotation.z = Math.PI / 2;
+        spawnParticles(birdMesh.position.x, birdMesh.position.y, 16, false);
+    }
     
-    // Pastga tushish
-    const fallAnimation = () => {
-        birdMesh.position.y -= 5;
-        if (birdMesh.position.y > ground.position.y) {
-            requestAnimationFrame(fallAnimation);
-        } else {
-            scene.remove(birdMesh);
-        }
-    };
-    fallAnimation();
-    
-    // Particle effect
-    spawnParticles(birdMesh.position.x, birdMesh.position.y, 10, false);
+    if (typeof checkQuestProgress === 'function') checkQuestProgress('crow', 1);
 }
 
 function updateCrowUI() {
@@ -9766,32 +9777,191 @@ function spawnEmoteBubble(playerIndex, emoji) {
 let airDropCrates = [];
 let turnsSinceLastCrate = 0;
 
+function create3DAirDropChest() {
+    const rootGroup = new THREE.Group();
+    
+    // Sandiqni 3D perspektivada (hajmli) ko'rsatish uchun biroz buramiz
+    const chestGroup = new THREE.Group();
+    chestGroup.rotation.y = 0.38; // 3D chuqurlik ko'rinishi
+    chestGroup.rotation.x = 0.12;
+
+    // 1. Asosiy yog'och sandiq korpusi (72 x 36 x 48)
+    const baseGeo = new THREE.BoxGeometry(72, 36, 48);
+    const woodMat = new THREE.MeshStandardMaterial({
+        color: 0x78350f, // boy yog'och rangi
+        roughness: 0.65,
+        metalness: 0.15
+    });
+    const baseMesh = new THREE.Mesh(baseGeo, woodMat);
+    baseMesh.position.y = 18;
+    chestGroup.add(baseMesh);
+
+    // 2. Sandiqning yarim aylana shaklidagi 3D qopqog'i (Arched Lid)
+    const lidGeo = new THREE.CylinderGeometry(24, 24, 72.4, 16, 1, false, 0, Math.PI);
+    const lidMat = new THREE.MeshStandardMaterial({
+        color: 0x854d0e,
+        roughness: 0.6,
+        metalness: 0.15
+    });
+    const lidMesh = new THREE.Mesh(lidGeo, lidMat);
+    lidMesh.rotation.z = Math.PI / 2;
+    lidMesh.position.set(0, 36, 0);
+    chestGroup.add(lidMesh);
+
+    // Qopqoqning yon yassi yarim doiralari
+    const lidSideGeo = new THREE.CircleGeometry(23.9, 14, 0, Math.PI);
+    const lidSideMat = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.7 });
+    const lidSideL = new THREE.Mesh(lidSideGeo, lidSideMat);
+    lidSideL.position.set(-36.2, 36, 0);
+    lidSideL.rotation.y = -Math.PI / 2;
+    chestGroup.add(lidSideL);
+
+    const lidSideR = new THREE.Mesh(lidSideGeo, lidSideMat);
+    lidSideR.position.set(36.2, 36, 0);
+    lidSideR.rotation.y = Math.PI / 2;
+    chestGroup.add(lidSideR);
+
+    // 3. Oltin/bronza mustahkamlovchi metall tasmalar va qirralar (Metal Armor Bands & Trim)
+    const metalMat = new THREE.MeshStandardMaterial({
+        color: 0xd97706, // Bronza / oltin zarhal metall
+        roughness: 0.35,
+        metalness: 0.75
+    });
+    const darkMetalMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b, // Qora quyma temir
+        roughness: 0.45,
+        metalness: 0.65
+    });
+
+    // Gorizontal qopqoq va tana birlashgan metall cheti (Rim trim)
+    const rimGeo = new THREE.BoxGeometry(75, 4.5, 51);
+    const rimMesh = new THREE.Mesh(rimGeo, metalMat);
+    rimMesh.position.y = 36;
+    chestGroup.add(rimMesh);
+
+    // Vertikal tasmalar (Chap va o'ng metall kamarlar)
+    [-22, 22].forEach(strapX => {
+        // Tana qismidagi tasma
+        const strapBodyGeo = new THREE.BoxGeometry(6, 38, 50.5);
+        const strapBody = new THREE.Mesh(strapBodyGeo, metalMat);
+        strapBody.position.set(strapX, 18, 0);
+        chestGroup.add(strapBody);
+
+        // Qopqoq qismidagi yarim aylana tasma
+        const strapLidGeo = new THREE.CylinderGeometry(25.2, 25.2, 6.2, 16, 1, false, 0, Math.PI);
+        const strapLid = new THREE.Mesh(strapLidGeo, metalMat);
+        strapLid.rotation.z = Math.PI / 2;
+        strapLid.position.set(strapX, 36, 0);
+        chestGroup.add(strapLid);
+    });
+
+    // 4. Old qismdagi qulf va qisqich (Center Golden Lock & Keyhole)
+    const lockPlateGeo = new THREE.BoxGeometry(11, 14, 4);
+    const lockPlate = new THREE.Mesh(lockPlateGeo, metalMat);
+    lockPlate.position.set(0, 34, 25.5);
+    chestGroup.add(lockPlate);
+
+    const keyholeGeo = new THREE.BoxGeometry(3, 5, 4.5);
+    const keyhole = new THREE.Mesh(keyholeGeo, darkMetalMat);
+    keyhole.position.set(0, 33, 25.8);
+    chestGroup.add(keyhole);
+
+    // 5. Sandiqning ikki yonidagi mustahkam tutqichlar (Side carry handles)
+    [-37.5, 37.5].forEach(hx => {
+        const handlePlateGeo = new THREE.BoxGeometry(3, 8, 14);
+        const handlePlate = new THREE.Mesh(handlePlateGeo, darkMetalMat);
+        handlePlate.position.set(hx, 20, 0);
+        chestGroup.add(handlePlate);
+
+        const handleRingGeo = new THREE.TorusGeometry(6, 1.8, 8, 12);
+        const handleRing = new THREE.Mesh(handleRingGeo, metalMat);
+        handleRing.position.set(hx > 0 ? hx + 1 : hx - 1, 17, 0);
+        handleRing.rotation.y = Math.PI / 2;
+        handleRing.rotation.x = Math.PI / 4;
+        chestGroup.add(handleRing);
+    });
+
+    // 6. Yuqoridagi signalli yorug'lik mayoqchasi (Air Drop Beacon Light)
+    const beaconBaseGeo = new THREE.CylinderGeometry(3.5, 4.5, 5, 8);
+    const beaconBase = new THREE.Mesh(beaconBaseGeo, darkMetalMat);
+    beaconBase.position.set(0, 61, 0);
+    chestGroup.add(beaconBase);
+
+    const beaconBulbGeo = new THREE.SphereGeometry(4.5, 8, 8);
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+    const beaconBulb = new THREE.Mesh(beaconBulbGeo, beaconMat);
+    beaconBulb.position.set(0, 65, 0);
+    chestGroup.add(beaconBulb);
+
+    rootGroup.add(chestGroup);
+
+    // 7. Katta va chiroyli harbiy parashyut (Military Air Drop Parachute Canopy)
+    const chuteGroup = new THREE.Group();
+    const canopyRadius = 68;
+    const canopyGeo = new THREE.SphereGeometry(canopyRadius, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.48);
+    const canopyMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444, // Qizil oq airdrop rangi
+        roughness: 0.5,
+        side: THREE.DoubleSide
+    });
+    const canopyMesh = new THREE.Mesh(canopyGeo, canopyMat);
+    canopyMesh.position.set(0, 140, 0);
+    chuteGroup.add(canopyMesh);
+
+    // Parashyut gumbazidagi oq polosa bezaklari
+    const whiteCanopyGeo = new THREE.SphereGeometry(canopyRadius + 0.3, 18, 6, 0, Math.PI * 0.5, 0, Math.PI * 0.48);
+    const whiteCanopyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5, side: THREE.DoubleSide });
+    const whiteMesh1 = new THREE.Mesh(whiteCanopyGeo, whiteCanopyMat);
+    whiteMesh1.position.set(0, 140, 0);
+    chuteGroup.add(whiteMesh1);
+
+    const whiteMesh2 = new THREE.Mesh(whiteCanopyGeo, whiteCanopyMat);
+    whiteMesh2.position.set(0, 140, 0);
+    whiteMesh2.rotation.y = Math.PI;
+    chuteGroup.add(whiteMesh2);
+
+    // Parashyut arqonlari (Parachute suspension ropes)
+    const ropeMat = new THREE.LineBasicMaterial({ color: 0xe2e8f0 });
+    const ropeCoords = [
+        [[-28, 42, 18], [-48, 135, 30]],
+        [[28, 42, 18], [48, 135, 30]],
+        [[-28, 42, -18], [-48, 135, -30]],
+        [[28, 42, -18], [48, 135, -30]]
+    ];
+    ropeCoords.forEach(([p1, p2]) => {
+        const ropeGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(...p1),
+            new THREE.Vector3(...p2)
+        ]);
+        const ropeLine = new THREE.Line(ropeGeo, ropeMat);
+        chuteGroup.add(ropeLine);
+    });
+
+    rootGroup.add(chuteGroup);
+
+    return {
+        rootGroup,
+        chestGroup,
+        chuteGroup,
+        beaconBulb
+    };
+}
+
 function spawnAirDropCrate() {
-    const group = new THREE.Group();
-    const chuteGeo = new THREE.SphereGeometry(35, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2);
-    const chuteMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
-    const chuteMesh = new THREE.Mesh(chuteGeo, chuteMat);
-    chuteMesh.position.y = 40;
-    group.add(chuteMesh);
-
-    const boxGeo = new THREE.BoxGeometry(40, 40, 40);
-    const boxMat = new THREE.MeshBasicMaterial({ color: 0xb45309 });
-    const boxMesh = new THREE.Mesh(boxGeo, boxMat);
-    boxMesh.position.y = 0;
-    group.add(boxMesh);
-
+    const { rootGroup, chestGroup, chuteGroup, beaconBulb } = create3DAirDropChest();
     const x = (Math.random() - 0.5) * 850;
-    const y = 820;
-    group.position.set(x, y, 10);
-    scene.add(group);
+    const y = 840;
+    rootGroup.position.set(x, y, 10);
+    scene.add(rootGroup);
 
     const crateObj = {
-        group,
-        boxMesh,
-        chuteMesh,
+        group: rootGroup,
+        chestGroup,
+        chuteMesh: chuteGroup,
+        beaconBulb,
         x,
         y,
-        vy: -35,
+        vy: -38,
         alive: true
     };
     airDropCrates.push(crateObj);
@@ -9804,11 +9974,24 @@ function updateAirDropCrates(dt) {
         if (!c.alive) continue;
         c.y += c.vy * dt;
         c.group.position.y = c.y;
-        c.group.rotation.z = Math.sin(performance.now() * 0.003) * 0.12;
-        if (c.y <= ground.position.y + 110) {
-            c.y = ground.position.y + 110;
+
+        // Havoda chayqalib tushish va signalli mayoqchani miltillatish
+        if (c.chuteMesh.visible) {
+            c.group.rotation.z = Math.sin(performance.now() * 0.003) * 0.08;
+            if (c.beaconBulb && c.beaconBulb.material) {
+                const isBright = Math.sin(performance.now() * 0.008) > 0;
+                c.beaconBulb.material.color.setHex(isBright ? 0x22c55e : 0x15803d);
+            }
+        }
+
+        if (c.y <= ground.position.y + 100) {
+            c.y = ground.position.y + 100;
             c.group.position.y = c.y;
-            c.chuteMesh.visible = false;
+            c.group.rotation.z = 0;
+            if (c.chuteMesh.visible) {
+                c.chuteMesh.visible = false;
+                spawnParticles(c.x, c.y + 20, 14, true); // Yerga qo'nganda chang effekti
+            }
         }
     }
 }
@@ -9817,10 +10000,11 @@ function checkAirDropCrateHit() {
     if (!spear || !spear.active) return false;
     for (let i = 0; i < airDropCrates.length; i++) {
         const c = airDropCrates[i];
-        if (c.alive && Math.abs(spear.x - c.x) < 55 && Math.abs(spear.y - c.y) < 55) {
+        if (c.alive && Math.abs(spear.x - c.x) < 70 && Math.abs(spear.y - c.y) < 70) {
             c.alive = false;
             scene.remove(c.group);
-            spawnParticles(c.x, c.y, 35, true);
+            spawnParticles(c.x, c.y + 25, 40, true);
+            spawnFireBurst(c.x, c.y + 25, 20);
             playSfx('break');
 
             const shooter = spear.playerIndex;
