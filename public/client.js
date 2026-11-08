@@ -2065,6 +2065,271 @@ function buildVolcanoBackdrop(safeRadius) {
     // Endi Canvas2D generatsiya qilingan fon ishlatiladi.
 }
 
+// === 2-3 ta yuqori sifatli procedural daraxt teksturalari (Canvas2D) ===
+// 0: Grand Oak / Chinar (keng shoxli, mahobatli soya beruvchi daraxt)
+// 1: Elegant Birch / Poplar (tik qomatli oq po'stloqli terak / qayin)
+// 2: Mountain Pine / Spruce (qatlamli doimiy yashil tog' archasi / qarag'ay)
+const proceduralTreeCache = {};
+
+function getProceduralTreeTexture(styleIndex, mapType, weather) {
+    const key = `${styleIndex}_${mapType}_${weather}`;
+    if (proceduralTreeCache[key]) return proceduralTreeCache[key];
+
+    const canvas = document.createElement('canvas');
+    const w = canvas.width = 512;
+    const h = canvas.height = 768;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    const isWinter = mapType === 'winter' || weather === 'snow';
+    const isSakura = mapType === 'sakura';
+    const isTaiga = mapType === 'taiga';
+    const isAutumn = mapType === 'canyon' || mapType === 'desert';
+
+    // Daraxt tanasi ranglari
+    let trunkBase = '#4a2f1b';
+    let trunkShadow = '#2d1a0e';
+    if (styleIndex === 1) {
+        // Birch/Poplar (Oq terak / qayin)
+        trunkBase = '#e2e8f0';
+        trunkShadow = '#94a3b8';
+    } else if (styleIndex === 2) {
+        // Pine/Spruce (Qarag'ay / archa)
+        trunkBase = '#54361c';
+        trunkShadow = '#2d1b0d';
+    }
+
+    // Barglar / ignabarglar palitrasi
+    let leafColors = ['#1d5918', '#2b7a24', '#3ea334', '#59c74e', '#7de374'];
+    if (isSakura) {
+        leafColors = ['#9e2a56', '#c93c72', '#e8588f', '#f48fb1', '#fce4ec'];
+    } else if (isWinter) {
+        leafColors = ['#475569', '#64748b', '#94a3b8', '#cbd5e1', '#f1f5f9'];
+    } else if (isTaiga) {
+        leafColors = ['#10351d', '#194929', '#246338', '#34834c', '#4ba468'];
+    } else if (isAutumn) {
+        leafColors = ['#7c2d12', '#b45309', '#d97706', '#f59e0b', '#fbbf24'];
+    }
+
+    if (styleIndex === 0) {
+        // === STYLE 0: GRAND OAK / CHINAR (Keng shoxli, bargli ulkan daraxt) ===
+        // Ildiz qismi (yerga mustahkam kirgan)
+        ctx.fillStyle = trunkBase;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.30, h);
+        ctx.bezierCurveTo(w * 0.38, h * 0.90, w * 0.42, h * 0.82, w * 0.44, h * 0.70);
+        ctx.lineTo(w * 0.56, h * 0.70);
+        ctx.bezierCurveTo(w * 0.58, h * 0.82, w * 0.62, h * 0.90, w * 0.70, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tana va asosiy shoxlar
+        ctx.fillStyle = trunkBase;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.44, h * 0.70);
+        ctx.bezierCurveTo(w * 0.43, h * 0.55, w * 0.38, h * 0.45, w * 0.30, h * 0.36);
+        ctx.bezierCurveTo(w * 0.34, h * 0.34, w * 0.42, h * 0.42, w * 0.46, h * 0.50);
+        ctx.bezierCurveTo(w * 0.48, h * 0.42, w * 0.46, h * 0.32, w * 0.48, h * 0.22);
+        ctx.bezierCurveTo(w * 0.52, h * 0.22, w * 0.52, h * 0.38, w * 0.54, h * 0.50);
+        ctx.bezierCurveTo(w * 0.58, h * 0.42, w * 0.66, h * 0.34, w * 0.70, h * 0.36);
+        ctx.bezierCurveTo(w * 0.62, h * 0.45, w * 0.57, h * 0.55, w * 0.56, h * 0.70);
+        ctx.closePath();
+        ctx.fill();
+
+        // Po'stloq chiziqlari
+        ctx.strokeStyle = trunkShadow;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.48, h * 0.86); ctx.lineTo(w * 0.47, h * 0.62);
+        ctx.moveTo(w * 0.52, h * 0.88); ctx.lineTo(w * 0.53, h * 0.64);
+        ctx.stroke();
+
+        // Qalin, to'yingan barglar to'dalari
+        const foliageClumps = [
+            { cx: w * 0.50, cy: h * 0.24, rx: w * 0.34, ry: h * 0.17 },
+            { cx: w * 0.34, cy: h * 0.35, rx: w * 0.26, ry: h * 0.15 },
+            { cx: w * 0.66, cy: h * 0.36, rx: w * 0.27, ry: h * 0.15 },
+            { cx: w * 0.42, cy: h * 0.42, rx: w * 0.24, ry: h * 0.14 },
+            { cx: w * 0.58, cy: h * 0.43, rx: w * 0.25, ry: h * 0.14 },
+            { cx: w * 0.50, cy: h * 0.32, rx: w * 0.30, ry: h * 0.16 }
+        ];
+
+        foliageClumps.forEach((clump) => {
+            const g = ctx.createRadialGradient(
+                clump.cx - clump.rx * 0.2, clump.cy - clump.ry * 0.3, clump.rx * 0.1,
+                clump.cx, clump.cy, clump.rx
+            );
+            g.addColorStop(0, leafColors[3] || '#59c74e');
+            g.addColorStop(0.5, leafColors[2] || '#3ea334');
+            g.addColorStop(0.85, leafColors[1] || '#2b7a24');
+            g.addColorStop(1, leafColors[0] || '#1d5918');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.ellipse(clump.cx, clump.cy, clump.rx, clump.ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Chetki barg to'plamlari
+            for (let p = 0; p < 14; p++) {
+                const angle = (p / 14) * Math.PI * 2;
+                const px = clump.cx + Math.cos(angle) * (clump.rx * 0.88);
+                const py = clump.cy + Math.sin(angle) * (clump.ry * 0.88);
+                const colIdx = Math.sin(angle + 1) > 0.2 ? 3 : (Math.cos(angle) > 0 ? 2 : 1);
+                ctx.fillStyle = leafColors[colIdx] || leafColors[2];
+                ctx.beginPath();
+                ctx.arc(px, py, 18 + ((p * 7) % 14), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // Tepasiga quyosh nuri jilosi
+        const topHighlight = ctx.createRadialGradient(w * 0.50, h * 0.16, 10, w * 0.50, h * 0.20, w * 0.25);
+        topHighlight.addColorStop(0, leafColors[4] || '#7de374');
+        topHighlight.addColorStop(0.85, 'rgba(255,255,255,0)');
+        ctx.fillStyle = topHighlight;
+        ctx.beginPath();
+        ctx.ellipse(w * 0.50, h * 0.20, w * 0.25, h * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isWinter) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+            foliageClumps.forEach(c => {
+                ctx.beginPath();
+                ctx.ellipse(c.cx, c.cy - c.ry * 0.65, c.rx * 0.65, c.ry * 0.28, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+    } else if (styleIndex === 1) {
+        // === STYLE 1: ELEGANT BIRCH / POPLAR (Tik qomatli oq terak / qayin) ===
+        // Oq-kumushrang ingichka tana
+        ctx.fillStyle = trunkBase;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.43, h);
+        ctx.bezierCurveTo(w * 0.45, h * 0.88, w * 0.47, h * 0.65, w * 0.48, h * 0.35);
+        ctx.lineTo(w * 0.52, h * 0.35);
+        ctx.bezierCurveTo(w * 0.53, h * 0.65, w * 0.55, h * 0.88, w * 0.57, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Qayin tanasidagi qora gorizontal chiziqlar (lenticels)
+        ctx.fillStyle = '#1e293b';
+        for (let y = h * 0.38; y < h * 0.95; y += 18 + ((y * 13) % 20)) {
+            const notchW = 10 + ((y * 7) % 18);
+            const notchX = w * 0.48 + ((y * 5) % 8) - 4;
+            ctx.beginPath();
+            ctx.roundRect(notchX - notchW / 2, y, notchW, 3 + ((y * 3) % 3), 1);
+            ctx.fill();
+        }
+
+        // Nafis, baland qomatli barglar to'dasi
+        const birchClumps = [
+            { cx: w * 0.50, cy: h * 0.18, rx: w * 0.20, ry: h * 0.14 },
+            { cx: w * 0.44, cy: h * 0.28, rx: w * 0.22, ry: h * 0.13 },
+            { cx: w * 0.56, cy: h * 0.29, rx: w * 0.23, ry: h * 0.13 },
+            { cx: w * 0.46, cy: h * 0.40, rx: w * 0.25, ry: h * 0.14 },
+            { cx: w * 0.54, cy: h * 0.41, rx: w * 0.25, ry: h * 0.14 },
+            { cx: w * 0.50, cy: h * 0.50, rx: w * 0.22, ry: h * 0.12 }
+        ];
+
+        birchClumps.forEach((clump) => {
+            const g = ctx.createRadialGradient(
+                clump.cx - clump.rx * 0.2, clump.cy - clump.ry * 0.3, clump.rx * 0.1,
+                clump.cx, clump.cy, clump.rx
+            );
+            g.addColorStop(0, leafColors[3] || '#59c74e');
+            g.addColorStop(0.6, leafColors[2] || '#3ea334');
+            g.addColorStop(1, leafColors[0] || '#1d5918');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.ellipse(clump.cx, clump.cy, clump.rx, clump.ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            for (let p = 0; p < 12; p++) {
+                const angle = (p / 12) * Math.PI * 2;
+                const px = clump.cx + Math.cos(angle) * (clump.rx * 0.85);
+                const py = clump.cy + Math.sin(angle) * (clump.ry * 0.85);
+                ctx.fillStyle = leafColors[(p % 3) + 1] || leafColors[2];
+                ctx.beginPath();
+                ctx.arc(px, py, 14 + (p % 8), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        if (isWinter) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            birchClumps.forEach(c => {
+                ctx.beginPath();
+                ctx.ellipse(c.cx, c.cy - c.ry * 0.65, c.rx * 0.65, c.ry * 0.25, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+    } else {
+        // === STYLE 2: STATELY MOUNTAIN PINE / SPRUCE (Archa / Qarag'ay) ===
+        // Tik baquvvat tana
+        ctx.fillStyle = trunkBase;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.43, h);
+        ctx.lineTo(w * 0.47, h * 0.40);
+        ctx.lineTo(w * 0.53, h * 0.40);
+        ctx.lineTo(w * 0.57, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Qatlamli uchburchak archa panjalari
+        const tiers = [
+            { topY: h * 0.08, botY: h * 0.22, halfW: w * 0.16 },
+            { topY: h * 0.16, botY: h * 0.33, halfW: w * 0.23 },
+            { topY: h * 0.26, botY: h * 0.45, halfW: w * 0.29 },
+            { topY: h * 0.37, botY: h * 0.58, halfW: w * 0.35 },
+            { topY: h * 0.48, botY: h * 0.72, halfW: w * 0.40 }
+        ];
+
+        tiers.forEach((tier) => {
+            const tg = ctx.createLinearGradient(0, tier.topY, 0, tier.botY);
+            tg.addColorStop(0, leafColors[3] || '#34834c');
+            tg.addColorStop(0.7, leafColors[1] || '#194929');
+            tg.addColorStop(1, leafColors[0] || '#10351d');
+
+            ctx.fillStyle = tg;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.50, tier.topY);
+            ctx.lineTo(w * 0.50 + tier.halfW, tier.botY);
+            const teeth = 9;
+            for (let t = teeth; t >= 0; t--) {
+                const tx = w * 0.50 - tier.halfW + (tier.halfW * 2 * (t / teeth));
+                const ty = tier.botY - (t % 2 === 1 ? 14 : 0);
+                ctx.lineTo(tx, ty);
+            }
+            ctx.lineTo(w * 0.50 - tier.halfW, tier.botY);
+            ctx.closePath();
+            ctx.fill();
+
+            if (isWinter) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                ctx.beginPath();
+                ctx.moveTo(w * 0.50, tier.topY);
+                ctx.lineTo(w * 0.50 + tier.halfW * 0.75, tier.topY + (tier.botY - tier.topY) * 0.55);
+                ctx.quadraticCurveTo(w * 0.50, tier.topY + 18, w * 0.50 - tier.halfW * 0.75, tier.topY + (tier.botY - tier.topY) * 0.55);
+                ctx.closePath();
+                ctx.fill();
+            }
+        });
+    }
+
+    // Daraxt tubining yerga botgan soyasi (ildizning yer bilan tutashuv joyi)
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(w * 0.50, h - 3, w * 0.32, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    proceduralTreeCache[key] = tex;
+    return tex;
+}
+
 function buildMap(mapType, weather = 'sunny') {
     if (typeof clearStuckSpears === 'function') clearStuckSpears();
     let groundColor = 0x52c234; // Boy yorqin yashil
@@ -2269,47 +2534,47 @@ function buildMap(mapType, weather = 'sunny') {
     const backdropW = 40000; // Juda keng va baland - barcha rejimlar va portretda to'liq qoplaydi
     const backdropH = 15000;
     const backdropPlane = new THREE.Mesh(new THREE.PlaneGeometry(backdropW, backdropH), backdropMat);
-    backdropPlane.position.set(0, ground.position.y + 100 + backdropH * 0.48, -700);
+    backdropPlane.position.set(0, ground.position.y + 100 + backdropH * 0.35, -700);
     scene.add(backdropPlane);
     mapBackdrops.push(backdropPlane);
 
     for (let side = -1; side <= 1; side += 2) {
         for (let i = 0; i < treesPerSide; i++) {
+            const treeStyle = i % 3; // 0: Grand Oak, 1: Birch/Poplar, 2: Mountain Pine
             const useSmallTree = Math.random() < smallTreeChance;
-            const w = useSmallTree ? (150 + Math.random() * 60) : (220 + Math.random() * 80);
-            const h = useSmallTree ? (230 + Math.random() * 90) : (320 + Math.random() * 120);
+            const w = useSmallTree ? (160 + Math.random() * 50) : (230 + Math.random() * 70);
+            const h = useSmallTree ? (240 + Math.random() * 70) : (330 + Math.random() * 90);
             const depthBand = Math.floor(Math.random() * 3); // 0: front, 1: middle, 2: back
             const depthOffsetX = depthBand * (110 + Math.random() * 70);
             const zByBand = depthBand === 0 ? (30 + Math.random() * 50) : (depthBand === 1 ? (-40 + Math.random() * 50) : (-150 + Math.random() * 70));
             const opacityByBand = depthBand === 0 ? (0.98 + Math.random() * 0.02) : (depthBand === 1 ? (0.94 + Math.random() * 0.04) : (0.9 + Math.random() * 0.05));
-            const tree = new THREE.Mesh(
-                new THREE.PlaneGeometry(w, h),
-                new THREE.MeshBasicMaterial({
-                    map: useSmallTree ? daraxtKichkinaTexture : daraxtKattaTexture,
-                    transparent: true,
-                    opacity: opacityByBand,
-                    side: THREE.FrontSide,
-                    alphaTest: 0.01,
-                    depthWrite: false
-                })
-            );
+            
+            // Ildiz markazi (pivot) pastki qismda bo'lishi uchun geometriyaning yarmini tepaga suramiz
+            const treeGeo = new THREE.PlaneGeometry(w, h);
+            treeGeo.translate(0, h / 2, 0); // (0, 0, 0) nuqta aynan ildiz tubi bo'ladi!
+
+            const treeMat = new THREE.MeshBasicMaterial({
+                map: getProceduralTreeTexture(treeStyle, mapType, weather),
+                transparent: true,
+                opacity: opacityByBand,
+                side: THREE.FrontSide,
+                alphaTest: 0.02,
+                depthWrite: false
+            });
+            const tree = new THREE.Mesh(treeGeo, treeMat);
+            const groundSurfaceY = ground.position.y + 100;
             tree.position.set(
                 side * (safeRadius + 260 + depthOffsetX + i * (200 + Math.random() * 90)),
-                ground.position.y + 100 + h / 2,
+                groundSurfaceY, // Ildiz aynan yer chizig'iga mahkam o'rnatiladi!
                 zByBand
             );
             tree.userData.baseX = tree.position.x;
             tree.userData.baseRot = (Math.random() - 0.5) * 0.02;
-            tree.userData.swayAmp = 0.005 + Math.random() * 0.012;
+            tree.userData.swayAmp = 0.006 + Math.random() * 0.012;
             tree.userData.swaySpeed = 0.7 + Math.random() * 1.1;
             tree.userData.swayPhase = Math.random() * Math.PI * 2;
             tree.userData.depthBand = depthBand;
 
-            // Keep trees crisp and neutral in all weather types.
-            if (mapType === 'sakura') tree.material.color.setRGB(1.0, 0.78, 0.88);
-            else if (mapType === 'taiga') tree.material.color.setRGB(0.72, 0.90, 0.80);
-            else if (mapType === 'winter' || weatherType === 'snow') tree.material.color.setRGB(0.85, 0.95, 1.0);
-            else tree.material.color.setRGB(1, 1, 1);
             scene.add(tree);
             decorTrees.push(tree);
         }
@@ -2339,7 +2604,7 @@ function spawnEntities(options) {
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.position.set(
             (Math.random() - 0.5) * 5500,
-            680 + Math.random() * 260,
+            720 + Math.random() * 320,
             -200 - Math.random() * 300
         );
         cloud.userData = { vx: (Math.random() - 0.5) * 15 };
@@ -2354,8 +2619,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            // Qushlar osmonda (340-760 balandlikda) ko'rinadigan erkin zonada uchadi
-            bird.position.set((seededRandom() - 0.5) * 3600, 340 + seededRandom() * 420, -30 + seededRandom() * 60);
+            // Qushlar osmonda (380-840 balandlikda) ko'rinadigan erkin zonada uchadi
+            bird.position.set((seededRandom() - 0.5) * 3600, 380 + seededRandom() * 460, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -2688,7 +2953,7 @@ function applySoldierWeatherTone() {
 
 const pos1X = -1300;
 const pos2X = 1300;
-const pos3Offset = 340; // Ikkinchi dushman bir-biriga yopishib qolmasligi uchun oradagi kengroq masofa
+const pos3Offset = 180; // 54-daraja va 50+ darajalarda 2-raqib ekrandan chiqib ketmasligi va yonma-yon turishi uchun qulay masofa
 
 let p1Model = createSoldier(true, 2);
 p1Model.position.x = pos1X;
@@ -3013,19 +3278,31 @@ function isPortraitMode() {
 function getFocusCameraTarget(turnIndex) {
     const isPortrait = isPortraitMode();
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
-    const p3OffsetExtra = (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) ? (pos3Offset / 2) : 0;
-    const centerX = p3OffsetExtra;
+
+    // Jang maydonidagi barcha faol jangchilar (o'yinchi va barcha dushmanlar)ning aniq gorizontal markazi
+    let centerX = 0;
+    if (p1Model && p2Model) {
+        let minX = Math.min(p1Model.position.x, p2Model.position.x);
+        let maxX = Math.max(p1Model.position.x, p2Model.position.x);
+        if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) {
+            minX = Math.min(minX, p3Model.position.x);
+            maxX = Math.max(maxX, p3Model.position.x);
+        }
+        centerX = (minX + maxX) / 2;
+    }
 
     const groundSurfaceY = ground.position.y + 100;
     const effectiveZoom = Math.max(0.1, baseZoom || 0.4);
     const visibleH = frustumSize / effectiveZoom;
 
-    // Yer sathi (groundSurfaceY) ekranning pastki ~22-26% qismida bo'lib, pastdagi tugmalar
-    // zamin qoraytirilgan qismi ustida qulay joylashadi. Jangchilar esa ekranning quyi-markaziy
-    // qismida yirik, mahobatli ko'rinadi. Yuqori qism esa qushlar, bulutlar va o'q parvozi bilan to'ladi.
-    const centerY = isPortrait 
-        ? 60 
-        : (isMobileView ? (groundSurfaceY + visibleH * 0.26) : (groundSurfaceY + visibleH * 0.22));
+    // Yer sathi (groundSurfaceY) ekranning pastki ~13.5% qismida joylashadi.
+    // Bu orqali:
+    // 1) Pastdagi tugmalar (Menu, Ortga, Super qurollar) ostida qora/ko'k bo'sh zona bo'lmaydi,
+    //    chiroyli toshli zamin qismi to'liq yopib turadi.
+    // 2) Jangchilar ekranda mitti emas, yirik va salobatli (heroic scale) ko'rinadi.
+    // 3) Yuqori qism bo'sh qolmaydi, qushlar, bulutlar va o'q parvozi tabiiy taqsimlanadi.
+    const groundBottomRatio = isPortrait ? 0.12 : (isMobileView ? 0.16 : 0.135);
+    const centerY = (groundSurfaceY - groundBottomRatio * visibleH) + (visibleH / 2);
 
     return {
         x: centerX,
@@ -3049,17 +3326,22 @@ function updateCameraBounds() {
     renderer.setSize(vp.width, vp.height);
     renderer.setPixelRatio(getPreferredPixelRatio());
     
-    // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
-    const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
-    // Har ikkala jangchining eni ~560 birlik.
-    // Ekran chetlaridan yarmi chiqib ketmasligi uchun yetarli yon xoshiya (padding) qo'shamiz:
-    const extraSideMargin = (p3Model ? (pos3Offset + 240) : 0) + 720;
-    const minWorldWidth = Math.max(2600, battleDist + extraSideMargin);
+    // Jang maydoni kengligi: o'yinchi va barcha raqiblar orasidagi haqiqiy oraliq
+    let minX = p1Model ? p1Model.position.x : -1200;
+    let maxX = p2Model ? p2Model.position.x : 1200;
+    if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) {
+        minX = Math.min(minX, p3Model.position.x);
+        maxX = Math.max(maxX, p3Model.position.x);
+    }
+    const battleSpan = Math.abs(maxX - minX);
+    // Har ikkala tomonga jangchi eni + qulay yon xoshiya (padding)
+    const sidePadding = isPortrait ? 280 : (isMobileView ? 300 : 340);
+    const minWorldWidth = Math.max(2200, battleSpan + sidePadding * 2);
     const zoomX = (frustumSize * aspect) / minWorldWidth;
 
     if (isPortrait) {
         // Portret rejimida ikkala jangchi ekranga to'liq sig'adi
-        baseZoom = Math.min(zoomX * 1.15, 0.6);
+        baseZoom = Math.min(zoomX * 1.15, 0.65);
     } else if (isMobileView) {
         // Mobil landshaft rejimida
         baseZoom = Math.min(zoomX * 1.0, 1.2);
@@ -7971,8 +8253,8 @@ function gameLoop(now) {
             const phase = d.swayPhase || 0;
             const band = d.depthBand || 1;
             const depthInfluence = band === 2 ? 0.8 : (band === 0 ? 1.12 : 1);
+            // Daraxtning faqat tepa qismi shamolda tebranadi, ildizi esa yerda qimirlamay qat'iy turadi
             tree.rotation.z = (d.baseRot || 0) + Math.sin(now * 0.0012 * speed + phase) * amp * depthInfluence;
-            tree.position.x = (d.baseX || tree.position.x) + Math.sin(now * 0.0006 * speed + phase) * (1.8 + band) * amp * 42;
         }
     }
 
