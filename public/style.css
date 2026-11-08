@@ -4444,3 +4444,118 @@ body.force-landscape .custom-select-item {
     color: #cbd5e1;
     font-weight: 600;
 }
+
+/* ============================================================
+   KOMPYUTER (DESKTOP) VERSIYASI UCHUN KATTALASHTIRILGAN TUGMALAR
+   ============================================================ */
+@media screen and (min-width: 901px) {
+    /* Chap tomondagi boshqaruv tugmalari (Menyu, Ortga, Musiqa, Emote) */
+    body:not(.force-landscape) #in-game-menu-btn {
+        min-width: 96px !important;
+        height: 46px !important;
+        font-size: 1.05rem !important;
+        padding: 8px 18px !important;
+        border-radius: 12px !important;
+        left: 24px !important;
+        bottom: 20px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    body:not(.force-landscape) #btn-in-game-back {
+        min-width: 104px !important;
+        height: 46px !important;
+        font-size: 1.05rem !important;
+        padding: 8px 18px !important;
+        border-radius: 12px !important;
+        left: 130px !important;
+        bottom: 20px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    body:not(.force-landscape) #music-toggle-btn {
+        width: 48px !important;
+        height: 46px !important;
+        font-size: 1.35rem !important;
+        border-radius: 12px !important;
+        left: 244px !important;
+        bottom: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    body:not(.force-landscape) .emote-btn {
+        width: 48px !important;
+        height: 46px !important;
+        font-size: 1.35rem !important;
+        border-radius: 12px !important;
+        left: 302px !important;
+        bottom: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* O'ng tomondagi qobiliyatlar docki (kattalashtirilgan va tekis oraliqda) */
+    body:not(.force-landscape) .shield-btn,
+    body:not(.force-landscape) .super-btn,
+    body:not(.force-landscape) .duck-btn,
+    body:not(.force-landscape) .jump-btn,
+    body:not(.force-landscape) .double-btn,
+    body:not(.force-landscape) .wall-btn,
+    body:not(.force-landscape) .fire-btn,
+    body:not(.force-landscape) .crow-btn,
+    body:not(.force-landscape) .artillery-btn {
+        width: 58px !important;
+        height: 58px !important;
+        font-size: 1.65rem !important;
+        bottom: 20px !important;
+        border-radius: 50% !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+
+    body:not(.force-landscape) .shield-btn:hover,
+    body:not(.force-landscape) .super-btn:hover,
+    body:not(.force-landscape) .duck-btn:hover,
+    body:not(.force-landscape) .jump-btn:hover,
+    body:not(.force-landscape) .double-btn:hover,
+    body:not(.force-landscape) .wall-btn:hover,
+    body:not(.force-landscape) .fire-btn:hover,
+    body:not(.force-landscape) .crow-btn:hover,
+    body:not(.force-landscape) .artillery-btn:hover {
+        transform: scale(1.1) !important;
+    }
+
+    body:not(.force-landscape) .shield-btn { right: 24px !important; }
+    body:not(.force-landscape) .super-btn { right: 96px !important; }
+    body:not(.force-landscape) .duck-btn { right: 168px !important; }
+    body:not(.force-landscape) .jump-btn { right: 240px !important; }
+    body:not(.force-landscape) .double-btn { right: 312px !important; }
+    body:not(.force-landscape) .wall-btn { right: 384px !important; }
+    body:not(.force-landscape) .fire-btn { right: 456px !important; }
+    body:not(.force-landscape) .crow-btn { right: 528px !important; }
+    body:not(.force-landscape) .artillery-btn { right: 600px !important; }
+
+    /* Tugmalar ustidagi son ko'rsatkichlari (Badges) */
+    body:not(.force-landscape) .shield-count {
+        min-width: 24px !important;
+        height: 24px !important;
+        font-size: 0.85rem !important;
+        line-height: 24px !important;
+        top: -6px !important;
+        right: -6px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+    }
+}

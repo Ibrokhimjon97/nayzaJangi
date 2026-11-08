@@ -2967,86 +2967,219 @@ let spear = null;
 let secondarySpear = null;
 const spearGroup = new THREE.Group();
 
-// === Haqiqiy kamon o'qi / nayza 3D modeli ===
-// MUHIM: o'qning/nayzaning faqat OLD tomonida uch (paykon) bo'ladi,
-// orqa tomonida esa patlar (fletching) bo'ladi. Ikki tomonida ham uch bo'lmasligi kerak.
-//
-// Shaft (o'q tanasi) - ingichka, uzun, tabiiy yog'och rangi, oldinga ozgina ingichkalashadi.
-const spearShaft = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.5, 2.1, 150, 12),
-    new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.62, metalness: 0.08 })
-);
-spearShaft.name = 'spear-shaft';
-spearShaft.rotateZ(Math.PI / 2);
-spearShaft.castShadow = true;
-spearGroup.add(spearShaft);
+// ============================================================
+// === HAQIQIY JANGOVAR NAYZA VA KAMON O'QI (HYPER-REALISTIC 3D) ===
+// ============================================================
 
-// Uch (broadhead) - FAQAT old tomonda. Metall uchburchak paykon (uzun, nafis bargsimon).
-const spearTipGroup = new THREE.Group();
-spearTipGroup.name = 'spear-tip-group';
-spearTipGroup.position.x = 75;
-const bladeMat = new THREE.MeshStandardMaterial({ color: 0xeef2f7, metalness: 0.96, roughness: 0.14 });
-// Asosiy uchli paykon
-const spearBlade = new THREE.Mesh(new THREE.ConeGeometry(5.2, 34, 16), bladeMat);
-spearBlade.name = 'spear-blade';
-spearBlade.rotateZ(-Math.PI / 2);
-spearBlade.position.x = 13;
-spearBlade.castShadow = true;
-spearTipGroup.add(spearBlade);
-// Paykon o'rta qirrasi (qirrali, jangovor ko'rinish uchun yassi rombsimon)
-const bladeEdge = new THREE.Mesh(
-    new THREE.OctahedronGeometry(4.4, 0),
-    new THREE.MeshStandardMaterial({ color: 0xcfd6df, metalness: 0.9, roughness: 0.22 })
-);
-bladeEdge.scale.set(2.0, 0.5, 1.0);
-bladeEdge.position.x = -2;
-bladeEdge.name = 'spear-blade-edge';
-spearTipGroup.add(bladeEdge);
-// Paykon bo'g'imi (socket) - uch bilan shaft orasidagi konussimon metall ulagich.
-const tipCollar = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.0, 3.0, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.3 })
-);
-tipCollar.rotateZ(Math.PI / 2);
-tipCollar.position.x = -16;
-spearTipGroup.add(tipCollar);
-spearGroup.add(spearTipGroup);
+// 1. KAMON O'QI MODELI (Real Combat Arrow)
+const arrowModelGroup = new THREE.Group();
+arrowModelGroup.name = 'weapon-arrow-model';
 
-// Patlar (fletching) - FAQAT orqa tomonda uchta nafis pat (haqiqiy o'q kabi).
-const featherMat = new THREE.MeshStandardMaterial({
-    color: 0xe23b3b,
-    roughness: 0.8,
+// A) O'q tanasi (Shaft) - ingichka, sayqallangan qizg'ish-sarg'ish sadr/zarang yog'ochi
+const arrowShaftMat = new THREE.MeshStandardMaterial({
+    color: 0x935116,
+    roughness: 0.42,
+    metalness: 0.06
+});
+const arrowShaft = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 140, 16), arrowShaftMat);
+arrowShaft.name = 'spear-shaft';
+arrowShaft.rotateZ(Math.PI / 2);
+arrowShaft.castShadow = true;
+arrowModelGroup.add(arrowShaft);
+
+// B) O'q uchi guruhi (Arrow Tip Group)
+const arrowTipGroup = new THREE.Group();
+arrowTipGroup.name = 'spear-tip-group';
+arrowTipGroup.position.x = 70;
+
+// O'qning po'lat uchli paykoni (Forged steel broadhead / bodkin)
+const arrowSteelMat = new THREE.MeshStandardMaterial({
+    color: 0xf1f5f9,
+    metalness: 0.96,
+    roughness: 0.12
+});
+// 4 qirrali o'tkir charxlangan po'lat paykon
+const arrowBlade = new THREE.Mesh(new THREE.ConeGeometry(4.2, 28, 4), arrowSteelMat);
+arrowBlade.name = 'spear-blade';
+arrowBlade.rotateZ(-Math.PI / 2);
+arrowBlade.position.x = 14;
+arrowBlade.castShadow = true;
+arrowTipGroup.add(arrowBlade);
+
+// Paykon qirrasi
+const arrowBladeEdge = new THREE.Mesh(
+    new THREE.OctahedronGeometry(3.6, 0),
+    new THREE.MeshStandardMaterial({ color: 0xcfd6df, metalness: 0.92, roughness: 0.18 })
+);
+arrowBladeEdge.scale.set(2.2, 0.4, 0.9);
+arrowBladeEdge.position.x = 2;
+arrowBladeEdge.name = 'spear-blade-edge';
+arrowTipGroup.add(arrowBladeEdge);
+
+// Paykon bo'g'imi (Socket ferrule)
+const arrowSocket = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.7, 2.4, 10, 12),
+    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.88, roughness: 0.28 })
+);
+arrowSocket.rotateZ(Math.PI / 2);
+arrowSocket.position.x = -8;
+arrowTipGroup.add(arrowSocket);
+
+// Ipak ip bilan o'ralgan paykon bog'ich halqasi (Sinew wrap)
+const arrowSinew1 = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.0, 2.0, 5, 12),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
+);
+arrowSinew1.rotateZ(Math.PI / 2);
+arrowSinew1.position.x = -14;
+arrowTipGroup.add(arrowSinew1);
+
+arrowModelGroup.add(arrowTipGroup);
+
+// C) Patlar guruhi (Natural Feather Fletching)
+const arrowFeatherGroup = new THREE.Group();
+arrowFeatherGroup.name = 'spear-feather';
+arrowFeatherGroup.position.x = -56;
+
+const arrowFeatherShape = new THREE.Shape();
+arrowFeatherShape.moveTo(0, 0);
+arrowFeatherShape.quadraticCurveTo(18, 9, 36, 7);
+arrowFeatherShape.quadraticCurveTo(28, 2, 26, 0);
+arrowFeatherShape.quadraticCurveTo(14, -1, 0, 0);
+const arrowFeatherGeo = new THREE.ShapeGeometry(arrowFeatherShape);
+const arrowFeatherMat = new THREE.MeshStandardMaterial({
+    color: 0xdc2626,
+    roughness: 0.75,
     metalness: 0.05,
     side: THREE.DoubleSide
 });
-const fletchingGroup = new THREE.Group();
-fletchingGroup.name = 'spear-feather';
-fletchingGroup.position.x = -64;
-const featherShape = new THREE.Shape();
-// Egri, oqimli pat shakli (tabiiy patga o'xshash).
-featherShape.moveTo(0, 0);
-featherShape.quadraticCurveTo(16, 9, 30, 7);
-featherShape.quadraticCurveTo(24, 2, 22, 0);
-featherShape.quadraticCurveTo(12, -1, 0, 0);
-const featherGeo = new THREE.ShapeGeometry(featherShape);
 for (let f = 0; f < 3; f++) {
-    const feather = new THREE.Mesh(featherGeo, featherMat.clone());
-    feather.rotation.x = (f * Math.PI * 2) / 3; // 120° oralab joylashadi
+    const feather = new THREE.Mesh(arrowFeatherGeo, arrowFeatherMat.clone());
+    feather.rotation.x = (f * Math.PI * 2) / 3;
     feather.position.x = -6;
     feather.castShadow = true;
-    fletchingGroup.add(feather);
+    arrowFeatherGroup.add(feather);
 }
-// Nock (o'qning kamon ipiga o'rnatiladigan orqa qismi) - tekis, uchsiz orqa.
-const nock = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.4, 2.0, 7, 10),
-    new THREE.MeshStandardMaterial({ color: 0x2a1c10, roughness: 0.85 })
+
+// Patlarni shaftga mahkamlagan old va orqa ipak iplar (Sinew wraps)
+[-8, 28].forEach(sx => {
+    const wrap = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.9, 1.9, 3.5, 12),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
+    );
+    wrap.rotateZ(Math.PI / 2);
+    wrap.position.x = sx;
+    arrowFeatherGroup.add(wrap);
+});
+
+arrowModelGroup.add(arrowFeatherGroup);
+
+// D) Nock (Kamon ipiga o'rnatiladigan shox dumi)
+const arrowNock = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.2, 1.8, 7, 12),
+    new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 })
 );
-nock.rotateZ(Math.PI / 2);
-nock.position.x = -79;
-spearGroup.add(nock);
-spearGroup.add(fletchingGroup);
+arrowNock.rotateZ(Math.PI / 2);
+arrowNock.position.x = -72;
+arrowModelGroup.add(arrowNock);
 
+spearGroup.add(arrowModelGroup);
 
+// ============================================================
+// 2. JANGOVAR NAYZA MODELI (Heavy War Spear / Javelin)
+// ============================================================
+const spearRealGroup = new THREE.Group();
+spearRealGroup.name = 'weapon-spear-model';
+spearRealGroup.visible = false; // faqat nayzaboz otganda chiqadi
+
+// A) Nayza sopi (Shaft) - baquvvat, to'q eman/shumtol yog'ochi (uzunligi 195)
+const realSpearShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.8, 3.2, 195, 16),
+    new THREE.MeshStandardMaterial({ color: 0x45220c, roughness: 0.52, metalness: 0.08 })
+);
+realSpearShaft.name = 'real-spear-shaft';
+realSpearShaft.rotateZ(Math.PI / 2);
+realSpearShaft.castShadow = true;
+spearRealGroup.add(realSpearShaft);
+
+// B) Nayza tutqichi (Markazdagi charm o'ram va tutqich tasma)
+const gripLeather = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.4, 3.4, 42, 16),
+    new THREE.MeshStandardMaterial({ color: 0x271406, roughness: 0.85 })
+);
+gripLeather.rotateZ(Math.PI / 2);
+gripLeather.position.x = -5;
+spearRealGroup.add(gripLeather);
+
+// Charm tutqichning oltin/bronza qirralari
+[-24, 18].forEach(gx => {
+    const ring = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.6, 3.6, 3, 16),
+        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 })
+    );
+    ring.rotateZ(Math.PI / 2);
+    ring.position.x = gx;
+    spearRealGroup.add(ring);
+});
+
+// C) Nayza uchi guruhi (Formidable Leaf Spearhead with Fuller)
+const realSpearTipGroup = new THREE.Group();
+realSpearTipGroup.position.x = 97;
+
+// Elongated Diamond Leaf Blade (Bargsimon og'ir po'lat nayza uchi)
+const realSpearBlade = new THREE.Mesh(
+    new THREE.OctahedronGeometry(6.5, 0),
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.96, roughness: 0.14 })
+);
+realSpearBlade.name = 'real-spear-blade';
+realSpearBlade.scale.set(3.8, 0.42, 1.25);
+realSpearBlade.position.x = 18;
+realSpearBlade.castShadow = true;
+realSpearTipGroup.add(realSpearBlade);
+
+// Nayza uchki nina qismi (Piercing Point)
+const spearSpikePoint = new THREE.Mesh(
+    new THREE.ConeGeometry(3.6, 18, 4),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.98, roughness: 0.10 })
+);
+spearSpikePoint.rotateZ(-Math.PI / 2);
+spearSpikePoint.position.x = 38;
+realSpearTipGroup.add(spearSpikePoint);
+
+// Bronza bo'g'im (Cast Bronze Ferrule/Socket)
+const realSpearSocket = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.3, 4.4, 22, 14),
+    new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.85, roughness: 0.3 })
+);
+realSpearSocket.rotateZ(Math.PI / 2);
+realSpearSocket.position.x = -8;
+realSpearTipGroup.add(realSpearSocket);
+
+// Jangovar qizil popuk / bayroqcha halqasi (Red Horsehair Battle Tuft)
+const tuftRing = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.2, 3.4, 9, 14),
+    new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.95 })
+);
+tuftRing.rotateZ(Math.PI / 2);
+tuftRing.position.x = -17;
+realSpearTipGroup.add(tuftRing);
+
+spearRealGroup.add(realSpearTipGroup);
+
+// D) Nayza dumi / Sauroter (Rear Counterweight Butt Spike)
+// Haqiqiy qadimgi nayzalarning orqasida po'lat/bronza o'tkir uch bo'ladi (yerga sanchish va orqa bilan urish uchun)
+const sauroter = new THREE.Mesh(
+    new THREE.ConeGeometry(3.6, 26, 12),
+    new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.88, roughness: 0.22 })
+);
+sauroter.rotateZ(Math.PI / 2);
+sauroter.position.x = -108;
+sauroter.castShadow = true;
+spearRealGroup.add(sauroter);
+
+spearGroup.add(spearRealGroup);
+
+// 3. ARTILERIYA BOMBASI MODELI
 const bombMesh = new THREE.Mesh(new THREE.SphereGeometry(18, 16, 16), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
 bombMesh.name = 'spear-bomb';
 bombMesh.visible = false;
@@ -3070,25 +3203,93 @@ fireSpearGlow.visible = false;
 spearGroup.add(fireSpearGlow);
 
 function applyFireSpearVisual(isFire) {
-    fireSpearGlow.visible = !!isFire;
-    // Nayza uchini olov rangiga bo'yaymiz.
-    const blade = spearGroup.getObjectByName('spear-blade');
-    const shaft = spearGroup.getObjectByName('spear-shaft');
-    if (blade && blade.material) {
-        if (isFire) {
-            if (blade.material.emissive) blade.material.emissive.setHex(0xff4500);
-            blade.material.color.setHex(0xffcc66);
-        } else {
-            if (blade.material.emissive) blade.material.emissive.setHex(0x000000);
-            blade.material.color.setHex(0xffffff);
-        }
-        blade.material.needsUpdate = true;
-    }
-    if (shaft && shaft.material && shaft.material.emissive) {
-        shaft.material.emissive.setHex(isFire ? 0x7a2500 : 0x000000);
-        shaft.material.needsUpdate = true;
-    }
+    if (fireSpearGlow) fireSpearGlow.visible = !!isFire;
+    [spearGroup, secondarySpearGroup].forEach((group) => {
+        if (!group) return;
+        const blade = group.getObjectByName('spear-blade');
+        const realBlade = group.getObjectByName('real-spear-blade');
+        [blade, realBlade].forEach((b) => {
+            if (b && b.material) {
+                if (isFire) {
+                    if (b.material.emissive) b.material.emissive.setHex(0xff4500);
+                    b.material.color.setHex(0xffcc66);
+                } else {
+                    if (b.material.emissive) b.material.emissive.setHex(0x000000);
+                    b.material.color.setHex(0xffffff);
+                }
+                b.material.needsUpdate = true;
+            }
+        });
+    });
 }
+
+// ============================================================
+// 4. HAQIQIY 3D USMONIY EGRI KAMON (Recurve Bow Model)
+// ============================================================
+function create3DRecurveBow() {
+    const bowGroup = new THREE.Group();
+    bowGroup.name = '3d-recurve-bow';
+
+    // Usmoniy kompozit kamonning egri profil chizig'i (Double Recurve)
+    const points = [
+        new THREE.Vector3(14, 52, 0),    // Yuqori tip (siyah)
+        new THREE.Vector3(8, 38, 0),     // Yuqori egilish
+        new THREE.Vector3(2, 22, 0),     // Yuqori yelka
+        new THREE.Vector3(0, 0, 0),      // Markaziy dasta (grip)
+        new THREE.Vector3(2, -22, 0),    // Quyi yelka
+        new THREE.Vector3(8, -38, 0),    // Quyi egilish
+        new THREE.Vector3(14, -52, 0)    // Quyi tip (siyah)
+    ];
+    const curve = new THREE.CatmullRomCurve3(points);
+    const limbGeo = new THREE.TubeGeometry(curve, 32, 2.6, 8, false);
+    const limbMat = new THREE.MeshStandardMaterial({
+        color: 0x3b1d0c, // To'q shox/yog'och kompozit
+        roughness: 0.38,
+        metalness: 0.15
+    });
+    const limbMesh = new THREE.Mesh(limbGeo, limbMat);
+    limbMesh.castShadow = true;
+    bowGroup.add(limbMesh);
+
+    // Kamon quloqlaridagi oltin bezak uchlar (Siyah gold tips)
+    [points[0], points[points.length - 1]].forEach(pos => {
+        const tipMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(3.6, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 })
+        );
+        tipMesh.position.copy(pos);
+        bowGroup.add(tipMesh);
+    });
+
+    // Markaziy charm dasta (Leather Handle Grip)
+    const handleGeo = new THREE.CylinderGeometry(3.6, 3.6, 18, 12);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 });
+    const handleMesh = new THREE.Mesh(handleGeo, handleMat);
+    bowGroup.add(handleMesh);
+
+    // Kamon ipi (Bowstring - dinamik tortiladigan ipak ip)
+    const stringMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+    const stringGeo = new THREE.BufferGeometry().setFromPoints([
+        points[0],
+        new THREE.Vector3(0, 0, 0), // O'rtadagi tortish nuqtasi
+        points[points.length - 1]
+    ]);
+    const bowString = new THREE.Line(stringGeo, stringMat);
+    bowString.name = 'bow-string';
+    bowGroup.add(bowString);
+
+    bowGroup.userData = {
+        topTip: points[0],
+        botTip: points[points.length - 1],
+        stringMesh: bowString
+    };
+
+    return bowGroup;
+}
+
+const active3DBow = create3DRecurveBow();
+active3DBow.visible = false;
+scene.add(active3DBow);
 
 spearGroup.visible = false;
 const secondarySpearGroup = spearGroup.clone();
@@ -3218,47 +3419,26 @@ function spawnFireTrailParticle(x, y) {
 }
 
 function applySpearVisualStyle(isSpearmanThrow, isArtillery = false) {
-    const styleScale = isSpearmanThrow ? 1.3 : 1;
     [spearGroup, secondarySpearGroup].forEach((group) => {
         if (!group) return;
-        const shaft = group.getObjectByName('spear-shaft');
-        const tipGroup = group.getObjectByName('spear-tip-group');
-        const feather = group.getObjectByName('spear-feather');
+        const arrow = group.getObjectByName('weapon-arrow-model');
+        const realSpear = group.getObjectByName('weapon-spear-model');
         const bomb = group.getObjectByName('spear-bomb');
 
         if (isArtillery) {
-            if (shaft) shaft.visible = false;
-            if (tipGroup) tipGroup.visible = false;
-            if (feather) feather.visible = false;
+            if (arrow) arrow.visible = false;
+            if (realSpear) realSpear.visible = false;
             if (bomb) bomb.visible = true;
-        } else {
-            if (shaft) shaft.visible = true;
-            if (tipGroup) tipGroup.visible = true;
-            if (feather) feather.visible = true;
+        } else if (isSpearmanThrow) {
+            // Nayzaboz otganda: haqiqiy og'ir jangovar nayza ko'rinadi (patlarsiz, popuk va orqa uchi bilan)
+            if (arrow) arrow.visible = false;
+            if (realSpear) realSpear.visible = true;
             if (bomb) bomb.visible = false;
-            
-            const blade = group.getObjectByName('spear-blade');
-            if (shaft) shaft.scale.set(1, styleScale, styleScale);
-            if (tipGroup) tipGroup.scale.set(styleScale, styleScale, styleScale);
-            if (blade && blade.material && blade.material.color) {
-                blade.material.color.setHex(isSpearmanThrow ? 0xe2e8f0 : 0xffffff);
-                blade.material.needsUpdate = true;
-            }
-            // Patlar endi Group (uchta pat) - har bir patning rangini yangilaymiz.
-            if (feather) {
-                const featherColor = isSpearmanThrow ? 0x7c3aed : 0xe23b3b;
-                if (feather.material && feather.material.color) {
-                    feather.material.color.setHex(featherColor);
-                    feather.material.needsUpdate = true;
-                } else if (feather.children && feather.children.length) {
-                    feather.children.forEach((fch) => {
-                        if (fch.material && fch.material.color) {
-                            fch.material.color.setHex(featherColor);
-                            fch.material.needsUpdate = true;
-                        }
-                    });
-                }
-            }
+        } else {
+            // Kamonchi otganda: haqiqiy nozik kamon o'qi ko'rinadi (o'tkir paykon va 3 ta qizil patlar bilan)
+            if (arrow) arrow.visible = true;
+            if (realSpear) realSpear.visible = false;
+            if (bomb) bomb.visible = false;
         }
     });
 }
@@ -5603,6 +5783,7 @@ function fireEnemyVolleyShot() {
 }
 
 function throwSpear(angle, power) {
+    if (typeof active3DBow !== 'undefined' && active3DBow) active3DBow.visible = false;
     if (gameMode === 'single' && singleShotLocked) return;
     if (gameMode === 'single') singleShotLocked = true;
     // Yordamchi hint uchun: o'yinchining joriy otish parametrlarini saqlaymiz.
@@ -8026,6 +8207,7 @@ function checkCollision() {
 }
 
 function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null, isSuicide = false) {
+    if (typeof active3DBow !== 'undefined' && active3DBow) active3DBow.visible = false;
     isAnimating = false;
     resetCameraAfterImpact();
     screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 7 : 12);
@@ -8528,11 +8710,38 @@ function gameLoop(now) {
             trajectoryLine = new THREE.Line(geo, mat);
             trajectoryLine.computeLineDistances();
             scene.add(trajectoryLine);
+
+            // 3D Usmoniy Kamonni mo'ljal olayotganda qo'lga keltirish va ipini tortish
+            const myWeapon = getPlayerWeaponType(myPlayerIndex);
+            if (typeof active3DBow !== 'undefined' && active3DBow) {
+                if (myWeapon === 'arrow' && !isArtilleryAiming) {
+                    active3DBow.visible = true;
+                    active3DBow.position.set(startX, startY, 15);
+                    const bowRotAngle = myPlayerIndex === 1 ? (Math.PI - rad) : rad;
+                    active3DBow.rotation.z = bowRotAngle;
+                    if (myPlayerIndex === 1) {
+                        active3DBow.scale.set(1.4, -1.4, 1.4);
+                    } else {
+                        active3DBow.scale.set(1.4, 1.4, 1.4);
+                    }
+                    if (active3DBow.userData && active3DBow.userData.stringMesh) {
+                        const pullDist = Math.min(22, (power / 1000) * 18);
+                        const posAttr = active3DBow.userData.stringMesh.geometry.attributes.position;
+                        posAttr.setXYZ(1, -pullDist, 0, 0);
+                        posAttr.needsUpdate = true;
+                    }
+                } else {
+                    active3DBow.visible = false;
+                }
+            }
+
             if (!aimSfxPlayed) {
                 playSfx('aim');
                 aimSfxPlayed = true;
             }
         }
+    } else {
+        if (typeof active3DBow !== 'undefined' && active3DBow) active3DBow.visible = false;
     }
 
     
@@ -11327,34 +11536,71 @@ function checkAirDropCrateHit() {
             playSfx('break');
 
             const shooter = spear.playerIndex;
-            const rewardTypes = ['hp', 'shield', 'double', 'fire', 'score'];
+            // Airdrop sandig'idan barcha xilma-xil bonuslar va quvvatlar tushadi:
+            // qush urar o'q, qo'sh nayza, devor, olov nayza, artileriya, super kuch, HP jon, qalqon, ball
+            const rewardTypes = ['crowhunt', 'double', 'wall', 'fire', 'artillery', 'super', 'hp', 'shield', 'score'];
             const chosen = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
 
-            if (chosen === 'hp') {
-                if (shooter === 0) myHealth = Math.min(100, myHealth + 30);
-                else enemyHealth = Math.min(100, enemyHealth + 30);
-                updateHealthUI();
-                showDamageText(c.x, c.y + 60, "🎁 +30 HP!", true, true);
-            } else if (chosen === 'shield') {
-                setShieldForPlayer(shooter, shieldForPlayer(shooter) + 2);
-                showDamageText(c.x, c.y + 60, "🎁 +2 QALQON!", true, true);
+            if (chosen === 'crowhunt') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.crowhunt = (Number(myProfile.crowhunt) || 0) + 1;
+                    myCrow = myProfile.crowhunt;
+                    saveProfile();
+                    updateSuperUI();
+                    if (typeof updateCrowUI === 'function') updateCrowUI();
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 QUSH URAR O'Q! 🐦", true, true);
+            } else if (chosen === 'wall') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.walls = (Number(myProfile.walls) || 0) + 1;
+                    saveProfile();
+                    updateSuperUI();
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 HIMOY DEVORI! 🧱", true, true);
+            } else if (chosen === 'artillery') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.artillery = (Number(myProfile.artillery) || 0) + 1;
+                    artilleryCount = myProfile.artillery;
+                    saveProfile();
+                    updateSuperUI();
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 ARTILERIYA! 💣", true, true);
+            } else if (chosen === 'super') {
+                if (shooter === myPlayerIndex) {
+                    myProfile.superPowers = (Number(myProfile.superPowers) || 0) + 1;
+                    mySuper = myProfile.superPowers;
+                    saveProfile();
+                    updateSuperUI();
+                } else {
+                    enemySuper = (Number(enemySuper) || 0) + 1;
+                }
+                showDamageText(c.x, c.y + 60, "🎁 +1 SUPER KUCH! 🗡️", true, true);
             } else if (chosen === 'double') {
                 if (shooter === myPlayerIndex) {
-                    myProfile.doubleSpears = (myProfile.doubleSpears || 0) + 1;
+                    myProfile.doubleSpears = (Number(myProfile.doubleSpears) || 0) + 1;
                     saveProfile();
                     updateSuperUI();
                 }
-                showDamageText(c.x, c.y + 60, "🎁 +1 QO'SH NAYZA!", true, true);
+                showDamageText(c.x, c.y + 60, "🎁 +1 QO'SH NAYZA! ⚔️", true, true);
             } else if (chosen === 'fire') {
                 if (shooter === myPlayerIndex) {
-                    myProfile.fireSpears = (myProfile.fireSpears || 0) + 1;
+                    myProfile.fireSpears = (Number(myProfile.fireSpears) || 0) + 1;
                     saveProfile();
                     updateSuperUI();
                 }
-                showDamageText(c.x, c.y + 60, "🎁 +1 OLOVLI NAYZA!", true, true);
+                showDamageText(c.x, c.y + 60, "🎁 +1 OLOVLI NAYZA! 🔥", true, true);
+            } else if (chosen === 'hp') {
+                if (shooter === 0) myHealth = Math.min(100, myHealth + 35);
+                else enemyHealth = Math.min(100, enemyHealth + 35);
+                updateHealthUI();
+                showDamageText(c.x, c.y + 60, "🎁 +35 HP JON! 💖", true, true);
+            } else if (chosen === 'shield') {
+                setShieldForPlayer(shooter, shieldForPlayer(shooter) + 2);
+                updateSuperUI();
+                showDamageText(c.x, c.y + 60, "🎁 +2 QALQON! 🛡️", true, true);
             } else {
-                if (shooter === myPlayerIndex) addScore(300);
-                showDamageText(c.x, c.y + 60, "🎁 +300 BALL!", true, true);
+                if (shooter === myPlayerIndex) addScore(500);
+                showDamageText(c.x, c.y + 60, "🎁 +500 BALL! 🪙", true, true);
             }
             return true;
         }
