@@ -5384,17 +5384,31 @@ const fireButton = document.getElementById('fire-button');
 if (fireButton) {
     const toggleFire = (e) => {
         if (e) {
-            e.preventDefault();
-            e.stopPropagation();
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
-        if (Number(myProfile.fireSpears || 0) <= 0) return;
+        const fireStock = Math.max(0, Number(myProfile.fireSpears || 0));
+        if (fireStock <= 0) {
+            showCenterNotice("Olovli o'qlaringiz qolmagan! Do'kondan xarid qiling.", 2200);
+            return;
+        }
         isFireSpearActive = !isFireSpearActive;
         fireButton.classList.toggle('active', isFireSpearActive);
         if (isFireSpearActive) {
             triggerAbilityPulse(fireButton);
             playSfx('superPress', 0.7);
+            showCenterNotice("🔥 Olovli o'q faollashdi!", 1500);
+        } else {
+            showCenterNotice("Oddiy o'qqa qaytildi", 1200);
         }
     };
+    if (window.PointerEvent) {
+        fireButton.addEventListener('pointerdown', (e) => { if (e) e.stopPropagation(); });
+        fireButton.addEventListener('pointerup', toggleFire);
+    } else {
+        fireButton.addEventListener('touchstart', (e) => { if (e) e.stopPropagation(); }, { passive: false });
+        fireButton.addEventListener('touchend', toggleFire, { passive: false });
+    }
     fireButton.addEventListener('click', toggleFire);
 }
 
@@ -5428,11 +5442,21 @@ function deployOrRepositionWall() {
 }
 
 if (wallButton) {
-    wallButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleWallBtn = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         deployOrRepositionWall();
-    });
+    };
+    if (window.PointerEvent) {
+        wallButton.addEventListener('pointerdown', (e) => { if (e) e.stopPropagation(); });
+        wallButton.addEventListener('pointerup', handleWallBtn);
+    } else {
+        wallButton.addEventListener('touchstart', (e) => { if (e) e.stopPropagation(); }, { passive: false });
+        wallButton.addEventListener('touchend', handleWallBtn, { passive: false });
+    }
+    wallButton.addEventListener('click', handleWallBtn);
 }
 
 function showSuperUseWarning() {
@@ -6059,81 +6083,106 @@ function throwSpear(angle, power) {
     }
 }
 
-const CROW_KILLER_CINEMATIC_MS = 4000;
+const CROW_KILLER_CINEMATIC_MS = 2500;
 let crowKillerCinematicActive = false;
 let crowKillerCinematicUntil = 0;
 
 function shootCrowKillerArrow() {
-    if (myCrow <= 0) return;
+    if (myCrow <= 0) {
+        showCenterNotice("Qush ovi o'qlari qolmagan!", 2000);
+        return;
+    }
+    if (gameMode === 'multi' && currentTurnIndex !== myPlayerIndex) {
+        showCenterNotice("Faqat o'z navbatingizda o'q uzishingiz mumkin!", 2000);
+        return;
+    }
+    if (isAnimating) return;
+
     myCrow--;
     myProfile.crowhunt = myCrow;
     saveProfile();
     updateCrowUI();
     updateSuperUI();
 
-    // Qarg'alarni aniqlash
+    isAnimating = true;
+    if (gameMode === 'multi') {
+        socket.emit('crowKillerShot', { count: 20 });
+    }
+
+    playCrowKillerVisualForShooter(myPlayerIndex, () => {
+        isAnimating = false;
+        crowKillerCinematicActive = false;
+        crowKillerCinematicUntil = 0;
+        resetCameraAfterImpact();
+        if (gameMode === 'multi') {
+            socket.emit('crowKillerComplete');
+        } else if (gameMode === 'single') {
+            updateTurn(getPrimaryEnemyTurnIndex(), generateWind());
+            setTimeout(() => {
+                if (gameMode === 'single' && currentTurnIndex === getPrimaryEnemyTurnIndex()) {
+                    playAITurn();
+                }
+            }, 800);
+        }
+    });
+}
+
+function playCrowKillerVisualForShooter(shooterIndex, onComplete) {
     const birds = entities.filter(e => e.type === 'bird' && e.alive);
-    if (birds.length === 0) return;
+    const shooterModel = modelForPlayer(shooterIndex);
+    if (!shooterModel) {
+        if (typeof onComplete === 'function') onComplete();
+        return;
+    }
 
-    // Barcha qushlarni urish
-    const targetCount = birds.length;
-    const targets = birds;
-
-    // Cinematic effektni yoqish
+    setModelActionState(shooterModel, 'aim', 1000);
     crowKillerCinematicActive = true;
-    crowKillerCinematicUntil = performance.now() + CROW_KILLER_CINEMATIC_MS;
+    crowKillerCinematicUntil = performance.now() + 2500;
     cameraState = 'crowKiller';
-    cameraZoomTarget = baseZoom * 1.8;
-
-    // Har bir qarg'a uchun o'q otish
-    const shooterModel = modelForPlayer(myPlayerIndex);
-    if (!shooterModel) return;
+    cameraZoomTarget = baseZoom * 1.7;
 
     const startX = shooterModel.position.x;
     const startY = shooterModel.position.y + 50;
 
-    targets.forEach((bird, index) => {
-        setTimeout(() => {
-            if (!bird || !bird.alive || !bird.mesh) return;
-            const birdMesh = bird.mesh;
-            const targetX = birdMesh.position.x;
-            const targetY = birdMesh.position.y;
-
-            // O'q trayektoriyasini hisoblash
-            const dx = targetX - startX;
-            const dy = targetY - startY;
-            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            const power = 1600;
-
-            // Homing o'q otish
-            startCrowKillerArrowAnimation(startX, startY, angle, power, bird);
-            playSfx('throw', 0.9);
-
-            // Camera target ni qarg'aga qaratish
-            cameraTargetX = targetX;
-            cameraTargetY = targetY;
-        }, index * 120);
-    });
-
-    // Kafolat: funksiya ishlaganda osmondagi BARCHA qarg'alar 100% yerga qulashi shart
-    setTimeout(() => {
-        targets.forEach((bird) => {
-            if (bird && bird.alive) {
-                killBird(bird);
-            }
+    if (birds.length > 0) {
+        birds.forEach((bird, index) => {
+            setTimeout(() => {
+                if (!bird || !bird.alive || !bird.mesh) return;
+                const birdMesh = bird.mesh;
+                const targetX = birdMesh.position.x;
+                const targetY = birdMesh.position.y;
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                startCrowKillerArrowAnimation(startX, startY, angle, 1700, bird);
+                playSfx('throw', 0.9);
+                cameraTargetX = targetX;
+                cameraTargetY = targetY;
+            }, Math.min(index * 90, 1200));
         });
-    }, 2000);
 
-    if (gameMode === 'multi') {
-        socket.emit('crowKillerShot', { count: targetCount });
+        setTimeout(() => {
+            birds.forEach((b) => {
+                if (b && b.alive) killBird(b);
+            });
+        }, 1800);
+    } else {
+        // Osmonda qush bo'lmasa ham 3 ta maxsus o'q yuqoriga uchadi
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const angle = 60 + i * 20;
+                startCrowKillerArrowAnimation(startX, startY, angle, 1600, null);
+                playSfx('throw', 0.9);
+            }, i * 150);
+        }
     }
 
-    // Cinematic tugagandan keyin camera ni darhol dastlabki o'yinchi / jang maydoni ko'rinishiga qaytarish
     setTimeout(() => {
         crowKillerCinematicActive = false;
         crowKillerCinematicUntil = 0;
         resetCameraAfterImpact();
-    }, 2000);
+        if (typeof onComplete === 'function') onComplete();
+    }, 2200);
 }
 
 function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird) {
@@ -6994,6 +7043,9 @@ function returnToMainMenu() {
     if (spear) spear.active = false;
     if (secondarySpear) secondarySpear.active = false;
     hideFlyingSpear();
+    hideCoinTossModal();
+    if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
+    if (typeof clearRandomWaitTimer === 'function') clearRandomWaitTimer();
 
     // Barcha o'yin ekranlarini yashirish
     if (gameScreen) gameScreen.classList.add('hidden');
@@ -7007,6 +7059,10 @@ function returnToMainMenu() {
     if (aboutModal) aboutModal.classList.add('hidden');
     if (settingsModal) settingsModal.classList.add('hidden');
     if (profileModal) profileModal.classList.add('hidden');
+    for (const id of ALL_MODAL_IDS) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    }
 
     // Intro ekranni yo'q qilish
     const introEl = document.getElementById('intro-screen');
@@ -7022,19 +7078,46 @@ function returnToMainMenu() {
             socket.emit('leaveRoom', { roomName: currentRoomName });
         } catch (_) { }
     }
+    currentRoomName = null;
 
     gameMode = 'menu';
-    if (menuScreen) menuScreen.classList.remove('hidden');
+    document.documentElement.classList.remove('direct-duel-active');
+    autoJoinExecuted = false;
+
+    // Bosh menyu ekranini to'liq ko'rsatish va blokirovkalarini yechish
+    if (menuScreen) {
+        menuScreen.style.removeProperty('display');
+        menuScreen.style.removeProperty('pointer-events');
+        menuScreen.classList.remove('hidden');
+    }
+
+    cameraState = 'static';
+    if (!isLooping) {
+        isLooping = true;
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
     if (typeof updateCampaignUI === 'function') updateCampaignUI();
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-        if (typeof checkFirstTimeLanguageModal === 'function') checkFirstTimeLanguageModal();
+    if (typeof checkFirstTimeLanguageModal === 'function') checkFirstTimeLanguageModal();
     if (typeof updateTelegramBackButton === 'function') updateTelegramBackButton();
 }
 
-btnExitMenu.addEventListener('click', returnToMainMenu);
+if (btnExitMenu) {
+    const handleExitMenu = safeModalAction((e) => {
+        returnToMainMenu();
+    });
+    btnExitMenu.addEventListener('click', handleExitMenu);
+    btnExitMenu.addEventListener('touchend', handleExitMenu, { passive: false });
+}
 const btnDisconnectHome = document.getElementById('btn-disconnect-home');
 if (btnDisconnectHome) {
-    btnDisconnectHome.addEventListener('click', returnToMainMenu);
+    const handleDiscHome = safeModalAction((e) => {
+        returnToMainMenu();
+    });
+    btnDisconnectHome.addEventListener('click', handleDiscHome);
+    btnDisconnectHome.addEventListener('touchend', handleDiscHome, { passive: false });
 }
 
 chatForm.addEventListener('submit', (e) => {
@@ -7681,6 +7764,13 @@ socket.on('entityHit', (data) => {
     }
 });
 
+socket.on('crowKillerShot', (data) => {
+    const shooterIndex = data?.shooterIndex !== undefined ? data.shooterIndex : (myPlayerIndex === 0 ? 1 : 0);
+    playCrowKillerVisualForShooter(shooterIndex, () => {
+        resetCameraAfterImpact();
+    });
+});
+
 socket.on('gameOver', (data) => {
     hideCoinTossModal();
     setTimeout(() => showGameOver(data.winnerIndex, data), 1200);
@@ -7689,8 +7779,7 @@ socket.on('gameOver', (data) => {
 socket.on('opponentDisconnected', () => {
     hideCoinTossModal();
     if (gameMode === 'multi') {
-        disconnectScreen.classList.remove('hidden');
-        gameScreen.classList.add('hidden');
+        showGameOver(myPlayerIndex, { winnerIndex: myPlayerIndex, winnerId: socket?.id, reason: 'opponent_left' });
     }
 });
 
@@ -7793,11 +7882,20 @@ function showGameOver(winnerIndex, data) {
     }
 
     if (data && (data.reason === 'timeout_forfeit' || data.reason === 'opponent_left')) {
+        if (data.winnerId && socket && socket.id) {
+            isMeWinner = (data.winnerId === socket.id);
+        } else if (typeof data.winnerIndex === 'number' && myPlayerIndex !== null && myPlayerIndex !== undefined) {
+            isMeWinner = (data.winnerIndex === myPlayerIndex);
+        }
         if (isMeWinner) {
-            winnerText.innerText = "Raqib jangdan qochdi! Siz g'olibsiz! 🏆";
+            winnerText.innerText = data.reason === 'timeout_forfeit'
+                ? "Raqib 30 soniyada o'q uzmadi va jangga kirmasdan qochdi! Siz g'olibsiz! 🏆"
+                : "Raqib jangdan qochdi! Siz g'olibsiz! 🏆";
             winnerText.style.color = '#22c55e';
         } else {
-            winnerText.innerText = "Vaqtingiz tugadi, siz yengildingiz! 💀";
+            winnerText.innerText = data.reason === 'timeout_forfeit'
+                ? "Belgilangan 30 soniyada o'q uzmadingiz, siz yengildingiz! 💀"
+                : "Siz jangni tark etdingiz! 💀";
             winnerText.style.color = '#ef4444';
         }
     } else {
@@ -12966,35 +13064,41 @@ if (btnMultiCreate) {
 }
 
 if (btnMultiRandom) {
+    let lastRandomClickTime = 0;
     const handleMultiRandom = (e) => {
         if (e) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
-        openCharacterSelectModal({
-            onConfirm: () => {
-                gameOptionsTargetMode = 'multiRandom';
-                if (joinError) joinError.style.display = 'none';
-                for (const id of ALL_MODAL_IDS) {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                }
-                if (multiMenu) multiMenu.classList.add('hidden');
-                if (menuScreen) menuScreen.classList.add('hidden');
-                if (waitingScreen) waitingScreen.classList.remove('hidden');
-                startRandomWaitTimer();
-                socket.emit('findGame', { profile: myProfile, options: null });
-            },
-            onCancel: () => {
-                if (multiMenu) multiMenu.classList.remove('hidden');
-            }
-        });
+        const now = Date.now();
+        if (now - lastRandomClickTime < 800) return;
+        lastRandomClickTime = now;
+
+        gameOptionsTargetMode = 'multiRandom';
+        if (joinError) joinError.style.display = 'none';
+        for (const id of ALL_MODAL_IDS) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+        if (multiMenu) multiMenu.classList.add('hidden');
+        if (menuScreen) {
+            menuScreen.classList.add('hidden');
+            menuScreen.style.setProperty('display', 'none', 'important');
+        }
+        if (waitingScreen) {
+            waitingScreen.classList.remove('hidden');
+            const waitTitle = waitingScreen.querySelector('h2') || waitingScreen.querySelector('.title');
+            if (waitTitle) waitTitle.innerText = "🔍 Tasodifiy raqib qidirilmoqda...";
+        }
+        startRandomWaitTimer();
+        if (socket && socket.connected) {
+            socket.emit('findGame', { profile: myProfile, options: null });
+        } else {
+            showCenterNotice("Serverga ulanish kutilmoqda...", 2500);
+        }
     };
     btnMultiRandom.addEventListener('click', handleMultiRandom);
-    btnMultiRandom.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        handleMultiRandom(e);
-    }, { passive: false });
+    btnMultiRandom.addEventListener('touchend', handleMultiRandom, { passive: false });
 }
 
 if (btnMultiJoinShow) {
@@ -13274,11 +13378,38 @@ socket.on('friendsPresence', (payload) => {
 });
 
 if (btnAddFriend) {
-    btnAddFriend.addEventListener('click', () => {
-        if (gameMode !== 'multi' || !currentOpponentProfile || !currentOpponentProfile.playerId) return;
+    const handleAddFriendClick = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        if (gameMode !== 'multi') {
+            showCenterNotice("Faqat onlayn o'yinda raqibni do'stlarga qo'shish mumkin!", 2500);
+            return;
+        }
+        if (!currentOpponentProfile || !currentOpponentProfile.playerId) {
+            showCenterNotice("Raqib ma'lumotlari topilmadi!", 2500);
+            return;
+        }
+        const oppId = String(currentOpponentProfile.playerId);
+        const alreadyFriend = myFriends.some(f => String(f.playerId) === oppId);
+        if (alreadyFriend) {
+            showCenterNotice(`${currentOpponentProfile.name || 'Raqib'} allaqachon do'stlaringiz ro'yxatida!`, 2500);
+            btnAddFriend.innerText = "✓ Do'stlikda";
+            btnAddFriend.disabled = true;
+            return;
+        }
         upsertFriend(currentOpponentProfile);
         renderFriendsList();
-    });
+        if (socket && socket.connected) {
+            socket.emit('addFriendDirect', { toPlayerId: currentOpponentProfile.playerId });
+        }
+        showCenterNotice(`✅ ${currentOpponentProfile.name || 'Raqib'} do'stlaringiz ro'yxatiga qo'shildi!`, 2500);
+        btnAddFriend.innerText = "✓ Do'stlikda";
+        btnAddFriend.disabled = true;
+    };
+    btnAddFriend.addEventListener('click', handleAddFriendClick);
+    btnAddFriend.addEventListener('touchend', handleAddFriendClick, { passive: false });
 }
 
 socket.on('friendInvite', (payload) => {
@@ -13499,9 +13630,15 @@ function startTurnTimerUI(duration = 30) {
 
     turnTimerInterval = setInterval(() => {
         turnSecondsLeft--;
-        if (turnSecondsLeft < 0) {
+        if (turnSecondsLeft <= 0) {
             clearInterval(turnTimerInterval);
             turnSecondsLeft = 0;
+            txt.innerText = '0 s';
+            // Agar belgilangan 30 soniyada o'q uzilmasa, serverga vaqt tugaganini bildiramiz
+            if (gameMode === 'multi' && socket && socket.connected) {
+                socket.emit('reportTurnTimeout', { roomName: currentRoomName });
+            }
+            return;
         }
         txt.innerText = turnSecondsLeft + ' s';
         if (turnSecondsLeft <= 5) {

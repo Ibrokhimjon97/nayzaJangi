@@ -221,7 +221,7 @@ const usersDbPath = path.join(__dirname, 'users.json');
 const duelInvitesDbPath = path.join(__dirname, 'duel_invites.json');
 const avatarsDir = path.join(__dirname, 'public', 'avatars');
 if (!fs.existsSync(avatarsDir)) {
-    try { fs.mkdirSync(avatarsDir, { recursive: true }); } catch (_) {}
+    try { fs.mkdirSync(avatarsDir, { recursive: true }); } catch (_) { }
 }
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -712,7 +712,7 @@ app.post('/api/auth/telegram', async (req, res) => {
         try {
             const { getTelegramUserPhotoUrl } = require('./telegramBot');
             photoUrl = (await getTelegramUserPhotoUrl(tgId)) || '';
-        } catch (_) {}
+        } catch (_) { }
     }
 
     const users = ensureLegacyBonus(loadUsers());
@@ -851,8 +851,8 @@ app.get('/api/duel-invites', (req, res) => {
 
 app.post('/api/duel-invites/send', async (req, res) => {
     const { fromPlayerId, fromName, fromFlag, fromPhoto, fromTgId, fromPhone,
-            toPlayerId, toName, toFlag, toPhoto, toTgId, toPhone,
-            options } = req.body || {};
+        toPlayerId, toName, toFlag, toPhoto, toTgId, toPhone,
+        options } = req.body || {};
 
     if (!fromPlayerId || !toPlayerId) {
         return res.status(400).json({ ok: false, error: 'missing_players' });
@@ -905,7 +905,7 @@ app.post('/api/duel-invites/send', async (req, res) => {
 
     // Real-time notification if recipient socket is online
     const targetSocket = onlineByPlayerId.get(newInvite.toPlayerId) ||
-                         (newInvite.toPhone && onlineByPlayerId.get(newInvite.toPhone));
+        (newInvite.toPhone && onlineByPlayerId.get(newInvite.toPhone));
     if (targetSocket) {
         targetSocket.emit('newDuelInvite', { invite: newInvite, pendingCount });
         targetSocket.emit('duelInvitesCount', { count: pendingCount });
@@ -973,7 +973,7 @@ app.post('/api/duel-invites/respond', async (req, res) => {
                     playUrl,
                     "⚔️ Jangga kirish (Play)"
                 );
-            } catch (_) {}
+            } catch (_) { }
         }
 
         // Socket notifications
@@ -998,7 +998,7 @@ app.post('/api/duel-invites/respond', async (req, res) => {
                     GAME_URL,
                     "🏹 Bosh menyu"
                 );
-            } catch (_) {}
+            } catch (_) { }
         }
 
         const fromSocket = onlineByPlayerId.get(invite.fromPlayerId) || (invite.fromPhone && onlineByPlayerId.get(invite.fromPhone));
@@ -1047,7 +1047,7 @@ function startScheduledDuelsMonitor() {
                             `🔔 *DUEL VAQTI KELDI!*\n\n⚔️ *${inv.fromName}* vs *${inv.toName}*\nJang maydoni tayyor! 2 daqiqa ichida jangga kiring:\nKechikkan o'yinchi mag'lub deb hisoblanadi!`,
                             playUrl,
                             "⚔️ Jangga kirish (Play)"
-                        ).catch(() => {});
+                        ).catch(() => { });
                     }
 
                     if (inv.toTgId) {
@@ -1056,7 +1056,7 @@ function startScheduledDuelsMonitor() {
                             `🔔 *DUEL VAQTI KELDI!*\n\n⚔️ *${inv.fromName}* vs *${inv.toName}*\nJang maydoni tayyor! 2 daqiqa ichida jangga kiring:\nKechikkan o'yinchi mag'lub deb hisoblanadi!`,
                             playUrl,
                             "⚔️ Jangga kirish (Play)"
-                        ).catch(() => {});
+                        ).catch(() => { });
                     }
 
                     const s1 = onlineByPlayerId.get(inv.fromPlayerId) || (inv.fromPhone && onlineByPlayerId.get(inv.fromPhone));
@@ -1120,7 +1120,7 @@ function startScheduledDuelsMonitor() {
                                 `❌ *Siz duelga o'z vaqtida (2 daqiqa ichida) kirmadingiz!*\nDueldan qochgan deb hisoblanib, -30 ball jarima berildi.`,
                                 GAME_URL,
                                 "🏹 Bosh menyu"
-                            ).catch(() => {});
+                            ).catch(() => { });
                         }
                         if (winnerTgId) {
                             sendTelegramDuelAlert(
@@ -1128,7 +1128,7 @@ function startScheduledDuelsMonitor() {
                                 `🏆 *Raqibingiz jangga kelmadi!*\nSizga texnik g'alaba berildi va +50 ball mukofot taqdim etildi!`,
                                 GAME_URL,
                                 "🏹 Bosh menyu"
-                            ).catch(() => {});
+                            ).catch(() => { });
                         }
                     }
                 }
@@ -1284,7 +1284,7 @@ function handleRoomTurnTimeout(roomName) {
     // 30 soniyada o'q uzilmasa o'yinchi yutqazadi va raqib chekingan deb topiladi
     room.gameOver = true;
     clearRoomTurnTimer(roomName);
-    const timedOutIndex = room.turnIndex;
+    const timedOutIndex = (room.turnIndex === 0 || room.turnIndex === 1) ? room.turnIndex : 0;
     const winnerIndex = timedOutIndex === 0 ? 1 : 0;
     const winnerId = room.players ? room.players[winnerIndex] : null;
     const timedOutId = room.players ? room.players[timedOutIndex] : null;
@@ -1626,7 +1626,7 @@ io.on('connection', (socket) => {
                 if (!u2.friends.includes(toPlayerId)) { u2.friends.push(toPlayerId); updated = true; }
             }
             if (updated) saveUsers(users);
-        } catch (_) {}
+        } catch (_) { }
     });
 
     socket.on('inviteFriend', (payload) => {
@@ -1681,15 +1681,15 @@ io.on('connection', (socket) => {
         const incoming = allInvites.filter(inv => {
             if (inv.status === 'cancelled') return false;
             return (myId && (inv.toPlayerId === myId || inv.toPhone === myId || inv.toTgId === myId || inv.toName === myId)) ||
-                   (myPhone && (inv.toPhone === myPhone || inv.toPlayerId === myPhone)) ||
-                   (myTgId && (inv.toTgId === myTgId || inv.toPlayerId === myTgId)) ||
-                   (myName && inv.toName && inv.toName.toLowerCase() === myName.toLowerCase());
+                (myPhone && (inv.toPhone === myPhone || inv.toPlayerId === myPhone)) ||
+                (myTgId && (inv.toTgId === myTgId || inv.toPlayerId === myTgId)) ||
+                (myName && inv.toName && inv.toName.toLowerCase() === myName.toLowerCase());
         });
         const outgoing = allInvites.filter(inv => {
             return (myId && (inv.fromPlayerId === myId || inv.fromPhone === myId || inv.fromTgId === myId || inv.fromName === myId)) ||
-                   (myPhone && (inv.fromPhone === myPhone || inv.fromPlayerId === myPhone)) ||
-                   (myTgId && (inv.fromTgId === myTgId || inv.fromPlayerId === myTgId)) ||
-                   (myName && inv.fromName && inv.fromName.toLowerCase() === myName.toLowerCase());
+                (myPhone && (inv.fromPhone === myPhone || inv.fromPlayerId === myPhone)) ||
+                (myTgId && (inv.fromTgId === myTgId || inv.fromPlayerId === myTgId)) ||
+                (myName && inv.fromName && inv.fromName.toLowerCase() === myName.toLowerCase());
         });
         const pendingCount = incoming.filter(inv => inv.status === 'pending').length;
         socket.emit('duelInvitesData', { incoming, outgoing, pendingCount });
@@ -1752,8 +1752,8 @@ io.on('connection', (socket) => {
                         `⚡ *Raqibingiz duel maydoniga kirdi!*\n*${socket.profile?.name || 'Raqib'}* sizni kutmoqda! 2 daqiqa ichida kiring, aks holda mag'lub deb hisoblanasiz:`,
                         `${GAME_URL}?duel_room=${inv.roomName}&invite_id=${inv.id}`,
                         "⚔️ Jangga kirish (Play)"
-                    ).catch(() => {});
-                } catch (_) {}
+                    ).catch(() => { });
+                } catch (_) { }
             }
         } else if (inv.joinedPlayers.length >= 2) {
             // Ikkala o'yinchi ham kirdi - 2 daqiqalik forfeyt taymerini to'xtatamiz va jangni boshlaymiz!
@@ -2112,6 +2112,90 @@ io.on('connection', (socket) => {
             wind: room.wind
         });
         startRoomTurnTimer(roomName);
+    });
+
+    // Qush o'qi (Crow killer arrow) multiplayer sinxronizatsiyasi
+    socket.on('crowKillerShot', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1 || playerIndex !== room.turnIndex) return;
+        socket.to(roomName).emit('crowKillerShot', {
+            shooterIndex: playerIndex,
+            count: Number(data?.count || 20)
+        });
+    });
+
+    socket.on('crowKillerComplete', () => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1 || playerIndex !== room.turnIndex) return;
+        room.inFlight = false;
+        room.turnIndex = room.turnIndex === 0 ? 1 : 0;
+        room.wind = generateWind();
+        io.to(roomName).emit('nextTurn', {
+            turnIndex: room.turnIndex,
+            wind: room.wind
+        });
+        startRoomTurnTimer(roomName);
+    });
+
+    // 30 soniya o'tib o'yinchi harakat qilmaganda forfeyt talab qilish
+    socket.on('reportTurnTimeout', (data) => {
+        const roomName = data?.roomName || socket.roomId;
+        if (!roomName || !rooms[roomName]) return;
+        handleRoomTurnTimeout(roomName);
+    });
+
+    // O'yin ichidan menyuga qaytish (Leave room)
+    socket.on('leaveRoom', (data) => {
+        const roomName = data?.roomName || socket.roomId;
+        const room = rooms[roomName];
+        if (!room) return;
+        clearRoomTurnTimer(roomName);
+        clearCoinTossTimer(roomName);
+        if (!room.gameOver && Array.isArray(room.players) && room.players.length === 2) {
+            const remainingPlayerId = room.players.find(id => id !== socket.id);
+            const winnerIndex = room.players.indexOf(remainingPlayerId);
+            room.gameOver = true;
+            if (remainingPlayerId) {
+                const winnerSocket = io.sockets.sockets.get(remainingPlayerId);
+                recordGameResult(winnerSocket, socket, 'opponent_left');
+                io.to(remainingPlayerId).emit('gameOver', {
+                    winnerIndex: winnerIndex >= 0 ? winnerIndex : 0,
+                    winnerId: remainingPlayerId,
+                    reason: 'opponent_left'
+                });
+            }
+        }
+        socket.leave(roomName);
+        socket.roomId = null;
+        delete rooms[roomName];
+    });
+
+    // O'yinda raqibni to'g'ridan-to'g'ri do'stlarga qo'shish
+    socket.on('addFriendDirect', (payload) => {
+        const toPlayerId = payload?.toPlayerId;
+        const fromPlayerId = socket.profile?.playerId;
+        if (!toPlayerId || !fromPlayerId) return;
+        try {
+            const users = loadUsers();
+            const u1 = users.find(u => u.id === toPlayerId || u.phone === toPlayerId);
+            const u2 = users.find(u => u.id === fromPlayerId || u.phone === fromPlayerId);
+            let updated = false;
+            if (u1) {
+                if (!Array.isArray(u1.friends)) u1.friends = [];
+                if (!u1.friends.includes(fromPlayerId)) { u1.friends.push(fromPlayerId); updated = true; }
+            }
+            if (u2) {
+                if (!Array.isArray(u2.friends)) u2.friends = [];
+                if (!u2.friends.includes(toPlayerId)) { u2.friends.push(toPlayerId); updated = true; }
+            }
+            if (updated) saveUsers(users);
+        } catch (_) { }
     });
 
     socket.on('chatMessage', (msg) => {
