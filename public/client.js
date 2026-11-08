@@ -19,10 +19,10 @@ const API_BASE = IS_NATIVE_APP ? REMOTE_SERVER_URL : (WEB_LOCAL_BASE || REMOTE_S
 const FALLBACK_SOCKET = {
     connected: false,
     id: null,
-    on: () => {},
-    emit: () => {},
-    off: () => {},
-    disconnect: () => {}
+    on: () => { },
+    emit: () => { },
+    off: () => { },
+    disconnect: () => { }
 };
 let socket = FALLBACK_SOCKET;
 try {
@@ -46,7 +46,7 @@ if (tg) {
                 if (typeof tg.isVersionAtLeast === 'function' ? tg.isVersionAtLeast('8.0') : false) {
                     tg.requestFullscreen();
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
         if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#111827');
         if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0b0f19');
@@ -66,7 +66,7 @@ function triggerHaptic(type = 'light') {
                 tg.HapticFeedback.selectionChanged();
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 let trajectoryLine = null;
@@ -94,8 +94,8 @@ function loadTextureWithBgRemoval(url) {
             if (data[3] > 200) {
                 const bgR = data[0], bgG = data[1], bgB = data[2];
                 for (let i = 0; i < data.length; i += 4) {
-                    if (Math.abs(data[i]-bgR)<50 && Math.abs(data[i+1]-bgG)<50 && Math.abs(data[i+2]-bgB)<50) {
-                        data[i+3] = 0;
+                    if (Math.abs(data[i] - bgR) < 50 && Math.abs(data[i + 1] - bgG) < 50 && Math.abs(data[i + 2] - bgB) < 50) {
+                        data[i + 3] = 0;
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
@@ -213,17 +213,17 @@ async function fetchCustomModels() {
             console.error('Local models failed:', e2);
         }
     }
-    
+
     if (data && data.length > 0) {
         window.customModelsInfo = data;
-        
+
         const s1 = document.getElementById('select-char-type');
         const s2 = document.getElementById('select-char-type-options');
         data.forEach(m => {
             if (s1) s1.innerHTML += `<option value="${m.id}">${m.name}</option>`;
             if (s2) s2.innerHTML += `<option value="${m.id}">${m.name}</option>`;
         });
-        
+
         // Ensure values match profile if any
         if (typeof myProfile !== 'undefined' && myProfile && myProfile.charType) {
             if (s1) s1.value = String(myProfile.charType);
@@ -233,7 +233,7 @@ async function fetchCustomModels() {
             setupCustomDropdown('select-char-type-options');
             setupCustomDropdown('select-char-type');
         }
-        
+
         data.forEach(m => {
             const raw = m.textures || {};
             const defIdle = raw.shieldIdle || raw.noShieldIdle || 'Kamonlik%20Usmoniy/kamonlik%201.png';
@@ -256,7 +256,7 @@ async function fetchCustomModels() {
                 celebrate: loadTexture(raw.celebrate || raw.shieldIdle || defIdle),
                 bgMusic: m.bgMusic
             };
-            
+
             // Auto-play music if this is the currently selected profile character
             if (typeof myProfile !== 'undefined' && myProfile && String(myProfile.charType) === m.id && m.bgMusic) {
                 if (typeof selectedMusicTrack !== 'undefined') {
@@ -441,7 +441,7 @@ document.addEventListener('visibilitychange', () => {
         } else {
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             if (bgMusicAudio && !musicMuted) {
-                bgMusicAudio.play().catch(() => {});
+                bgMusicAudio.play().catch(() => { });
             }
         }
     } catch (_) {
@@ -464,7 +464,7 @@ function initAudio() {
         bgMusicAudio.setAttribute('webkit-playsinline', 'true');
     }
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-    bgMusicAudio.play().catch(() => {});
+    bgMusicAudio.play().catch(() => { });
 }
 
 function applySelectedMusicTrack() {
@@ -475,7 +475,7 @@ function applySelectedMusicTrack() {
     bgMusicAudio.loop = true;
     bgMusicAudio.preload = 'auto';
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
-    bgMusicAudio.play().catch(() => {});
+    bgMusicAudio.play().catch(() => { });
 }
 
 function playSfx(key, volumeScale = 1) {
@@ -490,8 +490,8 @@ function playSfx(key, volumeScale = 1) {
         audio.playsInline = true;
         audio.setAttribute('playsinline', 'true');
         audio.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
-        audio.play().catch(() => {});
-    } catch (_) {}
+        audio.play().catch(() => { });
+    } catch (_) { }
 }
 
 function playHitByResult(hitResult) {
@@ -548,22 +548,22 @@ function triggerCinematicExplosion(x, y) {
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
-    for(let i=0; i<particleCount; i++) {
-        positions[i*3] = x;
-        positions[i*3+1] = y;
-        positions[i*3+2] = 20;
-        colors[i*3] = 1.0;
-        colors[i*3+1] = Math.random() * 0.6 + 0.1;
-        colors[i*3+2] = 0.0;
+    for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = x;
+        positions[i * 3 + 1] = y;
+        positions[i * 3 + 2] = 20;
+        colors[i * 3] = 1.0;
+        colors[i * 3 + 1] = Math.random() * 0.6 + 0.1;
+        colors[i * 3 + 2] = 0.0;
     }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const material = new THREE.PointsMaterial({ size: 10, vertexColors: true, transparent: true, opacity: 1 });
     const explosion = new THREE.Points(geometry, material);
     scene.add(explosion);
-    
+
     const velocities = [];
-    for(let i=0; i<particleCount; i++) {
+    for (let i = 0; i < particleCount; i++) {
         velocities.push({
             vx: (Math.random() - 0.5) * 800,
             vy: (Math.random() - 0.5) * 800
@@ -645,23 +645,23 @@ function tryLockLandscapeOrientation() {
             if (typeof window.Telegram.WebApp.lockOrientation === 'function') {
                 window.Telegram.WebApp.lockOrientation('landscape');
             }
-        } catch (_) {}
+        } catch (_) { }
     }
     try {
         if (screen.orientation && typeof screen.orientation.lock === 'function') {
-            screen.orientation.lock('landscape').catch(() => {});
+            screen.orientation.lock('landscape').catch(() => { });
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 tryLockLandscapeOrientation();
 
 function getAppViewport() {
     const winW = window.innerWidth;
     const winH = window.innerHeight;
-    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
-                           (window.matchMedia && window.matchMedia('(max-width: 950px)').matches);
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (window.matchMedia && window.matchMedia('(max-width: 950px)').matches);
     const needRotate = isMobileDevice && (winW < winH);
-    
+
     if (needRotate) {
         if (!document.body.classList.contains('force-landscape')) {
             document.body.classList.add('force-landscape');
@@ -714,9 +714,9 @@ try {
         e.preventDefault();
     }, false);
     renderer.domElement.addEventListener('webglcontextrestored', () => {
-        try { window.location.reload(); } catch (_) {}
+        try { window.location.reload(); } catch (_) { }
     }, false);
-} catch (_) {}
+} catch (_) { }
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
 scene.add(ambientLight);
@@ -815,9 +815,9 @@ scene.add(groundPebbleGroup);
 const dustGeo = new THREE.BufferGeometry();
 const dustCount = MOBILE_PERF_MODE ? 220 : 500;
 const dustPos = new Float32Array(dustCount * 3);
-for(let i=0; i<dustCount*3; i++) {
+for (let i = 0; i < dustCount * 3; i++) {
     dustPos[i] = (Math.random() - 0.5) * 4000;
-    if(i%3 === 1) dustPos[i] = Math.random() * 800 - 300; 
+    if (i % 3 === 1) dustPos[i] = Math.random() * 800 - 300;
 }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
 const dustMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 4, transparent: true, opacity: 0 });
@@ -877,9 +877,9 @@ function seededRandom() {
 
 function createAnimal() {
     const group = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(25, 15, 12), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
+    const body = new THREE.Mesh(new THREE.BoxGeometry(25, 15, 12), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
     body.position.y = 12;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshStandardMaterial({color: 0x222222}));
+    const head = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshStandardMaterial({ color: 0x222222 }));
     head.position.set(12, 20, 0);
     group.add(body); group.add(head);
     group.children.forEach(c => c.castShadow = true);
@@ -2336,12 +2336,12 @@ function buildMap(mapType, weather = 'sunny') {
     let rockColor = 0x9ca3af;
     let skyColor = 0x2e95e6; // To'q to'yingan havorang
     let groundTopColor = 0x7dd956; // Yer ustki qatlam rangi (o't)
-    
-    if (mapType === 'winter') { 
+
+    if (mapType === 'winter') {
         groundColor = 0xd8e8f8; rockColor = 0x94a3b8; skyColor = 0x7fc3e8; groundTopColor = 0xf0f8ff;
-    } else if (mapType === 'desert') { 
+    } else if (mapType === 'desert') {
         groundColor = 0xd4a030; rockColor = 0xc77d10; skyColor = 0x1ea7e0; groundTopColor = 0xf4d078;
-    } else if (mapType === 'castle') { 
+    } else if (mapType === 'castle') {
         groundColor = 0x4a5e3a; rockColor = 0x475569; skyColor = 0x2f7fc4; groundTopColor = 0x6a8050;
     } else if (mapType === 'mountain') {
         groundColor = 0x4a7030; rockColor = 0x6b5b4a; skyColor = 0x3a9bd4; groundTopColor = 0x6a9a48;
@@ -2358,7 +2358,7 @@ function buildMap(mapType, weather = 'sunny') {
     } else if (mapType === 'volcano') {
         groundColor = 0x2a2220; rockColor = 0x4a3530; skyColor = 0x6b3b2e; groundTopColor = 0x3a2e28;
     }
-    
+
     if (weather === 'night') {
         skyColor = 0x0b1020;
         groundColor = 0x1a2530;
@@ -2548,7 +2548,7 @@ function buildMap(mapType, weather = 'sunny') {
             const depthOffsetX = depthBand * (110 + Math.random() * 70);
             const zByBand = depthBand === 0 ? (30 + Math.random() * 50) : (depthBand === 1 ? (-40 + Math.random() * 50) : (-150 + Math.random() * 70));
             const opacityByBand = depthBand === 0 ? (0.98 + Math.random() * 0.02) : (depthBand === 1 ? (0.94 + Math.random() * 0.04) : (0.9 + Math.random() * 0.05));
-            
+
             // Ildiz markazi (pivot) pastki qismda bo'lishi uchun geometriyaning yarmini tepaga suramiz
             const treeGeo = new THREE.PlaneGeometry(w, h);
             treeGeo.translate(0, h / 2, 0); // (0, 0, 0) nuqta aynan ildiz tubi bo'ladi!
@@ -2585,12 +2585,12 @@ function spawnEntities(options) {
     if (typeof clearStuckSpears === 'function') clearStuckSpears();
     entities.forEach(e => scene.remove(e.mesh));
     entities = [];
-    
+
     clouds.forEach(c => scene.remove(c));
     clouds = [];
-    
+
     // Spawn Clouds
-    for(let i=0; i<8; i++) {
+    for (let i = 0; i < 8; i++) {
         const cloudWidth = 200 + Math.random() * 150;
         const cloudHeight = 100 + Math.random() * 80;
         const cloudGeo = new THREE.PlaneGeometry(cloudWidth, cloudHeight);
@@ -2614,10 +2614,10 @@ function spawnEntities(options) {
 
     if (!options) return;
     currentSeed = options.seed || 0.5;
-    
+
     if (options.birds) {
         const birdCount = options.birdCount || 20;
-        for(let i=0; i<birdCount; i++) {
+        for (let i = 0; i < birdCount; i++) {
             const bird = createCrow(0, 0);
             // Qushlar osmonda (380-840 balandlikda) ko'rinadigan erkin zonada uchadi
             bird.position.set((seededRandom() - 0.5) * 3600, 380 + seededRandom() * 460, -30 + seededRandom() * 60);
@@ -2640,7 +2640,7 @@ const bloodGeo = new THREE.SphereGeometry(4, 4, 4);
 const bloodMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
 const woodMat = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
 
-function spawnParticles(x, y, amount, isWood=false) {
+function spawnParticles(x, y, amount, isWood = false) {
     const geo = isWood ? new THREE.BoxGeometry(8, 8, 8) : bloodGeo;
     const mat = isWood ? woodMat : bloodMat;
     for (let i = 0; i < amount; i++) {
@@ -2707,7 +2707,7 @@ function createCrow(x, y) {
     planeMesh.renderOrder = 10;
     planeMesh.castShadow = true;
     crowGroup.add(planeMesh);
-    
+
     crowGroup.userData.tex = qargaTexture;
     crowGroup.userData.isCrowSprite = true;
     crowGroup.position.set(x, y, 0);
@@ -2720,7 +2720,7 @@ const pHeight = 160;
 
 function createSoldier(isP1, charType = 0) {
     const group = new THREE.Group();
-    
+
     const normalizedCharType = (typeof charType === 'string' && charType.startsWith('custom_')) ? charType : Number(charType || 0);
     group.userData.charType = normalizedCharType;
     group.userData.isCustomModel = typeof normalizedCharType === 'string' && normalizedCharType.startsWith('custom_');
@@ -2737,12 +2737,12 @@ function createSoldier(isP1, charType = 0) {
     group.userData.armL = new THREE.Group();
     group.userData.armR = new THREE.Group();
     group.userData.shieldGroup = new THREE.Group();
-    
+
     // Add dummy groups
     group.add(group.userData.headGroup);
     group.add(group.userData.armL);
     group.add(group.userData.armR);
-    
+
     // 2D High-Quality Hero Sprite using the selected texture
     let selectedTexture = ottomanArcherTextures.shieldIdle;
     if (normalizedCharType === 1) selectedTexture = nayzabozTexture || ottomanSpearmanTextures.shieldIdle;
@@ -2765,26 +2765,26 @@ function createSoldier(isP1, charType = 0) {
         }
         tex.offset.set(0, 0);
     }
-    
+
     // Use Standard Material with alphaTest 0.5 to fix black borders and enable proper shadows
     const soldierMat = new THREE.MeshBasicMaterial({
-        map: tex, 
-        transparent: true, 
-        side: THREE.DoubleSide, 
+        map: tex,
+        transparent: true,
+        side: THREE.DoubleSide,
         alphaTest: group.userData.isOttomanUnit ? 0.2 : 0.5,
         toneMapped: false,
         fog: false
     });
     group.userData.mats.push(soldierMat);
     group.userData.tex = tex;
-    
+
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     const mobileScaleBoost = isMobileView ? 1.16 : 1;
     let cWidth = group.userData.isOttomanSpearman ? 640 : (group.userData.isOttomanUnit ? 560 : 360);
     let cHeight = group.userData.isOttomanUnit ? 430 : 480;
     let cOffsetY = 0;
     let cOffsetX = 0;
-    
+
     let facesLeft = false;
     if (group.userData.isCustomModel) {
         const cModel = window.customModelsInfo.find(m => m.id == normalizedCharType);
@@ -2802,7 +2802,7 @@ function createSoldier(isP1, charType = 0) {
     const planeMesh = new THREE.Mesh(planeGeo, soldierMat);
     planeMesh.position.y = planeHeight / 2 + cOffsetY;
     planeMesh.position.x = isP1 ? cOffsetX : -cOffsetX;
-    
+
     // Yuzma-yuz turishni ta'minlash: Agar rasm chapga qaragan bo'lsa P1 ni o'girish, 
     // agar rasm o'ngga qaragan bo'lsa P2 ni o'girish kerak.
     const shouldFlip = isP1 ? facesLeft : !facesLeft;
@@ -2821,14 +2821,14 @@ function createSoldier(isP1, charType = 0) {
     planeMesh.castShadow = true;
     group.userData.torso.add(planeMesh); // attach to torso so breath animation works
     group.add(group.userData.torso);
-    
+
     // Keep feet on the visible top of the ground.
     group.position.y = ground.position.y + (group.userData.isOttomanUnit ? 78 : 86);
     group.userData.standingY = group.position.y;
     group.rotation.z = 0;
     group.userData.isKnockedDown = false;
     group.userData.isDead = false;
-    
+
     scene.add(group);
     return group;
 }
@@ -3498,7 +3498,7 @@ function updateCameraBounds() {
     aspect = vp.width / Math.max(1, vp.height);
     const isPortrait = isPortraitMode();
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
-    
+
     frustumSize = isPortrait ? 950 : 800;
     camera.left = -frustumSize * aspect / 2;
     camera.right = frustumSize * aspect / 2;
@@ -3507,7 +3507,7 @@ function updateCameraBounds() {
     camera.updateProjectionMatrix();
     renderer.setSize(vp.width, vp.height);
     renderer.setPixelRatio(getPreferredPixelRatio());
-    
+
     // Jang maydoni kengligi: o'yinchi va barcha raqiblar orasidagi haqiqiy oraliq
     let minX = p1Model ? p1Model.position.x : -1200;
     let maxX = p2Model ? p2Model.position.x : 1200;
@@ -3531,7 +3531,7 @@ function updateCameraBounds() {
         // Kompyuter (desktop) landshaft rejimida jangchilar yirik va chiroyli ko'rinsin
         baseZoom = Math.min(zoomX * 1.02, 1.35);
     }
-    
+
     if (cameraState === 'static' || cameraState === 'recover' || cameraState === 'normal') {
         const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
         cameraZoomTarget = camFocus.zoom;
@@ -3627,6 +3627,26 @@ function updateCampaignUI() {
         menuScoreText.innerText = score < 0 ? `Qarz: ${score}` : String(score);
         menuScoreText.style.color = score < 0 ? '#ef4444' : '#fbbf24';
     }
+    const menuPlayerName = document.getElementById('menu-player-name');
+    if (menuPlayerName && myProfile && myProfile.name) {
+        menuPlayerName.innerText = myProfile.name;
+    }
+    const menuAvatarIcon = document.getElementById('menu-avatar-icon');
+    if (menuAvatarIcon && myProfile && myProfile.avatar) {
+        menuAvatarIcon.innerText = myProfile.avatar;
+    }
+    const menuTierBadge = document.getElementById('menu-tier-badge');
+    if (menuTierBadge) {
+        const score = Number(myStats.score || 0);
+        let tier = "🥉 Bronza";
+        let tierColor = "#d97706";
+        if (score >= 3000) { tier = "👑 Afsona"; tierColor = "#ec4899"; }
+        else if (score >= 2000) { tier = "💎 Olmos"; tierColor = "#38bdf8"; }
+        else if (score >= 1200) { tier = "🥇 Oltin"; tierColor = "#eab308"; }
+        else if (score >= 600) { tier = "🥈 Kumush"; tierColor = "#94a3b8"; }
+        menuTierBadge.innerText = tier;
+        menuTierBadge.style.color = tierColor;
+    }
     if (hudScoreText) {
         const score = Number(myStats.score || 0);
         hudScoreText.innerText = score < 0 ? `Qarz: ${score}` : `Ball: ${score}`;
@@ -3692,26 +3712,26 @@ function getCampaignEnvironment(level) {
     // Boy, xilma-xil sahna ketma-ketligi (har 5 levelda yangi muhit).
     // Tabiat va tarixiy shaharlar aralashmasi.
     const scenes = [
-        { map: 'field',     weather: 'sunny' },   // 1-5   yashil dala, quyoshli
-        { map: 'desert',    weather: 'sunny' },   // 6-10  cho'l
-        { map: 'field',     weather: 'rain' },    // 11-15 yomg'irli dala
+        { map: 'field', weather: 'sunny' },   // 1-5   yashil dala, quyoshli
+        { map: 'desert', weather: 'sunny' },   // 6-10  cho'l
+        { map: 'field', weather: 'rain' },    // 11-15 yomg'irli dala
         { map: 'samarkand', weather: 'sunny' },   // 16-20 Samarqand
-        { map: 'mountain',  weather: 'sunny' },   // 21-25 tog'
-        { map: 'winter',    weather: 'snow' },    // 26-30 qor
-        { map: 'bukhara',   weather: 'sunny' },   // 31-35 Buxoro
-        { map: 'castle',    weather: 'night' },   // 36-40 qal'a, tun
-        { map: 'oasis',     weather: 'sunny' },   // 41-45 voha
-        { map: 'istanbul',  weather: 'sunny' },   // 46-50 Istanbul
-        { map: 'field',     weather: 'storm' },   // 51-55 bo'ronli dala
-        { map: 'volcano',   weather: 'night' },   // 56-60 vulqon, tun
-        { map: 'winter',    weather: 'night' },   // 61-65 qishki tun
+        { map: 'mountain', weather: 'sunny' },   // 21-25 tog'
+        { map: 'winter', weather: 'snow' },    // 26-30 qor
+        { map: 'bukhara', weather: 'sunny' },   // 31-35 Buxoro
+        { map: 'castle', weather: 'night' },   // 36-40 qal'a, tun
+        { map: 'oasis', weather: 'sunny' },   // 41-45 voha
+        { map: 'istanbul', weather: 'sunny' },   // 46-50 Istanbul
+        { map: 'field', weather: 'storm' },   // 51-55 bo'ronli dala
+        { map: 'volcano', weather: 'night' },   // 56-60 vulqon, tun
+        { map: 'winter', weather: 'night' },   // 61-65 qishki tun
         { map: 'samarkand', weather: 'night' },   // 66-70 Samarqand, tun
-        { map: 'canyon',    weather: 'sunny' },   // 71-75 kanyon
-        { map: 'desert',    weather: 'storm' },   // 76-80 cho'l bo'roni
-        { map: 'istanbul',  weather: 'rain' },    // 81-85 Istanbul, yomg'ir
-        { map: 'mountain',  weather: 'snow' },    // 86-90 qorli tog'
-        { map: 'bukhara',   weather: 'night' },   // 91-95 Buxoro, tun
-        { map: 'castle',    weather: 'storm' }    // 96-100 qal'a, jala
+        { map: 'canyon', weather: 'sunny' },   // 71-75 kanyon
+        { map: 'desert', weather: 'storm' },   // 76-80 cho'l bo'roni
+        { map: 'istanbul', weather: 'rain' },    // 81-85 Istanbul, yomg'ir
+        { map: 'mountain', weather: 'snow' },    // 86-90 qorli tog'
+        { map: 'bukhara', weather: 'night' },   // 91-95 Buxoro, tun
+        { map: 'castle', weather: 'storm' }    // 96-100 qal'a, jala
     ];
     const idx = Math.floor((lvl - 1) / 5) % scenes.length;
     let { map, weather } = scenes[idx];
@@ -3931,11 +3951,11 @@ function updateSuperUI() {
         }
         fireBtn.classList.toggle('active', isFireSpearActive && fireCount > 0);
     }
-    
+
     // Artillery and Crow buttons logic
     artilleryCount = Number(myProfile.artillery || 0);
     myCrow = Number(myProfile.crowhunt || 0);
-    
+
     const artCountText = document.getElementById('artillery-count');
     const bArtillery = document.getElementById('artillery-button');
     if (artCountText) artCountText.innerText = String(Math.max(0, artilleryCount));
@@ -3948,7 +3968,7 @@ function updateSuperUI() {
             bArtillery.classList.add('hidden');
         }
     }
-    
+
     const cBtn = document.getElementById('crow-button');
     const cCountText = document.getElementById('crow-count');
     if (cCountText) cCountText.innerText = String(Math.max(0, myCrow));
@@ -3961,7 +3981,7 @@ function updateSuperUI() {
             cBtn.classList.add('hidden');
         }
     }
-    
+
     updateShopUI();
     updateEnemyResourcesUI();
 }
@@ -4518,9 +4538,9 @@ function flashHit(model) {
     const tilt = model.position.x > 0 ? 0.3 : -0.3;
     model.userData.torso.rotation.z = tilt;
     model.userData.headGroup.rotation.z = tilt;
-    setTimeout(() => { 
-        model.userData.torso.rotation.z = 0; 
-        model.userData.headGroup.rotation.z = 0; 
+    setTimeout(() => {
+        model.userData.torso.rotation.z = 0;
+        model.userData.headGroup.rotation.z = 0;
     }, 200);
 }
 
@@ -4529,11 +4549,11 @@ function updateHealthUI() {
     const h2 = myPlayerIndex === 1 ? myHealth : enemyHealth;
     p1HealthBar.style.width = h1 + '%';
     p2HealthBar.style.width = h2 + '%';
-    
+
     if (h1 < 30) p1HealthBar.style.background = '#ef4444';
     else if (h1 < 60) p1HealthBar.style.background = '#f59e0b';
     else p1HealthBar.style.background = '#10b981';
-    
+
     if (h2 < 30) p2HealthBar.style.background = '#ef4444';
     else if (h2 < 60) p2HealthBar.style.background = '#f59e0b';
     else p2HealthBar.style.background = '#10b981';
@@ -4543,7 +4563,7 @@ function updateHealthUI() {
     const enemyInfoId = myPlayerIndex === 0 ? 'p2-info' : 'p1-info';
     const enemyInfoEl = document.getElementById(enemyInfoId);
     let p3Container = document.getElementById('p3-health-container');
-    
+
     if (p3Model) {
         // Agar p3 health bar hali yaratilmagan bo'lsa, raqib panelida yaratamiz.
         if (!p3Container && enemyInfoEl) {
@@ -4615,7 +4635,7 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
         el.style.fontSize = 'clamp(1.15rem, 2.2vw, 1.45rem)';
         el.style.color = '#fbbf24';
         el.style.textShadow = '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 4px #000';
-        screenShake = MOBILE_PERF_MODE ? 14 : 22; 
+        screenShake = MOBILE_PERF_MODE ? 14 : 22;
     } else if (isShield) {
         triggerHaptic('rigid');
         el.style.fontSize = 'clamp(1rem, 1.9vw, 1.3rem)';
@@ -4626,7 +4646,7 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
         triggerHaptic('light');
         el.style.fontSize = 'clamp(0.95rem, 1.8vw, 1.25rem)';
         el.style.color = '#ef4444';
-        screenShake = MOBILE_PERF_MODE ? 6 : 9; 
+        screenShake = MOBILE_PERF_MODE ? 6 : 9;
     }
 
     damageContainer.appendChild(el);
@@ -4692,7 +4712,7 @@ function clearStuckSpears() {
 
 function stickSpear(targetModel, hitX, hitY, angle) {
     const isCrowTarget = !!(targetModel && (
-        targetModel.userData?.isCrowSprite || 
+        targetModel.userData?.isCrowSprite ||
         targetModel.userData?.isBird ||
         targetModel.userData?.tex === qargaTexture ||
         targetModel.type === 'bird' ||
@@ -4966,16 +4986,16 @@ function handleEnd(e) {
     if (!isDragging) return;
     isDragging = false;
     aimSfxPlayed = false;
-    
+
     const dx = dragStart.x - dragCurrent.x;
-    const dy = dragCurrent.y - dragStart.y; 
-    
-    let distance = Math.sqrt(dx*dx + dy*dy);
-    if (distance < 10) return; 
-    
-    let power = computeShotPower(distance); 
+    const dy = dragCurrent.y - dragStart.y;
+
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < 10) return;
+
+    let power = computeShotPower(distance);
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    
+
     if (myPlayerIndex === 1) angle = 180 - angle;
     if (angle < -20) angle = -20;
     if (angle > 110) angle = 110;
@@ -4986,11 +5006,11 @@ function handleEnd(e) {
 const isUiTarget = (target) => {
     if (!target || typeof target.closest !== 'function') return false;
     return !!(
-        target.closest('button') || 
-        target.closest('input') || 
-        target.closest('select') || 
-        target.closest('textarea') || 
-        target.closest('#chat-container') || 
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('select') ||
+        target.closest('textarea') ||
+        target.closest('#chat-container') ||
         target.closest('#in-game-modal')
     );
 };
@@ -5006,7 +5026,7 @@ if (window.PointerEvent) {
         dragPointerId = e.pointerId;
         handleStart(e);
     }, { passive: true });
-    
+
     // Explicit touchstart for older Android/Capacitor versions
     document.addEventListener('touchstart', (e) => {
         if (isUiTarget(e.target)) return;
@@ -5070,12 +5090,12 @@ if (window.PointerEvent) {
         }
     });
     document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchstart', (e) => { 
-        if(!isUiTarget(e.target) && e.touches && e.touches[0]) { 
-            handleStart(e.touches[0]); 
-        } 
-    }, {passive: false});
-    document.addEventListener('touchmove', (e) => { 
+    document.addEventListener('touchstart', (e) => {
+        if (!isUiTarget(e.target) && e.touches && e.touches[0]) {
+            handleStart(e.touches[0]);
+        }
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
         if (isWallPlacementMode && isWallDragActive && e.touches && e.touches[0]) {
             const myWall = wallStates[myPlayerIndex];
             if (myWall && myWall.active) {
@@ -5085,15 +5105,15 @@ if (window.PointerEvent) {
             }
         }
         if (isDragging && e.touches && e.touches[0]) {
-            handleMove(e.touches[0]); 
+            handleMove(e.touches[0]);
         }
-    }, {passive: false});
-    document.addEventListener('touchend', (e) => { 
+    }, { passive: false });
+    document.addEventListener('touchend', (e) => {
         isWallDragActive = false;
         if (isDragging) {
-            handleEnd(e); 
+            handleEnd(e);
         }
-    }, {passive: false});
+    }, { passive: false });
 }
 
 if (shieldButton) {
@@ -5499,7 +5519,7 @@ function startSinglePlayer(opts) {
     clearHintTrajectory();
     const pauseBtn = document.getElementById('btn-pause');
     if (pauseBtn) pauseBtn.innerText = (translations[myProfile.lang] || translations.uz).pause;
-    
+
     const level = Math.max(1, singleCampaignLevel);
     campaignConfig = getCampaignConfig(level);
     currentBattleDistance = campaignConfig.distance;
@@ -5516,7 +5536,7 @@ function startSinglePlayer(opts) {
     clouds = [];
     const effectiveBirds = opts.birds !== false;
     spawnEntities({ ...opts, birds: effectiveBirds, birdCount: effectiveBirds ? campaignConfig.birds : 0 });
-    
+
     scene.remove(p1Model);
     scene.remove(p2Model);
     if (p3Model) {
@@ -5534,7 +5554,7 @@ function startSinglePlayer(opts) {
         }
         return allChars[Math.floor(Math.random() * allChars.length)] || 2;
     }
-    
+
     const myChar = myProfile.charType || 2;
     const enemyChar = getRandomEnemyChar(myChar);
     const p1Char = playerLeftSide ? myChar : enemyChar;
@@ -5579,7 +5599,7 @@ function startSinglePlayer(opts) {
     camera.position.y = camFocus.y;
     camera.zoom = camFocus.zoom;
     camera.updateProjectionMatrix();
-    
+
     myHealth = 100;
     enemyHealth = 100;
     enemy2Health = 100;
@@ -5628,7 +5648,7 @@ function startSinglePlayer(opts) {
     updateCampaignUI();
     setTimeout(() => { if (typeof checkDailyAutoPopup === 'function') checkDailyAutoPopup(); }, 500);
     updateTurn(myPlayerIndex, generateWind());
-    if(!isLooping) {
+    if (!isLooping) {
         isLooping = true;
         lastTime = performance.now();
         requestAnimationFrame(gameLoop);
@@ -5675,11 +5695,11 @@ function fireEnemyVolleyShot() {
     const profile = aiProfiles[aiDifficulty] || aiProfiles.normal;
     const cfg = campaignConfig || getCampaignConfig(singleCampaignLevel);
     const shouldHit = shouldAiHit();
-    
+
     // AI asosan o'yinchiga nishonlaydi (90%), tasodifan qushlarni o'ldiradi (10%)
     const targetBird = cfg.birdTargetChance > 0 && Math.random() < cfg.birdTargetChance;
     let targetIndex, targetX, targetY;
-    
+
     if (targetBird && entities.length > 0) {
         // Qushni nishonlash
         const birds = entities.filter(e => e.type === 'bird' && e.alive);
@@ -5699,7 +5719,7 @@ function fireEnemyVolleyShot() {
             let angle = baseAngle + (Math.random() - 0.5) * 5;
             angle = Math.max(-20, Math.min(110, angle));
             power = Math.max(700, Math.min(3600, power));
-            
+
             setModelActionState(shooter, 'aim', 1000);
             setTimeout(() => {
                 if (gameMode === 'single' && currentTurnIndex === getPrimaryEnemyTurnIndex() && !isPaused) {
@@ -5709,25 +5729,25 @@ function fireEnemyVolleyShot() {
             return;
         }
     }
-    
+
     // O'yinchiga aniq nishonlash
     targetIndex = myPlayerIndex;
     const targetModel = modelForPlayer(targetIndex);
-    
+
     // computeAccurateShot dan foydalanib aniq trajektoriya hisoblash
     const accurateShot = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
     if (!accurateShot) return;
-    
+
     let angle = accurateShot.angle;
     let power = accurateShot.power;
-    
+
     // 100% aniqlik
     angle = Math.max(-20, Math.min(110, angle));
     power = Math.max(700, Math.min(3600, power));
-    
+
     // AI o'q otishidan oldin mo'ljalga olish holatini ko'rsatish
     setModelActionState(shooter, 'aim', 1000);
-    
+
     // 50+ levellarda ikki dushman tengidan o'q uzgani uchun aim kechikishi qisqaroq.
     const aimDelay = (cfg.enemyVolleySimultaneous && enemyVolleyQueue.length > 0) ? 250 : 800;
     setTimeout(() => {
@@ -5808,7 +5828,7 @@ function throwSpear(angle, power) {
         saveProfile();
         updateSuperUI();
     }
-    
+
     if (gameMode === 'multi') {
         socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot });
     } else if (gameMode === 'single') {
@@ -5834,51 +5854,51 @@ function shootCrowKillerArrow() {
     saveProfile();
     updateCrowUI();
     updateSuperUI();
-    
+
     // Qarg'alarni aniqlash
     const birds = entities.filter(e => e.type === 'bird' && e.alive);
     if (birds.length === 0) return;
-    
+
     // Barcha qushlarni urish
     const targetCount = birds.length;
     const targets = birds;
-    
+
     // Cinematic effektni yoqish
     crowKillerCinematicActive = true;
     crowKillerCinematicUntil = performance.now() + CROW_KILLER_CINEMATIC_MS;
     cameraState = 'crowKiller';
     cameraZoomTarget = baseZoom * 1.8;
-    
+
     // Har bir qarg'a uchun o'q otish
     const shooterModel = modelForPlayer(myPlayerIndex);
     if (!shooterModel) return;
-    
+
     const startX = shooterModel.position.x;
     const startY = shooterModel.position.y + 50;
-    
+
     targets.forEach((bird, index) => {
         setTimeout(() => {
             if (!bird || !bird.alive || !bird.mesh) return;
             const birdMesh = bird.mesh;
             const targetX = birdMesh.position.x;
             const targetY = birdMesh.position.y;
-            
+
             // O'q trayektoriyasini hisoblash
             const dx = targetX - startX;
             const dy = targetY - startY;
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             const power = 1600;
-            
+
             // Homing o'q otish
             startCrowKillerArrowAnimation(startX, startY, angle, power, bird);
             playSfx('throw', 0.9);
-            
+
             // Camera target ni qarg'aga qaratish
             cameraTargetX = targetX;
             cameraTargetY = targetY;
         }, index * 120);
     });
-    
+
     // Kafolat: funksiya ishlaganda osmondagi BARCHA qarg'alar 100% yerga qulashi shart
     setTimeout(() => {
         targets.forEach((bird) => {
@@ -5887,11 +5907,11 @@ function shootCrowKillerArrow() {
             }
         });
     }, 2000);
-    
+
     if (gameMode === 'multi') {
         socket.emit('crowKillerShot', { count: targetCount });
     }
-    
+
     // Cinematic tugagandan keyin camera ni darhol dastlabki o'yinchi / jang maydoni ko'rinishiga qaytarish
     setTimeout(() => {
         crowKillerCinematicActive = false;
@@ -5904,12 +5924,12 @@ function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird)
     const rad = angle * Math.PI / 180;
     const vx = power * Math.cos(rad);
     const vy = power * Math.sin(rad);
-    
+
     // Maxsus o'q yaratish
     const arrow = createCrowKillerArrow();
     arrow.position.set(startX, startY, 0);
     scene.add(arrow);
-    
+
     const arrowData = {
         mesh: arrow,
         x: startX,
@@ -5920,20 +5940,20 @@ function startCrowKillerArrowAnimation(startX, startY, angle, power, targetBird)
         isCrowKiller: true,
         active: true
     };
-    
+
     crowKillerArrows.push(arrowData);
 }
 
 function createCrowKillerArrow() {
     const group = new THREE.Group();
-    
+
     // O'q tanasi
     const shaftGeo = new THREE.CylinderGeometry(2, 2, 60);
     const shaftMat = new THREE.MeshStandardMaterial({ color: 0xff1100, emissive: 0xaa0000 });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     shaft.rotation.z = -Math.PI / 2;
     group.add(shaft);
-    
+
     // O'q uchi
     const tipGeo = new THREE.ConeGeometry(5, 14, 8);
     const tipMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xff6600 });
@@ -5941,7 +5961,7 @@ function createCrowKillerArrow() {
     tip.position.set(36, 0, 0);
     tip.rotation.z = -Math.PI / 2;
     group.add(tip);
-    
+
     return group;
 }
 
@@ -5955,14 +5975,14 @@ function updateCrowKillerArrows() {
             crowKillerArrows.splice(i, 1);
             continue;
         }
-        
+
         // Homing: Agar nishondagi qush tirik bo'lsa, o'q to'g'ridan-to'g'ri qush tomon shiddat bilan yo'naladi
         if (arrow.targetBird && arrow.targetBird.alive && arrow.targetBird.mesh) {
             const birdMesh = arrow.targetBird.mesh;
             const dx = birdMesh.position.x - arrow.x;
             const dy = birdMesh.position.y - arrow.y;
             const dist = Math.hypot(dx, dy);
-            
+
             // Qarg'aga yaqin yetib borganda aniq urib tushirish
             if (dist < 80) {
                 killBird(arrow.targetBird);
@@ -5971,7 +5991,7 @@ function updateCrowKillerArrows() {
                 crowKillerArrows.splice(i, 1);
                 continue;
             }
-            
+
             // Homing boshqaruvi
             const speed = 1650;
             arrow.vx = (dx / dist) * speed;
@@ -5984,12 +6004,12 @@ function updateCrowKillerArrows() {
             arrow.y += arrow.vy * 0.016;
             arrow.vy -= 600 * 0.016;
         }
-        
+
         if (arrow.mesh) {
             arrow.mesh.position.set(arrow.x, arrow.y, 0);
             arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx);
         }
-        
+
         // Yerga tushsa yoki sahnadan chiqsa o'chirish
         if (arrow.y < ground.position.y || arrow.x < -2800 || arrow.x > 2800) {
             arrow.active = false;
@@ -6007,18 +6027,18 @@ function updateCrowKillerArrows() {
 
 function killBird(birdEntity) {
     if (!birdEntity || !birdEntity.alive) return;
-    
+
     birdEntity.alive = false;
     birdEntity.fallWithSpear = true;
     playCrowSound();
-    
+
     // Qarg'aning qulash animatsiyasi
     const birdMesh = birdEntity.mesh;
     if (birdMesh) {
         birdMesh.rotation.z = Math.PI / 2;
         spawnParticles(birdMesh.position.x, birdMesh.position.y, 16, false);
     }
-    
+
     if (typeof checkQuestProgress === 'function') checkQuestProgress('crow', 1);
 }
 
@@ -6145,7 +6165,7 @@ function tryEnemyUseShieldSingle() {
     const dx = Math.abs(spear.x - enemyModel.position.x);
     const dy = spear.y - enemyModel.position.y;
     if (dx > 430 || dy < -120 || dy > 420) return false;
-    
+
     // AI Decision: Jump, Duck or Shield?
     const rand = Math.random();
     if (rand > 0.72) return false;
@@ -6397,21 +6417,21 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
     const doubleShotFired = !!doubleOutcome;
     const hasExtraHit = !!(doubleOutcome && doubleOutcome.hitResult);
     if (doubleOutcome) spawnDoubleSpearVisual(doubleOutcome);
-    
+
     if (hitOpponent) {
         const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
         flashHit(targetModel);
         hideFlyingSpear();
-        
+
         let hitResult;
-        
+
         if (isSuicide) {
             hitResult = calculateHitResult(targetIndex, 0, true);
             spawnParticles(hitX, hitY, 50);
         } else {
             const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
             hitResult = calculateHitResult(targetIndex, relativeY, false);
-            
+
             if (spear && spear.isArtillery) {
                 const isDefending = isDefenseActiveForPlayer(targetIndex);
                 if (hitResult.isShieldHit || (isDefending && shieldForPlayer(targetIndex) > 0)) {
@@ -6465,7 +6485,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
 
         playHitByResult(hitResult);
         showDamageText(hitX, hitY + 80, hitResult.msg, hitResult.isCrit, hitResult.isShieldHit || hitResult.shieldlessDefense);
-        
+
         if (hitResult.hitZone === 'head') {
             if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
             if (typeof checkQuestProgress === 'function') checkQuestProgress('headshot', 1);
@@ -6497,7 +6517,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 applyDamageToTarget(targetIndex, hitResult.damage);
                 updateHealthUI();
             }
-            
+
             if (myHealth <= 0 || areAllEnemiesDead()) {
                 const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
                 setTimeout(() => showGameOver(winnerIndex), 1500);
@@ -6553,10 +6573,10 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         }
     } else {
         playSfx('ground');
-        spawnParticles(hitX, hitY, 10); 
+        spawnParticles(hitX, hitY, 10);
         stickSpear(null, hitX, hitY, finalAngle);
         hideFlyingSpear();
-        
+
         if (gameMode === 'single') {
             if (!lastRecordedSecondaryHit && hasExtraHit) {
                 const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
@@ -6745,7 +6765,7 @@ function returnToMainMenu() {
     if (spear) spear.active = false;
     if (secondarySpear) secondarySpear.active = false;
     hideFlyingSpear();
-    
+
     // Barcha o'yin ekranlarini yashirish
     if (gameScreen) gameScreen.classList.add('hidden');
     if (inGameModal) inGameModal.classList.add('hidden');
@@ -6758,7 +6778,7 @@ function returnToMainMenu() {
     if (aboutModal) aboutModal.classList.add('hidden');
     if (settingsModal) settingsModal.classList.add('hidden');
     if (profileModal) profileModal.classList.add('hidden');
-    
+
     // Intro ekranni yo'q qilish
     const introEl = document.getElementById('intro-screen');
     if (introEl) {
@@ -6766,14 +6786,14 @@ function returnToMainMenu() {
         introEl.style.display = 'none';
         if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
     }
-    
+
     // Multiplayer bo'lsa, xonani tark etish
     if (gameMode === 'multi' && socket && socket.connected) {
         try {
             socket.emit('leaveRoom', { roomName: currentRoomName });
-        } catch (_) {}
+        } catch (_) { }
     }
-    
+
     gameMode = 'menu';
     if (menuScreen) menuScreen.classList.remove('hidden');
     if (typeof updateCampaignUI === 'function') updateCampaignUI();
@@ -6857,7 +6877,7 @@ function playCoinFlipSound() {
             osc.start(now + i * 0.07);
             osc.stop(now + i * 0.07 + 0.25);
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function playCoinLandSound() {
@@ -6880,7 +6900,7 @@ function playCoinLandSound() {
         gain.connect(audioCtx.destination);
         osc.start(now);
         osc.stop(now + 0.35);
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function initCoinTossUI() {
@@ -7138,16 +7158,16 @@ socket.on('gameStart', (data) => {
     const opts = data.options || { map: 'field', birds: false, animals: false, weather: 'sunny' };
     buildMap(opts.map, opts.weather || 'sunny');
     spawnEntities(opts);
-    
+
     // Multiplayer rejimida jangchilar orasidagi masofani o'rnatish
     currentBattleDistance = 2700; // Onlayn rejim uchun qulay masofa
-    
+
     myPlayerIndex = data.playerIndex;
     myDefenseActive = false;
     enemyDefenseActive = false;
     myDuckActive = false;
     enemyDuckActive = false;
-    
+
     scene.remove(p1Model); scene.remove(p2Model);
     const myChar = myProfile.charType || 2;
     const oppChar = (data.opponentProfile && data.opponentProfile.charType) || 2;
@@ -7166,7 +7186,7 @@ socket.on('gameStart', (data) => {
     camera.position.y = camFocus.y;
     camera.zoom = camFocus.zoom;
     camera.updateProjectionMatrix();
-    
+
     if (myPlayerIndex === 0) {
         p1Name.innerText = myProfile.name;
         document.getElementById('p1-flag').innerText = myProfile.flag;
@@ -7180,7 +7200,7 @@ socket.on('gameStart', (data) => {
     }
     applyHudSideRoles();
     currentOpponentProfile = data.opponentProfile || null;
-    
+
     myHealth = data.health[myPlayerIndex];
     enemyHealth = data.health[myPlayerIndex === 0 ? 1 : 0];
     myShield = data.shield[myPlayerIndex];
@@ -7199,8 +7219,8 @@ socket.on('gameStart', (data) => {
     } else {
         updateTurn(data.turnIndex, data.wind);
     }
-    
-    if(!isLooping) {
+
+    if (!isLooping) {
         isLooping = true;
         lastTime = performance.now();
         requestAnimationFrame(gameLoop);
@@ -7398,7 +7418,7 @@ socket.on('entityHit', (data) => {
             spear.vy = Math.min(spear.vy, -120);
         }
         spawnParticles(hitX, hitY, 20);
-            // Bird hit text removed by user request
+        // Bird hit text removed by user request
     }
 });
 
@@ -7409,7 +7429,7 @@ socket.on('gameOver', (data) => {
 
 socket.on('opponentDisconnected', () => {
     hideCoinTossModal();
-    if(gameMode === 'multi') {
+    if (gameMode === 'multi') {
         disconnectScreen.classList.remove('hidden');
         gameScreen.classList.add('hidden');
     }
@@ -7492,7 +7512,7 @@ function showGameOver(winnerIndex, data) {
     gameOverScreen.classList.remove('hidden');
     controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
-    
+
     // Aniq g'olibni hisoblash (3-bosqichli tekshiruv)
     let isMeWinner = false;
     if (data && data.winnerId && socket && socket.id) {
@@ -7546,7 +7566,7 @@ function showGameOver(winnerIndex, data) {
         const replayLabel = t.playAgainBtn || "Yana o'ynash";
         restartBtn.innerText = (gameMode === 'single' && isMeWinner) ? nextLabel : replayLabel;
     }
-    
+
     // Online rejimda revansh tugmasini ko'rsatish
     if (rematchBtn) {
         if (gameMode === 'multi') {
@@ -7555,7 +7575,7 @@ function showGameOver(winnerIndex, data) {
             rematchBtn.classList.add('hidden');
         }
     }
-    
+
     if (isMeWinner) {
         triggerHaptic('success');
         myStats.wins++;
@@ -7574,7 +7594,7 @@ function showGameOver(winnerIndex, data) {
                     cachedAuth.campaignLevel = Math.max(Number(cachedAuth.campaignLevel || 1), singleCampaignLevel);
                     localStorage.setItem('nayza_auth_user', JSON.stringify(cachedAuth));
                 }
-            } catch {}
+            } catch { }
             updateCampaignUI();
         }
     } else {
@@ -7583,7 +7603,7 @@ function showGameOver(winnerIndex, data) {
     myStats.games++;
     saveStats();
     submitLeaderboard();
-    
+
     const targetFocusIndex = isMeWinner ? myPlayerIndex : (myPlayerIndex === 0 ? 1 : 0);
     cameraState = 'target';
     cameraTargetX = targetFocusIndex === 0 ? p1Model.position.x : p2Model.position.x;
@@ -7618,7 +7638,7 @@ function spawnConfetti() {
             layer.appendChild(piece);
             setTimeout(() => piece.remove(), 4200);
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 if (restartBtn) {
@@ -7785,7 +7805,7 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.innerText = "Sizning navbatingiz! (Tortib mo'ljalga oling)";
         turnIndicator.classList.add('turn-self');
         turnIndicator.classList.remove('turn-opponent');
-        
+
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
             camera.position.y = cameraTargetY;
@@ -7807,7 +7827,7 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.innerText = "Raqib navbati";
         turnIndicator.classList.add('turn-opponent');
         turnIndicator.classList.remove('turn-self');
-        
+
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
             camera.position.y = cameraTargetY;
@@ -7821,19 +7841,19 @@ function updateTurn(turnIndex, wind) {
 function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     isAnimating = true;
     controlsPanel.classList.add('disabled');
-    hud.style.opacity = 0.3; 
+    hud.style.opacity = 0.3;
     playThrowSound();
 
     const thrower = modelForPlayer(playerIndex);
     const isSpearman = !!thrower?.userData?.isOttomanSpearman;
     const isArcher = !!thrower?.userData?.isOttomanArcher;
     const isCustom = !!thrower?.userData?.isCustomModel;
-    
+
     let throwState = 'afterShot';
     // Kamonchilarda aim holati rasmda o'qni tortib turgan holat bo'lgani uchun, 
     // o'q uzilgandan so'ng 'afterShot' rasmiga o'tishi kerak.
     // Eski mantiqda aim bo'lib qolgan edi, shuni afterShot ga o'zgartiramiz.
-    
+
     setModelActionState(thrower, throwState, 1100);
 
     // Otish yo'nalishi otuvchining maydondagi TOMONIGA qarab aniqlanadi.
@@ -7844,12 +7864,12 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
 
     // Start trajectory directly from the bow's position
     let startX = thrower.position.x + (facingRight ? 60 : -60);
-    let startY = thrower.position.y + 270; 
-    
+    let startY = thrower.position.y + 270;
+
     if (isArtillery) {
         startX = thrower.position.x + (facingRight ? 200 : -200);
         startY = thrower.position.y + 150;
-        
+
         if (playerIndex !== myPlayerIndex) {
             if (!window.enemyArtilleryCannon) {
                 const tex = loadTexture('artileriya.png');
@@ -7859,9 +7879,9 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
             }
             window.enemyArtilleryCannon.scale.set(1.6, 1.6, 1.6);
             window.enemyArtilleryCannon.position.set(thrower.position.x + (facingRight ? 190 : -190), thrower.position.y + 200, thrower.position.z + 10);
-                        
+
             window.enemyArtilleryCannon.visible = true;
-            
+
             // Hide it after a short delay
             setTimeout(() => {
                 if (window.enemyArtilleryCannon) window.enemyArtilleryCannon.visible = false;
@@ -7891,7 +7911,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         weaponType: getPlayerWeaponType(playerIndex)
     };
     pendingFireShot = false;
-    
+
     let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
     if (thrower?.userData?.isCustomModel) {
         const cModel = window.customModelsInfo && window.customModelsInfo.find(m => m.id == thrower.userData.charType);
@@ -7931,11 +7951,11 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         secondarySpear = null;
         secondarySpearGroup.visible = false;
     }
-    
+
     if (gameMode === 'multi') {
         currentTurnIndex = -1;
     }
-    
+
     cameraState = 'follow';
     cameraZoomTarget = baseZoom * 1.35;
 }
@@ -8013,18 +8033,18 @@ function applySecondarySpearHit(targetIndex, hitX, hitY) {
     flashHit(targetModel);
     // Qo'sh nayzaning ikkinchi o'qi havoda muallaq qolib ketmasligi uchun urilgach yo'qoladi
     if (secondarySpearGroup) secondarySpearGroup.visible = false;
-    
+
     const relativeY = hitY - targetModel.position.y;
     const hitResult = calculateHitResult(targetIndex, relativeY, false);
-    
+
     const baseDamage = Number(hitResult.damage) > 0 ? Number(hitResult.damage) : 25;
     const finalDamage = Math.max(15, baseDamage);
     hitResult.damage = finalDamage;
     hitResult.msg = `Qo'sh nayza: -${finalDamage}`;
-    
+
     playHitByResult(hitResult);
     showDamageText(hitX, hitY + 80, hitResult.msg, hitResult.isCrit, hitResult.isShieldHit);
-    
+
     if (hitResult.isShieldHit) {
         spawnParticles(hitX, hitY, 15, true);
         setShieldForPlayer(targetIndex, shieldForPlayer(targetIndex) - 1);
@@ -8033,11 +8053,11 @@ function applySecondarySpearHit(targetIndex, hitX, hitY) {
         spawnParticles(hitX, hitY, 30);
         knockDownModel(targetModel);
     }
-    
+
     if (secondarySpear && secondarySpear.playerIndex === myPlayerIndex && targetIndex !== myPlayerIndex) {
         addScore(getScoreDeltaForHit(hitResult));
     }
-    
+
     if (gameMode === 'single') {
         applyDamageToTarget(targetIndex, finalDamage);
         updateHealthUI();
@@ -8133,7 +8153,7 @@ function getPlayerBoundingBox(playerIndex) {
 
 function checkSecondarySpearCollision() {
     if (!secondarySpear || !secondarySpear.active) return;
-    
+
     // Devor bilan to'qnashuv
     const wallOwner = getWallHitOwnerIndexForPos(secondarySpear.x, secondarySpear.y, secondarySpear.playerIndex);
     if (wallOwner >= 0) {
@@ -8150,7 +8170,7 @@ function checkSecondarySpearCollision() {
         }
         return;
     }
-    
+
     // Raqib modellari bilan to'qnashuv - aniq fizik geometriya (bo'y, en, o'tirish va sakrash)
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
@@ -8158,7 +8178,7 @@ function checkSecondarySpearCollision() {
         if (!m || m.userData.isKnockedDown) continue;
         if (i === secondarySpear.playerIndex) continue;
         if (areAllies(i, secondarySpear.playerIndex)) continue;
-        
+
         const box = getPlayerBoundingBox(i);
         if (!box) continue;
 
@@ -8175,7 +8195,7 @@ function checkSecondarySpearCollision() {
             return;
         }
     }
-    
+
     // Yerga tushish
     if (secondarySpear.y <= ground.position.y + 100) {
         secondarySpear.active = false;
@@ -8216,19 +8236,19 @@ function checkCollision() {
     }
 
     let hitEntity = null;
-    for(let e of entities) {
+    for (let e of entities) {
         if (e.alive) {
             if (spear.hitEntity === e) continue;
             const dx = spear.x - e.mesh.position.x;
             const dy = spear.y - e.mesh.position.y; // spear relative to e's origin
             let isHit = false;
-            
+
             if (e.type === 'bird' && e.mesh.userData.isCrowSprite) {
                 isHit = (Math.abs(dx) < 45 && Math.abs(dy) < 45);
             } else {
                 isHit = (Math.abs(dx) < 30 && Math.abs(dy) < 50);
             }
-            
+
             if (isHit) {
                 hitEntity = e;
                 break;
@@ -8294,7 +8314,7 @@ function checkCollision() {
             return;
         }
     }
-    
+
     if (spear.x < -4000 || spear.x > 4000 || spear.y < -1200) {
         spear.active = false;
         spear.y = ground.position.y + 100;
@@ -8307,7 +8327,7 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
     isAnimating = false;
     resetCameraAfterImpact();
     screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 7 : 12);
-    
+
     p1Model.userData.armR.rotation.z = Math.PI / 4;
     p2Model.userData.armR.rotation.z = Math.PI / 4;
     if (p3Model) p3Model.userData.armR.rotation.z = Math.PI / 4;
@@ -8317,9 +8337,9 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
         stickSpear(hitEntity.mesh, hitX, hitY, spearGroup.rotation.z);
         hideFlyingSpear();
         spawnParticles(hitX, hitY, 20);
-        
+
         // Bird hit text removed by user request
-        
+
         if (spear.playerIndex === myPlayerIndex || gameMode === 'single') {
             if (spear.playerIndex === myPlayerIndex) {
                 // Bird/crow kill penalty: can go below zero (debt mode).
@@ -8357,10 +8377,10 @@ function gameLoop(now) {
         return;
     }
     let timeScale = 1.0;
-    if (!isAnimating && screenShake > 0) timeScale = 0.3; 
+    if (!isAnimating && screenShake > 0) timeScale = 0.3;
     if (now < cinematicSlowUntil) timeScale *= 0.23;
     if (now < crowKillerCinematicUntil) timeScale *= 0.35; // Qush o'ldirish cinematic sekinlashtirish
-    
+
     const dt = ((now - lastTime) / 1000) * timeScale;
     lastTime = now;
     mixers.forEach(m => m.update(dt));
@@ -8436,7 +8456,7 @@ function gameLoop(now) {
     p1Model.userData.headGroup.position.y = (isDuckActiveForPlayer(0) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
     p2Model.userData.headGroup.position.y = (isDuckActiveForPlayer(1) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
     if (p3Model) p3Model.userData.headGroup.position.y = (isDuckActiveForPlayer(2) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
-    
+
     p1Model.userData.armL.rotation.z = Math.sin(now * 0.002) * 0.1;
     p2Model.userData.armL.rotation.z = -Math.sin(now * 0.002) * 0.1;
     if (p3Model) p3Model.userData.armL.rotation.z = -Math.sin(now * 0.002) * 0.1;
@@ -8444,7 +8464,7 @@ function gameLoop(now) {
     // Dust animation - faqat agar ko'rinadigan bo'lsa
     if (dustSystem && dustSystem.visible) {
         const positions = dustSystem.geometry.attributes.position.array;
-        for(let i=0; i<dustCount*3; i+=3) {
+        for (let i = 0; i < dustCount * 3; i += 3) {
             positions[i] += currentWind * 10 * dt;
             if (positions[i] > 2000) {
                 positions[i] = -2000 + Math.random() * 220;
@@ -8485,7 +8505,7 @@ function gameLoop(now) {
         weatherSystem.geometry.attributes.position.needsUpdate = true;
     }
 
-    
+
     entities.forEach((e, idx) => {
         e.index = idx;
         if (e.type === 'bird' && e.alive) {
@@ -8496,7 +8516,7 @@ function gameLoop(now) {
             if (e.mesh.position.x < -1800) e.vx = Math.abs(e.vx);
             if (e.mesh.position.y > 900) e.vy = -Math.abs(e.vy || 30);
             if (e.mesh.position.y < 320) e.vy = Math.abs(e.vy || 30);
-            
+
             if (e.mesh.userData.isCrowSprite && e.mesh.userData.tex) {
                 const planeMesh = e.mesh.children.find(child => child.isMesh);
                 if (planeMesh) {
@@ -8507,7 +8527,7 @@ function gameLoop(now) {
                 e.mesh.rotation.y = e.vx > 0 ? 0 : Math.PI;
             }
         }
-        
+
         if (!e.alive) {
             e.deathTimer = (e.deathTimer || 0) + dt;
             if (e.mesh.position.y > ground.position.y + 100) {
@@ -8516,7 +8536,7 @@ function gameLoop(now) {
             }
         }
     });
-    
+
     // Qarg'a o'qlarini yangilash
     updateCrowKillerArrows();
     if (typeof updateAirDropCrates === 'function') updateAirDropCrates(dt);
@@ -8532,8 +8552,8 @@ function gameLoop(now) {
     if (decorTrees.length) {
         const weatherSway =
             weatherType === 'storm' ? 1.9 :
-            weatherType === 'rain' ? 1.4 :
-            weatherType === 'snow' ? 0.65 : 1.0;
+                weatherType === 'rain' ? 1.4 :
+                    weatherType === 'snow' ? 0.65 : 1.0;
         const windSway = 1 + Math.min(1.6, Math.abs(currentWind) / 6);
         const swayScale = weatherSway * windSway;
         for (let i = 0; i < decorTrees.length; i++) {
@@ -8591,9 +8611,9 @@ function gameLoop(now) {
             p.userData.vy = 0;
             p.userData.vx = 0;
             p.userData.vz = 0;
-            if(!p.userData.isWood) p.scale.set(1.5, 0.2, 1.5);
+            if (!p.userData.isWood) p.scale.set(1.5, 0.2, 1.5);
         }
-        
+
         if (p.userData.life <= 0) {
             scene.remove(p);
             bloodParticles.splice(i, 1);
@@ -8605,8 +8625,8 @@ function gameLoop(now) {
         spear.prevY = spear.y;
         spear.x += spear.vx * dt;
         spear.y += spear.vy * dt;
-        spear.vy -= GRAVITY * dt; 
-        spear.vx += (currentWind * 30) * dt; 
+        spear.vy -= GRAVITY * dt;
+        spear.vx += (currentWind * 30) * dt;
 
         spearGroup.position.set(spear.x, spear.y, 0);
         const angle = Math.atan2(spear.vy, spear.vx);
@@ -8615,7 +8635,7 @@ function gameLoop(now) {
             spear.hitEntity.mesh.position.set(spear.x, spear.y, 0);
             spear.hitEntity.mesh.rotation.z = angle + Math.PI / 2;
         }
-        
+
         if (cameraState === 'follow') {
             // Lead slightly ahead of the spear for a more cinematic track.
             const lead = 90;
@@ -8690,7 +8710,7 @@ function gameLoop(now) {
             }
         }
     }
-    
+
     if (screenShake > 0) {
         camera.position.x += (Math.random() - 0.5) * screenShake;
         camera.position.y += (Math.random() - 0.5) * screenShake;
@@ -8705,13 +8725,13 @@ function gameLoop(now) {
         trajectoryLine.material.dispose();
         trajectoryLine = null;
     }
-    
+
     // Update animation frames based on state
     const animModels = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     animModels.forEach((model, idx) => {
         if (!model.userData.tex && !model.userData.isOttomanUnit) return;
         if (model.userData.isKnockedDown) return;
-        
+
         let targetState = 'idle';
         const nowMs = performance.now();
 
@@ -8721,7 +8741,7 @@ function gameLoop(now) {
         } else if (model.userData.forceState && model.userData.forceStateUntil <= nowMs) {
             model.userData.forceState = null;
         }
-        
+
         if (isDefenseActiveForPlayer(idx)) {
             targetState = 'defend';
         } else if (isAnimating) {
@@ -8733,8 +8753,8 @@ function gameLoop(now) {
             // Dragging
             const dx = dragStart.x - dragCurrent.x;
             const dy = dragCurrent.y - dragStart.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
             if (isArtilleryAiming) {
                 targetState = 'idle';
             } else if (dist > 50) {
@@ -8742,7 +8762,7 @@ function gameLoop(now) {
             } else if (dist > 10) {
                 targetState = 'load';
             }
-            
+
             // Aiming zoom logic: kamon tortayotganda
             if (cameraState === 'static' || cameraState === 'aiming' || cameraState === 'recover' || cameraState === 'normal') {
                 cameraState = 'aiming';
@@ -8771,31 +8791,31 @@ function gameLoop(now) {
             cameraZoomTarget = camFocus.zoom;
             if (hud) hud.style.opacity = '1';
         }
-        
+
         setSoldierVisual(model, targetState);
     });
 
     if (isDragging && currentTurnIndex === myPlayerIndex) {
         const dx = dragStart.x - dragCurrent.x;
         const dy = dragCurrent.y - dragStart.y;
-        
-        if (Math.sqrt(dx*dx + dy*dy) > 10) {
+
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {
             let startX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
             let startY = p1Model.position.y + 270;
-            
+
             if (isArtilleryAiming) {
                 startX = (myPlayerIndex === 0 ? p1Model.position.x : p2Model.position.x) + (myPlayerIndex === 0 ? 200 : -200);
                 startY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 150;
             }
-            
-            
-            
+
+
+
             let simX = startX;
             let simY = startY;
-            const distance = Math.sqrt(dx*dx + dy*dy);
+            const distance = Math.sqrt(dx * dx + dy * dy);
             const power = computeShotPower(distance);
             let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            
+
             if (myPlayerIndex === 1) angle = 180 - angle;
             if (angle < -20) angle = -20;
             if (angle > 110) angle = 110;
@@ -8806,18 +8826,18 @@ function gameLoop(now) {
             let simVy = power * Math.sin(rad);
 
             const allPoints = [];
-            for(let i=0; i<110; i++) {
+            for (let i = 0; i < 110; i++) {
                 allPoints.push(new THREE.Vector3(simX, simY, 0));
                 simX += simVx * 0.05;
                 simY += simVy * 0.05;
                 simVy -= GRAVITY * 0.05;
                 simVx += (currentWind * 30) * 0.05;
-                if(simY < ground.position.y + 100) break;
+                if (simY < ground.position.y + 100) break;
             }
             // Trayektoriya to'liq ko'rsatilmasin, faqat yo'nalish uchun yarimgacha (45%) ko'rsatilsin
             const halfCount = Math.max(5, Math.min(32, Math.floor(allPoints.length * 0.45)));
             const points = allPoints.slice(0, halfCount);
-            
+
             const geo = new THREE.BufferGeometry().setFromPoints(points);
             const mat = new THREE.LineDashedMaterial({ color: 0xff2d2d, dashSize: 30, gapSize: 15, linewidth: 3 });
             trajectoryLine = new THREE.Line(geo, mat);
@@ -8857,22 +8877,22 @@ function gameLoop(now) {
         if (typeof active3DBow !== 'undefined' && active3DBow) active3DBow.visible = false;
     }
 
-    
+
     if (window.explosions) {
         for (let i = window.explosions.length - 1; i >= 0; i--) {
             const expl = window.explosions[i];
             expl.userData.age += dt;
             const posAttr = expl.geometry.attributes.position;
             const mat = expl.material;
-            
-            for(let j=0; j<expl.userData.vels.length; j++) {
-                posAttr.array[j*3] += expl.userData.vels[j].vx * dt;
-                posAttr.array[j*3+1] += expl.userData.vels[j].vy * dt;
+
+            for (let j = 0; j < expl.userData.vels.length; j++) {
+                posAttr.array[j * 3] += expl.userData.vels[j].vx * dt;
+                posAttr.array[j * 3 + 1] += expl.userData.vels[j].vy * dt;
                 expl.userData.vels[j].vy -= GRAVITY * 0.2 * dt; // slightly affected by gravity
             }
             posAttr.needsUpdate = true;
             mat.opacity = Math.max(0, 1.0 - (expl.userData.age / 1.5));
-            
+
             if (expl.userData.age > 1.5) {
                 scene.remove(expl);
                 expl.geometry.dispose();
@@ -8883,7 +8903,7 @@ function gameLoop(now) {
     }
 
     renderer.render(scene, camera);
-    if(isLooping) requestAnimationFrame(gameLoop);
+    if (isLooping) requestAnimationFrame(gameLoop);
 }
 
 
@@ -8896,7 +8916,7 @@ try {
     camera.zoom = 1;
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
-} catch (_) {}
+} catch (_) { }
 
 // --- NEW PROFILE, STATS & LANGUAGE LOGIC ---
 let myProfile = JSON.parse(localStorage.getItem('nayza_profile')) || {
@@ -8984,8 +9004,8 @@ try {
     console.warn('Telegram auto-profile error:', e);
 }
 
-function isUserLoggedIn() { 
-    return Boolean(authPhone && (String(authPhone).replace(/\D/g, '').length >= 7 || String(authPhone).startsWith('tg_'))); 
+function isUserLoggedIn() {
+    return Boolean(authPhone && (String(authPhone).replace(/\D/g, '').length >= 7 || String(authPhone).startsWith('tg_')));
 }
 let authUserCache = null;
 try {
@@ -9590,7 +9610,7 @@ window.addEventListener('touchend', (e) => {
 }, { passive: true, capture: true });
 
 function safeModalAction(fn) {
-    return function(e) {
+    return function (e) {
         // Agar foydalanuvchi barmoq bilan menyuni / ekranni surgan (scroll qilgan) bo'lsa, tugma bosilmasligi shart!
         if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) {
             return;
@@ -9829,7 +9849,7 @@ function handleGlobalBack() {
             return;
         }
     }
-    
+
     // 2. Agar o'yin (jang) ekranida bo'lsa:
     const inGameModalEl = document.getElementById('in-game-modal');
     const isInGameModalOpen = inGameModalEl && !inGameModalEl.classList.contains('hidden');
@@ -10030,7 +10050,7 @@ function renderCharacterSelectRoster(activeId) {
                 }
             });
             if (typeof playSound === 'function') {
-                try { playSound('click'); } catch (_) {}
+                try { playSound('click'); } catch (_) { }
             }
         };
 
@@ -10067,7 +10087,7 @@ function openCharacterSelectModal(options = {}) {
     if ((!window.customModelsInfo || window.customModelsInfo.length === 0) && typeof fetchCustomModels === 'function') {
         fetchCustomModels().then(() => {
             renderCharacterSelectRoster(selectedCharRosterId || initialId);
-        }).catch(() => {});
+        }).catch(() => { });
     }
 
     openModalSafely(charSelectModal);
@@ -10138,7 +10158,7 @@ function openProfileSettingsModal(e) {
     if (selectAvatar) selectAvatar.value = myProfile.avatar;
     const selectCharType = document.getElementById('select-char-type');
     if (selectCharType) selectCharType.value = String(myProfile.charType || 2);
-    
+
     // Fix for flag selection (extract emoji)
     const countrySelect = document.getElementById('select-country');
     if (countrySelect) {
@@ -10149,7 +10169,7 @@ function openProfileSettingsModal(e) {
             }
         }
     }
-    
+
     if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
     const selectSpearModel = document.getElementById('select-spear-model');
     if (selectSpearModel) selectSpearModel.value = String(myProfile.spearModel || 0);
@@ -10209,13 +10229,13 @@ function handleSaveSettings(e) {
     const selectLang = document.getElementById('select-lang');
     if (selectLang) myProfile.lang = selectLang.value;
     saveProfile();
-    
+
     if (settingsMusicTrackSelect) {
         selectedMusicTrack = String(settingsMusicTrackSelect.value || 'music.mp3');
         if (typeof applyMusicSettings === 'function') applyMusicSettings();
         if (typeof saveMusicSettings === 'function') saveMusicSettings();
     }
-    
+
     closeModalSafely(settingsModal, e);
     showCenterNotice("Sozlamalar saqlandi!", 1500);
 }
@@ -10244,9 +10264,9 @@ function handleSaveProfile(e) {
     myProfile.flag = document.getElementById('select-country').value;
     const selSpear = document.getElementById('select-spear-model');
     if (selSpear) myProfile.spearModel = Number(selSpear.value || 0);
-    
+
     saveProfile();
-    
+
     if (window.customModelsInfo) {
         const custom = window.customModelsInfo.find(m => m.id === String(selectedCharType));
         if (custom && custom.bgMusic) {
@@ -10256,7 +10276,7 @@ function handleSaveProfile(e) {
         }
         if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
     }
-    
+
     closeModalSafely(profileModal, e);
     showCenterNotice("Profil saqlandi!", 1500);
 }
@@ -10546,7 +10566,7 @@ async function submitLeaderboard() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-            } catch (_) {}
+            } catch (_) { }
         }
     }
 }
@@ -10577,14 +10597,14 @@ async function renderLeaderboard() {
                 </div>
             </div>`;
         }).join('');
-        
+
         // Chaqirish tugmalariga event listener qo'shish
         leaderboardList.querySelectorAll('.btn-invite-leaderboard').forEach((el) => {
             el.addEventListener('click', () => {
                 const toPlayerId = el.getAttribute('data-fid');
                 const toPlayerName = el.getAttribute('data-fname');
                 if (!toPlayerId) return;
-                
+
                 const options = {
                     map: 'field',
                     weather: 'sunny',
@@ -10593,9 +10613,9 @@ async function renderLeaderboard() {
                     animals: false,
                     charType: myProfile.charType
                 };
-                
+
                 socket.emit('inviteFriend', { toPlayerId, profile: myProfile, options });
-                
+
                 // Taklif yuborilgani haqida xabar
                 if (friendIdStatus) {
                     friendIdStatus.style.color = '#3b82f6';
@@ -10603,7 +10623,7 @@ async function renderLeaderboard() {
                 }
             });
         });
-        
+
         return true;
     };
     let showedCached = false;
@@ -10611,7 +10631,7 @@ async function renderLeaderboard() {
         const cachedRaw = localStorage.getItem(LEADERBOARD_CACHE_KEY);
         const cachedRows = cachedRaw ? JSON.parse(cachedRaw) : [];
         showedCached = renderRows(cachedRows);
-    } catch (_) {}
+    } catch (_) { }
     if (!showedCached) leaderboardList.innerText = t.leaderboardLoading || "Loading leaderboard...";
     try {
         const fetchRows = async (base) => {
@@ -10634,7 +10654,7 @@ async function renderLeaderboard() {
         renderRows(rows);
         try {
             localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify(rows));
-        } catch (_) {}
+        } catch (_) { }
     } catch (_) {
         if (!showedCached) leaderboardList.innerText = "Reytingni yuklashda xatolik.";
     }
@@ -10685,7 +10705,7 @@ if (btnPause) {
         if (gameMode !== 'single') return; // Pause only in single player
         isPaused = !isPaused;
         btnPause.innerText = isPaused ? translations[myProfile.lang].resume : translations[myProfile.lang].pause;
-        if(!isPaused) {
+        if (!isPaused) {
             lastTime = performance.now(); // avoid teleportation
         }
     });
@@ -10756,7 +10776,7 @@ setInterval(updateMenuWallpaper, 350);
 (function setupIntroScreen() {
     const introScreen = document.getElementById('intro-screen');
     if (!introScreen) return;
-    
+
     // Agar Telegramdan duel kodi bilan kirilgan bo'lsa yoki avval ko'rilgan bo'lsa, introni umuman ko'rsatmaymiz
     try {
         if ((typeof getPendingRoomCode === 'function' && getPendingRoomCode()) || sessionStorage.getItem('kamonboz_intro_seen') === '1') {
@@ -10765,16 +10785,16 @@ setInterval(updateMenuWallpaper, 350);
             if (introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
             return;
         }
-    } catch (_) {}
-    
+    } catch (_) { }
+
     let introDismissed = false;
     const dismissIntro = (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         if (introDismissed) return;
         introDismissed = true;
-        try { sessionStorage.setItem('kamonboz_intro_seen', '1'); } catch (_) {}
-        try { initAudio(); } catch (_) {}
-        try { tryLockLandscapeOrientation(); } catch (_) {}
+        try { sessionStorage.setItem('kamonboz_intro_seen', '1'); } catch (_) { }
+        try { initAudio(); } catch (_) { }
+        try { tryLockLandscapeOrientation(); } catch (_) { }
         introScreen.classList.add('hide');
         if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
         setTimeout(() => {
@@ -10784,15 +10804,15 @@ setInterval(updateMenuWallpaper, 350);
 
     const handleIntroStartGame = safeModalAction((e) => {
         dismissIntro(e);
-        try { tryLockLandscapeOrientation(); } catch (_) {}
-        
+        try { tryLockLandscapeOrientation(); } catch (_) { }
+
         // 1. Agar Telegramdan duel uchun havola orqali kirgan bo'lsa, duelga avtomatik ulanadi:
         if (typeof checkAutoJoinTelegramRoom === 'function' && checkAutoJoinTelegramRoom()) {
             if (authModal) authModal.classList.add('hidden');
             if (menuScreen) menuScreen.classList.add('hidden');
             return;
         }
-        
+
         // 2. Havolasiz oddiy kirganda: Asosiy menyu ochilishi kerak (avtomatik level boshlanmaydi!):
         gameMode = 'menu';
         if (authModal) authModal.classList.add('hidden');
@@ -10833,22 +10853,22 @@ if (IS_NATIVE_APP) {
         try {
             const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
             if (!LN) return;
-            LN.requestPermissions().catch(() => {});
+            LN.requestPermissions().catch(() => { });
             LN.createChannel({
                 id: 'invite',
                 name: "O'yin taklifi",
                 importance: 5,
                 vibration: true,
                 sound: 'default'
-            }).catch(() => {});
+            }).catch(() => { });
             LN.addListener('localNotificationActionPerformed', () => {
                 // Notification bosilganda invite modal'ini ko'rsatish
                 if (pendingFriendInvite) {
                     if (friendInviteText) friendInviteText.innerText = `${pendingFriendInvite.fromProfile?.name || "Do'stingiz"} sizni o'yinga chaqirdi. Qo'shilasizmi?`;
                     if (friendInviteModal) friendInviteModal.classList.remove('hidden');
                 }
-            }).catch(() => {});
-        } catch (_) {}
+            }).catch(() => { });
+        } catch (_) { }
     };
     if (document.readyState === 'complete') {
         setTimeout(_initNotifications, 1000);
@@ -10933,9 +10953,9 @@ document.addEventListener('click', (e) => {
 }, true);
 
 // Missing Event Listeners
-if(document.getElementById('btn-single')) {
+if (document.getElementById('btn-single')) {
     const handleSingle = safeModalAction((e) => {
-        if(typeof initAudio === 'function') initAudio();
+        if (typeof initAudio === 'function') initAudio();
         if (singleModeModal) {
             openModalSafely(singleModeModal, e);
             return;
@@ -11028,7 +11048,7 @@ if (btnLevelSelectCancel) {
 function renderLevelGrid() {
     if (!levelGrid) return;
     levelGrid.innerHTML = '';
-    
+
     // Barcha levellar ochiq (qulfsiz). Joriy level alohida rangda belgilanadi.
     const currentLevel = Math.max(1, singleCampaignLevel || 1);
     // Har bir muhit uchun kichik emoji belgisi (level oldindan ko'rinishi).
@@ -11083,9 +11103,9 @@ function renderLevelGrid() {
     }
 }
 
-if(document.getElementById('btn-multi')) {
+if (document.getElementById('btn-multi')) {
     const handleMulti = safeModalAction((e) => {
-        if(typeof initAudio === 'function') initAudio();
+        if (typeof initAudio === 'function') initAudio();
         clearRandomWaitTimer();
         openModalSafely(multiMenu, e);
         renderFriendsList();
@@ -11258,7 +11278,7 @@ if (btnConfirmCreate) {
     });
 }
 
-if(document.getElementById('btn-cancel-multi')) {
+if (document.getElementById('btn-cancel-multi')) {
     document.getElementById('btn-cancel-multi').addEventListener('click', () => {
         clearRandomWaitTimer();
         socket.emit('cancelFind');
@@ -11308,7 +11328,7 @@ function getPendingRoomCode() {
         try {
             const sp = new URLSearchParams(window.location.search);
             code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join');
-        } catch (_) {}
+        } catch (_) { }
     }
     // 3. URL hash parametrlari (#tgWebAppStartParam=XYZ yoki #tgWebAppData=...&tgWebAppStartParam=XYZ)
     if (!code && window.location.hash) {
@@ -11320,18 +11340,18 @@ function getPendingRoomCode() {
                 const m = hashRaw.match(/tgWebAppStartParam=([^&]+)/);
                 if (m) code = decodeURIComponent(m[1]);
             }
-        } catch (_) {}
+        } catch (_) { }
     }
     // 4. SessionStorage
     if (!code) {
         try {
             code = sessionStorage.getItem('nayza_pending_room');
-        } catch (_) {}
+        } catch (_) { }
     }
     if (code) {
         code = String(code).replace(/^(room_|duel_)/i, '').trim().toUpperCase();
         if (code.length >= 3) {
-            try { sessionStorage.setItem('nayza_pending_room', code); } catch (_) {}
+            try { sessionStorage.setItem('nayza_pending_room', code); } catch (_) { }
             return code;
         }
     }
@@ -11379,7 +11399,7 @@ function checkAutoJoinTelegramRoom() {
 
 socket.on('joinError', (err) => {
     autoJoinExecuted = false;
-    try { sessionStorage.removeItem('nayza_pending_room'); } catch (_) {}
+    try { sessionStorage.removeItem('nayza_pending_room'); } catch (_) { }
     if (waitingScreen) waitingScreen.classList.add('hidden');
     if (multiMenu) multiMenu.classList.remove('hidden');
     if (joinCodeContainer) joinCodeContainer.classList.remove('hidden');
@@ -11431,9 +11451,9 @@ socket.on('friendInvite', (payload) => {
                         schedule: { at: new Date(Date.now() + 300) },
                         channelId: 'invite'
                     }]
-                }).catch(() => {});
+                }).catch(() => { });
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 });
 
@@ -11569,7 +11589,7 @@ socket.on('friendAdded', (payload) => {
     }
 });
 
-if(document.getElementById('btn-send-chat')) {
+if (document.getElementById('btn-send-chat')) {
     document.getElementById('btn-send-chat').addEventListener('click', () => {
         const input = document.getElementById('chat-input');
         if (input && input.value.trim() !== '') {
@@ -11707,7 +11727,7 @@ let turnsSinceLastCrate = 0;
 
 function create3DAirDropChest() {
     const rootGroup = new THREE.Group();
-    
+
     // Sandiqni 3D perspektivada (hajmli) ko'rsatish uchun biroz buramiz
     const chestGroup = new THREE.Group();
     chestGroup.rotation.y = 0.38; // 3D chuqurlik ko'rinishi
@@ -12166,7 +12186,7 @@ function getQuestsState() {
     try {
         const parsed = raw ? JSON.parse(raw) : null;
         if (parsed && parsed.date === today && Array.isArray(parsed.quests)) return parsed;
-    } catch {}
+    } catch { }
     const fresh = { date: today, quests: JSON.parse(JSON.stringify(DEFAULT_QUESTS)) };
     localStorage.setItem('kamonboz_daily_quests', JSON.stringify(fresh));
     return fresh;
@@ -12466,8 +12486,116 @@ document.addEventListener('keydown', (e) => {
     }, { capture: true });
 })();
 
+// =========================================================
+// ZAMONAVIY CARD CAROUSEL LOGIKASI (AAA O'YINLAR USLUBIDA)
+// =========================================================
+function setupMenuCarousel() {
+    const carousel = document.getElementById('menu-cards-carousel');
+    if (!carousel) return;
+    
+    const prevBtn = document.getElementById('btn-carousel-prev');
+    const nextBtn = document.getElementById('btn-carousel-next');
+    const dotsContainer = document.getElementById('menu-carousel-dots');
+    const cards = Array.from(carousel.querySelectorAll('.menu-card'));
+    
+    if (cards.length === 0) return;
+
+    // 1. Indikator nuqtalarni yaratish
+    if (dotsContainer) {
+        dotsContainer.innerHTML = '';
+        cards.forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = 'carousel-dot' + (idx === 0 ? ' active' : '');
+            dot.setAttribute('data-index', idx);
+            dot.addEventListener('click', () => {
+                const targetCard = cards[idx];
+                if (targetCard) {
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            });
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    // 2. Active nuqtani yangilash
+    let scrollTimer = null;
+    const updateActiveDot = () => {
+        if (!dotsContainer) return;
+        const dots = dotsContainer.querySelectorAll('.carousel-dot');
+        const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+        let closestIndex = 0;
+        let minDiff = Infinity;
+
+        cards.forEach((card, idx) => {
+            const cardCenter = card.offsetLeft + card.clientWidth / 2;
+            const diff = Math.abs(carouselCenter - cardCenter);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = idx;
+            }
+        });
+
+        dots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === closestIndex);
+        });
+    };
+
+    carousel.addEventListener('scroll', () => {
+        if (scrollTimer) clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(updateActiveDot, 60);
+    }, { passive: true });
+
+    // 3. Chap va O'ng o'q tugmalari
+    const getScrollStep = () => {
+        const card = cards[0];
+        return card ? (card.clientWidth + 16) : 230;
+    };
+
+    if (prevBtn && !prevBtn._hasCarouselListener) {
+        prevBtn._hasCarouselListener = true;
+        prevBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
+        });
+    }
+    if (nextBtn && !nextBtn._hasCarouselListener) {
+        nextBtn._hasCarouselListener = true;
+        nextBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
+        });
+    }
+
+    // 4. Cardning istalgan joyiga bosganda ichidagi tegishli tugmani bosish
+    cards.forEach(card => {
+        if (card._hasCardListener) return;
+        card._hasCardListener = true;
+        let startX = 0;
+        let startY = 0;
+        let isDrag = false;
+
+        card.addEventListener('pointerdown', (e) => {
+            startX = e.clientX;
+            startY = e.clientY;
+            isDrag = false;
+        }, { passive: true });
+
+        card.addEventListener('pointermove', (e) => {
+            if (Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+                isDrag = true;
+            }
+        }, { passive: true });
+
+        card.addEventListener('click', (e) => {
+            if (isDrag) return;
+            if (e.target.closest('button')) return; // Tugmaning o'zi bosilgan bo'lsa
+            const btn = card.querySelector('button');
+            if (btn) btn.click();
+        });
+    });
+}
+
 // Initialization logic
 function _runPageInits() {
+    setupMenuCarousel();
     initDailyRewards();
     initDailyQuests();
     initEmotesUI();
@@ -12477,10 +12605,10 @@ function _runPageInits() {
         if (el) setupCustomDropdown(el);
     });
     if (typeof checkAutoJoinTelegramRoom === 'function') checkAutoJoinTelegramRoom();
-    
+
     btnArtillery = document.getElementById('artillery-button');
     artilleryCountText = document.getElementById('artillery-count');
-    
+
     if (btnArtillery && !btnArtillery._hasArtilleryListener) {
         btnArtillery._hasArtilleryListener = true;
         const handleArtilleryClick = (e) => {
@@ -12488,7 +12616,7 @@ function _runPageInits() {
             e.stopPropagation();
             if (myHealth <= 0 || areAllEnemiesDead() || currentTurnIndex !== myPlayerIndex || artilleryCount <= 0) return;
             isArtilleryAiming = !isArtilleryAiming;
-            
+
             if (isArtilleryAiming) {
                 btnArtillery.classList.add('active');
                 if (!myArtilleryCannon) {

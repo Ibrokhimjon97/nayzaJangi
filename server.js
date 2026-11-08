@@ -1643,7 +1643,7 @@ server.listen(PORT, () => {
 function startKeepAlive() {
     const targetUrl = process.env.RENDER_EXTERNAL_URL || process.env.GAME_URL || 'https://nayza-jangi.onrender.com';
     if (!targetUrl || targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1')) return;
-    
+
     const pingEndpoint = `${targetUrl.replace(/\/$/, '')}/ping`;
     const PING_INTERVAL = 10 * 60 * 1000; // Har 10 daqiqada (Render 15 daqiqa harakatsizlikda uxlaydi)
     const https = require('https');
@@ -1667,9 +1667,9 @@ function pingOnce(endpoint, https) {
         const req = client.get(endpoint, (res) => {
             res.resume();
         });
-        req.on('error', () => {});
+        req.on('error', () => { });
         req.setTimeout(15000, () => req.destroy());
-    } catch (_) {}
+    } catch (_) { }
 }
 
 // Force redeploy 1397934648782924302

@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=78">
+    <link rel="stylesheet" href="style.css?v=79">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -151,38 +151,121 @@
                         Mehmon sifatida o'ynash</button>
                 </div>
             </div>
-            <div id="menu-screen" class="screen panel center-panel">
-                <h1>Nayza Jangi</h1>
-                <div id="campaign-progress-panel"
-                    style="margin-bottom: 12px; text-align: left; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                        <span id="txt-campaign-stage" style="font-size:0.9rem; color:#94a3b8;">Kampaniya bosqichi</span>
-                        <b id="campaign-level-text" style="color:#22c55e;">Lv.1</b>
-                    </div>
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
-                        <span id="txt-menu-score" style="font-size:0.86rem; color:#94a3b8;">Ball / Liga</span>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="menu-tier-badge"
-                                style="font-size:0.78rem; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.12); color:#d97706;">🥉
-                                Bronza</span>
-                            <b id="menu-score-text" style="color:#fbbf24;">0</b>
+            <div id="menu-screen" class="screen panel center-panel menu-carousel-screen">
+                <!-- Yuqori O'yinchi Profili va Boshqaruv Qatori -->
+                <div class="menu-top-bar" id="campaign-progress-panel">
+                    <div class="menu-user-badge">
+                        <span class="menu-avatar-icon" id="menu-avatar-icon">👤</span>
+                        <div class="menu-user-info">
+                            <span class="menu-user-name" id="menu-player-name">Jangchi</span>
+                            <div class="menu-user-sub">
+                                <span class="menu-level-chip"><span id="txt-campaign-stage" style="display:none;">Kampaniya</span>Lv.<b id="campaign-level-text">1</b></span>
+                                <span id="menu-tier-badge" class="menu-tier-chip">🥉 Bronza</span>
+                                <span class="menu-score-chip"><span id="txt-menu-score" style="display:none;">Ball</span>⭐ <b id="menu-score-text">0</b></span>
+                            </div>
                         </div>
                     </div>
+                    
+                    <div class="menu-top-actions">
+                        <button id="btn-profile" class="menu-top-btn" title="Profil">👤 Profil</button>
+                        <button id="btn-settings" class="menu-top-btn" title="Sozlamalar">⚙️ Sozlamalar</button>
+                        <button id="btn-logout" class="menu-top-btn menu-top-btn-danger" title="Chiqish">🚪 Chiqish</button>
+                    </div>
                 </div>
-                <button id="btn-single" class="primary-btn">Yakkalik o'yin (Kompyuterga qarshi)</button>
-                <button id="btn-multi" class="primary-btn">Onlayn (Haqiqiy raqibga qarshi)</button>
-                <button id="btn-daily-rewards" class="primary-btn"
-                    style="background: linear-gradient(135deg, #f59e0b, #d97706);">🎁 Kunlik Sovg'alar</button>
-                <button id="btn-daily-quests" class="primary-btn"
-                    style="background: linear-gradient(135deg, #06b6d4, #0891b2);">🎯 Vazifalar (Kvestlar)</button>
-                <button id="btn-profile" class="primary-btn" style="background:#0f766e;">Profil</button>
-                <button id="btn-about" class="primary-btn" style="background:#0ea5e9;">O'yin haqida</button>
-                <button id="btn-settings" class="primary-btn" style="background: #4b5563;">Sozlamalar</button>
-                <button id="btn-shop" class="primary-btn" style="background: #7c3aed;">Do'kon</button>
-                <button id="btn-rating" class="primary-btn" style="background: #f59e0b; color: #fff;">Reyting</button>
-                <button id="btn-logout" class="primary-btn"
-                    style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Akkauntdan chiqish</button>
+
+                <div class="menu-carousel-header">
+                    <h2 class="menu-carousel-title">Nayza Jangi</h2>
+                    <span class="menu-carousel-subtitle">Jang rejimini tanlang</span>
+                </div>
+
+                <!-- Card Carusel Sahnasi -->
+                <div class="menu-carousel-wrapper">
+                    <button type="button" class="carousel-arrow carousel-arrow-left" id="btn-carousel-prev" aria-label="Oldingi">‹</button>
+                    
+                    <div class="menu-cards-carousel" id="menu-cards-carousel">
+                        <!-- Card 1: Kampaniya -->
+                        <div class="menu-card" data-card="single">
+                            <div class="menu-card-badge badge-gold">⚔️ 100+ BOSQICH</div>
+                            <div class="menu-card-icon-box icon-gold">
+                                <span class="menu-card-emoji">🏹</span>
+                            </div>
+                            <h3 class="menu-card-name">Kampaniya</h3>
+                            <p class="menu-card-description">100 ta qiziqarli bosqich va qudratli sarkardalar bilan jang</p>
+                            <button id="btn-single" class="primary-btn menu-card-btn btn-gold">Yakkalik o'yin</button>
+                        </div>
+
+                        <!-- Card 2: Onlayn Duel -->
+                        <div class="menu-card" data-card="multi">
+                            <div class="menu-card-badge badge-cyan">⚡ 1v1 JONLI</div>
+                            <div class="menu-card-icon-box icon-cyan">
+                                <span class="menu-card-emoji">⚔️</span>
+                            </div>
+                            <h3 class="menu-card-name">Onlayn Duel</h3>
+                            <p class="menu-card-description">Haqiqiy raqiblar va do'stlar bilan jonli nayza jangi</p>
+                            <button id="btn-multi" class="primary-btn menu-card-btn btn-cyan">Onlayn o'yin</button>
+                        </div>
+
+                        <!-- Card 3: Kunlik Sovg'alar -->
+                        <div class="menu-card" data-card="rewards">
+                            <div class="menu-card-badge badge-amber">🎁 BEPUL BONUS</div>
+                            <div class="menu-card-icon-box icon-amber">
+                                <span class="menu-card-emoji">🎁</span>
+                            </div>
+                            <h3 class="menu-card-name">Kunlik Sovg'alar</h3>
+                            <p class="menu-card-description">Har kuni kiring va bepul super kuchlar va resurslarni oling</p>
+                            <button id="btn-daily-rewards" class="primary-btn menu-card-btn btn-amber">Sovg'ani olish</button>
+                        </div>
+
+                        <!-- Card 4: Kunlik Vazifalar -->
+                        <div class="menu-card" data-card="quests">
+                            <div class="menu-card-badge badge-emerald">🎯 KVESTLAR</div>
+                            <div class="menu-card-icon-box icon-emerald">
+                                <span class="menu-card-emoji">🎯</span>
+                            </div>
+                            <h3 class="menu-card-name">Vazifalar</h3>
+                            <p class="menu-card-description">Topshiriqlarni bajaring va qo'shimcha ballar to'plang</p>
+                            <button id="btn-daily-quests" class="primary-btn menu-card-btn btn-emerald">Vazifalar</button>
+                        </div>
+
+                        <!-- Card 5: Harbiy Do'kon -->
+                        <div class="menu-card" data-card="shop">
+                            <div class="menu-card-badge badge-purple">🛒 ARSENAL</div>
+                            <div class="menu-card-icon-box icon-purple">
+                                <span class="menu-card-emoji">🛡️</span>
+                            </div>
+                            <h3 class="menu-card-name">Harbiy Do'kon</h3>
+                            <p class="menu-card-description">Super himoya, nayzalar va maxsus jangovar vositalar</p>
+                            <button id="btn-shop" class="primary-btn menu-card-btn btn-purple">Do'kon</button>
+                        </div>
+
+                        <!-- Card 6: Reyting Jadvali -->
+                        <div class="menu-card" data-card="rating">
+                            <div class="menu-card-badge badge-yellow">🏆 TOP-100</div>
+                            <div class="menu-card-icon-box icon-yellow">
+                                <span class="menu-card-emoji">🏆</span>
+                            </div>
+                            <h3 class="menu-card-name">Reyting</h3>
+                            <p class="menu-card-description">Yetakchi kamonbozlar safiga kiring va chempionlikka erishing</p>
+                            <button id="btn-rating" class="primary-btn menu-card-btn btn-yellow">Reyting</button>
+                        </div>
+
+                        <!-- Card 7: O'yin Haqida -->
+                        <div class="menu-card" data-card="about">
+                            <div class="menu-card-badge badge-blue">ℹ️ MA'LUMOT</div>
+                            <div class="menu-card-icon-box icon-blue">
+                                <span class="menu-card-emoji">📜</span>
+                            </div>
+                            <h3 class="menu-card-name">O'yin Haqida</h3>
+                            <p class="menu-card-description">Qoidalar, muallif haqida va loyihani qo'llab-quvvatlash</p>
+                            <button id="btn-about" class="primary-btn menu-card-btn btn-blue">O'yin haqida</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="carousel-arrow carousel-arrow-right" id="btn-carousel-next" aria-label="Keyingi">›</button>
+                </div>
+
+                <!-- Indikator Nuqtalari -->
+                <div class="menu-carousel-dots" id="menu-carousel-dots"></div>
             </div>
 
             <!-- Multi Menu Modal -->
@@ -347,7 +430,7 @@
             <div id="settings-modal" class="screen hidden panel center-panel">
                 <button type="button" id="btn-close-settings-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2 id="txt-settings-title">Sozlamalar</h2>
-                <div style="margin: 15px 0; text-align: left;">
+                <div class="settings-items-container" style="margin: 15px 0; text-align: left;">
                     <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
                     <select id="select-lang"
                         style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
@@ -386,7 +469,7 @@
             <div id="profile-modal" class="screen hidden panel center-panel">
                 <button type="button" id="btn-close-profile-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2 id="txt-profile-title">Profil</h2>
-                <div style="margin: 15px 0; text-align: left;">
+                <div class="profile-items-container" style="margin: 15px 0; text-align: left;">
                     <label id="txt-name-lbl" style="display:block; margin-bottom:5px;">Ism:</label>
                     <input type="text" id="input-name" placeholder="Ismingiz..."
                         style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;"
@@ -475,7 +558,7 @@
                 <button type="button" id="btn-close-shop-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2>Do'kon</h2>
                 <div class="shop-balance">Balans: <b id="shop-score-text">0</b> ball</div>
-                <div style="margin: 15px 0; text-align: left;">
+                <div class="shop-items-container" style="margin: 15px 0; text-align: left;">
                     <div class="shop-item">
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -992,7 +1075,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=78"></script>
+    <script src="client.js?v=79"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {
