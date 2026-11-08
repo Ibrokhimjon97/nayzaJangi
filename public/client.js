@@ -167,6 +167,7 @@ const ottomanArcherTextures = {
     shieldDuck: loadTexture('Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png'),
     shieldHurt: loadTexture('Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png'),
     shieldBreak: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqoni%20yorildi.png'),
+    shieldAfterShot: loadTexture('Kamonlik%20Usmoniy/kamonlik%20uq%20uzdi.png'),
     noShieldIdle: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20stand.png'),
     noShieldAim: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20oq%20uzadi.png'),
     noShieldDefend: loadTexture('Kamonlik%20Usmoniy/kamonlik%20qalqonsiz%20himoyalanyapti.png'),
@@ -230,21 +231,23 @@ async function fetchCustomModels() {
         }
         
         data.forEach(m => {
+            const raw = m.textures || {};
+            const defIdle = raw.shieldIdle || raw.noShieldIdle || 'Kamonlik%20Usmoniy/kamonlik%201.png';
             window.customModelTextures[m.id] = {
-                shieldIdle: loadTexture(m.textures.shieldIdle),
-                shieldAim: loadTexture(m.textures.shieldAim),
-                shieldDuck: loadTexture(m.textures.shieldDuck),
-                shieldDefend: loadTexture(m.textures.shieldDefend),
-                shieldHurt: loadTexture(m.textures.shieldHurt || m.textures.shieldIdle),
-                shieldBreak: loadTexture(m.textures.shieldBreak || m.textures.noShieldIdle),
-                shieldAfterShot: loadTexture(m.textures.shieldAfterShot || m.textures.shieldIdle),
-                noShieldIdle: loadTexture(m.textures.noShieldIdle),
-                noShieldAim: loadTexture(m.textures.noShieldAim),
-                noShieldDuck: loadTexture(m.textures.noShieldDuck),
-                noShieldDefend: loadTexture(m.textures.noShieldDefend),
-                noShieldHurt: loadTexture(m.textures.noShieldHurt || m.textures.noShieldIdle),
-                noShieldAfterShot: loadTexture(m.textures.noShieldAfterShot || m.textures.noShieldIdle),
-                celebrate: loadTexture(m.textures.celebrate || m.textures.shieldIdle),
+                shieldIdle: loadTexture(raw.shieldIdle || defIdle),
+                shieldAim: loadTexture(raw.shieldAim || raw.noShieldAim || defIdle),
+                shieldDuck: loadTexture(raw.shieldDuck || raw.noShieldDuck || defIdle),
+                shieldDefend: loadTexture(raw.shieldDefend || raw.noShieldDefend || defIdle),
+                shieldHurt: loadTexture(raw.shieldHurt || raw.noShieldHurt || raw.shieldIdle || defIdle),
+                shieldBreak: loadTexture(raw.shieldBreak || raw.noShieldIdle || raw.shieldIdle || defIdle),
+                shieldAfterShot: loadTexture(raw.shieldAfterShot || raw.noShieldAfterShot || raw.shieldAim || defIdle),
+                noShieldIdle: loadTexture(raw.noShieldIdle || raw.shieldIdle || defIdle),
+                noShieldAim: loadTexture(raw.noShieldAim || raw.shieldAim || defIdle),
+                noShieldDuck: loadTexture(raw.noShieldDuck || raw.shieldDuck || defIdle),
+                noShieldDefend: loadTexture(raw.noShieldDefend || raw.shieldDefend || defIdle),
+                noShieldHurt: loadTexture(raw.noShieldHurt || raw.shieldHurt || raw.noShieldIdle || defIdle),
+                noShieldAfterShot: loadTexture(raw.noShieldAfterShot || raw.shieldAfterShot || raw.noShieldAim || defIdle),
+                celebrate: loadTexture(raw.celebrate || raw.shieldIdle || defIdle),
                 bgMusic: m.bgMusic
             };
             
@@ -2412,17 +2415,19 @@ function createSoldier(isP1, charType = 0) {
     group.add(group.userData.armR);
     
     // 2D High-Quality Hero Sprite using the selected texture
-    let selectedTexture = soldierTexture;
-    if (normalizedCharType === 1) selectedTexture = nayzabozTexture;
+    let selectedTexture = ottomanArcherTextures.shieldIdle;
+    if (normalizedCharType === 1) selectedTexture = nayzabozTexture || ottomanSpearmanTextures.shieldIdle;
     if (normalizedCharType === 2) selectedTexture = ottomanArcherTextures.shieldIdle;
     if (normalizedCharType === 3) selectedTexture = ottomanSpearmanTextures.shieldIdle;
-    if (group.userData.isCustomModel && window.customModelTextures[normalizedCharType]) {
-        selectedTexture = window.customModelTextures[normalizedCharType].shieldIdle;
+    if (group.userData.isCustomModel) {
+        const customTex = window.customModelTextures && window.customModelTextures[normalizedCharType];
+        if (customTex && (customTex.shieldIdle || customTex.noShieldIdle)) {
+            selectedTexture = customTex.shieldIdle || customTex.noShieldIdle;
+        } else {
+            selectedTexture = ottomanArcherTextures.shieldIdle;
+        }
     }
-    // Texture'ni to'g'ridan-to'g'ri ishlatamiz (clone qilmasdan).
-    // three.js TextureLoader image yuklangach avtomatik ravishda needsUpdate qo'yadi va material yangilanadi.
-    // Bu Android Capacitor'da WebView image yuklash kechikishi bo'lganda ham to'g'ri ishlaydi.
-    const tex = selectedTexture;
+    const tex = selectedTexture || ottomanArcherTextures.shieldIdle;
     if (tex) {
         if (group.userData.isOttomanUnit) {
             tex.repeat.set(1, 1);
@@ -2490,58 +2495,64 @@ function createSoldier(isP1, charType = 0) {
 }
 
 function getOttomanArcherTexture(model, state) {
-    const broken = model.userData.shieldBroken;
-    if (state === 'celebrate') return ottomanArcherTextures.celebrate;
-    if (state === 'break') return ottomanArcherTextures.shieldBreak;
-    if (state === 'hurt') return broken ? ottomanArcherTextures.noShieldHurt : ottomanArcherTextures.shieldHurt;
-    if (state === 'duck') return broken ? ottomanArcherTextures.noShieldDuck : ottomanArcherTextures.shieldDuck;
-    if (state === 'defend') return broken ? ottomanArcherTextures.noShieldDefend : ottomanArcherTextures.shieldDefend;
-    if (state === 'aim') return broken ? ottomanArcherTextures.noShieldAim : ottomanArcherTextures.shieldAim;
-    if (state === 'afterShot') return broken ? ottomanArcherTextures.noShieldAfterShot : (ottomanArcherTextures.shieldAfterShot || ottomanArcherTextures.shieldIdle);
-    return broken ? ottomanArcherTextures.noShieldIdle : ottomanArcherTextures.shieldIdle;
+    const broken = !!model.userData.shieldBroken;
+    const baseIdle = broken ? (ottomanArcherTextures.noShieldIdle || ottomanArcherTextures.shieldIdle) : (ottomanArcherTextures.shieldIdle || ottomanArcherTextures.noShieldIdle);
+    const baseAim = broken ? (ottomanArcherTextures.noShieldAim || ottomanArcherTextures.shieldAim || baseIdle) : (ottomanArcherTextures.shieldAim || ottomanArcherTextures.noShieldAim || baseIdle);
+    const baseAfterShot = broken ? (ottomanArcherTextures.noShieldAfterShot || ottomanArcherTextures.shieldAfterShot || baseAim) : (ottomanArcherTextures.shieldAfterShot || ottomanArcherTextures.noShieldAfterShot || baseAim);
+    const baseHurt = broken ? (ottomanArcherTextures.noShieldHurt || ottomanArcherTextures.shieldHurt || baseIdle) : (ottomanArcherTextures.shieldHurt || ottomanArcherTextures.noShieldHurt || baseIdle);
+    const baseDuck = broken ? (ottomanArcherTextures.noShieldDuck || ottomanArcherTextures.shieldDuck || baseIdle) : (ottomanArcherTextures.shieldDuck || ottomanArcherTextures.noShieldDuck || baseIdle);
+    const baseDefend = broken ? (ottomanArcherTextures.noShieldDefend || ottomanArcherTextures.shieldDefend || baseIdle) : (ottomanArcherTextures.shieldDefend || ottomanArcherTextures.noShieldDefend || baseIdle);
+
+    if (state === 'celebrate') return ottomanArcherTextures.celebrate || baseIdle;
+    if (state === 'break') return ottomanArcherTextures.shieldBreak || baseIdle;
+    if (state === 'hurt') return baseHurt;
+    if (state === 'duck') return baseDuck;
+    if (state === 'defend') return baseDefend;
+    if (state === 'aim' || state === 'load') return baseAim;
+    if (state === 'afterShot') return baseAfterShot;
+    return baseIdle;
 }
 
 function getOttomanSpearmanTexture(model, state) {
-    const broken = model.userData.shieldBroken;
-    if (state === 'break') return ottomanSpearmanTextures.shieldBreak;
-    if (state === 'celebrate') return ottomanSpearmanTextures.celebrate;
-    if (!broken) {
-        if (state === 'duck') return ottomanSpearmanTextures.shieldDuck;
-        if (state === 'defend') return ottomanSpearmanTextures.shieldDefend;
-        if (state === 'aim') return ottomanSpearmanTextures.shieldAim;
-        if (state === 'afterShot') return ottomanSpearmanTextures.shieldAfterShot;
-        return ottomanSpearmanTextures.shieldIdle;
-    }
-    if (state === 'duck') return ottomanSpearmanTextures.noShieldDuck;
-    if (state === 'defend') return ottomanSpearmanTextures.noShieldDefend;
-    if (state === 'aim') return ottomanSpearmanTextures.noShieldAim;
-    if (state === 'afterShot') return ottomanSpearmanTextures.noShieldAfterShot;
-    return ottomanSpearmanTextures.noShieldIdle;
+    const broken = !!model.userData.shieldBroken;
+    const baseIdle = broken ? (ottomanSpearmanTextures.noShieldIdle || ottomanSpearmanTextures.shieldIdle) : (ottomanSpearmanTextures.shieldIdle || ottomanSpearmanTextures.noShieldIdle);
+    const baseAim = broken ? (ottomanSpearmanTextures.noShieldAim || ottomanSpearmanTextures.shieldAim || baseIdle) : (ottomanSpearmanTextures.shieldAim || ottomanSpearmanTextures.noShieldAim || baseIdle);
+    const baseAfterShot = broken ? (ottomanSpearmanTextures.noShieldAfterShot || ottomanSpearmanTextures.shieldAfterShot || baseAim) : (ottomanSpearmanTextures.shieldAfterShot || ottomanSpearmanTextures.noShieldAfterShot || baseAim);
+    const baseHurt = broken ? (ottomanSpearmanTextures.noShieldHurt || ottomanSpearmanTextures.shieldHurt || baseIdle) : (ottomanSpearmanTextures.shieldHurt || ottomanSpearmanTextures.noShieldHurt || baseIdle);
+    const baseDuck = broken ? (ottomanSpearmanTextures.noShieldDuck || ottomanSpearmanTextures.shieldDuck || baseIdle) : (ottomanSpearmanTextures.shieldDuck || ottomanSpearmanTextures.noShieldDuck || baseIdle);
+    const baseDefend = broken ? (ottomanSpearmanTextures.noShieldDefend || ottomanSpearmanTextures.shieldDefend || baseIdle) : (ottomanSpearmanTextures.shieldDefend || ottomanSpearmanTextures.noShieldDefend || baseIdle);
+
+    if (state === 'break') return ottomanSpearmanTextures.shieldBreak || baseIdle;
+    if (state === 'celebrate') return ottomanSpearmanTextures.celebrate || baseIdle;
+    if (state === 'hurt') return baseHurt;
+    if (state === 'duck') return baseDuck;
+    if (state === 'defend') return baseDefend;
+    if (state === 'aim' || state === 'load') return baseAim;
+    if (state === 'afterShot') return baseAfterShot;
+    return baseIdle;
 }
 
 function getOttomanTexture(model, state) {
+    if (!model || !model.userData) return null;
     const charType = String(model.userData.charType);
-    if (charType.startsWith('custom_') && window.customModelTextures[charType]) {
+    if (charType.startsWith('custom_') && window.customModelTextures && window.customModelTextures[charType]) {
         const t = window.customModelTextures[charType];
-        const shieldBroken = model.userData.shieldBroken;
-        if (shieldBroken) {
-            if (state === 'duck') return t.noShieldDuck;
-            if (state === 'aim') return t.noShieldAim;
-            if (state === 'defend') return t.noShieldDefend;
-            if (state === 'hurt') return t.noShieldHurt;
-            if (state === 'afterShot') return t.noShieldAfterShot;
-            if (state === 'celebrate') return t.celebrate;
-            return t.noShieldIdle;
-        } else {
-            if (state === 'duck') return t.shieldDuck;
-            if (state === 'aim') return t.shieldAim;
-            if (state === 'defend') return t.shieldDefend;
-            if (state === 'break') return t.shieldBreak;
-            if (state === 'hurt') return t.shieldHurt;
-            if (state === 'afterShot') return t.shieldAfterShot;
-            if (state === 'celebrate') return t.celebrate;
-            return t.shieldIdle;
-        }
+        const shieldBroken = !!model.userData.shieldBroken;
+        const baseIdle = shieldBroken ? (t.noShieldIdle || t.shieldIdle) : (t.shieldIdle || t.noShieldIdle);
+        const baseAim = shieldBroken ? (t.noShieldAim || t.shieldAim || baseIdle) : (t.shieldAim || t.noShieldAim || baseIdle);
+        const baseAfterShot = shieldBroken ? (t.noShieldAfterShot || t.shieldAfterShot || baseAim || baseIdle) : (t.shieldAfterShot || t.noShieldAfterShot || baseAim || baseIdle);
+        const baseHurt = shieldBroken ? (t.noShieldHurt || t.shieldHurt || baseIdle) : (t.shieldHurt || t.noShieldHurt || baseIdle);
+        const baseDuck = shieldBroken ? (t.noShieldDuck || t.shieldDuck || baseIdle) : (t.shieldDuck || t.noShieldDuck || baseIdle);
+        const baseDefend = shieldBroken ? (t.noShieldDefend || t.shieldDefend || baseIdle) : (t.shieldDefend || t.noShieldDefend || baseIdle);
+
+        if (state === 'duck') return baseDuck;
+        if (state === 'aim' || state === 'load') return baseAim;
+        if (state === 'defend') return baseDefend;
+        if (state === 'break') return t.shieldBreak || baseIdle;
+        if (state === 'hurt') return baseHurt;
+        if (state === 'afterShot') return baseAfterShot;
+        if (state === 'celebrate') return t.celebrate || baseIdle;
+        return baseIdle;
     }
     if (model.userData.isOttomanSpearman) return getOttomanSpearmanTexture(model, state);
     return getOttomanArcherTexture(model, state);
@@ -2571,6 +2582,7 @@ function setSoldierVisual(model, state) {
     }
 
     const texture = getOttomanTexture(model, targetState);
+    if (!texture) return; // NEVER replace material map with null or undefined!
     const mat = model.userData.mats && model.userData.mats[0];
     if (!mat || mat.map === texture) return;
     mat.map = texture;
@@ -4530,14 +4542,14 @@ function startSinglePlayer(opts) {
     }
     const playerLeftSide = (level % 2 === 1);
     function getRandomEnemyChar(exclude) {
-        const defaultChars = [1, 2, 3];
+        const defaultChars = [2, 3];
         const customChars = (window.customModelsInfo || []).map(m => m.id);
         let allChars = defaultChars.concat(customChars);
         if (exclude !== undefined) {
             const filtered = allChars.filter(c => String(c) !== String(exclude));
             if (filtered.length > 0) allChars = filtered;
         }
-        return allChars[Math.floor(Math.random() * allChars.length)];
+        return allChars[Math.floor(Math.random() * allChars.length)] || 2;
     }
     
     const myChar = myProfile.charType || 2;
