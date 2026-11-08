@@ -19,8 +19,8 @@
     },
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
-      "width": 650,
-      "height": 500,
+      "width": 550,
+      "height": 420,
       "offsetY": 0,
       "offsetX": 0
     },
@@ -78,8 +78,8 @@
     "weaponType": "bow",
     "bgMusic": "custom_models/1794125558676-98367961.mp3",
     "settings": {
-      "width": 440,
-      "height": 435,
+      "width": 400,
+      "height": 420,
       "offsetY": 0,
       "offsetX": 0
     }

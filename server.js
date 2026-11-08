@@ -806,10 +806,12 @@ function handleRoomTurnTimeout(roomName) {
     clearRoomTurnTimer(roomName);
     const timedOutIndex = room.turnIndex;
     const winnerIndex = timedOutIndex === 0 ? 1 : 0;
+    const winnerId = room.players ? room.players[winnerIndex] : null;
     console.log(`[Turn Timeout] Room ${roomName}: Player ${timedOutIndex} timed out after 30s. Winner: Player ${winnerIndex}`);
 
     io.to(roomName).emit('gameOver', {
         winnerIndex,
+        winnerId,
         reason: 'timeout_forfeit',
         timedOutIndex
     });
@@ -846,16 +848,21 @@ io.on('connection', (socket) => {
         console.log('startGame called, roomName:', roomName);
         const existingOptions = rooms[roomName] && rooms[roomName].options ? rooms[roomName].options : { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false };
 
+        // O'yinchilarning o'ng va chap tomonga joylashishi har o'yinda 50/50 tasodifiy bo'ladi
+        const swapSides = Math.random() < 0.5;
+        const leftPlayer = swapSides ? player2 : player1;
+        const rightPlayer = swapSides ? player1 : player2;
+
         rooms[roomName] = {
-            players: [player1.id, player2.id],
+            players: [leftPlayer.id, rightPlayer.id],
             turnIndex: -1, // Qur'a tashlanmaguncha kutiladi
             wind: generateWind(),
             gameOver: false,
             health: [100, 100],
             shield: [5, 5],
             super: [
-                Math.max(0, Number(player1.profile?.superPowers ?? 5)),
-                Math.max(0, Number(player2.profile?.superPowers ?? 5))
+                Math.max(0, Number(leftPlayer.profile?.superPowers ?? 5)),
+                Math.max(0, Number(rightPlayer.profile?.superPowers ?? 5))
             ],
             walls: [
                 { active: false, x: 0, hp: 0 },
@@ -877,16 +884,16 @@ io.on('connection', (socket) => {
             }
         };
 
-        player1.roomId = roomName;
-        player2.roomId = roomName;
+        leftPlayer.roomId = roomName;
+        rightPlayer.roomId = roomName;
 
-        const gameStartData1 = {
+        const gameStartDataLeft = {
             playerIndex: 0,
             turnIndex: -1,
             hasCoinToss: true,
             wind: rooms[roomName].wind,
-            opponentId: player2.id,
-            opponentProfile: player2.profile,
+            opponentId: rightPlayer.id,
+            opponentProfile: rightPlayer.profile,
             health: rooms[roomName].health,
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
@@ -894,16 +901,16 @@ io.on('connection', (socket) => {
             options: rooms[roomName].options,
             roomName: roomName
         };
-        console.log('Sending gameStart to player1, roomName:', roomName);
-        player1.emit('gameStart', gameStartData1);
+        console.log('Sending gameStart to leftPlayer (index 0), roomName:', roomName);
+        leftPlayer.emit('gameStart', gameStartDataLeft);
 
-        const gameStartData2 = {
+        const gameStartDataRight = {
             playerIndex: 1,
             turnIndex: -1,
             hasCoinToss: true,
             wind: rooms[roomName].wind,
-            opponentId: player1.id,
-            opponentProfile: player1.profile,
+            opponentId: leftPlayer.id,
+            opponentProfile: leftPlayer.profile,
             health: rooms[roomName].health,
             shield: rooms[roomName].shield,
             super: rooms[roomName].super,
@@ -911,8 +918,8 @@ io.on('connection', (socket) => {
             options: rooms[roomName].options,
             roomName: roomName
         };
-        console.log('Sending gameStart to player2, roomName:', roomName);
-        player2.emit('gameStart', gameStartData2);
+        console.log('Sending gameStart to rightPlayer (index 1), roomName:', roomName);
+        rightPlayer.emit('gameStart', gameStartDataRight);
 
         // Turn timer qur'a natijasidan so'ng startRoomTurnTimer orqali ishga tushadi.
         // Agar o'yinchilar 7.5 soniya davomida tanlamasa, avtomatik qur'a tashlanadi:
@@ -1447,7 +1454,13 @@ io.on('connection', (socket) => {
             if (room.health[targetIndex] <= 0) {
                 room.gameOver = true;
                 clearRoomTurnTimer(roomName);
-                io.to(roomName).emit('gameOver', { winnerIndex: room.turnIndex });
+                const winnerIndex = targetIndex === 0 ? 1 : 0;
+                const winnerId = room.players ? room.players[winnerIndex] : null;
+                io.to(roomName).emit('gameOver', {
+                    winnerIndex,
+                    winnerId,
+                    reason: 'normal'
+                });
                 return true;
             }
             return false;
@@ -1590,8 +1603,21 @@ io.on('connection', (socket) => {
 
         const roomName = socket.roomId;
         if (roomName && rooms[roomName]) {
+            const room = rooms[roomName];
             clearRoomTurnTimer(roomName);
             clearCoinTossTimer(roomName);
+            if (!room.gameOver && Array.isArray(room.players) && room.players.length === 2) {
+                const remainingPlayerId = room.players.find(id => id !== socket.id);
+                const winnerIndex = room.players.indexOf(remainingPlayerId);
+                room.gameOver = true;
+                if (remainingPlayerId) {
+                    io.to(remainingPlayerId).emit('gameOver', {
+                        winnerIndex: winnerIndex >= 0 ? winnerIndex : 0,
+                        winnerId: remainingPlayerId,
+                        reason: 'opponent_left'
+                    });
+                }
+            }
             io.to(roomName).emit('opponentDisconnected');
             delete rooms[roomName];
         }

@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=77">
+    <link rel="stylesheet" href="style.css?v=78">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -948,10 +948,16 @@
 
             <div id="game-over-screen" class="screen hidden panel center-panel">
                 <h1 id="winner-text">O'yinchi Yutdi!</h1>
+                <div id="game-over-score-wrap" class="game-over-score-wrap">
+                    <span>To'plangan ball:</span>
+                    <strong id="game-over-score-val">0</strong> ⭐
+                </div>
                 <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
                 <button id="rematch-btn" class="primary-btn hidden"
-                    style="background: #8b5cf6; margin-top: 8px;">Revansh</button>
-                <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">Bosh
+                    style="background: #8b5cf6; margin-top: 8px;">⚔️ Revansh taklif qilish</button>
+                <button id="btn-game-over-rating" class="primary-btn"
+                    style="background: #d97706; margin-top: 8px;">🏆 Reytingni ko'rish</button>
+                <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">🏠 Bosh
                     menyu</button>
             </div>
 
@@ -986,7 +992,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=77"></script>
+    <script src="client.js?v=78"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {

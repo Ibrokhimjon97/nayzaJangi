@@ -5033,17 +5033,29 @@ if (window.PointerEvent) {
     document.addEventListener('pointerup', (e) => {
         isWallDragActive = false;
         if (!isDragging) return;
-        if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
         dragPointerId = null;
         handleEnd(e);
     });
     document.addEventListener('pointercancel', (e) => {
         isWallDragActive = false;
         if (!isDragging) return;
-        if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
         dragPointerId = null;
         handleEnd(e);
     });
+    document.addEventListener('touchend', (e) => {
+        isWallDragActive = false;
+        if (isDragging) {
+            dragPointerId = null;
+            handleEnd(e.changedTouches ? e.changedTouches[0] : e);
+        }
+    }, { passive: true });
+    document.addEventListener('touchcancel', (e) => {
+        isWallDragActive = false;
+        if (isDragging) {
+            dragPointerId = null;
+            handleEnd(e.changedTouches ? e.changedTouches[0] : e);
+        }
+    }, { passive: true });
 } else {
     document.addEventListener('mousedown', handleStart);
     document.addEventListener('mousemove', handleMove);
@@ -7196,8 +7208,14 @@ socket.on('gameStart', (data) => {
 });
 
 socket.on('nextTurn', (data) => {
+    isAnimating = false;
+    if (spear) spear.active = false;
+    hideFlyingSpear();
+    resetCameraAfterImpact();
+    if (controlsPanel) controlsPanel.classList.remove('disabled');
+    if (hud) hud.style.opacity = '1';
+    if (spearGroup) spearGroup.visible = false;
     updateTurn(data.turnIndex, data.wind);
-    if (!isAnimating) spearGroup.visible = false;
 });
 
 socket.on('superState', (data) => {
@@ -7245,13 +7263,17 @@ socket.on('spearThrown', (data) => {
 });
 
 socket.on('groundHit', (data) => {
+    isAnimating = false;
+    if (spear) spear.active = false;
+    hideFlyingSpear();
+    resetCameraAfterImpact();
+    if (controlsPanel) controlsPanel.classList.remove('disabled');
+    if (hud) hud.style.opacity = '1';
     if (spear && spear.playerIndex !== myPlayerIndex) {
         if (spear.isArtillery) {
             triggerCinematicExplosion(data.hitX, data.hitY);
-            hideFlyingSpear();
         } else {
             stickSpear(null, data.hitX, data.hitY, data.hitAngle);
-            hideFlyingSpear();
             playSfx('ground');
         }
     }
@@ -7260,6 +7282,13 @@ socket.on('groundHit', (data) => {
 socket.on('hitRegistered', (data) => {
     const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged, jumpDodged, isFire } = data;
     const targetModel = targetIndex === 0 ? p1Model : p2Model;
+
+    isAnimating = false;
+    if (spear) spear.active = false;
+    hideFlyingSpear();
+    resetCameraAfterImpact();
+    if (controlsPanel) controlsPanel.classList.remove('disabled');
+    if (hud) hud.style.opacity = '1';
 
     if (isFire) {
         spawnFireBurst(hitX, hitY, 35);
@@ -7464,24 +7493,58 @@ function showGameOver(winnerIndex, data) {
     controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
     
-    if (data && data.reason === 'timeout_forfeit') {
-        if (winnerIndex === myPlayerIndex) {
-            winnerText.innerText = "Siz g'alaba qozondingiz, raqibingiz chekindi!";
+    // Aniq g'olibni hisoblash (3-bosqichli tekshiruv)
+    let isMeWinner = false;
+    if (data && data.winnerId && socket && socket.id) {
+        isMeWinner = (data.winnerId === socket.id);
+    } else if (typeof winnerIndex === 'number' && myPlayerIndex !== null && myPlayerIndex !== undefined) {
+        isMeWinner = (winnerIndex === myPlayerIndex);
+    }
+    if (gameMode === 'multi') {
+        if (myHealth > 0 && enemyHealth <= 0) {
+            isMeWinner = true;
+        } else if (myHealth <= 0 && enemyHealth > 0) {
+            isMeWinner = false;
+        }
+    }
+
+    if (data && (data.reason === 'timeout_forfeit' || data.reason === 'opponent_left')) {
+        if (isMeWinner) {
+            winnerText.innerText = "Raqib jangdan qochdi! Siz g'olibsiz! 🏆";
             winnerText.style.color = '#22c55e';
         } else {
-            winnerText.innerText = "Vaqtingiz tugadi, siz yengildingiz!";
+            winnerText.innerText = "Vaqtingiz tugadi, siz yengildingiz! 💀";
             winnerText.style.color = '#ef4444';
         }
     } else {
-        const winner = winnerIndex === myPlayerIndex ? t.win : t.lose;
-        winnerText.innerText = winner;
-        winnerText.style.color = winnerIndex === myPlayerIndex ? '#22c55e' : '#ef4444';
+        winnerText.innerText = isMeWinner ? (t.win || "Siz g'olib bo'ldingiz! 🏆") : (t.lose || "Siz mag'lub bo'ldingiz! 💀");
+        winnerText.style.color = isMeWinner ? '#22c55e' : '#ef4444';
+    }
+
+    // To'plangan ballni aks ettirish
+    const scoreValEl = document.getElementById('game-over-score-val');
+    if (scoreValEl) {
+        scoreValEl.innerText = String(currentScore || myProfile.score || 0);
+    }
+
+    // Reytingni ko'rish tugmasi hodisasi
+    const btnGameOverRating = document.getElementById('btn-game-over-rating');
+    if (btnGameOverRating && !btnGameOverRating._boundRating) {
+        btnGameOverRating._boundRating = true;
+        btnGameOverRating.addEventListener('click', (e) => {
+            if (btnRating) {
+                btnRating.click();
+            } else if (typeof openModalSafely === 'function' && ratingModal) {
+                renderLeaderboard();
+                openModalSafely(ratingModal, e);
+            }
+        });
     }
 
     if (restartBtn) {
         const nextLabel = t.nextLevelBtn || "Keyingi bosqich";
         const replayLabel = t.playAgainBtn || "Yana o'ynash";
-        restartBtn.innerText = (gameMode === 'single' && winnerIndex === myPlayerIndex) ? nextLabel : replayLabel;
+        restartBtn.innerText = (gameMode === 'single' && isMeWinner) ? nextLabel : replayLabel;
     }
     
     // Online rejimda revansh tugmasini ko'rsatish
@@ -7493,7 +7556,7 @@ function showGameOver(winnerIndex, data) {
         }
     }
     
-    if (winnerIndex === myPlayerIndex) {
+    if (isMeWinner) {
         triggerHaptic('success');
         myStats.wins++;
         if (gameMode === 'multi') {
@@ -7521,14 +7584,15 @@ function showGameOver(winnerIndex, data) {
     saveStats();
     submitLeaderboard();
     
+    const targetFocusIndex = isMeWinner ? myPlayerIndex : (myPlayerIndex === 0 ? 1 : 0);
     cameraState = 'target';
-    cameraTargetX = winnerIndex === 0 ? p1Model.position.x : p2Model.position.x;
-    const camFocus = getFocusCameraTarget(winnerIndex);
+    cameraTargetX = targetFocusIndex === 0 ? p1Model.position.x : p2Model.position.x;
+    const camFocus = getFocusCameraTarget(targetFocusIndex);
     cameraTargetY = camFocus.y;
     cameraZoomTarget = baseZoom * 1.5;
 
     // G'alaba qozonganda bayram konfetti effekti.
-    if (winnerIndex === myPlayerIndex) {
+    if (isMeWinner) {
         spawnConfetti();
         playSfx('crowDead', 0.6);
     }
@@ -7659,6 +7723,14 @@ if (btnRematchDecline) {
 }
 
 function updateTurn(turnIndex, wind) {
+    isAnimating = false;
+    if (spear) spear.active = false;
+    if (secondarySpear) secondarySpear.active = false;
+    hideFlyingSpear();
+    resetCameraAfterImpact();
+    if (controlsPanel) controlsPanel.classList.remove('disabled');
+    if (hud) hud.style.opacity = '1';
+
     const turnChanged = turnIndex !== prevTurnIndex;
     prevTurnIndex = turnIndex;
     currentTurnIndex = turnIndex;
@@ -10685,9 +10757,9 @@ setInterval(updateMenuWallpaper, 350);
     const introScreen = document.getElementById('intro-screen');
     if (!introScreen) return;
     
-    // Agar bu sessiyada intro bir marta ko'rilgan bo'lsa, qayta ko'rsatilmaydi
+    // Agar Telegramdan duel kodi bilan kirilgan bo'lsa yoki avval ko'rilgan bo'lsa, introni umuman ko'rsatmaymiz
     try {
-        if (sessionStorage.getItem('kamonboz_intro_seen') === '1') {
+        if ((typeof getPendingRoomCode === 'function' && getPendingRoomCode()) || sessionStorage.getItem('kamonboz_intro_seen') === '1') {
             introScreen.classList.add('hide');
             introScreen.style.display = 'none';
             if (introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
@@ -11213,9 +11285,8 @@ if (btnShareTg) {
         }
         triggerHaptic('selection');
         const botUsername = 'Kamonboz_bot';
-        const inviteUrl = `https://t.me/${botUsername}?startapp=${encodeURIComponent(code)}`;
-        const webDirectUrl = `https://nayza-jangi.onrender.com/?room=${encodeURIComponent(code)}`;
-        const inviteText = `🏹 Men bilan Kamonboz duelida 1v1 nayza jangiga kiring!\n🔑 Xona kodi: ${code}\n👇 Havolani bosing va darhol o'yinga ulaning:\n${webDirectUrl}`;
+        const inviteUrl = `https://t.me/${botUsername}?start=room_${encodeURIComponent(code)}`;
+        const inviteText = `🏹 Men bilan Kamonboz duelida 1v1 nayza jangiga kiring!\n🔑 Xona kodi: ${code}\n👇 Havolani bosing va to'g'ridan-to'g'ri bot orqali jangga qo'shiling:`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(inviteText)}`;
 
         if (tg && typeof tg.openTelegramLink === 'function') {
