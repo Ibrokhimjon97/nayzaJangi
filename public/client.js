@@ -2775,6 +2775,7 @@ const fireSpearGlowMat = new THREE.SpriteMaterial({
     blending: THREE.AdditiveBlending
 });
 const fireSpearGlow = new THREE.Sprite(fireSpearGlowMat);
+fireSpearGlow.name = 'fire-spear-glow';
 fireSpearGlow.scale.set(150, 150, 1);
 fireSpearGlow.visible = false;
 spearGroup.add(fireSpearGlow);
@@ -3014,17 +3015,18 @@ function updateCameraBounds() {
     
     // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
     const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
-    const neededWidth = battleDist + (p3Model ? (pos3Offset + 240) : 180) + 120;
-    const minWorldWidth = Math.max(2600, neededWidth);
+    // Har ikkala jangchining eni ~650 birlik.
+    // Ekran chetlaridan yarmi chiqib ketmasligi uchun yetarli yon xoshiya (padding) qo'shamiz:
+    const extraSideMargin = (p3Model ? (pos3Offset + 350) : 0) + 1050;
+    const minWorldWidth = Math.max(3600, battleDist + extraSideMargin);
     const zoomX = (frustumSize * aspect) / minWorldWidth;
 
     if (isPortrait) {
-        // Portret rejimida ikkala jangchi ekranga to'liq sig'adi va ekran vertikal bo'yicha to'la to'ldiriladi
-        baseZoom = Math.min(zoomX * 1.18, 0.6);
+        // Portret rejimida ikkala jangchi ekranga to'liq sig'adi
+        baseZoom = Math.min(zoomX * 1.15, 0.6);
     } else {
-        // Landshaft (albom) rejimida butun maydon keng ko'rinadi
-        const mobileZoomBoost = isMobileView ? 1.08 : 1.0;
-        baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5);
+        // Landshaft (albom) rejimida ikkala personaj ham ekranga 100% to'liq sig'adi, qirqilmaydi
+        baseZoom = Math.min(zoomX * 0.98, 1.5);
     }
     
     if (cameraState === 'static' || cameraState === 'recover' || cameraState === 'normal') {
@@ -3477,12 +3479,12 @@ function ensureWallMesh(ownerIndex) {
     const height = 460;
     const mesh = new THREE.Mesh(
         new THREE.PlaneGeometry(width, height),
-        new THREE.MeshLambertMaterial({
+        new THREE.MeshBasicMaterial({
             map: devorTusiqTexture,
             transparent: true,
-            alphaTest: 0.015,
-            opacity: 0.98,
-            side: THREE.DoubleSide
+            alphaTest: 0.02,
+            side: THREE.DoubleSide,
+            toneMapped: false
         })
     );
     mesh.visible = false;
@@ -3495,7 +3497,8 @@ function ensureWallMesh(ownerIndex) {
         mesh.material.map.generateMipmaps = true;
         mesh.material.map.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 8);
     }
-    mesh.position.set(0, ground.position.y + 230, ownerIndex === 0 ? 8 : -8);
+    const groundSurfaceY = ground.position.y + 100;
+    mesh.position.set(0, groundSurfaceY + height / 2, 12);
     scene.add(mesh);
     wall.mesh = mesh;
     return wall;
@@ -3510,7 +3513,9 @@ function setWallState(ownerIndex, active, x = 0, hp = 0) {
     if (wall.mesh) {
         wall.mesh.visible = wall.active;
         wall.mesh.position.x = wall.x;
-        wall.mesh.position.y = ground.position.y + 230;
+        const groundSurfaceY = ground.position.y + 100;
+        wall.mesh.position.y = groundSurfaceY + (Number(wall.mesh.userData.wallHeight || 460) / 2);
+        wall.mesh.position.z = 12;
     }
 }
 
@@ -3541,8 +3546,8 @@ function isPointerOnMyWall(e) {
     const myWall = wallStates[myPlayerIndex];
     if (!myWall || !myWall.active || !myWall.mesh || !myWall.mesh.visible) return false;
     const pos = pointerToWorldPos(e);
-    const halfW = Number(myWall.mesh.userData.wallWidth || 250) / 2;
-    const halfH = Number(myWall.mesh.userData.wallHeight || 380) / 2;
+    const halfW = Number(myWall.mesh.userData.wallWidth || 280) / 2;
+    const halfH = Number(myWall.mesh.userData.wallHeight || 460) / 2;
     return (
         Math.abs(pos.x - myWall.mesh.position.x) <= halfW &&
         Math.abs(pos.y - myWall.mesh.position.y) <= halfH
@@ -4103,11 +4108,14 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
 
 function getCenterNoticeContainer() {
     let container = document.getElementById('center-notice-container');
+    const parent = document.getElementById('game-app-root') || document.body;
     if (!container) {
         container = document.createElement('div');
         container.id = 'center-notice-container';
-        container.style.cssText = 'position:fixed;top:18%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:9999;width:max-content;max-width:90vw;';
-        document.body.appendChild(container);
+        container.style.cssText = 'position:absolute;top:18%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:9999;width:max-content;max-width:90%;';
+        parent.appendChild(container);
+    } else if (container.parentElement !== parent) {
+        parent.appendChild(container);
     }
     return container;
 }
@@ -4154,25 +4162,30 @@ function stickSpear(targetModel, hitX, hitY, angle) {
         // Faqat yer ustidagi dasta (shaft) va patlar (fletching) ko'rinishi lozim.
         const groundSurfaceY = ground.position.y + 100;
         
-        // 1. O'q uchini butunlay yashiramiz (visible = false)
+        // 1. O'q uchini (metall paykonni) butunlay olib tashlaymiz (remove)
         const tipGroup = stuckSpear.getObjectByName('spear-tip-group');
-        if (tipGroup) tipGroup.visible = false;
+        if (tipGroup) stuckSpear.remove(tipGroup);
         const bomb = stuckSpear.getObjectByName('spear-bomb');
-        if (bomb) bomb.visible = false;
+        if (bomb) stuckSpear.remove(bomb);
+        const glow = stuckSpear.getObjectByName('fire-spear-glow');
+        if (glow) stuckSpear.remove(glow);
 
-        // 2. GPU darajasida yer ostidagi barcha geometriyani qirqib tashlash (clipping plane)
-        // Yer sathidan pastdagi (y < groundSurfaceY) har qanday qism kesib tashlanadi.
-        const groundClipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundSurfaceY + 2);
+        // 2. GPU darajasida yer ostidagi har qanday qoldiqni qirqib tashlash (clipping plane)
+        const groundClipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundSurfaceY + 1);
         stuckSpear.traverse((obj) => {
             if (obj.isMesh && obj.material) {
                 obj.material = obj.material.clone();
                 obj.material.clippingPlanes = [groundClipPlane];
                 obj.material.clipShadows = true;
+                obj.material.needsUpdate = true;
             }
         });
 
-        // 3. Pozitsiya: O'q yerga sanchilgan nuqtasida mustahkam turadi
-        stuckSpear.position.set(hitX, groundSurfaceY, 0);
+        // 3. Pozitsiya: O'q yerga sanchilgan nuqtasidan yuqoriga qaragan holda turadi.
+        // Dastaning uchi yer ichiga kiradi (55 birlik), qolgan qismi va patlar yer ustida ko'rinadi.
+        stuckSpear.position.x = hitX - 55 * Math.cos(angle);
+        stuckSpear.position.y = groundSurfaceY - 55 * Math.sin(angle);
+        stuckSpear.position.z = 12;
         scene.add(stuckSpear);
     }
 }
@@ -6589,7 +6602,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     }
     
     cameraState = 'follow';
-    cameraZoomTarget = baseZoom * 1.2;
+    cameraZoomTarget = baseZoom * 1.35;
 }
 
 function getWallHitOwnerIndex() {
@@ -6599,8 +6612,8 @@ function getWallHitOwnerIndex() {
         if (!wall || !wall.active || !wall.mesh) continue;
         // Owner's own projectile should pass through their wall.
         if (Number(spear.playerIndex) === Number(wall.ownerIndex)) continue;
-        const halfW = Number(wall.mesh.userData.wallWidth || 180) / 2;
-        const halfH = Number(wall.mesh.userData.wallHeight || 170) / 2;
+        const halfW = Number(wall.mesh.userData.wallWidth || 280) / 2;
+        const halfH = Number(wall.mesh.userData.wallHeight || 460) / 2;
         if (Math.abs(spear.x - wall.x) <= halfW && Math.abs(spear.y - wall.mesh.position.y) <= halfH) {
             return wall.ownerIndex;
         }
@@ -6634,8 +6647,8 @@ function getWallHitOwnerIndexForPos(posX, posY, shooterIndex) {
     for (const wall of states) {
         if (!wall || !wall.active || !wall.mesh) continue;
         if (Number(shooterIndex) === Number(wall.ownerIndex)) continue;
-        const halfW = Number(wall.mesh.userData.wallWidth || 180) / 2;
-        const halfH = Number(wall.mesh.userData.wallHeight || 170) / 2;
+        const halfW = Number(wall.mesh.userData.wallWidth || 280) / 2;
+        const halfH = Number(wall.mesh.userData.wallHeight || 460) / 2;
         if (Math.abs(posX - wall.x) <= halfW && Math.abs(posY - wall.mesh.position.y) <= halfH) {
             return wall.ownerIndex;
         }
@@ -7141,10 +7154,8 @@ function gameLoop(now) {
             const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
             cameraTargetY = Math.max(camFocus.y, Math.min(camFocus.y + spearAltitude * 0.52, 1450));
 
-            // Dinamik masshtab: nayza balandlagan sari kamera silliq zoom-out qiladi
-            const altitudeRatio = Math.min(1, spearAltitude / 2200);
-            const dynamicZoom = Math.max(0.60, 1 - altitudeRatio * 0.40);
-            cameraZoomTarget = baseZoom * 1.15 * dynamicZoom;
+            // Dinamik masshtab: o'q uzilganda kamera yaqinlashib (zoom bo'lib) o'q bilan birga boradi
+            cameraZoomTarget = baseZoom * 1.35;
         }
 
         // In single-player, AI can intercept player's projectile with super power.
