@@ -10432,6 +10432,7 @@ async function copyDonateValue(value, btnEl) {
 
 const btnCopyHumo = document.getElementById('btn-copy-humo');
 const btnCopyVisa = document.getElementById('btn-copy-visa');
+const btnCopyEmail = document.getElementById('btn-copy-email');
 if (btnCopyHumo) {
     btnCopyHumo.addEventListener('click', () => {
         const value = (document.getElementById('donate-humo')?.innerText || '').trim();
@@ -10442,6 +10443,11 @@ if (btnCopyVisa) {
     btnCopyVisa.addEventListener('click', () => {
         const value = (document.getElementById('donate-visa')?.innerText || '').trim();
         copyDonateValue(value, btnCopyVisa);
+    });
+}
+if (btnCopyEmail) {
+    btnCopyEmail.addEventListener('click', () => {
+        copyDonateValue('Abiturientlaruchun@gmail.com', btnCopyEmail);
     });
 }
 
