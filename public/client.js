@@ -3397,6 +3397,15 @@ function clearHintTrajectory() {
     }
 }
 
+function isPlayerOnRightSide(index) {
+    if (typeof index !== 'number' || index < 0) index = myPlayerIndex;
+    const model = (typeof modelForPlayer === 'function') ? modelForPlayer(index) : null;
+    if (model && model.position && typeof model.position.x === 'number') {
+        return model.position.x > 0;
+    }
+    return index === 1;
+}
+
 function buildHintTrajectory() {
     clearHintTrajectory();
     if (!lastPlayerShot) return;
@@ -3405,7 +3414,8 @@ function buildHintTrajectory() {
     let simY = shot.startY;
     const rad = shot.angle * (Math.PI / 180);
     let simVx = shot.power * Math.cos(rad);
-    if (shot.playerIndex === 1) simVx = -simVx;
+    const isRight = isPlayerOnRightSide(shot.playerIndex);
+    if (isRight) simVx = -simVx;
     let simVy = shot.power * Math.sin(rad);
     const allPoints = [];
     for (let i = 0; i < 75; i++) {
@@ -5104,6 +5114,37 @@ function computeShotPower(distance) {
     return Math.min(3600, Math.max(350, base));
 }
 
+function getAimParameters(dragStart, dragCurrent, isRightSide) {
+    if (!dragStart || !dragCurrent) return null;
+    const rawDx = dragCurrent.x - dragStart.x;
+    const rawDy = dragCurrent.y - dragStart.y;
+    const distance = Math.hypot(rawDx, rawDy);
+    if (distance < 10) return null;
+
+    const power = computeShotPower(distance);
+
+    // Otuvchining maydondagi tomoniga qarab orqaga tortish (slingshot):
+    // Chap tomondagi jangchi (o'ngga otadi): barmog'ini chapga (rawDx < 0) tortishi = kamon ipini orqaga tortish.
+    // O'ng tomondagi jangchi (chapga otadi): barmog'ini o'ngga (rawDx > 0) tortishi = kamon ipini orqaga tortish.
+    let pullX = isRightSide ? rawDx : -rawDx;
+    let pullY = rawDy; // Barmog'ini pastga tortish kamon uchini yuqoriga ko'taradi
+
+    // Agar o'yinchi orqaga tortish o'rniga to'g'ridan-to'g'ri raqib tomon surgan bo'lsa (direct swipe):
+    if (pullX < 0) {
+        pullX = -pullX;
+        pullY = -rawDy;
+    }
+
+    let angle = Math.atan2(pullY, pullX) * (180 / Math.PI);
+
+    // Kamon burchagi o'q doimo raqib tomonga yo'nalishi uchun -15° (pastga to'g'ri) dan 85° (baland osmonga) oralig'ida bo'ladi.
+    // 90° dan oshishiga aslo yo'l qo'yilmaydi (chunki 90° dan oshsa o'q o'zidan teskari orqa tomonga uchib ketadi).
+    if (angle < -15) angle = -15;
+    if (angle > 85) angle = 85;
+
+    return { angle, power, distance };
+}
+
 function handleEnd(e) {
     isWallDragActive = false;
     if (!isDragging) return;
@@ -5113,20 +5154,11 @@ function handleEnd(e) {
         socket.emit('playerAimState', { isAiming: false, dist: 0 });
     }
 
-    const dx = dragStart.x - dragCurrent.x;
-    const dy = dragCurrent.y - dragStart.y;
+    const isRight = isPlayerOnRightSide(myPlayerIndex);
+    const aim = getAimParameters(dragStart, dragCurrent, isRight);
+    if (!aim) return;
 
-    let distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance < 10) return;
-
-    let power = computeShotPower(distance);
-    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-    if (myPlayerIndex === 1) angle = 180 - angle;
-    if (angle < -20) angle = -20;
-    if (angle > 110) angle = 110;
-
-    throwSpear(angle, power);
+    throwSpear(aim.angle, aim.power);
 }
 
 const isUiTarget = (target) => {
@@ -6014,12 +6046,12 @@ function throwSpear(angle, power) {
     // Faqat o'yinchining o'z otishini saqlaymiz (raqibniki emas).
     if (currentTurnIndex === myPlayerIndex) {
         triggerHaptic('medium');
-        let sX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
-        let sY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 270;
+        const thrower = modelForPlayer(myPlayerIndex);
+        const isRight = isPlayerOnRightSide(myPlayerIndex);
+        let sX = thrower ? (thrower.position.x + (isRight ? -60 : 60)) : (myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60);
+        let sY = (thrower ? thrower.position.y : p1Model.position.y) + 270;
         if (isArtilleryAiming) {
-            const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
-            const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
-            sX = (thrower ? thrower.position.x : 0) + (facingRight ? 570 : -570);
+            sX = (thrower ? thrower.position.x : 0) + (isRight ? -570 : 570);
             sY = (thrower ? thrower.position.y : 0) + 175;
         }
         lastPlayerShot = { startX: sX, startY: sY, angle, power, wind: currentWind, playerIndex: myPlayerIndex };
@@ -6051,7 +6083,7 @@ function throwSpear(angle, power) {
         if (!pendingDoubleShot) {
             pendingDoubleShot = {
                 shooterIndex: currentTurnIndex,
-                angle: Math.max(-20, Math.min(110, angle + (currentTurnIndex === 0 ? 5.5 : -5.5))),
+                angle: Math.max(-15, Math.min(85, angle + 5.5)),
                 power: Math.max(650, power * 0.94),
                 wind: currentWind
             };
@@ -9268,35 +9300,26 @@ function gameLoop(now) {
     });
 
     if (isDragging && currentTurnIndex === myPlayerIndex) {
-        const dx = dragStart.x - dragCurrent.x;
-        const dy = dragCurrent.y - dragStart.y;
+        const isRight = isPlayerOnRightSide(myPlayerIndex);
+        const aim = getAimParameters(dragStart, dragCurrent, isRight);
 
-        if (Math.sqrt(dx * dx + dy * dy) > 10) {
-            let startX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
-            let startY = p1Model.position.y + 270;
+        if (aim) {
+            const { angle, power } = aim;
+            const thrower = modelForPlayer(myPlayerIndex);
+            let startX = thrower ? (thrower.position.x + (isRight ? -60 : 60)) : (myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60);
+            let startY = (thrower ? thrower.position.y : p1Model.position.y) + 270;
 
             if (isArtilleryAiming) {
-                const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
-                const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
-                startX = (thrower ? thrower.position.x : 0) + (facingRight ? 570 : -570);
+                startX = (thrower ? thrower.position.x : 0) + (isRight ? -570 : 570);
                 startY = (thrower ? thrower.position.y : 0) + 175;
             }
 
-
-
             let simX = startX;
             let simY = startY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const power = computeShotPower(distance);
-            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-            if (myPlayerIndex === 1) angle = 180 - angle;
-            if (angle < -20) angle = -20;
-            if (angle > 110) angle = 110;
 
             const rad = angle * (Math.PI / 180);
             let simVx = power * Math.cos(rad);
-            if (myPlayerIndex === 1) simVx = -simVx;
+            if (isRight) simVx = -simVx;
             let simVy = power * Math.sin(rad);
 
             const allPoints = [];
@@ -9324,9 +9347,9 @@ function gameLoop(now) {
                 if (myWeapon === 'arrow' && !isArtilleryAiming) {
                     active3DBow.visible = true;
                     active3DBow.position.set(startX, startY, 15);
-                    const bowRotAngle = myPlayerIndex === 1 ? (Math.PI - rad) : rad;
+                    const bowRotAngle = isRight ? (Math.PI - rad) : rad;
                     active3DBow.rotation.z = bowRotAngle;
-                    if (myPlayerIndex === 1) {
+                    if (isRight) {
                         active3DBow.scale.set(1.4, -1.4, 1.4);
                     } else {
                         active3DBow.scale.set(1.4, 1.4, 1.4);
