@@ -2919,44 +2919,15 @@ function isPortraitMode() {
 
 function getFocusCameraTarget(turnIndex) {
     const isPortrait = isPortraitMode();
-    if (!isPortrait) {
-        // Landscape (albom) rejimida butun jang maydoni markazda (x=0, y=0) ko'rinadi.
-        // O'yinchi va barcha raqiblar (shu jumladan 50+ levellardagi 2 raqib ham) to'liq ekranda doimiy ko'rinib turadi.
-        return { x: 0, y: 0, zoom: baseZoom };
-    }
-    
-    // Portret rejimida:
-    const myIdx = (typeof myPlayerIndex === 'number' && myPlayerIndex >= 0) ? myPlayerIndex : 0;
-    const isMyTurn = (turnIndex === myIdx || turnIndex === -1);
-    if (isMyTurn) {
-        const myModel = (typeof modelForPlayer === 'function' ? modelForPlayer(myIdx) : null) || p1Model;
-        const dir = (myModel && myModel.position.x < 0) ? 1 : -1;
-        return {
-            x: myModel ? myModel.position.x + dir * 140 : 0,
-            y: (myModel ? myModel.position.y : 0) + 80,
-            zoom: baseZoom
-        };
-    }
-    
-    // Raqib(lar) navbati / raqib tomoni:
-    const primaryEnemyModel = (myIdx === 0) ? p2Model : p1Model;
-    if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) {
-        // Ikki raqib mavjud bo'lganda, kamera ikkalasining o'rtasiga qaratiladi
-        const e1X = primaryEnemyModel ? primaryEnemyModel.position.x : 1300;
-        const e2X = p3Model.position.x;
-        const midX = (e1X + e2X) / 2;
-        const dir = (e1X < 0) ? 1 : -1;
-        return {
-            x: midX + dir * 30,
-            y: (primaryEnemyModel ? primaryEnemyModel.position.y : 0) + 80,
-            zoom: baseZoom * 0.90 // Ikkala raqib ham portret ekraniga to'liq sig'ishi uchun
-        };
-    }
-    
-    const dir = (primaryEnemyModel && primaryEnemyModel.position.x < 0) ? 1 : -1;
+    // Default holat: Jang maydoni markazda (x=0) joylashadi.
+    // Albomda ham, portret rejimida ham o'yinchi va uning raqibi ikkalasi ekranga to'liq sig'ib,
+    // o'yinchi raqib qayerda turganini aniq ko'rib turadi.
+    const p3OffsetExtra = (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) ? (pos3Offset / 2) : 0;
+    const centerX = p3OffsetExtra;
+    const centerY = isPortrait ? -35 : 0;
     return {
-        x: primaryEnemyModel ? primaryEnemyModel.position.x + dir * 140 : 0,
-        y: (primaryEnemyModel ? primaryEnemyModel.position.y : 0) + 80,
+        x: centerX,
+        y: centerY,
         zoom: baseZoom
     };
 }
@@ -2975,20 +2946,23 @@ function updateCameraBounds() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(getPreferredPixelRatio());
     
+    // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
+    const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
+    const neededWidth = battleDist + (p3Model ? (pos3Offset + 380) : 260) + 400;
+    const minWorldWidth = Math.max(2800, neededWidth);
+    const zoomX = (frustumSize * aspect) / minWorldWidth;
+
     if (isPortrait) {
-        // Portret rejimida o'yinchi va nayza juda kichik bo'lib ketmasligi uchun qulay masshtab
-        baseZoom = 0.88;
+        // Portret rejimida ekran tor bo'lgani sababli ikkala jangchi ekranga to'liq sig'ishi uchun
+        // kenglik bo'yicha masshtab hisoblanadi (uzoqlashtirilgan umumiy ko'rinish)
+        baseZoom = Math.min(zoomX * 1.05, 1.0);
     } else {
         // Landshaft (albom) rejimida butun maydon keng ko'rinadi
-        const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
-        const neededWidth = battleDist + (p3Model ? (pos3Offset + 380) : 260) + 380;
-        const minWorldWidth = Math.max(2800, neededWidth);
-        const zoomX = (frustumSize * aspect) / minWorldWidth;
         const mobileZoomBoost = isMobileView ? 1.08 : 1.0;
         baseZoom = Math.min(zoomX * mobileZoomBoost, 1.5);
     }
     
-    if (cameraState === 'static' || cameraState === 'recover') {
+    if (cameraState === 'static' || cameraState === 'recover' || cameraState === 'normal') {
         const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
         cameraZoomTarget = camFocus.zoom;
         camera.zoom = camFocus.zoom;
@@ -3917,13 +3891,6 @@ function updateSuperInterceptCinematic(now, dt) {
 
 function resetCameraAfterImpact() {
     cameraState = 'recover';
-    const isPortrait = isPortraitMode();
-    if (!isPortrait) {
-        cameraTargetX = 0;
-        cameraTargetY = 0;
-        cameraZoomTarget = baseZoom;
-        return;
-    }
     const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
     cameraTargetX = camFocus.x;
     cameraTargetY = camFocus.y;
@@ -6013,7 +5980,7 @@ socket.on('entityHit', (data) => {
 });
 
 socket.on('gameOver', (data) => {
-    setTimeout(() => showGameOver(data.winnerIndex), 1500);
+    setTimeout(() => showGameOver(data.winnerIndex, data), 1200);
 });
 
 socket.on('opponentDisconnected', () => {
@@ -6080,7 +6047,7 @@ socket.on('rematchDeclined', () => {
 
 socket.on('turnTimerStart', (data) => {
     if (typeof startTurnTimerUI === 'function') {
-        startTurnTimerUI(data?.duration || 25);
+        startTurnTimerUI(data?.duration || 30);
     }
 });
 
@@ -6094,13 +6061,26 @@ socket.on('playerEmote', (data) => {
     }
 });
 
-function showGameOver(winnerIndex) {
+function showGameOver(winnerIndex, data) {
     if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
     gameOverScreen.classList.remove('hidden');
     controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
-    const winner = winnerIndex === myPlayerIndex ? t.win : t.lose;
-    winnerText.innerText = winner;
+    
+    if (data && data.reason === 'timeout_forfeit') {
+        if (winnerIndex === myPlayerIndex) {
+            winnerText.innerText = "Siz g'alaba qozondingiz, raqibingiz chekindi!";
+            winnerText.style.color = '#22c55e';
+        } else {
+            winnerText.innerText = "Vaqtingiz tugadi, siz yengildingiz!";
+            winnerText.style.color = '#ef4444';
+        }
+    } else {
+        const winner = winnerIndex === myPlayerIndex ? t.win : t.lose;
+        winnerText.innerText = winner;
+        winnerText.style.color = winnerIndex === myPlayerIndex ? '#22c55e' : '#ef4444';
+    }
+
     if (restartBtn) {
         const nextLabel = t.nextLevelBtn || "Keyingi bosqich";
         const replayLabel = t.playAgainBtn || "Yana o'ynash";
@@ -6119,6 +6099,10 @@ function showGameOver(winnerIndex) {
     if (winnerIndex === myPlayerIndex) {
         triggerHaptic('success');
         myStats.wins++;
+        if (gameMode === 'multi') {
+            addScore(100);
+            showCenterNotice("+100 Ball qo'shildi! 🏆", 2500);
+        }
         if (typeof checkQuestProgress === 'function') checkQuestProgress('win', 1);
         if (gameMode === 'single') {
             singleCampaignLevel += 1;
@@ -6993,17 +6977,18 @@ function gameLoop(now) {
                 targetState = 'load';
             }
             
-            // Aiming zoom logic
-            if (cameraState === 'static' || cameraState === 'aiming') {
+            // Aiming zoom logic: kamon tortayotganda faqat o'yinchi yaqinlashadi, raqib ko'rinmaydi
+            if (cameraState === 'static' || cameraState === 'aiming' || cameraState === 'recover' || cameraState === 'normal') {
                 cameraState = 'aiming';
                 const isPortrait = isPortraitMode();
-                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 130 : 95) : (isPortrait ? -130 : -95)); 
-                cameraTargetY = model.position.y + 140;
-                cameraZoomTarget = isPortrait ? baseZoom * 1.28 : baseZoom * 1.75;
+                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 110 : 85) : (isPortrait ? -110 : -85)); 
+                cameraTargetY = model.position.y + 130;
+                // Yaqindan ko'rinish
+                cameraZoomTarget = isPortrait ? 1.45 : 1.75;
             }
         } else if (!isDragging && cameraState === 'aiming') {
-            // Revert back when stopped aiming
-            cameraState = 'static';
+            // Revert back when stopped aiming: yana butun maydon va raqib ko'rinadigan umumiy ko'rinishga qaytish
+            cameraState = 'recover';
             const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
             cameraTargetX = camFocus.x;
             cameraTargetY = camFocus.y;
@@ -8898,9 +8883,9 @@ if (btnShareTg) {
         }
         triggerHaptic('selection');
         const botUsername = 'Kamonboz_bot';
-        // Telegram Mini App direct link va bot start link
         const inviteUrl = `https://t.me/${botUsername}?startapp=${encodeURIComponent(code)}`;
-        const inviteText = `🏹 Men bilan Kamonboz duelida 1v1 nayza jangiga tushasizmi?\n🔑 Xona kodi: ${code}\n👇 Havolani bosing va to'g'ridan-to'g'ri jangga kiring:`;
+        const webDirectUrl = `https://nayza-jangi.onrender.com/?room=${encodeURIComponent(code)}`;
+        const inviteText = `🏹 Men bilan Kamonboz duelida 1v1 nayza jangiga kiring!\n🔑 Xona kodi: ${code}\n👇 Havolani bosing va darhol o'yinga ulaning:\n${webDirectUrl}`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(inviteText)}`;
 
         if (tg && typeof tg.openTelegramLink === 'function') {
@@ -8911,35 +8896,97 @@ if (btnShareTg) {
     });
 }
 
-function checkAutoJoinTelegramRoom() {
-    let code = tg?.initDataUnsafe?.start_param;
-    if (!code) {
+function getPendingRoomCode() {
+    let code = null;
+    // 1. Telegram start_param (Mini App)
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+        code = String(tg.initDataUnsafe.start_param);
+    }
+    // 2. URL search query parametrlari (?room=XYZ, ?startapp=XYZ, ?tgWebAppStartParam=XYZ)
+    if (!code && window.location.search) {
         try {
             const sp = new URLSearchParams(window.location.search);
-            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam');
-        } catch (e) {}
+            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join');
+        } catch (_) {}
     }
-    if (!code) return;
-    code = String(code).replace(/^(room_|duel_)/i, '').trim().toUpperCase();
-    if (!code || code.length < 3) return;
-
-    if (checkAutoJoinTelegramRoom.done) return;
-    checkAutoJoinTelegramRoom.done = true;
-
-    console.log('Telegram room code detected for auto-join:', code);
-    setTimeout(() => {
-        if (menuScreen) menuScreen.classList.add('hidden');
-        if (multiMenu) multiMenu.classList.add('hidden');
-        if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
-        if (createCodeContainer) createCodeContainer.classList.add('hidden');
-        if (gameOptionsModal) gameOptionsModal.classList.add('hidden');
-        showCenterNotice(`⚔️ Telegram xonasi (${code}) ga ulanilmoqda...`);
-        socket.emit('joinGame', { profile: myProfile, code });
-    }, 450);
+    // 3. URL hash parametrlari (#tgWebAppStartParam=XYZ yoki #tgWebAppData=...&tgWebAppStartParam=XYZ)
+    if (!code && window.location.hash) {
+        try {
+            const hashRaw = window.location.hash.replace(/^#/, '');
+            const hp = new URLSearchParams(hashRaw);
+            code = hp.get('tgWebAppStartParam') || hp.get('startapp') || hp.get('room') || hp.get('code');
+            if (!code && hashRaw.includes('tgWebAppStartParam=')) {
+                const m = hashRaw.match(/tgWebAppStartParam=([^&]+)/);
+                if (m) code = decodeURIComponent(m[1]);
+            }
+        } catch (_) {}
+    }
+    // 4. SessionStorage
+    if (!code) {
+        try {
+            code = sessionStorage.getItem('nayza_pending_room');
+        } catch (_) {}
+    }
+    if (code) {
+        code = String(code).replace(/^(room_|duel_)/i, '').trim().toUpperCase();
+        if (code.length >= 3) {
+            try { sessionStorage.setItem('nayza_pending_room', code); } catch (_) {}
+            return code;
+        }
+    }
+    return null;
 }
 
-socket.on('joinError', () => {
-    if (joinError) joinError.style.display = 'block';
+let autoJoinExecuted = false;
+function checkAutoJoinTelegramRoom() {
+    const code = getPendingRoomCode();
+    if (!code) return false;
+
+    // Har qanday holatda inputga ham to'ldirib qo'yamiz
+    if (inputJoinCode) inputJoinCode.value = code;
+
+    if (autoJoinExecuted) return true;
+
+    // Agar socket hali serverga ulanmagan bo'lsa, connect hodisasini kutamiz
+    if (!socket || !socket.connected) {
+        console.log('[AutoJoin] Socket ulanishi kutilmoqda. Xona kodi:', code);
+        return false;
+    }
+
+    autoJoinExecuted = true;
+    console.log('[AutoJoin] Xonaga avtomatik ulanmoqda:', code);
+
+    // Barcha oraliq ekranlarni yashirish
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
+    if (authModal) authModal.classList.add('hidden');
+    if (menuScreen) menuScreen.classList.add('hidden');
+    if (multiMenu) multiMenu.classList.add('hidden');
+    if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
+    if (createCodeContainer) createCodeContainer.classList.add('hidden');
+    if (gameOptionsModal) gameOptionsModal.classList.add('hidden');
+    if (waitingScreen) waitingScreen.classList.remove('hidden');
+
+    showCenterNotice(`⚔️ Taklif qilingan duelga (${code}) ulanilmoqda...`, 3000);
+    socket.emit('joinGame', { profile: myProfile, code });
+    return true;
+}
+
+socket.on('joinError', (err) => {
+    autoJoinExecuted = false;
+    try { sessionStorage.removeItem('nayza_pending_room'); } catch (_) {}
+    if (waitingScreen) waitingScreen.classList.add('hidden');
+    if (multiMenu) multiMenu.classList.remove('hidden');
+    if (joinCodeContainer) joinCodeContainer.classList.remove('hidden');
+    if (joinError) {
+        joinError.style.display = 'block';
+        joinError.innerText = "Xona topilmadi yoki o'yin boshlanib ketgan.";
+    }
+    showCenterNotice("❌ Xona topilmadi yoki o'yin tugagan.", 3000);
 });
 
 socket.on('waiting', () => {
@@ -9149,16 +9196,16 @@ function triggerScreenFlash(type = 'damage') {
 }
 
 let turnTimerInterval = null;
-let turnSecondsLeft = 25;
+let turnSecondsLeft = 30;
 
-function startTurnTimerUI(duration = 25) {
+function startTurnTimerUI(duration = 30) {
     const badge = document.getElementById('turn-timer-badge');
     const txt = document.getElementById('turn-timer-text');
     if (!badge || !txt) return;
     clearInterval(turnTimerInterval);
-    turnSecondsLeft = Math.max(1, Number(duration) || 25);
+    turnSecondsLeft = Math.max(1, Number(duration) || 30);
     badge.classList.remove('hidden', 'timer-warning');
-    txt.innerText = turnSecondsLeft;
+    txt.innerText = turnSecondsLeft + ' s';
 
     turnTimerInterval = setInterval(() => {
         turnSecondsLeft--;
@@ -9166,7 +9213,7 @@ function startTurnTimerUI(duration = 25) {
             clearInterval(turnTimerInterval);
             turnSecondsLeft = 0;
         }
-        txt.innerText = turnSecondsLeft;
+        txt.innerText = turnSecondsLeft + ' s';
         if (turnSecondsLeft <= 5) {
             badge.classList.add('timer-warning');
             playSfx('click');

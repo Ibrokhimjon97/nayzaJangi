@@ -697,7 +697,7 @@ const onlineByPlayerId = new Map();
 const pendingFriendInvites = new Map();
 const pendingFriendAddRequests = new Map();
 
-const TURN_TIMEOUT_SECONDS = 25;
+const TURN_TIMEOUT_SECONDS = 30;
 
 function clearRoomTurnTimer(roomName) {
     const room = rooms[roomName];
@@ -725,35 +725,29 @@ function startRoomTurnTimer(roomName) {
 function handleRoomTurnTimeout(roomName) {
     const room = rooms[roomName];
     if (!room || room.gameOver) return;
-    if (room.inFlight) return; // Projectile mid-air, wait
 
-    room.consecutiveTimeouts = room.consecutiveTimeouts || [0, 0];
-    room.consecutiveTimeouts[room.turnIndex] = (room.consecutiveTimeouts[room.turnIndex] || 0) + 1;
-
-    // AFK limit (3 turns missed = forfeit)
-    if (room.consecutiveTimeouts[room.turnIndex] >= 3) {
-        room.gameOver = true;
-        clearRoomTurnTimer(roomName);
-        const winnerIndex = room.turnIndex === 0 ? 1 : 0;
-        io.to(roomName).emit('gameOver', { winnerIndex, reason: 'forfeit_afk' });
-        return;
+    if (room.inFlight) {
+        const flightDuration = Date.now() - (room.flightStartTime || 0);
+        if (flightDuration < 8000) {
+            // Hali nayza parvozda, kuta turamiz
+            room.turnTimer = setTimeout(() => handleRoomTurnTimeout(roomName), 2500);
+            return;
+        }
+        room.inFlight = false;
     }
 
-    const skippedTurnIndex = room.turnIndex;
-    room.turnIndex = room.turnIndex === 0 ? 1 : 0;
-    room.wind = generateWind();
+    // 30 soniyada o'q uzilmasa o'yinchi yutqazadi va raqib chekingan deb topiladi
+    room.gameOver = true;
+    clearRoomTurnTimer(roomName);
+    const timedOutIndex = room.turnIndex;
+    const winnerIndex = timedOutIndex === 0 ? 1 : 0;
+    console.log(`[Turn Timeout] Room ${roomName}: Player ${timedOutIndex} timed out after 30s. Winner: Player ${winnerIndex}`);
 
-    io.to(roomName).emit('turnTimedOut', {
-        skippedTurnIndex,
-        nextTurnIndex: room.turnIndex,
-        wind: room.wind
+    io.to(roomName).emit('gameOver', {
+        winnerIndex,
+        reason: 'timeout_forfeit',
+        timedOutIndex
     });
-    io.to(roomName).emit('nextTurn', {
-        turnIndex: room.turnIndex,
-        wind: room.wind
-    });
-
-    startRoomTurnTimer(roomName);
 }
 
 function removeFromWaitingQueue(socketId) {
@@ -876,12 +870,15 @@ io.on('connection', (socket) => {
     });
 
     socket.on('joinGame', (data) => {
-        const { profile, code } = data;
+        const { profile, code } = data || {};
+        const cleanCode = String(code || '').replace(/^(room_|duel_)/i, '').trim().toUpperCase();
         socket.profile = profile || { name: "O'yinchi", flag: "🏳️", avatar: "👤" };
         bindOnlineProfile(socket.profile);
 
-        if (roomsByCode[code]) {
-            const roomData = roomsByCode[code];
+        const targetCode = roomsByCode[cleanCode] ? cleanCode : (roomsByCode[code] ? code : null);
+
+        if (targetCode && roomsByCode[targetCode]) {
+            const roomData = roomsByCode[targetCode];
             const player1 = roomData.player1;
             const player2 = socket;
             const roomName = roomData.roomName;
@@ -889,11 +886,11 @@ io.on('connection', (socket) => {
             // pre-fill room with options so startGame can read it
             rooms[roomName] = { options: roomData.options };
 
-            delete roomsByCode[code];
+            delete roomsByCode[targetCode];
             player2.join(roomName);
             startGame(player1, player2, roomName);
         } else {
-            socket.emit('joinError');
+            socket.emit('joinError', { code: cleanCode || code });
         }
     });
 
@@ -1077,6 +1074,7 @@ io.on('connection', (socket) => {
             isFire: !!isFire
         });
         room.inFlight = true;
+        room.flightStartTime = Date.now();
     });
 
     socket.on('useSuperPower', (payload) => {
