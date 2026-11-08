@@ -15,12 +15,12 @@
       "noShieldDefend": "custom_models/1777838541774-39863292.png",
       "noShieldHurt": "custom_models/1777838541776-792085097.png",
       "celebrate": "custom_models/1777838541778-161536922.png",
-      "shieldAfterShot": "custom_models/1777887065900-517890612.png"
+      "shieldAfterShot": "custom_models/1778945362637-394845209.png"
     },
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
       "width": 650,
-      "height": 430,
+      "height": 500,
       "offsetY": 0,
       "offsetX": 0
     },
@@ -42,16 +42,46 @@
       "noShieldDefend": "custom_models/1777843676351-553453094.png",
       "noShieldHurt": "custom_models/1777843676353-759105215.png",
       "celebrate": "custom_models/1777843676306-242349779.png",
-      "shieldAfterShot": "custom_models/1777845218515-884529067.png"
+      "shieldAfterShot": "custom_models/1778944954268-286092420.png"
     },
     "bgMusic": "custom_models/1777843676355-678209768.mp3",
     "settings": {
-      "width": 440,
-      "height": 450,
+      "width": 380,
+      "height": 480,
       "offsetY": 5,
       "offsetX": 0,
       "facesLeft": true
     },
     "weaponType": "spear"
+  },
+  {
+    "id": "custom_1794125558681",
+    "name": "Kamonchi qiz",
+    "textures": {
+      "shieldIdle": "custom_models/1794125558665-39560564.png",
+      "shieldAim": "custom_models/1794125558666-295247229.png",
+      "shieldDuck": "custom_models/1794125558667-291785840.png",
+      "shieldDefend": "custom_models/1794125558668-165785121.png",
+      "shieldHurt": "custom_models/1794125558669-281151343.png",
+      "shieldBreak": "custom_models/1794125558670-981774227.png",
+      "noShieldIdle": "custom_models/1794125558672-183326707.png",
+      "noShieldAim": "custom_models/1794125558673-912895632.png",
+      "noShieldDuck": "custom_models/1794125558673-803772340.png",
+      "noShieldDefend": "custom_models/1794125558674-224049467.png",
+      "noShieldHurt": "custom_models/1794125558675-370691010.png",
+      "shieldAfterShot": "custom_models/1794125558671-744462011.png",
+      "noShieldAfterShot": "custom_models/1794125558671-744462011.png",
+      "shieldJump": "custom_models/1794125558672-916781883.png",
+      "noShieldJump": "custom_models/1794125558675-873412463.png",
+      "celebrate": "custom_models/1794125558676-266533224.png"
+    },
+    "weaponType": "bow",
+    "bgMusic": "custom_models/1794125558676-98367961.mp3",
+    "settings": {
+      "width": 440,
+      "height": 435,
+      "offsetY": 0,
+      "offsetX": 0
+    }
   }
 ]

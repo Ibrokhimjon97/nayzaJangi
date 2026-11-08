@@ -956,6 +956,11 @@ io.on('connection', (socket) => {
         bindOnlineProfile(profile);
     });
 
+    socket.on('updateProfile', (profile) => {
+        if (!profile || !profile.playerId) return;
+        bindOnlineProfile(profile);
+    });
+
     function generateCode() {
         return Math.floor(1000 + Math.random() * 9000).toString();
     }

@@ -4568,3 +4568,301 @@ body.force-landscape .custom-select-item {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
     }
 }
+
+/* ========================================================
+   QAHRAMONNI TANLASH MODALI (CHARACTER SELECTION MODAL)
+   ======================================================== */
+.char-select-modal {
+    max-width: 720px !important;
+    width: 95vw !important;
+    max-height: 90vh !important;
+    padding: 16px 20px 18px !important;
+    background: radial-gradient(circle at 50% 15%, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99)) !important;
+    border: 1.5px solid rgba(148, 163, 184, 0.3) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.15) !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 1000 !important;
+    backdrop-filter: blur(12px) !important;
+    box-sizing: border-box !important;
+}
+
+.char-select-modal.hidden {
+    display: none !important;
+}
+
+.char-select-header {
+    text-align: center;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.char-select-header h2 {
+    font-size: clamp(1.3rem, 2.8vw, 1.85rem);
+    color: #f8fafc;
+    margin: 0 0 4px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.char-select-subtitle {
+    font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+    color: #94a3b8;
+    margin: 0;
+}
+
+.char-roster-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+    max-height: clamp(220px, 48vh, 380px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 6px;
+    margin-bottom: 14px;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.char-roster-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.char-roster-grid::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+}
+
+.char-card {
+    position: relative;
+    flex: 0 1 clamp(130px, 26vw, 165px);
+    background: rgba(30, 41, 59, 0.75);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    padding: 10px 8px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+}
+
+.char-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(56, 189, 248, 0.6);
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.char-card.selected {
+    border-color: #38bdf8 !important;
+    background: radial-gradient(circle at 50% 30%, rgba(14, 165, 233, 0.25), rgba(30, 41, 59, 0.95)) !important;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.5), inset 0 0 16px rgba(56, 189, 248, 0.15) !important;
+    transform: translateY(-4px) scale(1.03);
+}
+
+.char-card-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    z-index: 5;
+}
+
+.badge-bow {
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+.badge-spear {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.char-card-avatar-wrap {
+    width: 100%;
+    height: clamp(100px, 20vh, 140px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}
+
+.char-card-img {
+    max-width: 92%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.65));
+    transition: transform 0.2s ease;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.char-card:hover .char-card-img {
+    transform: scale(1.05);
+}
+
+.char-card-pedestal {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 78%;
+    height: 14px;
+    background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.35), transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.char-card.selected .char-card-pedestal {
+    background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.7), transparent 70%);
+}
+
+.char-card-info {
+    width: 100%;
+    margin-top: auto;
+}
+
+.char-card-name {
+    font-size: clamp(0.85rem, 1.8vw, 0.98rem);
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.char-card-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.2;
+    height: 2.4em;
+    overflow: hidden;
+}
+
+.char-card-selected-indicator {
+    display: none;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    border-radius: 999px;
+    padding: 2px 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.char-card.selected .char-card-selected-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.char-select-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.char-confirm-btn {
+    flex: 2 !important;
+    background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.45) !important;
+    font-weight: 800 !important;
+    font-size: clamp(0.95rem, 2vw, 1.15rem) !important;
+    margin: 0 !important;
+    border: none !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.char-confirm-btn:hover {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    box-shadow: 0 6px 22px rgba(14, 165, 233, 0.6) !important;
+    transform: translateY(-2px);
+}
+
+.char-cancel-btn {
+    flex: 1 !important;
+    background: #334155 !important;
+    color: #cbd5e1 !important;
+    font-size: clamp(0.85rem, 1.8vw, 1rem) !important;
+    margin: 0 !important;
+    border: none !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+}
+
+.char-cancel-btn:hover {
+    background: #475569 !important;
+    color: #f8fafc !important;
+}
+
+/* Albomniy / Landscape rejimida moslashuv */
+@media (max-height: 520px) {
+    .char-select-modal {
+        max-height: 96vh !important;
+        padding: 10px 14px !important;
+    }
+    .char-select-header {
+        margin-bottom: 6px !important;
+    }
+    .char-select-header h2 {
+        font-size: 1.15rem !important;
+        margin-bottom: 2px !important;
+    }
+    .char-select-subtitle {
+        display: none !important;
+    }
+    .char-roster-grid {
+        max-height: clamp(140px, 48vh, 210px) !important;
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+    }
+    .char-card {
+        flex: 0 1 125px !important;
+        padding: 6px 5px !important;
+    }
+    .char-card-avatar-wrap {
+        height: 85px !important;
+        margin-top: 8px !important;
+        margin-bottom: 4px !important;
+    }
+    .char-card-name {
+        font-size: 0.8rem !important;
+    }
+    .char-card-desc {
+        display: none !important;
+    }
+    .char-confirm-btn, .char-cancel-btn {
+        padding: 8px 12px !important;
+        font-size: 0.88rem !important;
+    }
+}
