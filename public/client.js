@@ -767,7 +767,8 @@ for (let i = 0; i < starCount; i++) {
 starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
 const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 5, transparent: true, opacity: 0, depthWrite: false });
 const starField = new THREE.Points(starGeo, starMat);
-scene.add(starField);
+starField.visible = false;
+// scene.add(starField); -- O'chirildi (ekranni tiniq saqlash uchun ortiqcha piksellar olib tashlandi)
 
 const groundGeo = new THREE.BoxGeometry(40000, 15000, 2000);
 groundGeo.translate(0, -7400, 0);
@@ -819,9 +820,10 @@ for(let i=0; i<dustCount*3; i++) {
     if(i%3 === 1) dustPos[i] = Math.random() * 800 - 300; 
 }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-const dustMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 4, transparent: true, opacity: 0.12 });
+const dustMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 4, transparent: true, opacity: 0 });
 const dustSystem = new THREE.Points(dustGeo, dustMat);
-scene.add(dustSystem);
+dustSystem.visible = false;
+// scene.add(dustSystem); -- O'chirildi (ekran tiniq bo'lishi uchun)
 let weatherType = 'sunny';
 let weatherSystem = null;
 let weatherVelocities = null;
@@ -837,7 +839,8 @@ function clearWeatherSystem() {
 
 function createWeatherSystem(type) {
     clearWeatherSystem();
-    if (type !== 'rain' && type !== 'storm' && type !== 'snow') return;
+    // Foydalanuvchi talabi: ortiqcha uchib yuruvchi mayda piksellar/qor/yomg'ir zarrachalari o'chirildi, ekran tiniq saqlanadi
+    return;
 
     const count = MOBILE_PERF_MODE ? (type === 'storm' ? 550 : 380) : (type === 'storm' ? 1200 : 800);
     const pos = new Float32Array(count * 3);
@@ -2150,7 +2153,7 @@ function buildMap(mapType, weather = 'sunny') {
         sunSprite.userData.baseScale = sunSprite.scale.x;
     }
     if (typeof starMat !== 'undefined' && starMat) {
-        starMat.opacity = weather === 'night' ? 0.9 : 0;
+        starMat.opacity = 0;
     }
     // Yorug'lik intensivligini ob-havoga moslab, sahnani jonliroq qilamiz.
     if (typeof dirLight !== 'undefined') {
@@ -2292,7 +2295,7 @@ function buildMap(mapType, weather = 'sunny') {
             );
             tree.position.set(
                 side * (safeRadius + 260 + depthOffsetX + i * (200 + Math.random() * 90)),
-                ground.position.y + 30 + h / 2,
+                ground.position.y + 100 + h / 2,
                 zByBand
             );
             tree.userData.baseX = tree.position.x;
@@ -2637,7 +2640,10 @@ function setSoldierVisual(model, state) {
     model.userData.visualState = targetState;
 
     if (model.userData.planeMesh && model.userData.basePlaneY) {
-        if (model.userData.isOttomanSpearman && targetState === 'duck') {
+        if (targetState === 'hurt') {
+            // Yaralangan/yiqilgan holatda model havoda muallaq yiqilmasdan, to'g'ridan-to'g'ri yer ustiga yotadi
+            model.userData.planeMesh.position.y = model.userData.basePlaneY - 110;
+        } else if (model.userData.isOttomanSpearman && targetState === 'duck') {
             model.userData.planeMesh.position.y = model.userData.basePlaneY + 45;
         } else {
             model.userData.planeMesh.position.y = model.userData.basePlaneY;
@@ -3556,7 +3562,7 @@ function ensureWallMesh(ownerIndex) {
         mesh.material.map.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 8);
     }
     const groundSurfaceY = ground.position.y + 100;
-    mesh.position.set(0, groundSurfaceY + height / 2, 12);
+    mesh.position.set(0, groundSurfaceY + height / 2 - 32, 12);
     scene.add(mesh);
     wall.mesh = mesh;
     return wall;
@@ -3572,7 +3578,7 @@ function setWallState(ownerIndex, active, x = 0, hp = 0) {
         wall.mesh.visible = wall.active;
         wall.mesh.position.x = wall.x;
         const groundSurfaceY = ground.position.y + 100;
-        wall.mesh.position.y = groundSurfaceY + (Number(wall.mesh.userData.wallHeight || 460) / 2);
+        wall.mesh.position.y = groundSurfaceY + (Number(wall.mesh.userData.wallHeight || 460) / 2) - 32;
         wall.mesh.position.z = 12;
     }
 }
@@ -7443,7 +7449,8 @@ function getWallHitOwnerIndexForPos(posX, posY, shooterIndex) {
 function applySecondarySpearHit(targetIndex, hitX, hitY) {
     const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
     flashHit(targetModel);
-    stickSpear(targetModel, hitX, hitY, secondarySpearGroup.rotation.z);
+    // Qo'sh nayzaning ikkinchi o'qi havoda muallaq qolib ketmasligi uchun urilgach yo'qoladi
+    if (secondarySpearGroup) secondarySpearGroup.visible = false;
     
     const relativeY = hitY - targetModel.position.y;
     const hitResult = calculateHitResult(targetIndex, relativeY, false);
@@ -7771,8 +7778,8 @@ function gameLoop(now) {
         }
     }
 
-    // Breathing Animation
-    const breath = Math.sin(now * 0.004) * 0.02 + 1;
+    // Breathing Animation - mayin, tabiiy va modelni haddan ziyod cho'zib yubormaydigan nafas olish
+    const breath = Math.sin(now * 0.002) * 0.005 + 1;
     const duckOffset = -62;
     const p1Duck = isDuckActiveForPlayer(0);
     const p2Duck = isDuckActiveForPlayer(1);
@@ -7780,39 +7787,41 @@ function gameLoop(now) {
     const p1ArcherDuck = p1Model?.userData?.isOttomanArcher && p1Duck;
     const p2ArcherDuck = p2Model?.userData?.isOttomanArcher && p2Duck;
     const p3ArcherDuck = p3Model?.userData?.isOttomanArcher && p3Duck;
-    p1Model.userData.torso.scale.y = p1ArcherDuck ? Math.max(0.74, breath - 0.22) : (p1Duck ? Math.max(0.86, breath - 0.12) : breath);
-    p2Model.userData.torso.scale.y = p2ArcherDuck ? Math.max(0.74, breath - 0.22) : (p2Duck ? Math.max(0.86, breath - 0.12) : breath);
-    if (p3Model) p3Model.userData.torso.scale.y = p3ArcherDuck ? Math.max(0.74, breath - 0.22) : (p3Duck ? Math.max(0.86, breath - 0.12) : breath);
+    p1Model.userData.torso.scale.y = (p1Model.userData.isKnockedDown || p1Model.userData.visualState === 'hurt') ? 1 : (p1ArcherDuck ? Math.max(0.74, breath - 0.22) : (p1Duck ? Math.max(0.86, breath - 0.12) : breath));
+    p2Model.userData.torso.scale.y = (p2Model.userData.isKnockedDown || p2Model.userData.visualState === 'hurt') ? 1 : (p2ArcherDuck ? Math.max(0.74, breath - 0.22) : (p2Duck ? Math.max(0.86, breath - 0.12) : breath));
+    if (p3Model) p3Model.userData.torso.scale.y = (p3Model.userData.isKnockedDown || p3Model.userData.visualState === 'hurt') ? 1 : (p3ArcherDuck ? Math.max(0.74, breath - 0.22) : (p3Duck ? Math.max(0.86, breath - 0.12) : breath));
     p1Model.userData.torso.position.y = p1ArcherDuck ? -34 : (p1Duck ? duckOffset : 0);
     p2Model.userData.torso.position.y = p2ArcherDuck ? -34 : (p2Duck ? duckOffset : 0);
     if (p3Model) p3Model.userData.torso.position.y = p3ArcherDuck ? -34 : (p3Duck ? duckOffset : 0);
-    p1Model.userData.headGroup.position.y = (isDuckActiveForPlayer(0) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
-    p2Model.userData.headGroup.position.y = (isDuckActiveForPlayer(1) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
-    if (p3Model) p3Model.userData.headGroup.position.y = (isDuckActiveForPlayer(2) ? 36 : 55) + Math.sin(now * 0.004) * 0.8;
+    p1Model.userData.headGroup.position.y = (isDuckActiveForPlayer(0) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
+    p2Model.userData.headGroup.position.y = (isDuckActiveForPlayer(1) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
+    if (p3Model) p3Model.userData.headGroup.position.y = (isDuckActiveForPlayer(2) ? 36 : 55) + Math.sin(now * 0.002) * 0.3;
     
     p1Model.userData.armL.rotation.z = Math.sin(now * 0.002) * 0.1;
     p2Model.userData.armL.rotation.z = -Math.sin(now * 0.002) * 0.1;
     if (p3Model) p3Model.userData.armL.rotation.z = -Math.sin(now * 0.002) * 0.1;
 
-    // Dust animation
-    const positions = dustSystem.geometry.attributes.position.array;
-    for(let i=0; i<dustCount*3; i+=3) {
-        positions[i] += currentWind * 10 * dt;
-        if (positions[i] > 2000) {
-            positions[i] = -2000 + Math.random() * 220;
-            positions[i + 1] = Math.random() * 800 - 300;
-            positions[i + 2] = (Math.random() - 0.5) * 180;
+    // Dust animation - faqat agar ko'rinadigan bo'lsa
+    if (dustSystem && dustSystem.visible) {
+        const positions = dustSystem.geometry.attributes.position.array;
+        for(let i=0; i<dustCount*3; i+=3) {
+            positions[i] += currentWind * 10 * dt;
+            if (positions[i] > 2000) {
+                positions[i] = -2000 + Math.random() * 220;
+                positions[i + 1] = Math.random() * 800 - 300;
+                positions[i + 2] = (Math.random() - 0.5) * 180;
+            }
+            if (positions[i] < -2000) {
+                positions[i] = 2000 - Math.random() * 220;
+                positions[i + 1] = Math.random() * 800 - 300;
+                positions[i + 2] = (Math.random() - 0.5) * 180;
+            }
         }
-        if (positions[i] < -2000) {
-            positions[i] = 2000 - Math.random() * 220;
-            positions[i + 1] = Math.random() * 800 - 300;
-            positions[i + 2] = (Math.random() - 0.5) * 180;
-        }
+        dustSystem.geometry.attributes.position.needsUpdate = true;
     }
-    dustSystem.geometry.attributes.position.needsUpdate = true;
 
     // Tunda yulduzlar miltillaydi (faqat ko'rinib turganda).
-    if (typeof starField !== 'undefined' && starField && starField.material.opacity > 0.01) {
+    if (typeof starField !== 'undefined' && starField && starField.visible && starField.material.opacity > 0.01) {
         starField.material.opacity = 0.55 + Math.sin(now * 0.0015) * 0.35;
         starField.rotation.z += 0.00002;
     }
