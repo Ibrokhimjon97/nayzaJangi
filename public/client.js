@@ -2787,7 +2787,7 @@ function createSoldier(isP1, charType = 0) {
 
     let facesLeft = false;
     if (group.userData.isCustomModel) {
-        const cModel = window.customModelsInfo.find(m => m.id == normalizedCharType);
+        const cModel = (window.customModelsInfo || []).find(m => m.id == normalizedCharType);
         if (cModel && cModel.settings) {
             cWidth = cModel.settings.width || cWidth;
             cHeight = cModel.settings.height || cHeight;
@@ -11072,13 +11072,20 @@ function openModalSafely(modalEl, e) {
     }
     if (modalEl) {
         modalEl.classList.remove('hidden');
-        // Shield the newly opened modal from any ghost clicks
-        modalEl.style.pointerEvents = 'none';
-        setTimeout(() => {
-            if (modalEl) modalEl.style.pointerEvents = '';
-        }, 320);
+        if (modalEl === charSelectModal) {
+            modalEl.style.pointerEvents = 'auto';
+        } else {
+            // Shield the newly opened modal from any ghost clicks
+            modalEl.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (modalEl) modalEl.style.pointerEvents = '';
+            }, 320);
+        }
     }
-    if (menuScreen) menuScreen.classList.add('hidden');
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.pointerEvents = 'none';
+    }
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     updateTelegramBackButton();
 }
@@ -11164,6 +11171,8 @@ function renderCharacterSelectRoster(activeId) {
     }
     selectedCharRosterId = activeId;
 
+    let lastCardSelectTime = 0;
+
     list.forEach(c => {
         const card = document.createElement('div');
         const isSel = String(c.id) === String(activeId);
@@ -11186,7 +11195,12 @@ function renderCharacterSelectRoster(activeId) {
             if (e) {
                 if (typeof e.preventDefault === 'function') e.preventDefault();
                 if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
             }
+            const now = Date.now();
+            if (now - lastCardSelectTime < 200) return;
+            lastCardSelectTime = now;
+
             selectedCharRosterId = c.id;
             const allCards = charSelectRoster.querySelectorAll('.char-card');
             allCards.forEach(el => {
@@ -11218,6 +11232,13 @@ function renderCharacterSelectRoster(activeId) {
 function openCharacterSelectModal(options = {}) {
     pendingCharSelectCallback = options.onConfirm || null;
     pendingCharSelectCancel = options.onCancel || null;
+    isCharSelectTransitioning = false;
+
+    // Disallow background touch bleed-through while modal is open
+    if (menuScreen) menuScreen.style.pointerEvents = 'none';
+    if (singleModeModal) singleModeModal.style.pointerEvents = 'none';
+    if (levelSelectModal) levelSelectModal.style.pointerEvents = 'none';
+    if (multiMenu) multiMenu.style.pointerEvents = 'none';
 
     const currentLang = (typeof myProfile !== 'undefined' && myProfile.lang) ? myProfile.lang : 'uz';
     const t = translations[currentLang] || translations.uz;
@@ -11238,23 +11259,34 @@ function openCharacterSelectModal(options = {}) {
     }
 
     openModalSafely(charSelectModal);
+    if (charSelectModal) charSelectModal.style.pointerEvents = 'auto';
 }
 
 let isCharSelectTransitioning = false;
+let lastConfirmClickTime = 0;
 
 if (btnCharSelectConfirm) {
     const handleCharConfirm = (e) => {
         if (e) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
         }
-        if (isCharSelectTransitioning) return;
+        const now = Date.now();
+        if (now - lastConfirmClickTime < 600 || isCharSelectTransitioning) return;
+        lastConfirmClickTime = now;
         isCharSelectTransitioning = true;
-        setTimeout(() => { isCharSelectTransitioning = false; }, 400);
+        setTimeout(() => { isCharSelectTransitioning = false; }, 800);
+
+        // Cancel callback is nullified immediately so onCancel can NEVER be triggered!
+        pendingCharSelectCancel = null;
 
         if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
             myProfile.charType = selectedCharRosterId;
-            saveProfile();
+            try {
+                localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
+                if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
+            } catch (_) { }
 
             const s1 = document.getElementById('select-char-type');
             if (s1) s1.value = String(myProfile.charType);
@@ -11272,29 +11304,32 @@ if (btnCharSelectConfirm) {
 
             if (socket && socket.connected) {
                 socket.emit('updateProfile', myProfile);
+                socket.emit('registerProfile', myProfile);
             }
         }
 
         if (charSelectModal) charSelectModal.classList.add('hidden');
 
-        // Mobil va desktopda bexosdan ostidagi tugmalarni bosib yuborishdan himoya (ghost-click shield)
-        const ghostShield = document.createElement('div');
-        ghostShield.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999999;background:transparent;pointer-events:all;';
-        document.body.appendChild(ghostShield);
-        setTimeout(() => {
-            if (ghostShield.parentNode) ghostShield.parentNode.removeChild(ghostShield);
-        }, 380);
+        // Restore pointer events
+        if (menuScreen) menuScreen.style.pointerEvents = '';
+        if (singleModeModal) singleModeModal.style.pointerEvents = '';
+        if (levelSelectModal) levelSelectModal.style.pointerEvents = '';
+        if (multiMenu) multiMenu.style.pointerEvents = '';
 
-        if (typeof pendingCharSelectCallback === 'function') {
-            const cb = pendingCharSelectCallback;
-            pendingCharSelectCallback = null;
-            pendingCharSelectCancel = null;
-            cb(myProfile.charType);
+        const cb = pendingCharSelectCallback;
+        pendingCharSelectCallback = null;
+        if (typeof cb === 'function') {
+            try {
+                cb(myProfile.charType);
+            } catch (err) {
+                console.error("Error executing character confirm callback:", err);
+            }
         }
     };
     btnCharSelectConfirm.addEventListener('click', handleCharConfirm);
     btnCharSelectConfirm.addEventListener('touchend', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         handleCharConfirm(e);
     }, { passive: false });
 }
@@ -11304,20 +11339,29 @@ if (btnCharSelectCancel) {
         if (e) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
         }
+        if (isCharSelectTransitioning) return; // Prevent cancel while confirmation is in progress
+
         if (charSelectModal) charSelectModal.classList.add('hidden');
+
+        // Restore pointer events
+        if (menuScreen) menuScreen.style.pointerEvents = '';
+        if (singleModeModal) singleModeModal.style.pointerEvents = '';
+        if (levelSelectModal) levelSelectModal.style.pointerEvents = '';
+        if (multiMenu) multiMenu.style.pointerEvents = '';
+
         if (typeof pendingCharSelectCancel === 'function') {
             const onCancel = pendingCharSelectCancel;
             pendingCharSelectCallback = null;
             pendingCharSelectCancel = null;
             onCancel();
-        } else {
-            if (menuScreen) menuScreen.classList.remove('hidden');
         }
     };
     btnCharSelectCancel.addEventListener('click', handleCharCancel);
     btnCharSelectCancel.addEventListener('touchend', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         handleCharCancel(e);
     }, { passive: false });
 }
