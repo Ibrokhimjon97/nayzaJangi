@@ -466,6 +466,7 @@ function initAudio() {
     }
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     bgMusicAudio.play().catch(() => { });
+    preloadAllSfx();
 }
 
 function applySelectedMusicTrack() {
@@ -477,6 +478,21 @@ function applySelectedMusicTrack() {
     bgMusicAudio.preload = 'auto';
     bgMusicAudio.volume = musicMuted ? 0 : musicVolume;
     bgMusicAudio.play().catch(() => { });
+    preloadAllSfx();
+}
+
+const sfxPool = {};
+function preloadAllSfx() {
+    try {
+        Object.entries(sfxPaths).forEach(([key, src]) => {
+            if (!sfxPool[key]) {
+                const a = new Audio(src);
+                a.preload = 'auto';
+                a.load();
+                sfxPool[key] = a;
+            }
+        });
+    } catch (_) {}
 }
 
 function playSfx(key, volumeScale = 1) {
@@ -486,12 +502,21 @@ function playSfx(key, volumeScale = 1) {
     try {
         if (!audioCtx) initAudio();
         else if (audioCtx.state === 'suspended') audioCtx.resume();
-        const audio = new Audio(src);
-        audio.preload = 'auto';
-        audio.playsInline = true;
-        audio.setAttribute('playsinline', 'true');
+        let audio = sfxPool[key];
+        if (!audio) {
+            audio = new Audio(src);
+            audio.preload = 'auto';
+            sfxPool[key] = audio;
+        }
+        if (!audio.paused && audio.currentTime > 0) {
+            const clone = audio.cloneNode();
+            clone.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
+            clone.play().catch(() => {});
+            return;
+        }
+        audio.currentTime = 0;
         audio.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
-        audio.play().catch(() => { });
+        audio.play().catch(() => {});
     } catch (_) { }
 }
 
@@ -2758,6 +2783,16 @@ function createSoldier(isP1, charType = 0) {
             selectedTexture = customTex.shieldIdle || customTex.noShieldIdle;
         } else {
             selectedTexture = ottomanArcherTextures.shieldIdle;
+            if (typeof fetchCustomModels === 'function') {
+                fetchCustomModels().then(() => {
+                    const lateTex = window.customModelTextures && window.customModelTextures[normalizedCharType];
+                    if (lateTex && (lateTex.shieldIdle || lateTex.noShieldIdle) && group.userData.mats && group.userData.mats[0]) {
+                        group.userData.mats[0].map = lateTex.shieldIdle || lateTex.noShieldIdle;
+                        group.userData.mats[0].needsUpdate = true;
+                        group.userData.customTextures = lateTex;
+                    }
+                }).catch(() => {});
+            }
         }
     }
     const tex = selectedTexture || ottomanArcherTextures.shieldIdle;
@@ -2829,6 +2864,7 @@ function createSoldier(isP1, charType = 0) {
     // Keep feet on the visible top of the ground.
     group.position.y = ground.position.y + (group.userData.isOttomanUnit ? 78 : 86);
     group.userData.standingY = group.position.y;
+    group.userData.baseY = group.position.y;
     group.rotation.z = 0;
     group.userData.isKnockedDown = false;
     group.userData.isDead = false;
@@ -3570,6 +3606,7 @@ let myCrow = 0;
 let enemyCrow = 0;
 let myDefenseActive = false;
 let enemyDefenseActive = false;
+const duckStates = [false, false, false];
 let myDuckActive = false;
 let enemyDuckActive = false;
 let p3DuckActive = false;
@@ -3891,9 +3928,10 @@ function isDefenseActiveForPlayer(index) {
 }
 
 function isDuckActiveForPlayer(index) {
-    if (index === myPlayerIndex) return myDuckActive;
-    if (index === 1) return enemyDuckActive;
-    if (index === 2) return p3DuckActive;
+    if (typeof index === 'number' && index >= 0 && index < duckStates.length) {
+        return !!duckStates[index];
+    }
+    if (index === myPlayerIndex) return !!myDuckActive;
     return false;
 }
 
@@ -4146,12 +4184,18 @@ function triggerAbilityPulse(btn) {
 }
 
 function setDuckActive(active, shouldEmit = true) {
-    myDuckActive = !!active;
-    if (duckButton) duckButton.classList.toggle('active', myDuckActive);
-    if (myPlayerIndex >= 0 && !isDragging) {
-        setSoldierVisual(modelForPlayer(myPlayerIndex), myDefenseActive ? 'defend' : 'idle');
+    const val = !!active;
+    myDuckActive = val;
+    if (myPlayerIndex >= 0 && myPlayerIndex < duckStates.length) {
+        duckStates[myPlayerIndex] = val;
     }
-    if (gameMode === 'multi' && shouldEmit) socket.emit('duckState', { active: myDuckActive });
+    if (duckButton) duckButton.classList.toggle('active', val);
+    if (myPlayerIndex >= 0 && !isDragging) {
+        setSoldierVisual(modelForPlayer(myPlayerIndex), val ? 'duck' : (myDefenseActive ? 'defend' : 'idle'));
+    }
+    if (gameMode === 'multi' && shouldEmit && socket && socket.connected) {
+        socket.emit('duckState', { active: val });
+    }
 }
 
 function triggerJump(playerIndex = myPlayerIndex) {
@@ -4165,7 +4209,7 @@ function triggerJump(playerIndex = myPlayerIndex) {
     js.duration = 750;
     js.height = 165;
     if (js.baseY === null || isNaN(js.baseY) || Math.abs(m.position.y - js.baseY) > 200) {
-        js.baseY = m.userData.baseY !== undefined ? m.userData.baseY : m.position.y;
+        js.baseY = m.userData.standingY !== undefined ? m.userData.standingY : m.position.y;
     }
     m.userData.isJumping = true;
 
@@ -4182,10 +4226,8 @@ function triggerJump(playerIndex = myPlayerIndex) {
         if (gameMode === 'multi' && socket && socket.connected) {
             socket.emit('jumpState', { active: true });
         }
-    } else if (playerIndex === 1) {
+    } else {
         enemyJumpActive = true;
-    } else if (playerIndex === 2) {
-        p3JumpActive = true;
     }
 }
 
@@ -4194,10 +4236,15 @@ function resetJumpStates() {
         js.active = false;
         js.baseY = null;
     });
+    for (let di = 0; di < duckStates.length; di++) duckStates[di] = false;
     myJumpActive = false;
     enemyJumpActive = false;
     p3JumpActive = false;
+    myDuckActive = false;
+    enemyDuckActive = false;
+    p3DuckActive = false;
     if (jumpButton) jumpButton.classList.remove('active');
+    if (duckButton) duckButton.classList.remove('active');
     const allModels = [p1Model, p2Model];
     if (typeof p3Model !== 'undefined' && p3Model) allModels.push(p3Model);
     allModels.forEach(m => {
@@ -5560,8 +5607,41 @@ function showLevelBonusChestModal(onStartBattle) {
     modal.classList.remove('hidden');
 }
 
+function showBattleLoading(onComplete) {
+    const overlay = document.getElementById('battle-loading-overlay');
+    const bar = document.getElementById('battle-loading-bar');
+    const pct = document.getElementById('battle-loading-pct');
+    if (!overlay || !bar) {
+        if (typeof onComplete === 'function') onComplete();
+        return;
+    }
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+    bar.style.width = '20%';
+    if (pct) pct.innerText = '20%';
+
+    preloadAllSfx();
+
+    setTimeout(() => {
+        bar.style.width = '65%';
+        if (pct) pct.innerText = '65%';
+    }, 180);
+
+    setTimeout(() => {
+        bar.style.width = '100%';
+        if (pct) pct.innerText = '100%';
+    }, 450);
+
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+        if (typeof onComplete === 'function') onComplete();
+    }, 650);
+}
+
 // Game Logic
 function startSinglePlayer(opts) {
+    showBattleLoading();
     if (authModal) authModal.classList.add('hidden');
     if (singleModeModal) singleModeModal.classList.add('hidden');
     if (levelSelectModal) levelSelectModal.classList.add('hidden');
@@ -5644,6 +5724,9 @@ function startSinglePlayer(opts) {
     const p2Char = playerLeftSide ? enemyChar : myChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
+    p1Model.visible = true;
+    p2Model.visible = true;
+    showBattleLoading();
     if (campaignConfig.enemyCount === 2) {
         let enemyChar2 = getRandomEnemyChar(myChar);
         let tries = 10;
@@ -7302,6 +7385,9 @@ socket.on('gameStart', (data) => {
     const p2Char = myPlayerIndex === 1 ? myChar : oppChar;
     p1Model = createSoldier(true, p1Char); p1Model.position.x = pos1X;
     p2Model = createSoldier(false, p2Char); p2Model.position.x = pos2X;
+    p1Model.visible = true;
+    p2Model.visible = true;
+    showBattleLoading();
     applySoldierWeatherTone();
     updateCameraBounds();
     const camFocus = getFocusCameraTarget(myPlayerIndex);
@@ -7506,13 +7592,22 @@ socket.on('defenseStateChanged', (data) => {
 });
 
 socket.on('duckStateChanged', (data) => {
-    if (!data || data.playerIndex === myPlayerIndex) return;
-    enemyDuckActive = !!data.active;
-    setSoldierVisual(modelForPlayer(data.playerIndex), enemyDefenseActive ? 'defend' : 'idle');
+    if (!data || typeof data.playerIndex !== 'number') return;
+    if (data.playerIndex === myPlayerIndex) return;
+    const isDuck = !!data.active;
+    if (data.playerIndex >= 0 && data.playerIndex < duckStates.length) {
+        duckStates[data.playerIndex] = isDuck;
+    }
+    enemyDuckActive = isDuck;
+    const m = modelForPlayer(data.playerIndex);
+    if (m) {
+        setSoldierVisual(m, isDuck ? 'duck' : (isDefenseActiveForPlayer(data.playerIndex) ? 'defend' : 'idle'));
+    }
 });
 
 socket.on('jumpStateChanged', (data) => {
-    if (!data || data.playerIndex === myPlayerIndex) return;
+    if (!data || typeof data.playerIndex !== 'number') return;
+    if (data.playerIndex === myPlayerIndex) return;
     if (data.active) {
         triggerJump(data.playerIndex);
     }
@@ -8941,7 +9036,11 @@ function gameLoop(now) {
             model.userData.forceState = null;
         }
 
-        if (isDefenseActiveForPlayer(idx)) {
+        if (isJumpActiveForPlayer(idx)) {
+            targetState = 'jump';
+        } else if (isDuckActiveForPlayer(idx)) {
+            targetState = 'duck';
+        } else if (isDefenseActiveForPlayer(idx)) {
             targetState = 'defend';
         } else if (isAnimating) {
             // Is animating (spear thrown)
@@ -14283,205 +14382,22 @@ function checkFirstTimeLanguageModal() {
 function setupMenuCarousel() {
     const carousel = document.getElementById('menu-cards-carousel');
     if (!carousel) return;
-    
-    const prevBtn = document.getElementById('btn-carousel-prev');
-    const nextBtn = document.getElementById('btn-carousel-next');
-    const dotsContainer = document.getElementById('menu-carousel-dots');
     const cards = Array.from(carousel.querySelectorAll('.menu-card'));
-    
     if (cards.length === 0) return;
 
-    // Tezkor 1:1 barmoq bilan siljitish uchun vaqtinchalik smooth behaviourni o'chiramiz
-    carousel.style.scrollBehavior = 'auto';
-    carousel.style.touchAction = 'pan-x';
+    // Cardlar bosilishini boshqarish: Card bosilsa ichidagi tegishli tugmani bosadi
+    cards.forEach(card => {
+        if (card._hasCardListener) return;
+        card._hasCardListener = true;
 
-    // 1. Universal Touch & Mouse Swipe tizimi (telefon va kompyuter uchun)
-    if (!carousel._hasSwipeEngine) {
-        carousel._hasSwipeEngine = true;
-        let isDragging = false;
-        let startClientX = 0;
-        let startScrollLeft = 0;
-        let lastClientX = 0;
-        let lastMoveTime = 0;
-        let swipeVelocity = 0;
-        let hasMoved = false;
-
-        const handleStart = (clientX) => {
-            isDragging = true;
-            hasMoved = false;
-            startClientX = clientX;
-            lastClientX = clientX;
-            startScrollLeft = carousel.scrollLeft;
-            lastMoveTime = performance.now();
-            swipeVelocity = 0;
-        };
-
-        const handleMove = (clientX) => {
-            if (!isDragging) return;
-            const dx = clientX - startClientX;
-            if (Math.abs(dx) > 6) {
-                hasMoved = true;
-            }
-            if (hasMoved) {
-                carousel.scrollLeft = startScrollLeft - dx;
-                const now = performance.now();
-                const dt = Math.max(1, now - lastMoveTime);
-                swipeVelocity = (clientX - lastClientX) / dt;
-                lastClientX = clientX;
-                lastMoveTime = now;
-            }
-        };
-
-        const handleEnd = () => {
-            if (!isDragging) return;
-            isDragging = false;
-            if (hasMoved) {
-                // Inersiya (momentum)
-                if (Math.abs(swipeVelocity) > 0.12) {
-                    const momentum = swipeVelocity * 220;
-                    carousel.scrollBy({ left: -momentum, behavior: 'smooth' });
-                }
-            }
-            setTimeout(() => {
-                hasMoved = false;
-            }, 50);
-        };
-
-        // Mobile touch hodisalari
-        carousel.addEventListener('touchstart', (e) => {
-            if (!e.touches || !e.touches[0]) return;
-            handleStart(e.touches[0].clientX);
-        }, { passive: true });
-
-        carousel.addEventListener('touchmove', (e) => {
-            if (!e.touches || !e.touches[0]) return;
-            handleMove(e.touches[0].clientX);
-        }, { passive: true });
-
-        carousel.addEventListener('touchend', () => {
-            handleEnd();
-        }, { passive: true });
-
-        carousel.addEventListener('touchcancel', () => {
-            handleEnd();
-        }, { passive: true });
-
-        // Desktop sichqoncha bilan tortib siljitish
-        carousel.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            if (e.target && e.target.closest && e.target.closest('button')) {
-                hasMoved = false;
+        card.addEventListener('click', (e) => {
+            if (e.target && typeof e.target.closest === 'function' && e.target.closest('button')) {
                 return;
             }
-            handleStart(e.clientX);
+            const btn = card.querySelector('button');
+            if (btn) btn.click();
         });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            handleMove(e.clientX);
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (isDragging) handleEnd();
-        });
-
-        // Sichqoncha g'ildiragi (wheel) bilan gorizontal siljitish
-        const handleWheel = (e) => {
-            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-            if (delta !== 0) {
-                e.preventDefault();
-                carousel.scrollLeft += delta * 1.2;
-            }
-        };
-        carousel.addEventListener('wheel', handleWheel, { passive: false });
-        if (carousel.parentElement) {
-            carousel.parentElement.addEventListener('wheel', handleWheel, { passive: false });
-        }
-
-        // Cardlar bosilishini boshqarish
-        cards.forEach(card => {
-            if (card._hasCardListener) return;
-            card._hasCardListener = true;
-
-            card.addEventListener('click', (e) => {
-                // Tugmaning o'zi bosilgan bo'lsa, card click aralashmasin
-                if (e.target && typeof e.target.closest === 'function' && e.target.closest('button')) {
-                    return;
-                }
-                if (hasMoved) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return;
-                }
-                const btn = card.querySelector('button');
-                if (btn) btn.click();
-            });
-        });
-    }
-
-    // 2. Indikator nuqtalarni yaratish
-    if (dotsContainer) {
-        dotsContainer.innerHTML = '';
-        cards.forEach((_, idx) => {
-            const dot = document.createElement('div');
-            dot.className = 'carousel-dot' + (idx === 0 ? ' active' : '');
-            dot.setAttribute('data-index', idx);
-            dot.addEventListener('click', () => {
-                const targetCard = cards[idx];
-                if (targetCard) {
-                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
-            });
-            dotsContainer.appendChild(dot);
-        });
-    }
-
-    // 3. Active nuqtani yangilash
-    let scrollTimer = null;
-    const updateActiveDot = () => {
-        if (!dotsContainer) return;
-        const dots = dotsContainer.querySelectorAll('.carousel-dot');
-        const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
-        let closestIndex = 0;
-        let minDiff = Infinity;
-
-        cards.forEach((card, idx) => {
-            const cardCenter = card.offsetLeft + card.clientWidth / 2;
-            const diff = Math.abs(carouselCenter - cardCenter);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closestIndex = idx;
-            }
-        });
-
-        dots.forEach((dot, idx) => {
-            dot.classList.toggle('active', idx === closestIndex);
-        });
-    };
-
-    carousel.addEventListener('scroll', () => {
-        if (scrollTimer) clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(updateActiveDot, 60);
-    }, { passive: true });
-
-    // 4. Chap va O'ng o'q tugmalari
-    const getScrollStep = () => {
-        const card = cards[0];
-        return card ? (card.clientWidth + 12) : 180;
-    };
-
-    if (prevBtn && !prevBtn._hasCarouselListener) {
-        prevBtn._hasCarouselListener = true;
-        prevBtn.addEventListener('click', () => {
-            carousel.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
-        });
-    }
-    if (nextBtn && !nextBtn._hasCarouselListener) {
-        nextBtn._hasCarouselListener = true;
-        nextBtn.addEventListener('click', () => {
-            carousel.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
-        });
-    }
+    });
 }
 
 // =========================================================
