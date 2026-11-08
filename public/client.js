@@ -5515,12 +5515,26 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 }
             } else {
                 if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
-                // Olov nayza: tegganda kuydirish zarari (+60%) va olov zarralari.
-                if (spear && spear.isFire && !hitResult.isShieldHit && !hitResult.duckDodged && Number(hitResult.damage) > 0) {
-                    hitResult = applyDoubleDamageBoost(hitResult, 1.6);
+                // Olov nayza / o'qi: raqibga tekkanda kuchli yonish effekti va yuqori ziyon
+                if (spear && spear.isFire && !hitResult.duckDodged) {
+                    if (hitResult.isShieldHit) {
+                        if (hitResult.shieldActiveBlock) {
+                            hitResult.damage = 25;
+                            hitResult.msg = "🔥 QALQONNI YONDIRDI! -25";
+                        } else {
+                            hitResult.damage = 35;
+                            hitResult.msg = "🔥 QALQON VA OLOV! -35";
+                        }
+                    } else {
+                        const rawDmg = Math.max(25, Number(hitResult.damage || 25));
+                        const zoneBonus = hitResult.hitZone === 'head' ? 20 : (hitResult.hitZone === 'leg' ? 10 : 15);
+                        hitResult.damage = Math.round(rawDmg * 2.0 + zoneBonus);
+                        hitResult.msg = `🔥 OLOV ZARBASI! -${hitResult.damage}`;
+                    }
                     hitResult.isCrit = true;
-                    hitResult.msg = `🔥 ${String(hitResult.msg || '').replace('🔥 ', '')}`;
-                    spawnFireBurst(hitX, hitY);
+                    spawnFireBurst(hitX, hitY, 40);
+                    screenShake = Math.max(screenShake, 18);
+                    playSfx('headHit', 1.25);
                 }
 
                 if (hitResult.isShieldHit) {
@@ -5619,6 +5633,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 isShieldHit: hitResult.isShieldHit,
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
+                isFire: !!(spear && spear.isFire),
                 extraHit: finalExtra
             });
         }
@@ -6045,8 +6060,13 @@ socket.on('groundHit', (data) => {
 });
 
 socket.on('hitRegistered', (data) => {
-    const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged } = data;
+    const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged, isFire } = data;
     const targetModel = targetIndex === 0 ? p1Model : p2Model;
+
+    if (isFire) {
+        spawnFireBurst(hitX, hitY, 35);
+        screenShake = Math.max(screenShake, 16);
+    }
 
     if (spear && spear.playerIndex !== myPlayerIndex) {
         hideFlyingSpear();
@@ -6118,7 +6138,7 @@ socket.on('wallStateChanged', (data) => {
 
 socket.on('wallHitFx', (data) => {
     if (!data) return;
-    applyWallHit(Number(data.ownerIndex), Number(data.hitX || 0), Number(data.hitY || (ground.position.y + 90)), data.isArtillery);
+    applyWallHit(Number(data.ownerIndex), Number(data.hitX || 0), Number(data.hitY || (ground.position.y + 90)), !!data.isArtillery, !!data.isFire);
 });
 
 socket.on('entityHit', (data) => {
@@ -6621,10 +6641,27 @@ function getWallHitOwnerIndex() {
     return -1;
 }
 
-function applyWallHit(ownerIndex, hitX, hitY, isArtillery = false) {
+function applyWallHit(ownerIndex, hitX, hitY, isArtillery = false, isFire = false) {
     const wall = wallStates[ownerIndex];
     if (!wall || !wall.active) return;
-    if (isArtillery) {
+    if (isFire) {
+        wall.hp = 0;
+        showDamageText(hitX, hitY + 50, "🔥 DEVOR YONIB KETDI!", true, false);
+        spawnFireBurst(hitX, hitY, 50);
+        if (wall.mesh) {
+            spawnFireBurst(wall.x, wall.mesh.position.y, 40);
+            spawnFireBurst(wall.x, wall.mesh.position.y + 80, 30);
+            spawnFireBurst(wall.x, wall.mesh.position.y - 80, 30);
+        }
+        let burnTicks = 0;
+        const burnInterval = setInterval(() => {
+            burnTicks++;
+            spawnFireBurst(wall.x + (Math.random() - 0.5) * 60, hitY + (Math.random() - 0.5) * 80, 10);
+            if (burnTicks >= 5) clearInterval(burnInterval);
+        }, 75);
+        playSfx('headHit', 1.25);
+        screenShake = Math.max(screenShake, 15);
+    } else if (isArtillery) {
         wall.hp = 0;
         showDamageText(hitX, hitY + 40, "DEVOR PORTLADI!", true, false);
         triggerCinematicExplosion(hitX, hitY);
@@ -6776,10 +6813,10 @@ function checkCollision() {
         hideFlyingSpear();
         if (gameMode === 'multi') {
             if (spear.playerIndex === myPlayerIndex) {
-                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY, isArtillery: spear.isArtillery });
+                socket.emit('wallHit', { ownerIndex: wallOwnerIndex, hitX, hitY, isArtillery: spear.isArtillery, isFire: spear.isFire });
             }
         } else {
-            applyWallHit(wallOwnerIndex, hitX, hitY, spear.isArtillery);
+            applyWallHit(wallOwnerIndex, hitX, hitY, spear.isArtillery, spear.isFire);
             advanceSingleTurnAfterShot();
         }
         return;
@@ -8022,10 +8059,58 @@ function applyLanguage() {
     updateCampaignUI();
 }
 
-// Universal Safe Modal Management with Ghost Click Shield & Full Modal Isolation
+// Universal Safe Modal Management with Ghost Click Shield, Full Modal Isolation & Mobile Scroll Protection
 let lastModalActionTime = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let isTouchScrolling = false;
+let lastScrollEndTime = 0;
+let lastTouchTriggerTime = 0;
+
+window.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isTouchScrolling = false;
+    }
+}, { passive: true, capture: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches[0]) {
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (Math.hypot(dx, dy) > 8) {
+            isTouchScrolling = true;
+        }
+    }
+}, { passive: true, capture: true });
+
+window.addEventListener('touchend', (e) => {
+    if (isTouchScrolling) {
+        lastScrollEndTime = Date.now();
+        setTimeout(() => {
+            isTouchScrolling = false;
+        }, 280);
+    }
+}, { passive: true, capture: true });
+
 function safeModalAction(fn) {
     return function(e) {
+        // Agar foydalanuvchi barmoq bilan menyuni / ekranni surgan (scroll qilgan) bo'lsa, tugma bosilmasligi shart!
+        if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) {
+            return;
+        }
+        if (e && e.type === 'touchend') {
+            const touch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+            if (touch) {
+                const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+                if (dist > 8) {
+                    isTouchScrolling = true;
+                    lastScrollEndTime = Date.now();
+                    return;
+                }
+            }
+        }
         const now = Date.now();
         if (now - lastModalActionTime < 380) {
             if (e) {
@@ -8239,7 +8324,7 @@ if (btnSettings) {
 }
 
 if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
+    const handleLogout = safeModalAction(() => {
         authPhone = '';
         authUserCache = null;
         delete myProfile.phone;
@@ -8253,6 +8338,8 @@ if (btnLogout) {
         if (authPhoneInput) authPhoneInput.value = '';
         setAuthStatus("Siz akkauntdan chiqdingiz.");
     });
+    btnLogout.addEventListener('click', handleLogout);
+    btnLogout.addEventListener('touchend', handleLogout, { passive: false });
 }
 
 function handleSaveSettings(e) {
@@ -8932,47 +9019,36 @@ if (authPhone) {
 if (authTabLogin) authTabLogin.addEventListener('click', () => switchAuthTab('login'));
 if (authTabRegister) authTabRegister.addEventListener('click', () => switchAuthTab('register'));
 if (btnForgotToggle && forgotSection) {
-    const handleForgotToggle = (e) => {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
+    const handleForgotToggle = safeModalAction((e) => {
         const isHidden = forgotSection.classList.contains('hidden');
         forgotSection.classList.toggle('hidden', !isHidden);
         btnForgotToggle.innerText = isHidden ? "Parolni tiklash bo'limini yopish" : "Parolni unutdingizmi?";
-    };
+    });
     btnForgotToggle.addEventListener('click', handleForgotToggle);
-    btnForgotToggle.addEventListener('touchstart', handleForgotToggle, { passive: false });
+    btnForgotToggle.addEventListener('touchend', handleForgotToggle, { passive: false });
 }
 switchAuthTab('login');
 
 document.addEventListener('click', (e) => {
+    if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) return;
     const t = e.target;
     if (!t || typeof t.closest !== 'function') return;
     if (t.closest('button')) playSfx('button', 0.85);
 });
 
 // Force touchstart to trigger click on mobile for all buttons
-// BUG FIX: touchstart click trigger scroll'ni buzayotgan edi. 
-// Endi faqat barmoq qimirlatmasdan (scroll qilmasdan) bosilsa ishlaydi.
-let lastTouchStartPos = { x: 0, y: 0 };
-let lastTouchTriggerTime = 0;
-document.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches[0]) {
-        lastTouchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-}, { passive: true });
-
+// BUG FIX: touchstart click trigger scroll'ni buzmasligi uchun scroll holatini tekshiramiz.
 document.addEventListener('touchend', (e) => {
+    if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) return;
     const t = e.target;
     if (t && typeof t.closest === 'function') {
         const btn = t.closest('button');
         if (btn && !btn.disabled) {
-            // Agar barmoq 25px dan ortiq surilmagan bo'lsa, demak bu tap/click
+            // Agar barmoq 8px dan ortiq surilmagan bo'lsa, demak bu haqiqiy tap/click
             const touch = e.changedTouches ? e.changedTouches[0] : null;
             if (touch) {
-                const dist = Math.hypot(touch.clientX - lastTouchStartPos.x, touch.clientY - lastTouchStartPos.y);
-                if (dist < 25) {
+                const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+                if (dist <= 8) {
                     lastTouchTriggerTime = Date.now();
                     btn.click();
                 }
@@ -8981,8 +9057,13 @@ document.addEventListener('touchend', (e) => {
     }
 }, { passive: true });
 
-// Prevent delayed synthetic click on touch devices from ghost-clicking elements underneath or double firing
+// Prevent delayed synthetic click on touch devices from ghost-clicking elements underneath or firing after scroll
 document.addEventListener('click', (e) => {
+    if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+    }
     if (Date.now() - lastTouchTriggerTime < 350 && e.isTrusted) {
         e.stopPropagation();
         e.preventDefault();
@@ -9160,16 +9241,12 @@ if (btnMultiRandom) {
 }
 
 if (btnMultiJoinShow) {
-    const handleJoinShow = (e) => {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        }
+    const handleJoinShow = safeModalAction((e) => {
         if (joinCodeContainer) joinCodeContainer.classList.toggle('hidden');
         if (joinError) joinError.style.display = 'none';
-    };
+    });
     btnMultiJoinShow.addEventListener('click', handleJoinShow);
-    btnMultiJoinShow.addEventListener('touchstart', handleJoinShow, { passive: false });
+    btnMultiJoinShow.addEventListener('touchend', handleJoinShow, { passive: false });
 }
 
 if (btnMultiJoin) {

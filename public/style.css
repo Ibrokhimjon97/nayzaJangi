@@ -2242,7 +2242,9 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* === O'yin uslubidagi 3D tugmalar === */
-#menu-screen .primary-btn {
+#menu-screen .primary-btn,
+.center-panel .primary-btn,
+.modal-panel .primary-btn {
     position: relative;
     min-height: 56px;
     border-radius: 16px;
@@ -2255,6 +2257,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     border: none;
     overflow: visible;
     transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
+    touch-action: pan-y !important; /* Barmoq bilan button ustidan ushlab scroll qilishga imkon berish */
 }
 
 /* Har bir tugma ostida "qalin" pastki qirra (3D bevel effekti) */

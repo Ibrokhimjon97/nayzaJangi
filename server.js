@@ -1077,6 +1077,8 @@ io.on('connection', (socket) => {
         });
         room.inFlight = true;
         room.flightStartTime = Date.now();
+        room.inFlightIsFire = !!isFire;
+        room.inFlightIsArtillery = !!isArtillery;
     });
 
     socket.on('useSuperPower', (payload) => {
@@ -1177,7 +1179,9 @@ io.on('connection', (socket) => {
         if (!room.inFlight) return;
         const ownerIndex = Number(data?.ownerIndex);
         if (!Number.isFinite(ownerIndex) || !room.walls[ownerIndex] || !room.walls[ownerIndex].active) return;
-        if (data.isArtillery) {
+        const isFire = !!(data?.isFire || room.inFlightIsFire);
+        const isArtillery = !!(data?.isArtillery || room.inFlightIsArtillery);
+        if (isArtillery || isFire) {
             room.walls[ownerIndex].hp = 0;
         } else {
             room.walls[ownerIndex].hp = Math.max(0, Number(room.walls[ownerIndex].hp || 5) - 1);
@@ -1186,7 +1190,8 @@ io.on('connection', (socket) => {
             ownerIndex,
             hitX: Number(data?.hitX || 0),
             hitY: Number(data?.hitY || 0),
-            isArtillery: data.isArtillery
+            isArtillery,
+            isFire
         });
         if (room.walls[ownerIndex].hp <= 0) {
             room.walls[ownerIndex] = { active: false, x: 0, hp: 0 };
@@ -1218,13 +1223,17 @@ io.on('connection', (socket) => {
         if (socket.id !== room.players[room.turnIndex]) return;
         if (!room.inFlight) return; // ignore stale/duplicate completion events
         room.inFlight = false;
+        const isFire = !!(data?.isFire || room.inFlightIsFire);
+        const isArtillery = !!(data?.isArtillery || room.inFlightIsArtillery);
 
         const applyHitPayload = (payload) => {
             if (!payload || !payload.hitOpponent) return;
             let targetIndex = payload.targetIndex !== undefined ? payload.targetIndex : (room.turnIndex === 0 ? 1 : 0);
             const hitZone = payload.hitZone || 'body';
+            const hitIsFire = !!(payload.isFire || isFire);
+            const hitIsArtillery = !!(payload.isArtillery || isArtillery);
             // Anti-cheat: clamp client-reported damage to legitimate physics bounds
-            const maxAllowed = payload.isArtillery ? 75 : (hitZone === 'head' ? 55 : (hitZone === 'leg' ? 25 : 40));
+            const maxAllowed = hitIsArtillery ? 75 : (hitIsFire ? (hitZone === 'head' ? 95 : (hitZone === 'leg' ? 45 : 70)) : (hitZone === 'head' ? 55 : (hitZone === 'leg' ? 25 : 40)));
             const baseDamage = Math.max(0, Math.min(Number(payload.damage) || 0, maxAllowed));
             const defending = room.defending && room.defending[targetIndex];
             const ducking = room.ducking && room.ducking[targetIndex];
@@ -1235,7 +1244,7 @@ io.on('connection', (socket) => {
             let shieldBroke = false;
             let duckDodged = false;
 
-            if (payload.isArtillery) {
+            if (hitIsArtillery) {
                 if (room.shield[targetIndex] > 0 && defending) {
                     shieldHit = true;
                     shieldActiveBlock = true;
@@ -1247,6 +1256,26 @@ io.on('connection', (socket) => {
                     room.shield[targetIndex] = 0; // Artillery breaks shield completely
                 } else {
                     appliedDamage = Math.ceil(room.health[targetIndex] / 2);
+                }
+            } else if (hitIsFire) {
+                // Olovli nayza / kamon o'qi: raqib qalqon tutsa ham kuydirib ziyon yetkazadi
+                if (ducking && (hitZone === 'head' || hitZone === 'body')) {
+                    appliedDamage = 0;
+                    duckDodged = true;
+                } else if (room.shield[targetIndex] > 0 && defending && (hitZone === 'head' || hitZone === 'body')) {
+                    shieldHit = true;
+                    shieldActiveBlock = true;
+                    appliedDamage = 25; // Olov qalqonni qizdirib ziyon keltiradi
+                    room.shield[targetIndex] -= 1;
+                } else if (room.shield[targetIndex] > 0 && payload.isShieldHit && hitZone === 'body') {
+                    shieldHit = true;
+                    appliedDamage = 35; // Olov qalqondan o'tadi
+                    room.shield[targetIndex] -= 1;
+                } else if (room.shield[targetIndex] <= 0 && defending) {
+                    shieldlessDefense = true;
+                    appliedDamage = Math.max(25, Math.round(baseDamage * 0.75));
+                } else {
+                    appliedDamage = baseDamage;
                 }
             } else if (ducking && (hitZone === 'head' || hitZone === 'body')) {
                 appliedDamage = 0;
@@ -1282,7 +1311,9 @@ io.on('connection', (socket) => {
                 shieldBroke,
                 duckDodged,
                 hitZone,
-                hitAngle: payload.hitAngle
+                hitAngle: payload.hitAngle,
+                isFire: hitIsFire,
+                isArtillery: hitIsArtillery
             });
             if (room.health[targetIndex] <= 0) {
                 room.gameOver = true;
