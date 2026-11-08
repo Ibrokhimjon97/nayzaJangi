@@ -231,6 +231,7 @@ async function fetchCustomModels() {
         }
         if (typeof setupCustomDropdown === 'function') {
             setupCustomDropdown('select-char-type-options');
+            setupCustomDropdown('select-char-type');
         }
         
         data.forEach(m => {
@@ -751,7 +752,7 @@ const sunSpriteMat = new THREE.SpriteMaterial({
 });
 const sunSprite = new THREE.Sprite(sunSpriteMat);
 sunSprite.scale.set(900, 900, 1);
-sunSprite.position.set(-1400, 1100, -900);
+sunSprite.position.set(-1100, 780, -900);
 scene.add(sunSprite);
 
 // Tun uchun yulduzlar (statik nuqtalar)
@@ -760,7 +761,7 @@ const starCount = MOBILE_PERF_MODE ? 220 : 420;
 const starPos = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
     starPos[i * 3] = (Math.random() - 0.5) * 6000;
-    starPos[i * 3 + 1] = 400 + Math.random() * 1400;
+    starPos[i * 3 + 1] = 250 + Math.random() * 950;
     starPos[i * 3 + 2] = -1200 - Math.random() * 400;
 }
 starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
@@ -2333,7 +2334,7 @@ function spawnEntities(options) {
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.position.set(
             (Math.random() - 0.5) * 5500,
-            850 + Math.random() * 450,
+            680 + Math.random() * 260,
             -200 - Math.random() * 300
         );
         cloud.userData = { vx: (Math.random() - 0.5) * 15 };
@@ -2348,8 +2349,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            // Qushlar osmonda (520-1140 balandlikda) ko'rinadigan erkin zonada uchadi
-            bird.position.set((seededRandom() - 0.5) * 3600, 520 + seededRandom() * 620, -30 + seededRandom() * 60);
+            // Qushlar osmonda (340-760 balandlikda) ko'rinadigan erkin zonada uchadi
+            bird.position.set((seededRandom() - 0.5) * 3600, 340 + seededRandom() * 420, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -3010,11 +3011,12 @@ function getFocusCameraTarget(turnIndex) {
     const effectiveZoom = Math.max(0.1, baseZoom || 0.4);
     const visibleH = frustumSize / effectiveZoom;
 
-    // Kompyuter versiyada ekranning pastki qismidagi katta bo'sh havorang/qora zona to'liq yopilishi uchun:
-    // Sahna (yer yuzasi va jangchilar oyoqlari) pastdagi tugmalar ustiga tushiriladi (ekranning pastki ~8% qismida).
+    // Yer sathi (groundSurfaceY) ekranning pastki ~22-26% qismida bo'lib, pastdagi tugmalar
+    // zamin qoraytirilgan qismi ustida qulay joylashadi. Jangchilar esa ekranning quyi-markaziy
+    // qismida yirik, mahobatli ko'rinadi. Yuqori qism esa qushlar, bulutlar va o'q parvozi bilan to'ladi.
     const centerY = isPortrait 
         ? 60 
-        : (isMobileView ? (groundSurfaceY + visibleH * 0.36) : (groundSurfaceY + visibleH * 0.42));
+        : (isMobileView ? (groundSurfaceY + visibleH * 0.26) : (groundSurfaceY + visibleH * 0.22));
 
     return {
         x: centerX,
@@ -3040,18 +3042,21 @@ function updateCameraBounds() {
     
     // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
     const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
-    // Har ikkala jangchining eni ~650 birlik.
+    // Har ikkala jangchining eni ~560 birlik.
     // Ekran chetlaridan yarmi chiqib ketmasligi uchun yetarli yon xoshiya (padding) qo'shamiz:
-    const extraSideMargin = (p3Model ? (pos3Offset + 350) : 0) + 1050;
-    const minWorldWidth = Math.max(3600, battleDist + extraSideMargin);
+    const extraSideMargin = (p3Model ? (pos3Offset + 240) : 0) + 720;
+    const minWorldWidth = Math.max(2600, battleDist + extraSideMargin);
     const zoomX = (frustumSize * aspect) / minWorldWidth;
 
     if (isPortrait) {
         // Portret rejimida ikkala jangchi ekranga to'liq sig'adi
         baseZoom = Math.min(zoomX * 1.15, 0.6);
+    } else if (isMobileView) {
+        // Mobil landshaft rejimida
+        baseZoom = Math.min(zoomX * 1.0, 1.2);
     } else {
-        // Landshaft (albom) rejimida ikkala personaj ham ekranga 100% to'liq sig'adi, qirqilmaydi
-        baseZoom = Math.min(zoomX * 0.98, 1.5);
+        // Kompyuter (desktop) landshaft rejimida jangchilar yirik va chiroyli ko'rinsin
+        baseZoom = Math.min(zoomX * 1.02, 1.35);
     }
     
     if (cameraState === 'static' || cameraState === 'recover' || cameraState === 'normal') {
@@ -3158,8 +3163,8 @@ function updateCampaignUI() {
 
 function getCampaignConfig(level) {
     const lvl = Math.max(1, level || 1);
-    // Masofa bosqichma-bosqich oshadi (uzoqroq = qiyinroq).
-    const distance = Math.min(3700, 2400 + (lvl - 1) * 26);
+    // Masofa bosqichma-bosqich me'yorida oshadi (uzoqroq = qiyinroq, lekin jangchilar ekranda yirik va aniq ko'rinadi).
+    const distance = Math.min(2700, 2400 + (lvl - 1) * 4);
     // Qushlar (to'siq) soni level oshgani sayin ko'payadi.
     const birds = Math.min(28, Math.floor(4 + lvl * 0.55));
 
@@ -6597,7 +6602,7 @@ socket.on('gameStart', (data) => {
     spawnEntities(opts);
     
     // Multiplayer rejimida jangchilar orasidagi masofani o'rnatish
-    currentBattleDistance = 3600; // Onlayn rejim uchun uzoq masofa
+    currentBattleDistance = 2700; // Onlayn rejim uchun qulay masofa
     
     myPlayerIndex = data.playerIndex;
     myDefenseActive = false;
@@ -9191,6 +9196,17 @@ function openProfileSettingsModal(e) {
     }
     
     if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
+    const selectSpearModel = document.getElementById('select-spear-model');
+    if (selectSpearModel) selectSpearModel.value = String(myProfile.spearModel || 0);
+
+    // Profil modalidagi barcha dropdownlarni custom in-DOM landscape qilib yangilaymiz
+    if (typeof setupCustomDropdown === 'function') {
+        ['select-char-type', 'select-avatar', 'select-spear-model', 'select-country'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) setupCustomDropdown(el);
+        });
+    }
+
     updateSuperUI();
     openModalSafely(profileModal, e);
 }
@@ -9271,6 +9287,8 @@ function handleSaveProfile(e) {
     const selectedCharType = document.getElementById('select-char-type').value || 2;
     myProfile.charType = selectedCharType;
     myProfile.flag = document.getElementById('select-country').value;
+    const selSpear = document.getElementById('select-spear-model');
+    if (selSpear) myProfile.spearModel = Number(selSpear.value || 0);
     
     saveProfile();
     
@@ -11231,8 +11249,13 @@ document.addEventListener('keydown', (e) => {
         if (rawTarget && typeof rawTarget.closest === 'function') {
             const grid = rawTarget.closest('#level-grid');
             if (grid) return grid;
-            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable]');
+            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable], .custom-select-menu, #profile-modal, #level-select-modal, .center-panel, .modal-panel');
             if (scrollable) return scrollable;
+        }
+
+        const profModal = document.getElementById('profile-modal');
+        if (profModal && !profModal.classList.contains('hidden') && profModal.offsetParent !== null) {
+            return profModal;
         }
 
         const lvlModal = document.getElementById('level-select-modal');
@@ -11244,6 +11267,7 @@ document.addEventListener('keydown', (e) => {
 
         if (typeof gameMode !== 'undefined' && gameMode !== 'menu') {
             const activeModals = [
+                document.getElementById('profile-modal'),
                 document.getElementById('settings-modal'),
                 document.getElementById('rating-modal'),
                 document.getElementById('shop-modal'),
@@ -11259,6 +11283,7 @@ document.addEventListener('keydown', (e) => {
         }
 
         const candidatePanels = [
+            document.getElementById('profile-modal'),
             document.getElementById('single-mode-modal'),
             document.getElementById('multi-menu'),
             document.getElementById('settings-modal'),
@@ -11397,7 +11422,7 @@ function _runPageInits() {
     initDailyQuests();
     initEmotesUI();
     initCoinTossUI();
-    ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options'].forEach(id => {
+    ['select-map', 'select-weather', 'select-difficulty', 'select-char-type-options', 'select-char-type', 'select-avatar', 'select-spear-model', 'select-country'].forEach(id => {
         const el = document.getElementById(id);
         if (el) setupCustomDropdown(el);
     });

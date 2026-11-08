@@ -3898,6 +3898,7 @@ body.force-landscape .chest-reward-title {
     max-height: 190px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
     z-index: 9999;
     padding: 4px;
     box-sizing: border-box;
@@ -3941,6 +3942,53 @@ body.force-landscape .custom-select-menu {
 body.force-landscape .custom-select-item {
     padding: 6px 10px;
     font-size: 0.82rem;
+}
+
+@media (max-height: 520px) {
+    .custom-select-wrap {
+        margin-bottom: 8px !important;
+    }
+    .custom-select-trigger {
+        padding: 5px 9px !important;
+        font-size: 0.84rem !important;
+    }
+    .custom-select-menu {
+        max-height: 130px !important;
+    }
+    .custom-select-item {
+        padding: 5px 8px !important;
+        font-size: 0.82rem !important;
+    }
+}
+
+/* Profil oynasi (mobil landshaftda barmoq bilan silliq scroll bo'lishi va tugmalarga yetish) */
+#profile-modal {
+    max-height: min(88vh, 560px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 16px 20px 32px !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-height: 520px) {
+    #profile-modal {
+        max-height: 94vh !important;
+        padding: 10px 14px 28px !important;
+    }
+    #profile-modal .custom-select-wrap {
+        margin-bottom: 8px !important;
+    }
+    #profile-modal .custom-select-trigger {
+        padding: 5px 8px !important;
+        font-size: 0.84rem !important;
+    }
+    #profile-modal input {
+        padding: 5px 8px !important;
+        font-size: 0.84rem !important;
+        margin-bottom: 8px !important;
+    }
 }
 
 /* ============================================================
