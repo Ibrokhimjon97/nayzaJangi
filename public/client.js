@@ -2553,6 +2553,10 @@ function createSoldier(isP1, charType = 0) {
     
     // Keep feet on the visible top of the ground.
     group.position.y = ground.position.y + (group.userData.isOttomanUnit ? 78 : 86);
+    group.userData.standingY = group.position.y;
+    group.rotation.z = 0;
+    group.userData.isKnockedDown = false;
+    group.userData.isDead = false;
     
     scene.add(group);
     return group;
@@ -2569,7 +2573,7 @@ function getOttomanArcherTexture(model, state) {
 
     if (state === 'celebrate') return ottomanArcherTextures.celebrate || baseIdle;
     if (state === 'break') return ottomanArcherTextures.shieldBreak || baseIdle;
-    if (state === 'hurt') return baseHurt;
+    if (state === 'hurt') return baseIdle;
     if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
@@ -2589,7 +2593,7 @@ function getOttomanSpearmanTexture(model, state) {
 
     if (state === 'break') return ottomanSpearmanTextures.shieldBreak || baseIdle;
     if (state === 'celebrate') return ottomanSpearmanTextures.celebrate || baseIdle;
-    if (state === 'hurt') return baseHurt;
+    if (state === 'hurt') return baseIdle;
     if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
@@ -2617,7 +2621,7 @@ function getOttomanTexture(model, state) {
         if (state === 'aim' || state === 'load') return baseAim;
         if (state === 'defend') return baseDefend;
         if (state === 'break') return t.shieldBreak || baseIdle;
-        if (state === 'hurt') return baseHurt;
+        if (state === 'hurt') return baseIdle;
         if (state === 'afterShot') return baseAfterShot;
         if (state === 'celebrate') return t.celebrate || baseIdle;
         return baseIdle;
@@ -2640,10 +2644,7 @@ function setSoldierVisual(model, state) {
     model.userData.visualState = targetState;
 
     if (model.userData.planeMesh && model.userData.basePlaneY) {
-        if (targetState === 'hurt') {
-            // Yaralangan/yiqilgan holatda model havoda muallaq yiqilmasdan, to'g'ridan-to'g'ri yer ustiga yotadi
-            model.userData.planeMesh.position.y = model.userData.basePlaneY - 110;
-        } else if (model.userData.isOttomanSpearman && targetState === 'duck') {
+        if (model.userData.isOttomanSpearman && targetState === 'duck') {
             model.userData.planeMesh.position.y = model.userData.basePlaneY + 45;
         } else {
             model.userData.planeMesh.position.y = model.userData.basePlaneY;
@@ -4396,51 +4397,117 @@ function stickSpear(targetModel, hitX, hitY, angle) {
 }
 
 function knockDownModel(model) {
-    if (!model || !model.userData || model.userData.isKnockedDown) return;
+    if (!model || !model.userData) return;
 
-    model.userData.isKnockedDown = true;
     const modelIndex = getPlayerIndexByModel(model);
     const isDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
 
-    // Barcha 2D sprite qahramonlar (Kamonchi, Nayzachi, Maxsus modellar)
-    if (model.userData.isOttomanUnit || model.userData.isOttomanArcher || model.userData.isOttomanSpearman || model.userData.isCustomModel) {
-        setSoldierVisual(model, 'hurt');
-        // Agar o'lgan bo'lsa, yiqilgan (yarador) holatda qoladi, qaytib o'rnidan turmaydi
-        if (!isDead) {
-            setTimeout(() => {
-                if (model && model.userData) {
-                    // Qayta tekshiramiz: agar shu vaqt ichida o'lgan bo'lsa turmasin
-                    const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
-                    if (!stillDead) {
+    // Agar model allaqachon o'lgan bo'lsa va yerda yotgan bo'lsa, qayta yiqitish shart emas
+    if (model.userData.isDead && model.userData.isKnockedDown) return;
+
+    // Har qanday avvalgi yiqilish/turish taymer va animatsiyalarini bekor qilamiz
+    if (model.userData.knockDownTimer) {
+        clearTimeout(model.userData.knockDownTimer);
+        model.userData.knockDownTimer = null;
+    }
+    if (model.userData.knockDownAnimId) {
+        cancelAnimationFrame(model.userData.knockDownAnimId);
+        model.userData.knockDownAnimId = null;
+    }
+
+    model.userData.isKnockedDown = true;
+    model.userData.isDead = isDead;
+
+    // Asl tik turgan Y koordinatasini eslab qolamiz
+    const standingY = (typeof model.userData.standingY === 'number')
+        ? model.userData.standingY
+        : (model.position.y || (ground.position.y + 78));
+    model.userData.standingY = standingY;
+
+    // Modelning default tik turgan holatini saqlaymiz (alohida yotgan rasm shart emas)
+    setSoldierVisual(model, 'idle');
+
+    // Yiqilish yo'nalishi:
+    // O'ng tomondagi jangchi (x >= 0) o'q zarbidan orqaga (o'ng tomonga) yiqiladi: soat strelkasi bo'yicha -90 gradus (-Math.PI / 2)
+    // Chap tomondagi jangchi (x < 0) o'q zarbidan orqaga (chap tomonga) yiqiladi: soat strelkasiga qarshi +90 gradus (+Math.PI / 2)
+    const fallDir = (model.position.x >= 0) ? -1 : 1;
+    const targetRotZ = fallDir * (Math.PI / 2);
+
+    // Yer sathiga to'g'ri yotish balandligi (model yer ostiga kirmasligi uchun)
+    const groundSurfaceY = ground.position.y + 100;
+    const fallenY = groundSurfaceY + 68;
+
+    const startRotZ = model.rotation.z || 0;
+    const startY = model.position.y;
+    const fallDuration = 320; // 320ms silliq gravitatsiya bilan yerga yiqilish
+    const startTime = performance.now();
+
+    function stepFall(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / fallDuration);
+        // Gravitatsiya tezlashuvi effekti (easeInQuad)
+        const ease = progress * progress;
+
+        model.rotation.z = startRotZ + (targetRotZ - startRotZ) * ease;
+        model.position.y = startY + (fallenY - startY) * ease;
+
+        if (progress < 1) {
+            model.userData.knockDownAnimId = requestAnimationFrame(stepFall);
+        } else {
+            model.rotation.z = targetRotZ;
+            model.position.y = fallenY;
+            model.userData.knockDownAnimId = null;
+
+            // Yerga zarb bilan tushish effekti
+            playSfx('ground', 0.85);
+            spawnParticles(model.position.x + (fallDir * 90), groundSurfaceY + 14, 10, false);
+            screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
+
+            // Agar joni tugagan bo'lsa (o'lgan bo'lsa):
+            // Shu yotgan holatida qoladi, o'rnidan qaytib turmaydi! O'yin tugaydi!
+            if (isDead) {
+                return;
+            }
+
+            // Agar joni tugamagan bo'lsa:
+            // Yerda biroz (850ms) yotgach, yana default tikka holatiga qayta turadi!
+            model.userData.knockDownTimer = setTimeout(() => {
+                // Qayta tekshiramiz: agar shu orada joni tugagan bo'lsa turmasin
+                const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
+                if (stillDead) {
+                    model.userData.isDead = true;
+                    return;
+                }
+
+                const standDuration = 360; // 360ms da silliq tik turish
+                const standStartTime = performance.now();
+
+                function stepStand(sNow) {
+                    const sElapsed = sNow - standStartTime;
+                    const sProgress = Math.min(1, sElapsed / standDuration);
+                    // Qayta tik turish (easeOutQuad)
+                    const sEase = 1 - (1 - sProgress) * (1 - sProgress);
+
+                    model.rotation.z = targetRotZ * (1 - sEase);
+                    model.position.y = fallenY + (standingY - fallenY) * sEase;
+
+                    if (sProgress < 1) {
+                        model.userData.knockDownAnimId = requestAnimationFrame(stepStand);
+                    } else {
+                        model.rotation.z = 0;
+                        model.position.y = standingY;
                         model.userData.isKnockedDown = false;
-                        const def = modelIndex >= 0 && isDefenseActiveForPlayer(modelIndex);
+                        model.userData.knockDownAnimId = null;
+                        const def = (modelIndex >= 0 && isDefenseActiveForPlayer(modelIndex));
                         setSoldierVisual(model, def ? 'defend' : 'idle');
                     }
                 }
-            }, 900);
+                model.userData.knockDownAnimId = requestAnimationFrame(stepStand);
+            }, 850);
         }
-        return;
     }
 
-    // 3D modellar uchun: 90 daraja yiqilganda yer tagiga kirib ketmasligi uchun
-    // Yer usti yuzi ground.position.y + 100 da joylashgan. Model yuzasi yer ustida turishi shart.
-    const originalY = model.position.y;
-    const direction = model.position.x > 0 ? -1 : 1;
-    model.rotation.z = direction * Math.PI / 2;
-    model.position.y = ground.position.y + 100 + 180;
-
-    if (!isDead) {
-        setTimeout(() => {
-            if (model && model.userData) {
-                const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
-                if (!stillDead) {
-                    model.rotation.z = 0;
-                    model.position.y = originalY;
-                    model.userData.isKnockedDown = false;
-                }
-            }
-        }, 1500);
-    }
+    model.userData.knockDownAnimId = requestAnimationFrame(stepFall);
 }
 
 function breakShield(model) {
