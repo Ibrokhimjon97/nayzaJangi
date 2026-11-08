@@ -86,7 +86,7 @@ body.force-landscape .hud .wind-indicator {
 body.force-landscape #in-game-menu-btn {
     top: 6px !important;
     bottom: auto !important;
-    left: 8px !important;
+    left: 88px !important;
     min-width: 52px !important;
     height: 32px !important;
     padding: 4px 8px !important;
@@ -97,8 +97,8 @@ body.force-landscape #in-game-menu-btn {
 body.force-landscape #btn-in-game-back {
     top: 6px !important;
     bottom: auto !important;
-    left: 66px !important;
-    min-width: 52px !important;
+    left: 148px !important;
+    min-width: 54px !important;
     height: 32px !important;
     padding: 4px 8px !important;
     font-size: 0.72rem !important;
@@ -108,7 +108,7 @@ body.force-landscape #btn-in-game-back {
 body.force-landscape #btn-toggle-chat {
     top: 6px !important;
     bottom: auto !important;
-    left: 124px !important;
+    left: 210px !important;
     width: 32px !important;
     height: 32px !important;
     font-size: 1.05rem !important;
@@ -122,22 +122,55 @@ body.force-landscape #btn-toggle-chat {
 body.force-landscape #chat-container {
     top: 44px !important;
     bottom: auto !important;
-    left: 8px !important;
+    left: 88px !important;
 }
 
 body.force-landscape #music-toggle-btn {
-    left: 8px !important;
-    bottom: 8px !important;
-    width: 36px !important;
-    height: 36px !important;
+    left: 36px !important;
+    bottom: clamp(6px, 1.5vh, 12px) !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1rem !important;
 }
 
 body.force-landscape .emote-btn {
-    left: 48px !important;
-    bottom: 8px !important;
-    width: 36px !important;
-    height: 36px !important;
+    left: 84px !important;
+    bottom: clamp(6px, 1.5vh, 12px) !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1rem !important;
 }
+
+body.force-landscape .emote-picker {
+    left: 84px !important;
+    bottom: 50px !important;
+}
+
+/* Landshaftda barcha 9 ta qobiliyat tugmasi teng o'lchamda va tartibli */
+body.force-landscape .shield-btn,
+body.force-landscape .super-btn,
+body.force-landscape .duck-btn,
+body.force-landscape .jump-btn,
+body.force-landscape .double-btn,
+body.force-landscape .wall-btn,
+body.force-landscape .crow-btn,
+body.force-landscape .artillery-btn,
+body.force-landscape .fire-btn {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 1.15rem !important;
+    bottom: clamp(6px, 1.5vh, 12px) !important;
+}
+
+body.force-landscape .shield-btn { right: 10px !important; }
+body.force-landscape .super-btn { right: 62px !important; }
+body.force-landscape .duck-btn { right: 114px !important; }
+body.force-landscape .jump-btn { right: 166px !important; }
+body.force-landscape .double-btn { right: 218px !important; }
+body.force-landscape .wall-btn { right: 270px !important; }
+body.force-landscape .crow-btn { right: 322px !important; }
+body.force-landscape .artillery-btn { right: 374px !important; }
+body.force-landscape .fire-btn { right: 426px !important; }
 
 :root {
     --menu-left-safe: max(8px, env(safe-area-inset-left));
@@ -980,40 +1013,40 @@ body.force-landscape .emote-btn {
 #in-game-menu-btn {
     pointer-events: auto;
     position: absolute;
-    left: max(var(--menu-left-safe), clamp(8px, 2vw, 20px));
-    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
+    left: max(var(--menu-left-safe), 20px);
+    bottom: max(var(--menu-bottom-safe), 20px);
     z-index: 125;
     width: auto;
-    min-width: clamp(56px, 7vw, 80px);
-    padding: clamp(6px, 1vw, 10px) clamp(8px, 1.4vw, 14px) !important;
-    font-size: clamp(0.64rem, 0.9vw, 0.9rem) !important;
-    border-radius: clamp(10px, 1.4vw, 14px) !important;
+    min-width: 72px;
+    padding: 8px 14px !important;
+    font-size: 0.85rem !important;
+    border-radius: 12px !important;
     margin: 0;
 }
 
 #btn-in-game-back {
     pointer-events: auto;
     position: absolute;
-    left: max(calc(var(--menu-left-safe) + 84px), clamp(90px, 10.5vw, 120px));
-    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
+    left: max(calc(var(--menu-left-safe) + 84px), 104px);
+    bottom: max(var(--menu-bottom-safe), 20px);
     z-index: 125;
     width: auto;
-    min-width: clamp(56px, 7vw, 80px);
-    padding: clamp(6px, 1vw, 10px) clamp(8px, 1.4vw, 14px) !important;
-    font-size: clamp(0.64rem, 0.9vw, 0.9rem) !important;
-    border-radius: clamp(10px, 1.4vw, 14px) !important;
+    min-width: 78px;
+    padding: 8px 14px !important;
+    font-size: 0.85rem !important;
+    border-radius: 12px !important;
     margin: 0;
     background: linear-gradient(180deg, #475569, #334155);
 }
 
 #music-toggle-btn {
     position: absolute;
-    left: max(calc(var(--menu-left-safe) + 168px), clamp(174px, 19vw, 204px));
-    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
+    left: max(calc(var(--menu-left-safe) + 196px), 216px);
+    bottom: max(var(--menu-bottom-safe), 20px);
     z-index: 126;
-    width: clamp(40px, 5.5vw, 50px);
-    height: clamp(40px, 5.5vw, 50px);
-    font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+    width: 44px;
+    height: 44px;
+    font-size: 1.15rem;
 }
 
 .chat-messages {
@@ -1285,11 +1318,11 @@ body.force-landscape .emote-btn {
         right: 426px !important;
     }
 
-    /* Yuqori chap tomondagi tugmalar landshaftda: Menyu, Ortga va Chat yonma-yon */
+    /* Yuqori chap tomondagi tugmalar landshaftda: Menyu, Ortga va Chat yonma-yon (Telegram interfeysidan xoli) */
     #in-game-menu-btn {
         top: 6px !important;
         bottom: auto !important;
-        left: 8px !important;
+        left: 88px !important;
         min-width: 52px !important;
         height: 32px !important;
         padding: 4px 8px !important;
@@ -1300,8 +1333,8 @@ body.force-landscape .emote-btn {
     #btn-in-game-back {
         top: 6px !important;
         bottom: auto !important;
-        left: 66px !important;
-        min-width: 52px !important;
+        left: 148px !important;
+        min-width: 54px !important;
         height: 32px !important;
         padding: 4px 8px !important;
         font-size: 0.72rem !important;
@@ -1311,7 +1344,7 @@ body.force-landscape .emote-btn {
     #btn-toggle-chat {
         top: 6px !important;
         bottom: auto !important;
-        left: 124px !important;
+        left: 210px !important;
         width: 32px !important;
         height: 32px !important;
         font-size: 1.05rem !important;
@@ -1325,24 +1358,29 @@ body.force-landscape .emote-btn {
     #chat-container {
         top: 44px !important;
         bottom: auto !important;
-        left: 8px !important;
+        left: 88px !important;
     }
 
-    /* Pastki chap tomondagi tugmalar landshaftda: Musiqa, Emote */
+    /* Pastki chap tomondagi tugmalar landshaftda: Musiqa, Emote (chap burchakdan o'ngroqqa surilgan) */
     #music-toggle-btn {
-        left: 8px !important;
-        bottom: clamp(6px, 1.5vh, 12px) !important;
-        width: 38px !important;
-        height: 38px !important;
-        font-size: 0.95rem !important;
-    }
-
-    .emote-btn {
-        left: 52px !important;
+        left: 36px !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
         width: 38px !important;
         height: 38px !important;
         font-size: 1rem !important;
+    }
+
+    .emote-btn {
+        left: 84px !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1rem !important;
+    }
+
+    .emote-picker {
+        left: 84px !important;
+        bottom: 50px !important;
     }
 
 
@@ -1574,7 +1612,7 @@ screen and (max-height: 390px) {
     #in-game-menu-btn {
         top: 6px !important;
         bottom: auto !important;
-        left: 6px !important;
+        left: 88px !important;
         min-width: 48px !important;
         height: 30px !important;
         font-size: 0.68rem !important;
@@ -1585,7 +1623,7 @@ screen and (max-height: 390px) {
     #btn-in-game-back {
         top: 6px !important;
         bottom: auto !important;
-        left: 58px !important;
+        left: 144px !important;
         min-width: 48px !important;
         height: 30px !important;
         font-size: 0.68rem !important;
@@ -1596,7 +1634,7 @@ screen and (max-height: 390px) {
     #btn-toggle-chat {
         top: 6px !important;
         bottom: auto !important;
-        left: 110px !important;
+        left: 200px !important;
         width: 30px !important;
         height: 30px !important;
         font-size: 0.95rem !important;
@@ -1608,24 +1646,24 @@ screen and (max-height: 390px) {
     }
 
     #music-toggle-btn {
-        left: 6px !important;
+        left: 36px !important;
         bottom: 6px !important;
-        width: 36px;
-        height: 36px;
-        font-size: 0.95rem;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.95rem !important;
     }
 
     .emote-btn {
-        left: 48px !important;
+        left: 80px !important;
         bottom: 6px !important;
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
     }
 
     .emote-picker {
-        left: 48px;
-        bottom: 46px;
+        left: 80px !important;
+        bottom: 46px !important;
     }
 
     .chat-container {
@@ -1700,7 +1738,7 @@ screen and (max-height: 340px) {
         height: 28px !important;
         padding: 3px 6px !important;
         font-size: 0.58rem !important;
-        left: 5px !important;
+        left: 82px !important;
         top: 5px !important;
         bottom: auto !important;
         z-index: 130 !important;
@@ -1711,7 +1749,7 @@ screen and (max-height: 340px) {
         height: 28px !important;
         padding: 3px 6px !important;
         font-size: 0.58rem !important;
-        left: 52px !important;
+        left: 136px !important;
         top: 5px !important;
         bottom: auto !important;
         z-index: 130 !important;
@@ -1721,7 +1759,7 @@ screen and (max-height: 340px) {
         width: 28px !important;
         height: 28px !important;
         font-size: 0.9rem !important;
-        left: 99px !important;
+        left: 190px !important;
         top: 5px !important;
         bottom: auto !important;
         z-index: 130 !important;
@@ -1732,7 +1770,7 @@ screen and (max-height: 340px) {
     }
 
     #music-toggle-btn {
-        left: 5px !important;
+        left: 32px !important;
         bottom: 5px !important;
         width: 34px !important;
         height: 34px !important;
@@ -1740,7 +1778,7 @@ screen and (max-height: 340px) {
     }
 
     .emote-btn {
-        left: 43px !important;
+        left: 74px !important;
         bottom: 5px !important;
         width: 34px !important;
         height: 34px !important;
@@ -2450,17 +2488,6 @@ label,
     opacity: 0.5;
 }
 
-@media screen and (max-width: 620px),
-screen and (max-height: 390px) {
-    .fire-btn {
-        width: 42px;
-        height: 42px;
-        right: 344px;
-        bottom: 8px;
-        font-size: 1.05rem;
-    }
-}
-
 /* ============================================================
    ASOSIY MENYU - HAQIQIY O'YIN USLUBIDAGI TUGMALAR (v42)
    Tiniq, rang-barang, hajmli (3D) tugmalar va panel
@@ -3081,15 +3108,15 @@ screen and (max-height: 390px) {
 /* === Emote System === */
 .emote-btn {
     position: absolute;
-    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
-    left: max(calc(var(--menu-left-safe) + 218px), clamp(224px, 24vw, 256px));
+    bottom: max(var(--menu-bottom-safe), 20px);
+    left: max(calc(var(--menu-left-safe) + 252px), 272px);
     z-index: 126;
-    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    font-size: 1.2rem;
     background: rgba(30, 41, 59, 0.85);
     border: 2px solid #8b5cf6;
     border-radius: 50%;
-    width: clamp(40px, 5.5vw, 50px);
-    height: clamp(40px, 5.5vw, 50px);
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3104,8 +3131,8 @@ screen and (max-height: 390px) {
 
 .emote-picker {
     position: absolute;
-    bottom: calc(max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px)) + clamp(50px, 6.5vh, 66px));
-    left: max(calc(var(--menu-left-safe) + 90px), clamp(96px, 12vw, 134px));
+    bottom: calc(max(var(--menu-bottom-safe), 20px) + 54px);
+    left: max(calc(var(--menu-left-safe) + 252px), 272px);
     z-index: 130;
     display: flex;
     gap: 8px;
