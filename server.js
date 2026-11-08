@@ -2110,6 +2110,13 @@ io.on('connection', (socket) => {
 
         room.turnIndex = room.turnIndex === 0 ? 1 : 0;
         room.wind = generateWind();
+        room.turnCount = (room.turnCount || 0) + 1;
+        // Har 4 navbatda serverdan sinxron Air Drop sandiq tushiriladi
+        if (room.turnCount % 4 === 0) {
+            const crateX = Math.round((Math.random() - 0.5) * 750);
+            const crateId = 'crate_' + Date.now();
+            io.to(roomName).emit('airDropSpawn', { id: crateId, x: crateX, y: 840 });
+        }
         io.to(roomName).emit('nextTurn', {
             turnIndex: room.turnIndex,
             wind: room.wind
@@ -2125,15 +2132,16 @@ io.on('connection', (socket) => {
         if (roomName) {
             socket.to(roomName).emit('entityHit', data);
         }
-        // Switch turn like groundHit
-        room.inFlight = false;
-        room.turnIndex = room.turnIndex === 0 ? 1 : 0;
-        room.wind = generateWind();
-        io.to(roomName).emit('nextTurn', {
-            turnIndex: room.turnIndex,
-            wind: room.wind
-        });
-        startRoomTurnTimer(roomName);
+        // Navbat havoda qushga tekkanda emas, balki nayza va qush yerga tushgach 
+        // mijozdan keladigan throwComplete orqali tartibli va to'liq animatsiyadan so'ng almashtiriladi.
+    });
+
+    // Air drop sandig'i urilganda ikkala o'yinchiga sinxron yetkazish
+    socket.on('airDropHit', (data) => {
+        const roomName = socket.roomId;
+        if (roomName) {
+            socket.to(roomName).emit('airDropHit', data);
+        }
     });
 
     // Qush o'qi (Crow killer arrow) multiplayer sinxronizatsiyasi
@@ -2250,7 +2258,8 @@ io.on('connection', (socket) => {
         socket.to(roomName).emit('playerAimState', {
             playerIndex,
             isAiming: !!data?.isAiming,
-            dist: Number(data?.dist || 0)
+            dist: Number(data?.dist || 0),
+            angle: Number(data?.angle || 0)
         });
     });
 

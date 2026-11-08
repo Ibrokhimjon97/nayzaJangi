@@ -2633,6 +2633,11 @@ function spawnEntities(options) {
     entities.forEach(e => scene.remove(e.mesh));
     entities = [];
 
+    if (typeof airDropCrates !== 'undefined' && Array.isArray(airDropCrates)) {
+        airDropCrates.forEach(c => { if (c && c.group) scene.remove(c.group); });
+        airDropCrates = [];
+    }
+
     clouds.forEach(c => scene.remove(c));
     clouds = [];
 
@@ -3350,6 +3355,12 @@ function create3DRecurveBow() {
 const active3DBow = create3DRecurveBow();
 active3DBow.visible = false;
 scene.add(active3DBow);
+
+const opponent3DBow = create3DRecurveBow();
+opponent3DBow.visible = false;
+scene.add(opponent3DBow);
+
+let remoteAimStates = {};
 
 spearGroup.visible = false;
 const secondarySpearGroup = spearGroup.clone();
@@ -5102,12 +5113,13 @@ function handleMove(e) {
     dragCurrent = getPointerPos(e);
     if (gameMode === 'multi' && socket && socket.connected) {
         const now = performance.now();
-        if (now - lastAimEmitTime > 70) {
+        if (now - lastAimEmitTime > 60) {
             lastAimEmitTime = now;
-            const dx = dragStart.x - dragCurrent.x;
-            const dy = dragCurrent.y - dragStart.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            socket.emit('playerAimState', { isAiming: true, dist });
+            const isRight = isPlayerOnRightSide(myPlayerIndex);
+            const aim = getAimParameters(dragStart, dragCurrent, isRight);
+            const dist = aim ? aim.distance : Math.hypot(dragCurrent.x - dragStart.x, dragCurrent.y - dragStart.y);
+            const angle = aim ? aim.angle : 0;
+            socket.emit('playerAimState', { isAiming: true, dist, angle });
         }
     }
 }
@@ -5160,7 +5172,7 @@ function handleEnd(e) {
     isDragging = false;
     aimSfxPlayed = false;
     if (gameMode === 'multi' && socket && socket.connected) {
-        socket.emit('playerAimState', { isAiming: false, dist: 0 });
+        socket.emit('playerAimState', { isAiming: false, dist: 0, angle: 0 });
     }
 
     const isRight = isPlayerOnRightSide(myPlayerIndex);
@@ -6306,11 +6318,16 @@ function updateCrowKillerArrows() {
             const dy = birdMesh.position.y - arrow.y;
             const dist = Math.hypot(dx, dy);
 
-            // Qarg'aga yaqin yetib borganda aniq urib tushirish
+            // Qarg'aga yaqin yetib borganda aniq urib sanchilish va birga qulash
             if (dist < 80) {
+                if (arrow.mesh && birdMesh) {
+                    scene.remove(arrow.mesh);
+                    arrow.mesh.position.set(0, 0, 5);
+                    arrow.mesh.rotation.z = Math.atan2(arrow.vy, arrow.vx) - (birdMesh.rotation.z || 0);
+                    birdMesh.add(arrow.mesh);
+                }
                 killBird(arrow.targetBird);
                 arrow.active = false;
-                if (arrow.mesh) scene.remove(arrow.mesh);
                 crowKillerArrows.splice(i, 1);
                 continue;
             }
@@ -7678,6 +7695,11 @@ socket.on('superIntercept', (data) => {
 socket.on('playerAimState', (data) => {
     if (!data || typeof data.playerIndex !== 'number') return;
     if (data.playerIndex === myPlayerIndex) return;
+    remoteAimStates[data.playerIndex] = {
+        isAiming: !!data.isAiming,
+        dist: Number(data.dist || 0),
+        angle: Number(data.angle || 0)
+    };
     const oppModel = modelForPlayer(data.playerIndex);
     if (!oppModel) return;
     if (data.isAiming) {
@@ -7687,17 +7709,34 @@ socket.on('playerAimState', (data) => {
         const isDef = isDefenseActiveForPlayer(data.playerIndex);
         const isDck = isDuckActiveForPlayer(data.playerIndex);
         setSoldierVisual(oppModel, isDck ? 'duck' : (isDef ? 'defend' : 'idle'));
+        if (typeof opponent3DBow !== 'undefined' && opponent3DBow) opponent3DBow.visible = false;
     }
 });
 
 socket.on('spearThrown', (data) => {
     const { playerIndex, angle, power, isArtillery, isFire } = data;
+    remoteAimStates[playerIndex] = { isAiming: false, dist: 0, angle: 0 };
+    if (typeof opponent3DBow !== 'undefined' && opponent3DBow) opponent3DBow.visible = false;
     const thrower = modelForPlayer(playerIndex);
     if (thrower) {
         setModelActionState(thrower, 'afterShot', 950);
     }
     if (isFire) pendingFireShot = true;
     startSpearAnimation(playerIndex, angle, power, isArtillery);
+});
+
+socket.on('airDropSpawn', (data) => {
+    if (!data) return;
+    if (typeof spawnAirDropCrate === 'function') {
+        spawnAirDropCrate(data.x, data.y, data.id);
+    }
+});
+
+socket.on('airDropHit', (data) => {
+    if (!data) return;
+    if (typeof onRemoteAirDropHit === 'function') {
+        onRemoteAirDropHit(data);
+    }
 });
 
 socket.on('groundHit', (data) => {
@@ -7717,7 +7756,7 @@ socket.on('groundHit', (data) => {
 
 socket.on('hitRegistered', (data) => {
     const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged, jumpDodged, isFire } = data;
-    const targetModel = targetIndex === 0 ? p1Model : p2Model;
+    const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
 
     isAnimating = false;
     if (spear) spear.active = false;
@@ -8260,10 +8299,12 @@ function updateTurn(turnIndex, wind) {
     if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
 
-    turnsSinceLastCrate = (typeof turnsSinceLastCrate === 'number' ? turnsSinceLastCrate : 0) + 1;
-    if (turnsSinceLastCrate >= 4) {
-        turnsSinceLastCrate = 0;
-        if (typeof spawnAirDropCrate === 'function') spawnAirDropCrate();
+    if (gameMode === 'single') {
+        turnsSinceLastCrate = (typeof turnsSinceLastCrate === 'number' ? turnsSinceLastCrate : 0) + 1;
+        if (turnsSinceLastCrate >= 4) {
+            turnsSinceLastCrate = 0;
+            if (typeof spawnAirDropCrate === 'function') spawnAirDropCrate();
+        }
     }
 
     // O'yinchi navbati boshlanganda avvalgi otish trayektoriyasini hint sifatida ko'rsatamiz.
@@ -8747,12 +8788,32 @@ function checkCollision() {
         return;
     }
 
-    if (typeof checkAirDropCrateHit === 'function' && checkAirDropCrateHit()) {
+    const crateHitInfo = (typeof checkAirDropCrateHit === 'function') ? checkAirDropCrateHit() : null;
+    if (crateHitInfo) {
         spear.active = false;
         isAnimating = false;
         resetCameraAfterImpact();
         hideFlyingSpear();
-        if (gameMode === 'single') advanceSingleTurnAfterShot();
+        if (gameMode === 'multi') {
+            if (spear.playerIndex === myPlayerIndex) {
+                socket.emit('airDropHit', {
+                    crateId: crateHitInfo.crate ? crateHitInfo.crate.id : null,
+                    reward: crateHitInfo.chosenReward,
+                    hitX: spear.x,
+                    hitY: spear.y,
+                    shooterIndex: myPlayerIndex
+                });
+                socket.emit('throwComplete', {
+                    hitOpponent: false,
+                    hitCrate: true,
+                    hitX: spear.x,
+                    hitY: spear.y,
+                    hitAngle: spearGroup.rotation.z
+                });
+            }
+        } else {
+            advanceSingleTurnAfterShot();
+        }
         return;
     }
 
@@ -8877,9 +8938,15 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
                 addScore(-2);
             }
             if (gameMode === 'multi') {
-                if (!spear.entityHitEmitted) {
-                    socket.emit('entityHit', { entityIndex: entities.indexOf(hitEntity), hitX, hitY, hitAngle: spearGroup.rotation.z, isArtillery: spear.isArtillery });
-                    spear.entityHitEmitted = true;
+                if (spear.playerIndex === myPlayerIndex) {
+                    socket.emit('throwComplete', {
+                        hitOpponent: false,
+                        hitEntity: true,
+                        entityIndex: entities.indexOf(hitEntity),
+                        hitX,
+                        hitY,
+                        hitAngle: spearGroup.rotation.z
+                    });
                 }
             } else {
                 advanceSingleTurnAfterShot();
@@ -9061,6 +9128,10 @@ function gameLoop(now) {
         }
 
         if (!e.alive) {
+            // Agar qush nayzaga sanchilib uchayotgan bo'lsa, uni nayza o'zi boshqaradi (ikki marta gravitatsiya bo'lmaydi)
+            if (spear && spear.active && spear.hitEntity === e) {
+                return;
+            }
             e.deathTimer = (e.deathTimer || 0) + dt;
             if (e.mesh.position.y > ground.position.y + 100) {
                 e.mesh.position.y -= GRAVITY * dt * 0.5;
@@ -9285,6 +9356,10 @@ function gameLoop(now) {
             if ((spear && spear.playerIndex === idx) || idx === currentTurnIndex || idx === (currentTurnIndex === -1 && spear ? spear.playerIndex : -1)) {
                 targetState = 'afterShot';
             }
+        } else if (remoteAimStates[idx] && remoteAimStates[idx].isAiming && currentTurnIndex === idx) {
+            // Raqib onlaynda mo'ljal olayotganda uning tortish animatsiyasi real-time ko'rinadi
+            const rDist = remoteAimStates[idx].dist || 0;
+            targetState = (rDist > 50) ? 'aim' : (rDist > 10 ? 'load' : 'aim');
         } else if (isDragging && currentTurnIndex === idx) {
             // Dragging
             const dx = dragStart.x - dragCurrent.x;
@@ -9404,6 +9479,36 @@ function gameLoop(now) {
         }
     } else {
         if (typeof active3DBow !== 'undefined' && active3DBow) active3DBow.visible = false;
+    }
+
+    // Onlayn raqibning 3D Usmoniy Kamonini real-time ko'rsatish va uning burchak/ipini harakatlantirish
+    if (typeof opponent3DBow !== 'undefined' && opponent3DBow) {
+        const oppIdx = myPlayerIndex === 0 ? 1 : 0;
+        const oppAim = remoteAimStates[oppIdx];
+        const oppModel = modelForPlayer(oppIdx);
+        if (oppModel && oppAim && oppAim.isAiming && currentTurnIndex === oppIdx && !isAnimating) {
+            const oppIsRight = isPlayerOnRightSide(oppIdx);
+            const startX = oppModel.position.x + (oppIsRight ? -60 : 60);
+            const startY = oppModel.position.y + 270;
+            opponent3DBow.visible = true;
+            opponent3DBow.position.set(startX, startY, 15);
+            const rad = (oppAim.angle || 0) * (Math.PI / 180);
+            const bowRotAngle = oppIsRight ? (Math.PI - rad) : rad;
+            opponent3DBow.rotation.z = bowRotAngle;
+            if (oppIsRight) {
+                opponent3DBow.scale.set(1.4, -1.4, 1.4);
+            } else {
+                opponent3DBow.scale.set(1.4, 1.4, 1.4);
+            }
+            if (opponent3DBow.userData && opponent3DBow.userData.stringMesh) {
+                const pullDist = Math.min(22, ((oppAim.dist || 0) / 100) * 18);
+                const posAttr = opponent3DBow.userData.stringMesh.geometry.attributes.position;
+                posAttr.setXYZ(1, -pullDist, 0, 0);
+                posAttr.needsUpdate = true;
+            }
+        } else {
+            opponent3DBow.visible = false;
+        }
     }
 
 
@@ -14157,14 +14262,15 @@ function create3DAirDropChest() {
     };
 }
 
-function spawnAirDropCrate() {
+function spawnAirDropCrate(customX, customY, customId) {
     const { rootGroup, chestGroup, chuteGroup, beaconBulb } = create3DAirDropChest();
-    const x = (Math.random() - 0.5) * 850;
-    const y = 840;
+    const x = typeof customX === 'number' ? customX : (Math.random() - 0.5) * 850;
+    const y = typeof customY === 'number' ? customY : 840;
     rootGroup.position.set(x, y, 10);
     scene.add(rootGroup);
 
     const crateObj = {
+        id: customId || ('crate_' + Date.now() + '_' + Math.floor(Math.random() * 10000)),
         group: rootGroup,
         chestGroup,
         chuteMesh: chuteGroup,
@@ -14206,8 +14312,85 @@ function updateAirDropCrates(dt) {
     }
 }
 
+function applyAirDropRewardVisual(chosen, shooter, x, y) {
+    if (chosen === 'crowhunt') {
+        if (shooter === myPlayerIndex) {
+            myProfile.crowhunt = (Number(myProfile.crowhunt) || 0) + 1;
+            myCrow = myProfile.crowhunt;
+            saveProfile();
+            updateSuperUI();
+            if (typeof updateCrowUI === 'function') updateCrowUI();
+        }
+        showDamageText(x, y + 60, "🎁 +1 QUSH URAR O'Q! 🐦", true, true);
+    } else if (chosen === 'wall') {
+        if (shooter === myPlayerIndex) {
+            myProfile.walls = (Number(myProfile.walls) || 0) + 1;
+            saveProfile();
+            updateSuperUI();
+        }
+        showDamageText(x, y + 60, "🎁 +1 HIMOY DEVORI! 🧱", true, true);
+    } else if (chosen === 'artillery') {
+        if (shooter === myPlayerIndex) {
+            myProfile.artillery = (Number(myProfile.artillery) || 0) + 1;
+            artilleryCount = myProfile.artillery;
+            saveProfile();
+            updateSuperUI();
+        }
+        showDamageText(x, y + 60, "🎁 +1 ARTILERIYA! 💣", true, true);
+    } else if (chosen === 'super') {
+        if (shooter === myPlayerIndex) {
+            myProfile.superPowers = (Number(myProfile.superPowers) || 0) + 1;
+            mySuper = myProfile.superPowers;
+            saveProfile();
+            updateSuperUI();
+        } else {
+            enemySuper = (Number(enemySuper) || 0) + 1;
+        }
+        showDamageText(x, y + 60, "🎁 +1 SUPER KUCH! 🗡️", true, true);
+    } else if (chosen === 'double') {
+        if (shooter === myPlayerIndex) {
+            myProfile.doubleSpears = (Number(myProfile.doubleSpears) || 0) + 1;
+            saveProfile();
+            updateSuperUI();
+        }
+        showDamageText(x, y + 60, "🎁 +1 QO'SH NAYZA! ⚔️", true, true);
+    } else if (chosen === 'fire') {
+        if (shooter === myPlayerIndex) {
+            myProfile.fireSpears = (Number(myProfile.fireSpears) || 0) + 1;
+            saveProfile();
+            updateSuperUI();
+        }
+        showDamageText(x, y + 60, "🎁 +1 OLOVLI NAYZA! 🔥", true, true);
+    } else if (chosen === 'hp') {
+        if (shooter === 0) myHealth = Math.min(100, myHealth + 35);
+        else enemyHealth = Math.min(100, enemyHealth + 35);
+        updateHealthUI();
+        showDamageText(x, y + 60, "🎁 +35 HP JON! 💖", true, true);
+    } else if (chosen === 'shield') {
+        setShieldForPlayer(shooter, shieldForPlayer(shooter) + 2);
+        updateSuperUI();
+        showDamageText(x, y + 60, "🎁 +2 QALQON! 🛡️", true, true);
+    } else {
+        if (shooter === myPlayerIndex) addScore(500);
+        showDamageText(x, y + 60, "🎁 +500 BALL! 🪙", true, true);
+    }
+}
+
+function onRemoteAirDropHit(data) {
+    if (!data) return;
+    const hitCrate = airDropCrates.find(c => c.id === data.crateId) || airDropCrates.find(c => c.alive && Math.abs(c.x - data.hitX) < 140);
+    if (hitCrate && hitCrate.alive) {
+        hitCrate.alive = false;
+        scene.remove(hitCrate.group);
+        spawnParticles(hitCrate.x, hitCrate.y + 25, 40, true);
+        spawnFireBurst(hitCrate.x, hitCrate.y + 25, 20);
+        playSfx('break');
+    }
+    applyAirDropRewardVisual(data.reward, data.shooterIndex, data.hitX, data.hitY);
+}
+
 function checkAirDropCrateHit() {
-    if (!spear || !spear.active) return false;
+    if (!spear || !spear.active) return null;
     for (let i = 0; i < airDropCrates.length; i++) {
         const c = airDropCrates[i];
         if (c.alive && Math.abs(spear.x - c.x) < 70 && Math.abs(spear.y - c.y) < 70) {
@@ -14219,75 +14402,15 @@ function checkAirDropCrateHit() {
 
             const shooter = spear.playerIndex;
             // Airdrop sandig'idan barcha xilma-xil bonuslar va quvvatlar tushadi:
-            // qush urar o'q, qo'sh nayza, devor, olov nayza, artileriya, super kuch, HP jon, qalqon, ball
             const rewardTypes = ['crowhunt', 'double', 'wall', 'fire', 'artillery', 'super', 'hp', 'shield', 'score'];
             const chosen = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
 
-            if (chosen === 'crowhunt') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.crowhunt = (Number(myProfile.crowhunt) || 0) + 1;
-                    myCrow = myProfile.crowhunt;
-                    saveProfile();
-                    updateSuperUI();
-                    if (typeof updateCrowUI === 'function') updateCrowUI();
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 QUSH URAR O'Q! 🐦", true, true);
-            } else if (chosen === 'wall') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.walls = (Number(myProfile.walls) || 0) + 1;
-                    saveProfile();
-                    updateSuperUI();
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 HIMOY DEVORI! 🧱", true, true);
-            } else if (chosen === 'artillery') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.artillery = (Number(myProfile.artillery) || 0) + 1;
-                    artilleryCount = myProfile.artillery;
-                    saveProfile();
-                    updateSuperUI();
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 ARTILERIYA! 💣", true, true);
-            } else if (chosen === 'super') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.superPowers = (Number(myProfile.superPowers) || 0) + 1;
-                    mySuper = myProfile.superPowers;
-                    saveProfile();
-                    updateSuperUI();
-                } else {
-                    enemySuper = (Number(enemySuper) || 0) + 1;
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 SUPER KUCH! 🗡️", true, true);
-            } else if (chosen === 'double') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.doubleSpears = (Number(myProfile.doubleSpears) || 0) + 1;
-                    saveProfile();
-                    updateSuperUI();
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 QO'SH NAYZA! ⚔️", true, true);
-            } else if (chosen === 'fire') {
-                if (shooter === myPlayerIndex) {
-                    myProfile.fireSpears = (Number(myProfile.fireSpears) || 0) + 1;
-                    saveProfile();
-                    updateSuperUI();
-                }
-                showDamageText(c.x, c.y + 60, "🎁 +1 OLOVLI NAYZA! 🔥", true, true);
-            } else if (chosen === 'hp') {
-                if (shooter === 0) myHealth = Math.min(100, myHealth + 35);
-                else enemyHealth = Math.min(100, enemyHealth + 35);
-                updateHealthUI();
-                showDamageText(c.x, c.y + 60, "🎁 +35 HP JON! 💖", true, true);
-            } else if (chosen === 'shield') {
-                setShieldForPlayer(shooter, shieldForPlayer(shooter) + 2);
-                updateSuperUI();
-                showDamageText(c.x, c.y + 60, "🎁 +2 QALQON! 🛡️", true, true);
-            } else {
-                if (shooter === myPlayerIndex) addScore(500);
-                showDamageText(c.x, c.y + 60, "🎁 +500 BALL! 🪙", true, true);
-            }
-            return true;
+            applyAirDropRewardVisual(chosen, shooter, c.x, c.y);
+
+            return { crate: c, chosenReward: chosen, x: c.x, y: c.y };
         }
     }
-    return false;
+    return null;
 }
 
 const DAILY_REWARDS_DATA = [
