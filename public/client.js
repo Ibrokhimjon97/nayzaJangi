@@ -4506,6 +4506,14 @@ function getPointerPos(e) {
 
 // Game Logic
 function startSinglePlayer(opts) {
+    if (authModal) authModal.classList.add('hidden');
+    if (singleModeModal) singleModeModal.classList.add('hidden');
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
     waitingScreen.classList.add('hidden');
     menuScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
@@ -6164,7 +6172,7 @@ function spawnConfetti() {
 }
 
 if (restartBtn) {
-    restartBtn.addEventListener('click', () => {
+    const handleRestartGame = safeModalAction((e) => {
         gameOverScreen.classList.add('hidden');
         if (gameMode === 'single') {
             const level = Math.max(1, singleCampaignLevel);
@@ -6174,10 +6182,12 @@ if (restartBtn) {
         }
         location.reload();
     });
+    restartBtn.addEventListener('click', handleRestartGame);
+    restartBtn.addEventListener('touchend', handleRestartGame, { passive: false });
 }
 
 if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
+    const handleReturnToMenu = safeModalAction((e) => {
         gameOverScreen.classList.add('hidden');
         gameScreen.classList.add('hidden');
         waitingScreen.classList.add('hidden');
@@ -6185,15 +6195,21 @@ if (menuBtn) {
         disconnectScreen.classList.add('hidden');
         inGameModal.classList.add('hidden');
         if (aboutModal) aboutModal.classList.add('hidden');
+        if (settingsModal) settingsModal.classList.add('hidden');
+        if (profileModal) profileModal.classList.add('hidden');
+        if (singleModeModal) singleModeModal.classList.add('hidden');
         menuScreen.classList.remove('hidden');
         gameMode = 'menu';
         updateCampaignUI();
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     });
+    menuBtn.addEventListener('click', handleReturnToMenu);
+    menuBtn.addEventListener('touchend', handleReturnToMenu, { passive: false });
 }
 
 // Revansh tugmasi - so'rov yuborish
 if (rematchBtn) {
-    rematchBtn.addEventListener('click', () => {
+    const handleRematchRequest = safeModalAction((e) => {
         console.log('Revansh tugmasi bosildi, roomName:', currentRoomName);
         if (socket && socket.connected) {
             socket.emit('rematchRequest', { roomName: currentRoomName });
@@ -6204,21 +6220,25 @@ if (rematchBtn) {
             rematchBtn.innerText = "Xatolik";
         }
     });
+    rematchBtn.addEventListener('click', handleRematchRequest);
+    rematchBtn.addEventListener('touchend', handleRematchRequest, { passive: false });
 }
 
 // Revansh so'rovini qabul qilish
 if (btnRematchAccept) {
-    btnRematchAccept.addEventListener('click', () => {
+    const handleRematchAccept = safeModalAction((e) => {
         if (socket && socket.connected) {
             socket.emit('rematchAccept', { roomName: currentRoomName });
         }
         if (rematchModal) rematchModal.classList.add('hidden');
     });
+    btnRematchAccept.addEventListener('click', handleRematchAccept);
+    btnRematchAccept.addEventListener('touchend', handleRematchAccept, { passive: false });
 }
 
 // Revansh so'rovini rad etish
 if (btnRematchDecline) {
-    btnRematchDecline.addEventListener('click', () => {
+    const handleRematchDecline = safeModalAction((e) => {
         if (socket && socket.connected) {
             socket.emit('rematchDecline', { roomName: currentRoomName });
         }
@@ -6226,7 +6246,10 @@ if (btnRematchDecline) {
         gameOverScreen.classList.add('hidden');
         menuScreen.classList.remove('hidden');
         gameMode = 'menu';
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     });
+    btnRematchDecline.addEventListener('click', handleRematchDecline);
+    btnRematchDecline.addEventListener('touchend', handleRematchDecline, { passive: false });
 }
 
 function updateTurn(turnIndex, wind) {
@@ -8166,6 +8189,17 @@ if (btnAuthReset) {
     });
 }
 
+const btnGuestPlay = document.getElementById('btn-guest-play');
+if (btnGuestPlay) {
+    const handleGuestPlay = safeModalAction((e) => {
+        if (authModal) authModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.remove('hidden');
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    });
+    btnGuestPlay.addEventListener('click', handleGuestPlay);
+    btnGuestPlay.addEventListener('touchend', handleGuestPlay, { passive: false });
+}
+
 // Rating Modal
 const btnRating = document.getElementById('btn-rating');
 const ratingModal = document.getElementById('rating-modal');
@@ -8425,17 +8459,34 @@ setInterval(updateMenuWallpaper, 350);
             if (introScreen && introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
         }, 600);
     };
+
+    const handleIntroStartGame = safeModalAction((e) => {
+        dismissIntro(e);
+        if (authModal) authModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
+        if (typeof checkAutoJoinTelegramRoom === 'function' && checkAutoJoinTelegramRoom()) {
+            return;
+        }
+        const level = Math.max(1, singleCampaignLevel);
+        aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
+        gameMode = 'single';
+        startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+    });
+
     const startBtn = document.getElementById('btn-intro-start');
     if (startBtn) {
-        startBtn.addEventListener('click', dismissIntro);
-        startBtn.addEventListener('touchstart', dismissIntro, { passive: true });
-        startBtn.addEventListener('pointerdown', dismissIntro);
+        startBtn.addEventListener('click', handleIntroStartGame);
+        startBtn.addEventListener('touchend', handleIntroStartGame, { passive: false });
     }
-    introScreen.addEventListener('pointerdown', dismissIntro);
-    introScreen.addEventListener('touchstart', dismissIntro, { passive: true });
-    introScreen.addEventListener('click', dismissIntro);
-    // 3.5 soniyadan so'ng avtomatik o'tish
-    setTimeout(dismissIntro, 3500);
+
+    const handleBackgroundDismiss = (e) => {
+        if (e.target === startBtn || (startBtn && startBtn.contains(e.target))) return;
+        dismissIntro(e);
+    };
+    introScreen.addEventListener('click', handleBackgroundDismiss);
+    introScreen.addEventListener('touchend', handleBackgroundDismiss, { passive: true });
+    // 4.5 soniyadan so'ng avtomatik o'tish
+    setTimeout(dismissIntro, 4500);
 })();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
@@ -8531,11 +8582,11 @@ document.addEventListener('touchend', (e) => {
     if (t && typeof t.closest === 'function') {
         const btn = t.closest('button');
         if (btn && !btn.disabled) {
-            // Agar barmoq 10px dan ortiq surilmagan bo'lsa, demak bu click
+            // Agar barmoq 25px dan ortiq surilmagan bo'lsa, demak bu tap/click
             const touch = e.changedTouches ? e.changedTouches[0] : null;
             if (touch) {
                 const dist = Math.hypot(touch.clientX - lastTouchStartPos.x, touch.clientY - lastTouchStartPos.y);
-                if (dist < 10) {
+                if (dist < 25) {
                     lastTouchTriggerTime = Date.now();
                     btn.click();
                 }
@@ -8571,48 +8622,58 @@ if(document.getElementById('btn-single')) {
 }
 
 if (btnSingleContinue) {
-    btnSingleContinue.addEventListener('click', () => {
+    const handleContinue = safeModalAction((e) => {
         if (singleModeModal) singleModeModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
         const level = Math.max(1, singleCampaignLevel);
         aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
         gameMode = 'single';
         startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
     });
+    btnSingleContinue.addEventListener('click', handleContinue);
+    btnSingleContinue.addEventListener('touchend', handleContinue, { passive: false });
 }
 
 if (btnSingleNew) {
-    btnSingleNew.addEventListener('click', () => {
+    const handleNew = safeModalAction((e) => {
         singleCampaignLevel = 1;
         localStorage.setItem('nayza_single_level', '1');
         updateCampaignUI();
         if (singleModeModal) singleModeModal.classList.add('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
         aiDifficulty = 'easy';
         gameMode = 'single';
         startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
     });
+    btnSingleNew.addEventListener('click', handleNew);
+    btnSingleNew.addEventListener('touchend', handleNew, { passive: false });
 }
 
 if (btnSingleCancel) {
-    const handleSingleCancel = (e) => closeModalSafely(singleModeModal, e);
+    const handleSingleCancel = safeModalAction((e) => closeModalSafely(singleModeModal, e));
     btnSingleCancel.addEventListener('click', handleSingleCancel);
     btnSingleCancel.addEventListener('touchend', handleSingleCancel, { passive: false });
 }
 
 if (btnSingleSelectLevel) {
-    btnSingleSelectLevel.addEventListener('click', () => {
+    const handleSelectLevel = safeModalAction((e) => {
         if (singleModeModal) singleModeModal.classList.add('hidden');
         if (levelSelectModal) {
             levelSelectModal.classList.remove('hidden');
             renderLevelGrid();
         }
     });
+    btnSingleSelectLevel.addEventListener('click', handleSelectLevel);
+    btnSingleSelectLevel.addEventListener('touchend', handleSelectLevel, { passive: false });
 }
 
 if (btnLevelSelectCancel) {
-    btnLevelSelectCancel.addEventListener('click', () => {
+    const handleLevelSelectCancel = safeModalAction((e) => {
         if (levelSelectModal) levelSelectModal.classList.add('hidden');
         if (singleModeModal) singleModeModal.classList.remove('hidden');
     });
+    btnLevelSelectCancel.addEventListener('click', handleLevelSelectCancel);
+    btnLevelSelectCancel.addEventListener('touchend', handleLevelSelectCancel, { passive: false });
 }
 
 function renderLevelGrid() {
@@ -8650,7 +8711,7 @@ function renderLevelGrid() {
                 : 'linear-gradient(135deg, #10b981, #059669)');
         levelBtn.innerHTML = `<span style="font-size:1rem;font-weight:800;">${i}</span><span style="font-size:0.72rem;opacity:0.9;">${emoji}${isBoss ? '⚔️' : ''}</span>`;
         levelBtn.title = `Level ${i}${isBoss ? ' (2 dushman)' : ''}`;
-        levelBtn.addEventListener('click', () => {
+        const handleLevelPick = safeModalAction((e) => {
             singleCampaignLevel = i;
             if (levelSelectModal) levelSelectModal.classList.add('hidden');
             if (singleModeModal) singleModeModal.classList.add('hidden');
@@ -8659,6 +8720,8 @@ function renderLevelGrid() {
             gameMode = 'single';
             startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
         });
+        levelBtn.addEventListener('click', handleLevelPick);
+        levelBtn.addEventListener('touchend', handleLevelPick, { passive: false });
 
         levelGrid.appendChild(levelBtn);
     }
