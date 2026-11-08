@@ -5129,18 +5129,27 @@ function getAimParameters(dragStart, dragCurrent, isRightSide) {
 
     const power = computeShotPower(distance);
 
-    // Gorizontal va vertikal siljishlarni har qanday yo'nalish uchun xavfsiz hisoblash:
-    // O'yinchi barmoqni chapga yoki o'ngga surishidan qat'iy nazar, otish quvvati va burchagi raqib tomon yo'naltiriladi.
-    const hDist = Math.max(12, Math.abs(rawDx));
-    // Vertikal tortish: pastga tortsa (slingshot) ham, yuqoriga sursa (direct swipe) ham balandlik burchagi hisoblanadi.
-    const vDist = Math.abs(rawDy);
+    // Gorizontal va vertikal tortish/surish vektorini to'g'ri hisoblash:
+    // Chapdagi o'yinchi (isRightSide=false): orqaga (chapga, rawDx < 0) tortsa, raqib tomon otadi.
+    // O'ngdagi o'yinchi (isRightSide=true): orqaga (o'ngga, rawDx > 0) tortsa, raqib tomon otadi.
+    let pullX = isRightSide ? rawDx : -rawDx;
+    // Vertikal: pastga tortganda (rawDy > 0) o'q osmonga, yuqoriga surtganda (rawDy < 0) o'q yerga qaraydi.
+    let pullY = rawDy;
 
-    let angle = Math.atan2(vDist, hDist) * (180 / Math.PI);
+    // Agar o'yinchi orqaga tortish (slingshot) o'rniga to'g'ridan-to'g'ri oldinga surgan (swipe) bo'lsa:
+    if (pullX < 0) {
+        pullX = -pullX;
+        pullY = -pullY;
+    }
 
-    // Agar o'yinchi deyarli to'g'ri gorizontal tortgan bo'lsa, pastga to'g'ri otilmasligi uchun eng kamida 5° ko'tariladi
-    if (angle < 5) angle = 5;
-    // O'q hech qachon teskari (orqaga) uchmasligi uchun maksimal burchak 80°
-    if (angle > 80) angle = 80;
+    let angle = Math.atan2(pullY, Math.max(10, pullX)) * (180 / Math.PI);
+
+    // Foydalanuvchi xohlaganidek to'liq erkin fizik burchak:
+    // Pastga (yerga) qaratib otilsa - o'q to'g'ri yerga qarab ketadi va yerga sanchiladi (-60° gacha)
+    // Osmonga baland qaratib otilsa - o'q osmonga tik uchadi (+88° gacha)
+    // Gorizontal oldinga uchish (vx) saqlanib qolishi uchun 90° dan kam bo'lishi kifoya
+    if (angle < -60) angle = -60;
+    if (angle > 88) angle = 88;
 
     return { angle, power, distance };
 }
@@ -6083,7 +6092,7 @@ function throwSpear(angle, power) {
         if (!pendingDoubleShot) {
             pendingDoubleShot = {
                 shooterIndex: currentTurnIndex,
-                angle: Math.max(-15, Math.min(85, angle + 5.5)),
+                angle: Math.max(-60, Math.min(85, angle + 5.5)),
                 power: Math.max(650, power * 0.94),
                 wind: currentWind
             };
