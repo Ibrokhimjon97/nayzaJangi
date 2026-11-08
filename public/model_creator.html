@@ -84,10 +84,14 @@
             <div class="flex-row">
                 <div class="form-group">
                     <label>Otgandan so'ng (After Shot):</label>
-                    <input type="file" name="shieldAfterShot" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-s-after')">
+                    <input type="file" name="shieldAfterShot" class="file-input" accept="image/png, image/jpeg" onchange="preview(this, 'prev-s-after')">
                     <img id="prev-s-after" class="preview-img">
                 </div>
-                <div class="form-group"></div>
+                <div class="form-group">
+                    <label>Sakrash (Jump):</label>
+                    <input type="file" name="shieldJump" class="file-input" accept="image/png, image/jpeg" onchange="preview(this, 'prev-s-jump')">
+                    <img id="prev-s-jump" class="preview-img">
+                </div>
             </div>
 
             <div class="section-title">Qalqonsiz holatlar (No Shield)</div>
@@ -121,7 +125,11 @@
                     <input type="file" name="noShieldHurt" class="file-input" accept="image/png, image/jpeg" required onchange="preview(this, 'prev-ns-hurt')">
                     <img id="prev-ns-hurt" class="preview-img">
                 </div>
-                <div class="form-group"></div>
+                <div class="form-group">
+                    <label>Sakrash (Jump):</label>
+                    <input type="file" name="noShieldJump" class="file-input" accept="image/png, image/jpeg" onchange="preview(this, 'prev-ns-jump')">
+                    <img id="prev-ns-jump" class="preview-img">
+                </div>
             </div>
 
             <div class="section-title">O'lcham va Joylashuv Sozlamalari</div>
@@ -283,11 +291,14 @@
             showPreviewImage('prev-s-defend', m.textures.shieldDefend);
             showPreviewImage('prev-s-hurt', m.textures.shieldHurt);
             showPreviewImage('prev-s-break', m.textures.shieldBreak);
+            showPreviewImage('prev-s-after', m.textures.shieldAfterShot);
+            showPreviewImage('prev-s-jump', m.textures.shieldJump);
             showPreviewImage('prev-ns-idle', m.textures.noShieldIdle);
             showPreviewImage('prev-ns-aim', m.textures.noShieldAim);
             showPreviewImage('prev-ns-duck', m.textures.noShieldDuck);
             showPreviewImage('prev-ns-defend', m.textures.noShieldDefend);
             showPreviewImage('prev-ns-hurt', m.textures.noShieldHurt);
+            showPreviewImage('prev-ns-jump', m.textures.noShieldJump);
             showPreviewImage('prev-celebrate', m.textures.celebrate);
             
             if (m.bgMusic) {
@@ -313,7 +324,7 @@
             
             // Make core inputs required again
             document.querySelectorAll('.file-input').forEach(el => {
-                if (el.name !== 'celebrate' && el.name !== 'bgMusic') {
+                if (el.name !== 'celebrate' && el.name !== 'bgMusic' && el.name !== 'shieldAfterShot' && el.name !== 'shieldJump' && el.name !== 'noShieldJump') {
                     el.setAttribute('required', 'true');
                 }
             });

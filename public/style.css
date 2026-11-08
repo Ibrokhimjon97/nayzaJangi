@@ -549,6 +549,30 @@ body.force-landscape .emote-btn {
     box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255,255,255,0.18);
 }
 
+.jump-btn {
+    position: absolute;
+    bottom: clamp(8px, 2vh, 20px);
+    right: clamp(184px, 26vw, 246px);
+    z-index: 100;
+    width: clamp(48px, 9vw, 66px);
+    height: clamp(48px, 9vw, 66px);
+    font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+    border-color: rgba(56, 189, 248, 0.75);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(14, 116, 144, 0.92));
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.jump-btn.active {
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(6, 182, 212, 0.95));
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.85);
+    transform: translateY(-8px) scale(1.08);
+}
+
 .double-btn {
     position: absolute;
     bottom: clamp(8px, 2vh, 20px);
@@ -1134,12 +1158,20 @@ body.force-landscape .emote-btn {
         right: 114px !important;
     }
 
+    .jump-btn {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 166px !important;
+    }
+
     .double-btn {
         width: 46px !important;
         height: 46px !important;
         font-size: 1.1rem !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
-        right: 166px !important;
+        right: 218px !important;
     }
 
     .wall-btn {
@@ -1147,7 +1179,7 @@ body.force-landscape .emote-btn {
         height: 46px !important;
         font-size: 1.15rem !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
-        right: 218px !important;
+        right: 270px !important;
     }
 
     .crow-btn {
@@ -1155,7 +1187,7 @@ body.force-landscape .emote-btn {
         height: 46px !important;
         font-size: 1.15rem !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
-        right: 270px !important;
+        right: 322px !important;
     }
 
     .artillery-btn {
@@ -1163,7 +1195,7 @@ body.force-landscape .emote-btn {
         height: 46px !important;
         font-size: 1.15rem !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
-        right: 322px !important;
+        right: 374px !important;
     }
 
     .fire-btn {
@@ -1171,7 +1203,7 @@ body.force-landscape .emote-btn {
         height: 46px !important;
         font-size: 1.15rem !important;
         bottom: clamp(6px, 1.5vh, 12px) !important;
-        right: 374px !important;
+        right: 426px !important;
     }
 
     /* Yuqori chap tomondagi tugmalar landshaftda: Menyu, Ortga va Chat yonma-yon */
@@ -1652,10 +1684,18 @@ body.force-landscape .emote-btn {
         font-size: 0.95rem !important;
     }
 
-    .double-btn {
+    .jump-btn {
         min-width: 40px !important;
         min-height: 40px !important;
         right: 141px !important;
+        bottom: 5px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .double-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 186px !important;
         bottom: 5px !important;
         font-size: 0.86rem !important;
     }
@@ -1663,7 +1703,7 @@ body.force-landscape .emote-btn {
     .wall-btn {
         min-width: 40px !important;
         min-height: 40px !important;
-        right: 186px !important;
+        right: 231px !important;
         bottom: 5px !important;
         font-size: 0.92rem !important;
     }
@@ -1671,7 +1711,7 @@ body.force-landscape .emote-btn {
     .crow-btn {
         min-width: 40px !important;
         min-height: 40px !important;
-        right: 231px !important;
+        right: 276px !important;
         bottom: 5px !important;
         font-size: 0.95rem !important;
     }
@@ -1679,7 +1719,7 @@ body.force-landscape .emote-btn {
     .artillery-btn {
         min-width: 40px !important;
         min-height: 40px !important;
-        right: 276px !important;
+        right: 321px !important;
         bottom: 5px !important;
         font-size: 0.95rem !important;
     }
@@ -1687,7 +1727,7 @@ body.force-landscape .emote-btn {
     .fire-btn {
         min-width: 40px !important;
         min-height: 40px !important;
-        right: 321px !important;
+        right: 366px !important;
         bottom: 5px !important;
         font-size: 0.95rem !important;
     }
@@ -1914,7 +1954,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* Ability cluster feels like single action bar */
-.shield-btn, .super-btn, .duck-btn, .double-btn, .wall-btn, .crow-btn, .artillery-btn, .fire-btn {
+.shield-btn, .super-btn, .duck-btn, .jump-btn, .double-btn, .wall-btn, .crow-btn, .artillery-btn, .fire-btn {
     bottom: clamp(10px, 2.2vh, 22px);
 }
 
@@ -1930,29 +1970,34 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     right: clamp(126px, 19vw, 176px);
 }
 
+.jump-btn {
+    right: clamp(184px, 26vw, 246px);
+}
+
 .double-btn {
-    right: clamp(184px, 27vw, 246px);
+    right: clamp(242px, 33vw, 316px);
 }
 
 .wall-btn {
-    right: clamp(242px, 35vw, 320px);
+    right: clamp(300px, 40vw, 386px);
 }
 
 .crow-btn {
-    right: clamp(300px, 43vw, 394px);
+    right: clamp(358px, 47vw, 456px);
 }
 
 .artillery-btn {
-    right: clamp(358px, 51vw, 468px);
+    right: clamp(416px, 54vw, 526px);
 }
 
 .fire-btn {
-    right: clamp(416px, 59vw, 542px);
+    right: clamp(474px, 61vw, 596px);
 }
 
 .shield-btn::before,
 .super-btn::before,
 .duck-btn::before,
+.jump-btn::before,
 .double-btn::before {
     content: "";
     position: absolute;
@@ -2997,9 +3042,16 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    body:not(.force-landscape) .double-btn {
+    body:not(.force-landscape) .jump-btn {
         bottom: 12px !important;
         right: 162px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+    }
+    body:not(.force-landscape) .double-btn {
+        bottom: 12px !important;
+        right: 212px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.1rem !important;

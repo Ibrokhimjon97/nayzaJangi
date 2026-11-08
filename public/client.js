@@ -241,12 +241,14 @@ async function fetchCustomModels() {
                 shieldHurt: loadTexture(raw.shieldHurt || raw.noShieldHurt || raw.shieldIdle || defIdle),
                 shieldBreak: loadTexture(raw.shieldBreak || raw.noShieldIdle || raw.shieldIdle || defIdle),
                 shieldAfterShot: loadTexture(raw.shieldAfterShot || raw.noShieldAfterShot || raw.shieldAim || defIdle),
+                shieldJump: loadTexture(raw.shieldJump || raw.shieldDuck || raw.shieldIdle || defIdle),
                 noShieldIdle: loadTexture(raw.noShieldIdle || raw.shieldIdle || defIdle),
                 noShieldAim: loadTexture(raw.noShieldAim || raw.shieldAim || defIdle),
                 noShieldDuck: loadTexture(raw.noShieldDuck || raw.shieldDuck || defIdle),
                 noShieldDefend: loadTexture(raw.noShieldDefend || raw.shieldDefend || defIdle),
                 noShieldHurt: loadTexture(raw.noShieldHurt || raw.shieldHurt || raw.noShieldIdle || defIdle),
                 noShieldAfterShot: loadTexture(raw.noShieldAfterShot || raw.shieldAfterShot || raw.noShieldAim || defIdle),
+                noShieldJump: loadTexture(raw.noShieldJump || raw.shieldJump || raw.noShieldDuck || raw.shieldDuck || defIdle),
                 celebrate: loadTexture(raw.celebrate || raw.shieldIdle || defIdle),
                 bgMusic: m.bgMusic
             };
@@ -307,6 +309,7 @@ const superCountText = document.getElementById('super-count');
 const crowButton = document.getElementById('crow-button');
 const crowCountText = document.getElementById('crow-count');
 const duckButton = document.getElementById('duck-button');
+const jumpButton = document.getElementById('jump-button');
 const doubleButton = document.getElementById('double-button');
 const doubleCountText = document.getElementById('double-count');
 const wallButton = document.getElementById('wall-button');
@@ -2558,6 +2561,7 @@ function getOttomanArcherTexture(model, state) {
     if (state === 'celebrate') return ottomanArcherTextures.celebrate || baseIdle;
     if (state === 'break') return ottomanArcherTextures.shieldBreak || baseIdle;
     if (state === 'hurt') return baseHurt;
+    if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
     if (state === 'aim' || state === 'load') return baseAim;
@@ -2577,6 +2581,7 @@ function getOttomanSpearmanTexture(model, state) {
     if (state === 'break') return ottomanSpearmanTextures.shieldBreak || baseIdle;
     if (state === 'celebrate') return ottomanSpearmanTextures.celebrate || baseIdle;
     if (state === 'hurt') return baseHurt;
+    if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
     if (state === 'aim' || state === 'load') return baseAim;
@@ -2595,8 +2600,10 @@ function getOttomanTexture(model, state) {
         const baseAfterShot = shieldBroken ? (t.noShieldAfterShot || t.shieldAfterShot || baseAim || baseIdle) : (t.shieldAfterShot || t.noShieldAfterShot || baseAim || baseIdle);
         const baseHurt = shieldBroken ? (t.noShieldHurt || t.shieldHurt || baseIdle) : (t.shieldHurt || t.noShieldHurt || baseIdle);
         const baseDuck = shieldBroken ? (t.noShieldDuck || t.shieldDuck || baseIdle) : (t.shieldDuck || t.noShieldDuck || baseIdle);
+        const baseJump = shieldBroken ? (t.noShieldJump || t.shieldJump || t.noShieldDuck || t.shieldDuck || baseIdle) : (t.shieldJump || t.noShieldJump || t.shieldDuck || t.noShieldDuck || baseIdle);
         const baseDefend = shieldBroken ? (t.noShieldDefend || t.shieldDefend || baseIdle) : (t.shieldDefend || t.noShieldDefend || baseIdle);
 
+        if (state === 'jump') return baseJump;
         if (state === 'duck') return baseDuck;
         if (state === 'aim' || state === 'load') return baseAim;
         if (state === 'defend') return baseDefend;
@@ -2614,8 +2621,12 @@ function setSoldierVisual(model, state) {
     if (!model || !model.userData) return;
     let targetState = state;
     const modelIndex = getPlayerIndexByModel(model);
-    if (model.userData.isOttomanUnit && modelIndex >= 0 && isDuckActiveForPlayer(modelIndex)) {
-        targetState = 'duck';
+    if (model.userData.isOttomanUnit && modelIndex >= 0) {
+        if (isJumpActiveForPlayer(modelIndex)) {
+            targetState = 'jump';
+        } else if (isDuckActiveForPlayer(modelIndex)) {
+            targetState = 'duck';
+        }
     }
     model.userData.visualState = targetState;
 
@@ -3063,6 +3074,14 @@ let myDefenseActive = false;
 let enemyDefenseActive = false;
 let myDuckActive = false;
 let enemyDuckActive = false;
+let myJumpActive = false;
+let enemyJumpActive = false;
+let p3JumpActive = false;
+const jumpStates = [
+    { active: false, startTime: 0, duration: 750, height: 165, baseY: null },
+    { active: false, startTime: 0, duration: 750, height: 165, baseY: null },
+    { active: false, startTime: 0, duration: 750, height: 165, baseY: null }
+];
 let isDoubleSpearActive = false;
 let pendingDoubleShot = null;
 let isFireSpearActive = false; // Olov nayza qobiliyati yoqilganmi
@@ -3327,6 +3346,11 @@ function isDuckActiveForPlayer(index) {
     return index === myPlayerIndex ? myDuckActive : enemyDuckActive;
 }
 
+function isJumpActiveForPlayer(index) {
+    if (index < 0 || index >= jumpStates.length) return false;
+    return jumpStates[index].active;
+}
+
 function updateShieldUI() {
     if (!shieldCountText) return;
     shieldCountText.innerText = Math.max(0, myShield);
@@ -3577,6 +3601,60 @@ function setDuckActive(active, shouldEmit = true) {
         setSoldierVisual(modelForPlayer(myPlayerIndex), myDefenseActive ? 'defend' : 'idle');
     }
     if (gameMode === 'multi' && shouldEmit) socket.emit('duckState', { active: myDuckActive });
+}
+
+function triggerJump(playerIndex = myPlayerIndex) {
+    const m = modelForPlayer(playerIndex);
+    if (!m || !m.userData || m.userData.isKnockedDown) return;
+    const js = jumpStates[playerIndex];
+    if (!js || js.active) return;
+
+    js.active = true;
+    js.startTime = performance.now();
+    js.duration = 750;
+    js.height = 165;
+    if (js.baseY === null || isNaN(js.baseY) || Math.abs(m.position.y - js.baseY) > 200) {
+        js.baseY = m.userData.baseY !== undefined ? m.userData.baseY : m.position.y;
+    }
+    m.userData.isJumping = true;
+
+    setSoldierVisual(m, 'jump');
+    spawnParticles(m.position.x, ground.position.y + 100, 10);
+    playSfx('arrowSwoosh', 0.85);
+
+    if (playerIndex === myPlayerIndex) {
+        myJumpActive = true;
+        if (jumpButton) {
+            jumpButton.classList.add('active');
+            triggerAbilityPulse(jumpButton);
+        }
+        if (gameMode === 'multi' && socket && socket.connected) {
+            socket.emit('jumpState', { active: true });
+        }
+    } else if (playerIndex === 1) {
+        enemyJumpActive = true;
+    } else if (playerIndex === 2) {
+        p3JumpActive = true;
+    }
+}
+
+function resetJumpStates() {
+    jumpStates.forEach(js => {
+        js.active = false;
+        js.baseY = null;
+    });
+    myJumpActive = false;
+    enemyJumpActive = false;
+    p3JumpActive = false;
+    if (jumpButton) jumpButton.classList.remove('active');
+    const allModels = [p1Model, p2Model];
+    if (typeof p3Model !== 'undefined' && p3Model) allModels.push(p3Model);
+    allModels.forEach(m => {
+        if (m && m.userData) {
+            m.userData.isJumping = false;
+            if (m.userData.baseY !== undefined) m.position.y = m.userData.baseY;
+        }
+    });
 }
 
 function createDuckHeadPngDataUrl() {
@@ -4497,6 +4575,22 @@ if (duckButton) {
     }
 }
 
+if (jumpButton) {
+    const handleJump = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        triggerJump(myPlayerIndex);
+    };
+    if (window.PointerEvent) {
+        jumpButton.addEventListener('pointerdown', handleJump);
+    } else {
+        jumpButton.addEventListener('click', handleJump);
+        jumpButton.addEventListener('touchstart', handleJump, { passive: false });
+    }
+}
+
 if (doubleButton) {
     const toggleDouble = (e) => {
         if (e) {
@@ -4610,6 +4704,7 @@ function startSinglePlayer(opts) {
     singleShotLocked = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
+    resetJumpStates();
     enemyDuckActive = false;
     currentOpponentProfile = null;
     // Yangi o'yin: avvalgi otish hint trayektoriyasini tozalaymiz.
@@ -5245,11 +5340,16 @@ function tryEnemyUseShieldSingle() {
     const dy = spear.y - enemyModel.position.y;
     if (dx > 430 || dy < -120 || dy > 420) return false;
     
-    // AI Decision: Duck or Shield?
+    // AI Decision: Jump, Duck or Shield?
     const rand = Math.random();
     if (rand > 0.72) return false;
 
-    if (rand < 0.3) {
+    if (dy < 140 && rand < 0.36) {
+        // AI JUMPS to dodge incoming low/leg shot!
+        triggerJump(enemyTurnIndex);
+        if (p3Model && Math.random() < 0.5) triggerJump(2);
+        return true;
+    } else if (rand < 0.3) {
         // AI DUCKS
         enemyDuckActive = true;
         enemyShieldUsesRemaining = Math.max(0, enemyShieldUsesRemaining - 1);
@@ -5323,6 +5423,10 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
         return { damage: 0, msg: "BOSHNI EGIB QUTULDI!", isCrit: false, hitZone: 'head', isShieldHit: false, shieldActiveBlock: false, shieldlessDefense: false, duckDodged: true };
     }
 
+    if (isJumpActiveForPlayer(targetIndex) && (relativeY <= legThreshold || hitZone === 'leg')) {
+        return { damage: 0, msg: "SAKRAB QUTULDI! 🤾", isCrit: false, hitZone: 'leg', isShieldHit: false, shieldActiveBlock: false, shieldlessDefense: false, jumpDodged: true };
+    }
+
     const hasShield = shieldForPlayer(targetIndex) > 0 && !targetModel.userData.shieldBroken;
     const defending = isDefenseActiveForPlayer(targetIndex);
 
@@ -5344,7 +5448,7 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
 
 function getScoreDeltaForHit(hitResult) {
     if (!hitResult) return 0;
-    if (hitResult.duckDodged) return 0;
+    if (hitResult.duckDodged || hitResult.jumpDodged) return 0;
     if (hitResult.isShieldHit) return 5;
     if (hitResult.hitZone === 'head') return 20;
     if (hitResult.hitZone === 'leg') return 5;
@@ -5940,6 +6044,7 @@ socket.on('gameStart', (data) => {
     isWallDragActive = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
+    resetJumpStates();
     chatMessages.innerHTML = '';
     unreadMessages = 0; chatBadge.classList.add('hidden');
     btnToggleChat.classList.remove('hidden');
@@ -6071,7 +6176,7 @@ socket.on('groundHit', (data) => {
 });
 
 socket.on('hitRegistered', (data) => {
-    const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged, isFire } = data;
+    const { targetIndex, damage, newHealth, newShield, hitX, hitY, isShieldHit, hitAngle, shieldActiveBlock, shieldlessDefense, shieldBroke, hitZone, duckDodged, jumpDodged, isFire } = data;
     const targetModel = targetIndex === 0 ? p1Model : p2Model;
 
     if (isFire) {
@@ -6089,6 +6194,8 @@ socket.on('hitRegistered', (data) => {
             flashHit(targetModel);
             if (duckDodged) {
                 showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
+            } else if (jumpDodged) {
+                showDamageText(hitX, hitY + 80, "SAKRAB QUTULDI! 🤾", false, true);
             } else if (isShieldHit) {
                 spawnParticles(hitX, hitY, 10, true);
                 const msg = shieldActiveBlock ? "🛡️ QALQON! BLOK" : `QALQONGA TEGDI! -${damage}`;
@@ -6137,6 +6244,13 @@ socket.on('duckStateChanged', (data) => {
     if (!data || data.playerIndex === myPlayerIndex) return;
     enemyDuckActive = !!data.active;
     setSoldierVisual(modelForPlayer(data.playerIndex), enemyDefenseActive ? 'defend' : 'idle');
+});
+
+socket.on('jumpStateChanged', (data) => {
+    if (!data || data.playerIndex === myPlayerIndex) return;
+    if (data.active) {
+        triggerJump(data.playerIndex);
+    }
 });
 
 socket.on('wallStateChanged', (data) => {
@@ -6215,6 +6329,7 @@ socket.on('rematchStart', () => {
     enemyDuckActive = false;
     setDefenseActive(false, false);
     setDuckActive(false, false);
+    resetJumpStates();
     currentTurnIndex = 0;
     prevTurnIndex = -2;
     isWallPlacementMode = false;
@@ -6789,6 +6904,7 @@ function checkSecondarySpearCollision() {
         const relativeY = secondarySpear.y - m.position.y;
         
         if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
+        if (isJumpActiveForPlayer(i) && relativeY < modelHeight * 0.34) continue;
         
         if (Math.abs(secondarySpear.x - m.position.x) < 65 &&
             secondarySpear.y > hitBottomY &&
@@ -6908,6 +7024,7 @@ function checkCollision() {
         const hitBottomY = m.position.y + 30;
         const relativeY = spear.y - m.position.y;
         if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
+        if (isJumpActiveForPlayer(i) && relativeY < modelHeight * 0.34) continue;
         // Ittifoqchini (bir tomondagi raqibni) o'qi/nayzasi urmaydi - dushmanlar
         // bir-birining jonini kamaytirmaydi (50+ levelda ikki dushman).
         if (i !== spear.playerIndex && areAllies(i, spear.playerIndex)) continue;
@@ -6992,6 +7109,46 @@ function gameLoop(now) {
     const dt = ((now - lastTime) / 1000) * timeScale;
     lastTime = now;
     mixers.forEach(m => m.update(dt));
+
+    // Jumping Animation
+    for (let ji = 0; ji < jumpStates.length; ji++) {
+        const js = jumpStates[ji];
+        if (!js || !js.active) continue;
+        const jm = modelForPlayer(ji);
+        if (!jm) continue;
+        if (js.baseY === null || isNaN(js.baseY)) {
+            js.baseY = jm.userData.baseY !== undefined ? jm.userData.baseY : jm.position.y;
+        }
+        const elapsed = now - js.startTime;
+        const progress = Math.min(1, elapsed / js.duration);
+        const jumpOffset = Math.sin(progress * Math.PI) * js.height;
+        jm.position.y = js.baseY + jumpOffset;
+
+        if (progress >= 1) {
+            js.active = false;
+            jm.position.y = js.baseY;
+            jm.userData.isJumping = false;
+            spawnParticles(jm.position.x, ground.position.y + 100, 10);
+            playSfx('woodHit', 0.4);
+
+            if (ji === myPlayerIndex) {
+                myJumpActive = false;
+                if (jumpButton) jumpButton.classList.remove('active');
+                if (gameMode === 'multi' && socket && socket.connected) {
+                    socket.emit('jumpState', { active: false });
+                }
+            } else if (ji === 1) {
+                enemyJumpActive = false;
+            } else if (ji === 2) {
+                p3JumpActive = false;
+            }
+
+            // "sakrash tugab yerga tushganda yana dastlabki 1- holati ya`ni idle holatiga qaytsin"
+            const def = isDefenseActiveForPlayer(ji);
+            const dck = isDuckActiveForPlayer(ji);
+            setSoldierVisual(jm, def ? 'defend' : (dck ? 'duck' : 'idle'));
+        }
+    }
 
     // Breathing Animation
     const breath = Math.sin(now * 0.004) * 0.02 + 1;
@@ -10299,6 +10456,16 @@ function initDailyQuests() {
 
 // Global modal ESC key handler
 document.addEventListener('keydown', (e) => {
+    if ((e.code === 'Space' || e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') && !e.repeat) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (activeTag !== 'input' && activeTag !== 'textarea') {
+            const gameOverM = document.getElementById('game-over-modal');
+            if (menuScreen && menuScreen.classList.contains('hidden') && (!gameOverM || gameOverM.classList.contains('hidden'))) {
+                e.preventDefault();
+                triggerJump(myPlayerIndex);
+            }
+        }
+    }
     if (e.key === 'Escape' || e.key === 'Esc') {
         const modals = ['daily-quests-modal', 'daily-rewards-modal', 'about-modal', 'settings-modal', 'shop-modal', 'rating-modal', 'help-modal'];
         let closedAny = false;

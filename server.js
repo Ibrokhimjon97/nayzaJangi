@@ -102,12 +102,14 @@ app.post('/api/models/update', upload.fields([
     { name: 'shieldHurt', maxCount: 1 },
     { name: 'shieldBreak', maxCount: 1 },
     { name: 'shieldAfterShot', maxCount: 1 },
+    { name: 'shieldJump', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
     { name: 'noShieldAim', maxCount: 1 },
     { name: 'noShieldDuck', maxCount: 1 },
     { name: 'noShieldDefend', maxCount: 1 },
     { name: 'noShieldHurt', maxCount: 1 },
     { name: 'noShieldAfterShot', maxCount: 1 },
+    { name: 'noShieldJump', maxCount: 1 },
     { name: 'celebrate', maxCount: 1 },
     { name: 'bgMusic', maxCount: 1 }
 ]), (req, res) => {
@@ -129,7 +131,7 @@ app.post('/api/models/update', upload.fields([
         if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
         if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
 
-        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'celebrate'];
+        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'shieldJump', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'noShieldJump', 'celebrate'];
         fileNames.forEach(fn => {
             if (files[fn] && files[fn][0]) {
                 oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
@@ -156,19 +158,21 @@ app.post('/api/models/create', upload.fields([
     { name: 'shieldHurt', maxCount: 1 },
     { name: 'shieldBreak', maxCount: 1 },
     { name: 'shieldAfterShot', maxCount: 1 },
+    { name: 'shieldJump', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
     { name: 'noShieldAim', maxCount: 1 },
     { name: 'noShieldDuck', maxCount: 1 },
     { name: 'noShieldDefend', maxCount: 1 },
     { name: 'noShieldHurt', maxCount: 1 },
     { name: 'noShieldAfterShot', maxCount: 1 },
+    { name: 'noShieldJump', maxCount: 1 },
     { name: 'celebrate', maxCount: 1 },
     { name: 'bgMusic', maxCount: 1 }
 ]), (req, res) => {
     try {
         const name = req.body.name || 'Yangi Model';
         const files = req.files || {};
-        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt || !files.shieldAfterShot || !files.noShieldAfterShot) {
+        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt) {
             console.error('Kemtik fayllar:', Object.keys(files));
             return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart. Yuborilgan fayllar: ' + Object.keys(files).join(', ') });
         }
@@ -188,8 +192,10 @@ app.post('/api/models/create', upload.fields([
                 noShieldDuck: 'custom_models/' + files.noShieldDuck[0].filename,
                 noShieldDefend: 'custom_models/' + files.noShieldDefend[0].filename,
                 noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
-                shieldAfterShot: 'custom_models/' + files.shieldAfterShot[0].filename,
-                noShieldAfterShot: 'custom_models/' + files.noShieldAfterShot[0].filename,
+                shieldAfterShot: files.shieldAfterShot ? 'custom_models/' + files.shieldAfterShot[0].filename : (files.shieldAim ? 'custom_models/' + files.shieldAim[0].filename : 'custom_models/' + files.shieldIdle[0].filename),
+                noShieldAfterShot: files.noShieldAfterShot ? 'custom_models/' + files.noShieldAfterShot[0].filename : (files.shieldAfterShot ? 'custom_models/' + files.shieldAfterShot[0].filename : 'custom_models/' + files.noShieldIdle[0].filename),
+                shieldJump: files.shieldJump ? 'custom_models/' + files.shieldJump[0].filename : (files.shieldDuck ? 'custom_models/' + files.shieldDuck[0].filename : 'custom_models/' + files.shieldIdle[0].filename),
+                noShieldJump: files.noShieldJump ? 'custom_models/' + files.noShieldJump[0].filename : (files.shieldJump ? 'custom_models/' + files.shieldJump[0].filename : (files.noShieldDuck ? 'custom_models/' + files.noShieldDuck[0].filename : 'custom_models/' + files.noShieldIdle[0].filename)),
                 celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
             },
             weaponType: req.body.weaponType || 'spear',
@@ -800,6 +806,7 @@ io.on('connection', (socket) => {
             ],
             defending: [false, false],
             ducking: [false, false],
+            jumping: [false, false],
             inFlight: false,
             options: existingOptions
         };
@@ -1140,6 +1147,20 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('jumpState', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1) return;
+        if (!room.jumping) room.jumping = [false, false];
+        room.jumping[playerIndex] = !!(data && data.active);
+        socket.to(roomName).emit('jumpStateChanged', {
+            playerIndex,
+            active: room.jumping[playerIndex]
+        });
+    });
+
     socket.on('wallPlaced', (data) => {
         const roomName = socket.roomId;
         const room = rooms[roomName];
@@ -1237,14 +1258,19 @@ io.on('connection', (socket) => {
             const baseDamage = Math.max(0, Math.min(Number(payload.damage) || 0, maxAllowed));
             const defending = room.defending && room.defending[targetIndex];
             const ducking = room.ducking && room.ducking[targetIndex];
+            const jumping = room.jumping && room.jumping[targetIndex];
             let appliedDamage = baseDamage;
             let shieldHit = false;
             let shieldActiveBlock = false;
             let shieldlessDefense = false;
             let shieldBroke = false;
             let duckDodged = false;
+            let jumpDodged = false;
 
-            if (hitIsArtillery) {
+            if (jumping && hitZone === 'leg') {
+                appliedDamage = 0;
+                jumpDodged = true;
+            } else if (hitIsArtillery) {
                 if (room.shield[targetIndex] > 0 && defending) {
                     shieldHit = true;
                     shieldActiveBlock = true;
@@ -1310,6 +1336,7 @@ io.on('connection', (socket) => {
                 shieldlessDefense,
                 shieldBroke,
                 duckDodged,
+                jumpDodged,
                 hitZone,
                 hitAngle: payload.hitAngle,
                 isFire: hitIsFire,
