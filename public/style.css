@@ -3948,13 +3948,16 @@ body.force-landscape .custom-select-item {
     .custom-select-wrap {
         margin-bottom: 8px !important;
     }
+
     .custom-select-trigger {
         padding: 5px 9px !important;
         font-size: 0.84rem !important;
     }
+
     .custom-select-menu {
         max-height: 130px !important;
     }
+
     .custom-select-item {
         padding: 5px 8px !important;
         font-size: 0.82rem !important;
@@ -3977,13 +3980,16 @@ body.force-landscape .custom-select-item {
         max-height: 94vh !important;
         padding: 10px 14px 28px !important;
     }
+
     #profile-modal .custom-select-wrap {
         margin-bottom: 8px !important;
     }
+
     #profile-modal .custom-select-trigger {
         padding: 5px 8px !important;
         font-size: 0.84rem !important;
     }
+
     #profile-modal input {
         padding: 5px 8px !important;
         font-size: 0.84rem !important;
@@ -4066,8 +4072,15 @@ body.force-landscape .custom-select-item {
 }
 
 @keyframes coinHeaderBounce {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-4px) scale(1.12); }
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1.12);
+    }
 }
 
 .coin-toss-header h2 {
@@ -4279,7 +4292,7 @@ body.force-landscape .custom-select-item {
 
 .coin-inner-icon {
     font-size: 2.1rem;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .coin-inner-label {
@@ -4318,21 +4331,27 @@ body.force-landscape .custom-select-item {
     0% {
         transform: translateY(0) rotateY(0deg) rotateX(0deg) scale(1);
     }
+
     18% {
         transform: translateY(-90px) rotateY(720deg) rotateX(15deg) scale(1.15);
     }
+
     45% {
         transform: translateY(-115px) rotateY(1440deg) rotateX(-10deg) scale(1.22);
     }
+
     75% {
         transform: translateY(-30px) rotateY(1980deg) rotateX(6deg) scale(1.05);
     }
+
     90% {
         transform: translateY(0) rotateY(2160deg) rotateX(0deg) scale(1);
     }
+
     95% {
         transform: translateY(-8px) rotateY(2160deg) rotateX(0deg) scale(1.02);
     }
+
     100% {
         transform: translateY(0) rotateY(2160deg) rotateX(0deg) scale(1);
     }
@@ -4342,31 +4361,54 @@ body.force-landscape .custom-select-item {
     0% {
         transform: translateY(0) rotateY(0deg) rotateX(0deg) scale(1);
     }
+
     18% {
         transform: translateY(-90px) rotateY(720deg) rotateX(15deg) scale(1.15);
     }
+
     45% {
         transform: translateY(-115px) rotateY(1440deg) rotateX(-10deg) scale(1.22);
     }
+
     75% {
         transform: translateY(-30px) rotateY(2160deg) rotateX(6deg) scale(1.05);
     }
+
     90% {
         transform: translateY(0) rotateY(2340deg) rotateX(0deg) scale(1);
     }
+
     95% {
         transform: translateY(-8px) rotateY(2340deg) rotateX(0deg) scale(1.02);
     }
+
     100% {
         transform: translateY(0) rotateY(2340deg) rotateX(0deg) scale(1);
     }
 }
 
 @keyframes coinShadowPulse {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    45% { transform: scale(0.35); opacity: 0.2; }
-    90% { transform: scale(1.08); opacity: 0.7; }
-    95% { transform: scale(0.92); opacity: 0.5; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    45% {
+        transform: scale(0.35);
+        opacity: 0.2;
+    }
+
+    90% {
+        transform: scale(1.08);
+        opacity: 0.7;
+    }
+
+    95% {
+        transform: scale(0.92);
+        opacity: 0.5;
+    }
 }
 
 /* Natija va g'olib banneri */

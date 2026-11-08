@@ -20,7 +20,7 @@
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
       "width": 650,
-      "height": 430,
+      "height": 530,
       "offsetY": 0,
       "offsetX": 0
     },
@@ -46,8 +46,8 @@
     },
     "bgMusic": "custom_models/1777843676355-678209768.mp3",
     "settings": {
-      "width": 400,
-      "height": 450,
+      "width": 380,
+      "height": 480,
       "offsetY": 5,
       "offsetX": 0,
       "facesLeft": true

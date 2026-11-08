@@ -2063,6 +2063,7 @@ function buildVolcanoBackdrop(safeRadius) {
 }
 
 function buildMap(mapType, weather = 'sunny') {
+    if (typeof clearStuckSpears === 'function') clearStuckSpears();
     let groundColor = 0x52c234; // Boy yorqin yashil
     let rockColor = 0x9ca3af;
     let skyColor = 0x2e95e6; // To'q to'yingan havorang
@@ -2313,6 +2314,7 @@ function buildMap(mapType, weather = 'sunny') {
 }
 
 function spawnEntities(options) {
+    if (typeof clearStuckSpears === 'function') clearStuckSpears();
     entities.forEach(e => scene.remove(e.mesh));
     entities = [];
     
@@ -4255,44 +4257,70 @@ function hideFlyingSpear() {
     if (typeof resetSpearTrail === 'function') resetSpearTrail();
 }
 
-function stickSpear(targetModel, hitX, hitY, angle) {
-    const stuckSpear = spearGroup.clone();
-    stuckSpear.visible = true;
-    stuckSpear.rotation.z = angle;
-    stuckSpear.children.slice().forEach((child) => {
-        if (child.userData && child.userData.tempCrow) stuckSpear.remove(child);
+let stuckSpearObjects = [];
+function clearStuckSpears() {
+    if (!Array.isArray(stuckSpearObjects)) stuckSpearObjects = [];
+    stuckSpearObjects.forEach(obj => {
+        if (!obj) return;
+        if (obj.parent) obj.parent.remove(obj);
+        else scene.remove(obj);
+        obj.traverse(c => {
+            if (c.geometry && typeof c.geometry.dispose === 'function') c.geometry.dispose();
+            if (c.material) {
+                if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+                else if (typeof c.material.dispose === 'function') c.material.dispose();
+            }
+        });
     });
+    stuckSpearObjects = [];
+}
 
-    if (targetModel) {
-        stuckSpear.position.set(hitX, hitY, 0);
-        scene.add(stuckSpear);
-        targetModel.attach(stuckSpear);
-    } else {
-        // Yerga sanchilgan nayza / kamon o'qi:
-        // O'q uchi butunlay yer ostiga kirgan bo'ladi va MUTLAQO KO'RINMAYDI.
-        // Faqat yer sathidan (groundSurfaceY) yuqoriga qaragan dasta (shaft) va patlar (fletching) ko'rinadi.
-        const groundSurfaceY = ground.position.y + 100;
+function stickSpear(targetModel, hitX, hitY, angle) {
+    const isCrowTarget = !!(targetModel && (
+        targetModel.userData?.isCrowSprite || 
+        targetModel.userData?.isBird ||
+        targetModel.userData?.tex === qargaTexture ||
+        targetModel.type === 'bird' ||
+        (targetModel.mesh && targetModel.mesh.userData?.isCrowSprite) ||
+        (targetModel.children && targetModel.children.some(c => c.userData && c.userData.isCrowSprite)) ||
+        (Array.isArray(entities) && entities.some(e => e.mesh === targetModel || e === targetModel))
+    ));
+    const groundSurfaceY = ground.position.y + 100;
+    const isAtGroundLevel = (!targetModel || isCrowTarget || hitY <= groundSurfaceY + 25);
+
+    // Agar nayza yerga sanchilgan bo'lsa (yoki qush/qarg'a bilan birga yerga kirgan bo'lsa):
+    // Yer ostiga kirgan qismi (uch va paykon) MUTLAQO KO'RINMAYDI!
+    // Faqat yerdan yuqoriga qaragan dasta (shaft) va patlar ko'rinadi.
+    if (!targetModel || isCrowTarget || isAtGroundLevel) {
         const groundStuckGroup = new THREE.Group();
         groundStuckGroup.name = 'ground-stuck-spear';
         groundStuckGroup.position.set(hitX, groundSurfaceY, 14);
         groundStuckGroup.rotation.z = angle;
 
         // Qurol turi va miqyosi
-        const isSpearmanThrow = (spearGroup && spearGroup.scale.x > 1.2);
+        const isSpearmanThrow = (spear && spear.weaponType === 'spear') || (spearGroup && spearGroup.scale.x > 1.2);
         const shaftLength = isSpearmanThrow ? 115 : 95;
         const shaftRadius = isSpearmanThrow ? 2.1 : 1.6;
 
         // Shaft (dasta): Faqat x = 0 (yer yuzasi) dan x = -shaftLength (havodagi orqa qism) gacha cho'ziladi.
         // Hech bir nuqtasi x > 0 (yer osti) da bo'lmaydi!
         const shaftGeo = new THREE.CylinderGeometry(shaftRadius * 0.85, shaftRadius * 1.1, shaftLength, 10);
-        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.65, metalness: 0.08 });
+        let shaftMat;
+        if (spear && spear.isFire) {
+            shaftMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.7, emissive: 0xb45309, emissiveIntensity: 0.35 });
+        } else {
+            shaftMat = new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: 0.65, metalness: 0.08 });
+        }
         const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
         shaftMesh.rotation.z = Math.PI / 2;
         shaftMesh.position.x = -shaftLength / 2;
         groundStuckGroup.add(shaftMesh);
 
         // Patlar (fletching): Faqat orqa uchida (havoda) joylashadi
-        const featherColor = isSpearmanThrow ? 0x7c3aed : 0xe23b3b;
+        let featherColor = isSpearmanThrow ? 0x7c3aed : 0xe23b3b;
+        if (spear && spear.isFire) featherColor = 0xff5500;
+        else if (spear && spear.isSuper) featherColor = 0xa855f7;
+
         const fMat = new THREE.MeshStandardMaterial({
             color: featherColor,
             roughness: 0.8,
@@ -4332,7 +4360,33 @@ function stickSpear(targetModel, hitX, hitY, angle) {
         }
 
         scene.add(groundStuckGroup);
+        stuckSpearObjects.push(groundStuckGroup);
+
+        // Agar bu qarg'a bo'lsa, qarg'a ham yer sathiga to'g'ri yotqiziladi
+        if (isCrowTarget && targetModel) {
+            targetModel.position.set(hitX, groundSurfaceY, 2);
+            if (targetModel.children && targetModel.children.length > 1) {
+                targetModel.children.slice().forEach(child => {
+                    if (child !== targetModel.children[0] && (child.name?.includes('spear') || child.type === 'Group')) {
+                        targetModel.remove(child);
+                    }
+                });
+            }
+        }
+        return;
     }
+
+    // Agar yuqorida (havoda) turgan jangchiga sanchilgan bo'lsa:
+    const stuckSpear = spearGroup.clone();
+    stuckSpear.visible = true;
+    stuckSpear.rotation.z = angle;
+    stuckSpear.children.slice().forEach((child) => {
+        if (child.userData && child.userData.tempCrow) stuckSpear.remove(child);
+    });
+    stuckSpear.position.set(hitX, hitY, 0);
+    scene.add(stuckSpear);
+    targetModel.attach(stuckSpear);
+    stuckSpearObjects.push(stuckSpear);
 }
 
 function knockDownModel(model) {
