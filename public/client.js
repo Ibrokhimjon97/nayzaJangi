@@ -3589,6 +3589,8 @@ window.addEventListener('orientationchange', () => { setTimeout(updateCameraBoun
 
 // Game State
 let gameMode = 'menu';
+var autoJoinExecuted = false;
+window.autoJoinExecuted = false;
 let myPlayerIndex = -1;
 let currentRoomName = null;
 let currentTurnIndex = 0;
@@ -9328,10 +9330,10 @@ function isUrlDuelOrRoomJoin() {
 
 function shouldShowMainMenuOnAuth() {
     if (gameMode === 'multi' || gameMode === 'single') return false;
-    if (typeof autoJoinExecuted !== 'undefined' && autoJoinExecuted) return false;
+    if (Boolean(window.autoJoinExecuted || autoJoinExecuted)) return false;
     if (typeof gameScreen !== 'undefined' && gameScreen && !gameScreen.classList.contains('hidden')) return false;
     if (typeof waitingScreen !== 'undefined' && waitingScreen && !waitingScreen.classList.contains('hidden')) return false;
-    if (isUrlDuelOrRoomJoin()) return false;
+    if (typeof isUrlDuelOrRoomJoin === 'function' && isUrlDuelOrRoomJoin()) return false;
     if (typeof getPendingRoomCode === 'function' && getPendingRoomCode()) return false;
     return true;
 }
@@ -13143,7 +13145,7 @@ function getPendingRoomCode() {
     return null;
 }
 
-let autoJoinExecuted = false;
+// autoJoinExecuted is declared at top-level state
 function checkAutoJoinTelegramRoom() {
     // 1. Agar URL da duel parametri bo'lsa (masalan duel_room yoki view=invites)
     if (typeof checkDuelUrlParams === 'function' && checkDuelUrlParams()) {
