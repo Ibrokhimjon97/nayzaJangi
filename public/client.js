@@ -154,7 +154,7 @@ function loadTexture(url, options = {}) {
 
 const soldierTexture = loadTexture('Kamonlik%20Usmoniy/kamonlik%201.png');
 const nayzabozTexture = loadTexture('Nayzalik%20Usmoniy/Jangchi%20nayza%201.png');
-const qargaTexture = loadTextureWithBgRemoval('qarga.png');
+const qargaTexture = loadTexture('qarga.png');
 const daraxtKattaTexture = loadTexture('daraxtkatta.png');
 const daraxtKichkinaTexture = loadTexture('daraxtkichkina.png');
 const qalaTexture = loadTexture('Qala.png');
@@ -628,8 +628,57 @@ function makeRadialGlowTexture(innerColor = '#ffffff', outerColor = '#ffcc66') {
     return tex;
 }
 
+function tryLockLandscapeOrientation() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        try {
+            window.Telegram.WebApp.expand();
+            if (typeof window.Telegram.WebApp.requestFullscreen === 'function') {
+                window.Telegram.WebApp.requestFullscreen();
+            }
+            if (typeof window.Telegram.WebApp.lockOrientation === 'function') {
+                window.Telegram.WebApp.lockOrientation('landscape');
+            }
+        } catch (_) {}
+    }
+    try {
+        if (screen.orientation && typeof screen.orientation.lock === 'function') {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    } catch (_) {}
+}
+tryLockLandscapeOrientation();
+
+function getAppViewport() {
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+                           (window.matchMedia && window.matchMedia('(max-width: 950px)').matches);
+    const needRotate = isMobileDevice && (winW < winH);
+    
+    if (needRotate) {
+        if (!document.body.classList.contains('force-landscape')) {
+            document.body.classList.add('force-landscape');
+        }
+        return {
+            width: winH,
+            height: winW,
+            isRotated: true
+        };
+    } else {
+        if (document.body.classList.contains('force-landscape')) {
+            document.body.classList.remove('force-landscape');
+        }
+        return {
+            width: winW,
+            height: winH,
+            isRotated: false
+        };
+    }
+}
+
 let frustumSize = 800;
-let aspect = window.innerWidth / window.innerHeight;
+const initialVp = getAppViewport();
+let aspect = initialVp.width / Math.max(1, initialVp.height);
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 3000);
 camera.position.set(0, 0, 1000);
 
@@ -640,10 +689,11 @@ function getPreferredPixelRatio() {
     return Math.min(dpr, MOBILE_PERF_MODE ? 1.6 : 2.5);
 }
 
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(initialVp.width, initialVp.height);
 renderer.setPixelRatio(getPreferredPixelRatio());
 renderer.shadowMap.enabled = !MOBILE_PERF_MODE;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.18;
 if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -2292,8 +2342,8 @@ function spawnEntities(options) {
         const birdCount = options.birdCount || 20;
         for(let i=0; i<birdCount; i++) {
             const bird = createCrow(0, 0);
-            // Qushlar balandroqda uchadi - 1200-1600 balandlik
-            bird.position.set((seededRandom() - 0.5) * 3200, 1200 + seededRandom() * 400, -30 + seededRandom() * 60);
+            // Qushlar osmonda (350-900 balandlikda) ko'rinadigan zonada uchadi
+            bird.position.set((seededRandom() - 0.5) * 3200, 350 + seededRandom() * 550, -30 + seededRandom() * 60);
             scene.add(bird);
             entities.push({
                 type: 'bird',
@@ -2359,28 +2409,29 @@ function spawnFireBurst(x, y, amount = 26) {
     screenShake = MOBILE_PERF_MODE ? 12 : 20;
 }
 
+let crowSharedMaterial = null;
+function getCrowMaterial() {
+    if (!crowSharedMaterial) {
+        crowSharedMaterial = new THREE.MeshBasicMaterial({
+            map: qargaTexture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            alphaTest: 0.1,
+            depthWrite: false
+        });
+    }
+    return crowSharedMaterial;
+}
+
 function createCrow(x, y) {
     const crowGroup = new THREE.Group();
-    
-    const tex = qargaTexture.clone();
-    tex.needsUpdate = true;
-    tex.repeat.set(1, 1);
-    tex.offset.set(0, 0);
-    
-    const mat = new THREE.MeshBasicMaterial({
-        map: tex, 
-        transparent: true, 
-        side: THREE.DoubleSide, 
-        alphaTest: 0.35
-    });
-    
-    // Qarga size
-    const planeGeo = new THREE.PlaneGeometry(80, 80);
-    const planeMesh = new THREE.Mesh(planeGeo, mat);
+    const planeGeo = new THREE.PlaneGeometry(120, 100);
+    const planeMesh = new THREE.Mesh(planeGeo, getCrowMaterial());
+    planeMesh.renderOrder = 10;
     planeMesh.castShadow = true;
     crowGroup.add(planeMesh);
     
-    crowGroup.userData.tex = tex;
+    crowGroup.userData.tex = qargaTexture;
     crowGroup.userData.isCrowSprite = true;
     crowGroup.position.set(x, y, 0);
     return crowGroup;
@@ -2927,17 +2978,18 @@ let cameraTargetX = 0;
 let cameraTargetY = 0;
 
 function isPortraitMode() {
+    const vp = getAppViewport();
+    if (vp.isRotated) return false;
     return (window.innerHeight / Math.max(1, window.innerWidth)) > 1.05;
 }
 
 function getFocusCameraTarget(turnIndex) {
     const isPortrait = isPortraitMode();
     // Default holat: Jang maydoni markazda (x=0) joylashadi.
-    // Albomda ham, portret rejimida ham o'yinchi va uning raqibi ikkalasi ekranga to'liq sig'ib,
-    // o'yinchi raqib qayerda turganini aniq ko'rib turadi.
+    // Albomda ham, portret rejimida ham o'yinchining oyoqlari pastdagi buttonlar ustida turishi uchun centerY to'g'rilanadi.
     const p3OffsetExtra = (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) ? (pos3Offset / 2) : 0;
     const centerX = p3OffsetExtra;
-    const centerY = isPortrait ? -85 : 0;
+    const centerY = isPortrait ? 60 : 150;
     return {
         x: centerX,
         y: centerY,
@@ -2946,7 +2998,8 @@ function getFocusCameraTarget(turnIndex) {
 }
 
 function updateCameraBounds() {
-    aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    const vp = getAppViewport();
+    aspect = vp.width / Math.max(1, vp.height);
     const isPortrait = isPortraitMode();
     const isMobileView = window.matchMedia('(max-width: 900px)').matches;
     
@@ -2956,7 +3009,7 @@ function updateCameraBounds() {
     camera.top = frustumSize / 2;
     camera.bottom = -frustumSize / 2;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(vp.width, vp.height);
     renderer.setPixelRatio(getPreferredPixelRatio());
     
     // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
@@ -2985,6 +3038,7 @@ function updateCameraBounds() {
 }
 
 window.addEventListener('resize', updateCameraBounds);
+window.addEventListener('orientationchange', () => { setTimeout(updateCameraBounds, 120); });
 
 // Game State
 let gameMode = 'menu';
@@ -3471,8 +3525,9 @@ function clampWallX(x) {
 
 function pointerToWorldPos(e) {
     const p = getPointerPos(e);
-    const nx = (p.x / Math.max(1, window.innerWidth)) - 0.5;
-    const ny = 0.5 - (p.y / Math.max(1, window.innerHeight));
+    const vp = getAppViewport();
+    const nx = (p.x / Math.max(1, vp.width)) - 0.5;
+    const ny = 0.5 - (p.y / Math.max(1, vp.height));
     const worldWidth = (camera.right - camera.left) / Math.max(0.0001, camera.zoom);
     const worldHeight = (camera.top - camera.bottom) / Math.max(0.0001, camera.zoom);
     return {
@@ -3993,9 +4048,9 @@ function showDamageText(worldX, worldY, damageText, isCrit = false, isShield = f
     if (!damageText) return;
     const vector = new THREE.Vector3(worldX, worldY, 0);
     vector.project(camera);
-    
-    let screenX = (vector.x * .5 + .5) * window.innerWidth;
-    let screenY = (-(vector.y * .5) + .5) * window.innerHeight;
+    const vp = getAppViewport();
+    let screenX = (vector.x * .5 + .5) * vp.width;
+    let screenY = (-(vector.y * .5) + .5) * vp.height;
 
     // Yozuvlar bir-birini ustiga chiqib qolmasligi uchun vaqt va masofaga qarab siljitish (Anti-overlap)
     const now = Date.now();
@@ -4095,7 +4150,29 @@ function stickSpear(targetModel, hitX, hitY, angle) {
         scene.add(stuckSpear);
         targetModel.attach(stuckSpear);
     } else {
-        stuckSpear.position.set(hitX, hitY, 0);
+        // Yerga sanchilgan nayza: o'q uchi (paykon) butunlay yer ostiga kiradi, ko'rinmasligi kerak.
+        // Faqat yer ustidagi dasta (shaft) va patlar (fletching) ko'rinishi lozim.
+        const groundSurfaceY = ground.position.y + 100;
+        
+        // 1. O'q uchini butunlay yashiramiz (visible = false)
+        const tipGroup = stuckSpear.getObjectByName('spear-tip-group');
+        if (tipGroup) tipGroup.visible = false;
+        const bomb = stuckSpear.getObjectByName('spear-bomb');
+        if (bomb) bomb.visible = false;
+
+        // 2. GPU darajasida yer ostidagi barcha geometriyani qirqib tashlash (clipping plane)
+        // Yer sathidan pastdagi (y < groundSurfaceY) har qanday qism kesib tashlanadi.
+        const groundClipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundSurfaceY + 2);
+        stuckSpear.traverse((obj) => {
+            if (obj.isMesh && obj.material) {
+                obj.material = obj.material.clone();
+                obj.material.clippingPlanes = [groundClipPlane];
+                obj.material.clipShadows = true;
+            }
+        });
+
+        // 3. Pozitsiya: O'q yerga sanchilgan nuqtasida mustahkam turadi
+        stuckSpear.position.set(hitX, groundSurfaceY, 0);
         scene.add(stuckSpear);
     }
 }
@@ -4484,7 +4561,16 @@ function showSuperUseWarning() {
 }
 
 function getPointerPos(e) {
-    return { x: e.clientX, y: e.clientY };
+    const vp = getAppViewport();
+    const cx = (typeof e.clientX === 'number') ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const cy = (typeof e.clientY === 'number') ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    if (vp.isRotated) {
+        return {
+            x: cy,
+            y: window.innerWidth - cx
+        };
+    }
+    return { x: cx, y: cy };
 }
 
 // Game Logic
@@ -5475,7 +5561,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
                 setTimeout(() => showGameOver(winnerIndex), 1500);
             } else {
-                if (hasExtraHit) {
+                if (!lastRecordedSecondaryHit && hasExtraHit) {
                     const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
                     const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
                     const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
@@ -5497,7 +5583,17 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 advanceSingleTurnAfterShot();
             }
         } else {
-            const extraNetHit = hasExtraHit ? applyDoubleDamageBoost(doubleOutcome.hitResult, 2) : null;
+            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
+                targetIndex: doubleOutcome.targetIndex,
+                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
+                hitZone: doubleOutcome.hitResult.hitZone || 'body',
+                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
+                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
+                hitX: doubleOutcome.hitX,
+                hitY: doubleOutcome.hitY,
+                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
+                hitAngle: doubleOutcome.hitAngle
+            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: true,
                 targetIndex: targetIndex,
@@ -5510,17 +5606,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 isShieldHit: hitResult.isShieldHit,
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
-                extraHit: hasExtraHit ? {
-                    targetIndex: doubleOutcome.targetIndex,
-                    damage: extraNetHit.damage,
-                    hitZone: extraNetHit.hitZone,
-                    shieldActiveBlock: extraNetHit.shieldActiveBlock,
-                    shieldlessDefense: extraNetHit.shieldlessDefense,
-                    hitX: doubleOutcome.hitX,
-                    hitY: doubleOutcome.hitY,
-                    isShieldHit: extraNetHit.isShieldHit,
-                    hitAngle: doubleOutcome.hitAngle
-                } : null
+                extraHit: finalExtra
             });
         }
     } else {
@@ -5530,7 +5616,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         hideFlyingSpear();
         
         if (gameMode === 'single') {
-            if (hasExtraHit) {
+            if (!lastRecordedSecondaryHit && hasExtraHit) {
                 const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
                 const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
                 const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
@@ -5551,24 +5637,24 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
             }
             advanceSingleTurnAfterShot();
         } else {
-            const extraNetHit = hasExtraHit ? applyDoubleDamageBoost(doubleOutcome.hitResult, 2) : null;
+            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
+                targetIndex: doubleOutcome.targetIndex,
+                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
+                hitZone: doubleOutcome.hitResult.hitZone || 'body',
+                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
+                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
+                hitX: doubleOutcome.hitX,
+                hitY: doubleOutcome.hitY,
+                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
+                hitAngle: doubleOutcome.hitAngle
+            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: false,
                 hitX,
                 hitY,
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
-                extraHit: hasExtraHit ? {
-                    targetIndex: doubleOutcome.targetIndex,
-                    damage: extraNetHit.damage,
-                    hitZone: extraNetHit.hitZone,
-                    shieldActiveBlock: extraNetHit.shieldActiveBlock,
-                    shieldlessDefense: extraNetHit.shieldlessDefense,
-                    hitX: doubleOutcome.hitX,
-                    hitY: doubleOutcome.hitY,
-                    isShieldHit: extraNetHit.isShieldHit,
-                    hitAngle: doubleOutcome.hitAngle
-                } : null
+                extraHit: finalExtra
             });
         }
     }
@@ -5711,7 +5797,53 @@ if (btnMusicToggle) {
         saveMusicSettings();
     });
 }
-btnExitMenu.addEventListener('click', () => { location.reload(); });
+function returnToMainMenu() {
+    isPaused = false;
+    isAnimating = false;
+    if (spear) spear.active = false;
+    if (secondarySpear) secondarySpear.active = false;
+    hideFlyingSpear();
+    
+    // Barcha o'yin ekranlarini yashirish
+    if (gameScreen) gameScreen.classList.add('hidden');
+    if (inGameModal) inGameModal.classList.add('hidden');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (waitingScreen) waitingScreen.classList.add('hidden');
+    if (multiMenu) multiMenu.classList.add('hidden');
+    if (disconnectScreen) disconnectScreen.classList.add('hidden');
+    if (rematchModal) rematchModal.classList.add('hidden');
+    if (singleModeModal) singleModeModal.classList.add('hidden');
+    if (aboutModal) aboutModal.classList.add('hidden');
+    if (settingsModal) settingsModal.classList.add('hidden');
+    if (profileModal) profileModal.classList.add('hidden');
+    
+    // Intro ekranni yo'q qilish
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
+    
+    // Multiplayer bo'lsa, xonani tark etish
+    if (gameMode === 'multi' && socket && socket.connected) {
+        try {
+            socket.emit('leaveRoom', { roomName: currentRoomName });
+        } catch (_) {}
+    }
+    
+    gameMode = 'menu';
+    if (menuScreen) menuScreen.classList.remove('hidden');
+    if (typeof updateCampaignUI === 'function') updateCampaignUI();
+    if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    if (typeof updateTelegramBackButton === 'function') updateTelegramBackButton();
+}
+
+btnExitMenu.addEventListener('click', returnToMainMenu);
+const btnDisconnectHome = document.getElementById('btn-disconnect-home');
+if (btnDisconnectHome) {
+    btnDisconnectHome.addEventListener('click', returnToMainMenu);
+}
 
 chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -6429,19 +6561,23 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     spearGroup.visible = true;
     // Olov nayza: nayzaga yonayotgan glow va olovni biriktiramiz.
     applyFireSpearVisual(spear.isFire);
+    lastRecordedSecondaryHit = null;
     if (pendingDoubleShot) {
         const shot = pendingDoubleShot;
         const shotRad = shot.angle * (Math.PI / 180);
         let svx = shot.power * Math.cos(shotRad);
-        if (playerIndex !== 0) svx = -svx;
+        if (!facingRight) svx = -svx;
         secondarySpear = {
             x: startX,
-            y: startY,
+            y: startY + 12,
             vx: svx,
             vy: shot.power * Math.sin(shotRad),
-            active: true
+            active: true,
+            playerIndex: playerIndex,
+            shooterIndex: playerIndex,
+            isSecondary: true
         };
-        secondarySpearGroup.position.set(startX, startY, 0);
+        secondarySpearGroup.position.set(startX, startY + 12, 0);
         secondarySpearGroup.visible = true;
     } else {
         secondarySpear = null;
@@ -6488,6 +6624,129 @@ function applyWallHit(ownerIndex, hitX, hitY, isArtillery = false) {
         removeWall(ownerIndex);
     } else {
         setWallState(ownerIndex, true, wall.x, wall.hp);
+    }
+}
+
+let lastRecordedSecondaryHit = null;
+
+function getWallHitOwnerIndexForPos(posX, posY, shooterIndex) {
+    const states = [wallStates[0], wallStates[1]];
+    for (const wall of states) {
+        if (!wall || !wall.active || !wall.mesh) continue;
+        if (Number(shooterIndex) === Number(wall.ownerIndex)) continue;
+        const halfW = Number(wall.mesh.userData.wallWidth || 180) / 2;
+        const halfH = Number(wall.mesh.userData.wallHeight || 170) / 2;
+        if (Math.abs(posX - wall.x) <= halfW && Math.abs(posY - wall.mesh.position.y) <= halfH) {
+            return wall.ownerIndex;
+        }
+    }
+    return -1;
+}
+
+function applySecondarySpearHit(targetIndex, hitX, hitY) {
+    const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
+    flashHit(targetModel);
+    stickSpear(targetModel, hitX, hitY, secondarySpearGroup.rotation.z);
+    
+    const relativeY = hitY - targetModel.position.y;
+    const hitResult = calculateHitResult(targetIndex, relativeY, false);
+    
+    const baseDamage = Number(hitResult.damage) > 0 ? Number(hitResult.damage) : 25;
+    const finalDamage = Math.max(15, baseDamage);
+    hitResult.damage = finalDamage;
+    hitResult.msg = `Qo'sh nayza: -${finalDamage}`;
+    
+    playHitByResult(hitResult);
+    showDamageText(hitX, hitY + 80, hitResult.msg, hitResult.isCrit, hitResult.isShieldHit);
+    
+    if (hitResult.isShieldHit) {
+        spawnParticles(hitX, hitY, 15, true);
+        setShieldForPlayer(targetIndex, shieldForPlayer(targetIndex) - 1);
+        if (shieldForPlayer(targetIndex) <= 0) breakShield(targetModel);
+    } else {
+        spawnParticles(hitX, hitY, 30);
+        knockDownModel(targetModel);
+    }
+    
+    if (secondarySpear && secondarySpear.playerIndex === myPlayerIndex && targetIndex !== myPlayerIndex) {
+        addScore(getScoreDeltaForHit(hitResult));
+    }
+    
+    if (gameMode === 'single') {
+        applyDamageToTarget(targetIndex, finalDamage);
+        updateHealthUI();
+        if (myHealth <= 0 || areAllEnemiesDead()) {
+            const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
+            setTimeout(() => showGameOver(winnerIndex), 1500);
+        }
+    } else {
+        lastRecordedSecondaryHit = {
+            targetIndex,
+            damage: finalDamage,
+            hitZone: hitResult.hitZone || 'body',
+            shieldActiveBlock: hitResult.shieldActiveBlock || false,
+            shieldlessDefense: hitResult.shieldlessDefense || false,
+            hitX,
+            hitY,
+            isShieldHit: hitResult.isShieldHit || false,
+            hitAngle: secondarySpearGroup.rotation.z
+        };
+    }
+}
+
+function checkSecondarySpearCollision() {
+    if (!secondarySpear || !secondarySpear.active) return;
+    
+    // Devor bilan to'qnashuv
+    const wallOwner = getWallHitOwnerIndexForPos(secondarySpear.x, secondarySpear.y, secondarySpear.playerIndex);
+    if (wallOwner >= 0) {
+        secondarySpear.active = false;
+        secondarySpearGroup.visible = false;
+        const hitX = secondarySpear.x;
+        const hitY = secondarySpear.y;
+        if (gameMode === 'multi') {
+            if (secondarySpear.playerIndex === myPlayerIndex) {
+                socket.emit('wallHit', { ownerIndex: wallOwner, hitX, hitY, isArtillery: false });
+            }
+        } else {
+            applyWallHit(wallOwner, hitX, hitY, false);
+        }
+        return;
+    }
+    
+    // Raqib modellari bilan to'qnashuv
+    const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
+    for (let i = 0; i < models.length; i++) {
+        const m = models[i];
+        if (!m || m.userData.isKnockedDown) continue;
+        if (i === secondarySpear.playerIndex) continue;
+        if (areAllies(i, secondarySpear.playerIndex)) continue;
+        
+        const modelHeight = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
+        const hitTopY = m.position.y + modelHeight;
+        const hitBottomY = m.position.y + 30;
+        const relativeY = secondarySpear.y - m.position.y;
+        
+        if (isDuckActiveForPlayer(i) && relativeY > modelHeight * 0.52) continue;
+        
+        if (Math.abs(secondarySpear.x - m.position.x) < 65 &&
+            secondarySpear.y > hitBottomY &&
+            secondarySpear.y < hitTopY) {
+            
+            const hitX = secondarySpear.x;
+            const hitY = secondarySpear.y;
+            secondarySpear.active = false;
+            secondarySpearGroup.visible = false;
+            applySecondarySpearHit(i, hitX, hitY);
+            return;
+        }
+    }
+    
+    // Yerga tushish
+    if (secondarySpear.y <= ground.position.y + 100) {
+        secondarySpear.active = false;
+        secondarySpearGroup.visible = false;
+        stickSpear(null, secondarySpear.x, ground.position.y + 100, secondarySpearGroup.rotation.z);
     }
 }
 
@@ -6747,8 +7006,8 @@ function gameLoop(now) {
             e.vy = (e.vy || 0) + Math.sin((now * 0.001) + idx) * 3 * dt;
             if (e.mesh.position.x > 1800) e.vx = -Math.abs(e.vx);
             if (e.mesh.position.x < -1800) e.vx = Math.abs(e.vx);
-            if (e.mesh.position.y > 920) e.vy = -Math.abs(e.vy || 30);
-            if (e.mesh.position.y < 280) e.vy = Math.abs(e.vy || 30);
+            if (e.mesh.position.y > 900) e.vy = -Math.abs(e.vy || 30);
+            if (e.mesh.position.y < 320) e.vy = Math.abs(e.vy || 30);
             
             if (e.mesh.userData.isCrowSprite && e.mesh.userData.tex) {
                 const planeMesh = e.mesh.children.find(child => child.isMesh);
@@ -6879,7 +7138,8 @@ function gameLoop(now) {
             // Nayza qanchalik baland uchmasin, o'yin maydoni va ufq doimo ko'rinib turadi
             const groundSurfaceY = ground.position.y + 100;
             const spearAltitude = Math.max(0, spear.y - groundSurfaceY);
-            cameraTargetY = Math.max(0, Math.min(spearAltitude * 0.52, 1450));
+            const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+            cameraTargetY = Math.max(camFocus.y, Math.min(camFocus.y + spearAltitude * 0.52, 1450));
 
             // Dinamik masshtab: nayza balandlagan sari kamera silliq zoom-out qiladi
             const altitudeRatio = Math.min(1, spearAltitude / 2200);
@@ -6916,7 +7176,8 @@ function gameLoop(now) {
         secondarySpear.vx += (currentWind * 30) * dt;
         secondarySpearGroup.position.set(secondarySpear.x, secondarySpear.y, 0);
         secondarySpearGroup.rotation.z = Math.atan2(secondarySpear.vy, secondarySpear.vx);
-        if (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200) {
+        checkSecondarySpearCollision();
+        if (secondarySpear.active && (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200)) {
             secondarySpear.active = false;
             secondarySpearGroup.visible = false;
         }
@@ -6992,14 +7253,24 @@ function gameLoop(now) {
                 targetState = 'load';
             }
             
-            // Aiming zoom logic: kamon tortayotganda o'yinchi mo'tadil yaqinlashadi, haddan tashqari yaqin kelmaydi
+            // Aiming zoom logic: kamon tortayotganda
             if (cameraState === 'static' || cameraState === 'aiming' || cameraState === 'recover' || cameraState === 'normal') {
                 cameraState = 'aiming';
                 const isPortrait = isPortraitMode();
-                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 60 : 70) : (isPortrait ? -60 : -70)); 
-                cameraTargetY = model.position.y + (isPortrait ? 85 : 95);
-                // Yaqindan mo'tadil ko'rinish
-                cameraZoomTarget = isPortrait ? Math.min(baseZoom * 1.35, 0.65) : Math.min(baseZoom * 1.3, 1.15);
+                const camFocus = getFocusCameraTarget(currentTurnIndex >= 0 ? currentTurnIndex : myPlayerIndex);
+                if (isPortrait) {
+                    cameraTargetX = model.position.x + (idx === 0 ? 60 : -60);
+                    cameraTargetY = model.position.y + 240;
+                    cameraZoomTarget = Math.min(baseZoom * 1.35, 0.65);
+                } else {
+                    // Albom (landshaft) rejimida o'yinchi ekranning markaziga surilmaydi!
+                    // O'yinchi o'z tomonida turadi, raqib va mo'ljal to'liq ko'rinadi va tepada ball/daraja bloki o'yinchini to'smaydi.
+                    // O'yinchining oyoqlari pastki tugmalar ustida turadi.
+                    cameraTargetX = camFocus.x;
+                    cameraTargetY = camFocus.y;
+                    cameraZoomTarget = camFocus.zoom;
+                }
+                if (hud) hud.style.opacity = isPortrait ? '0.35' : '0.65';
             }
         } else if (!isDragging && cameraState === 'aiming') {
             // Revert back when stopped aiming: yana butun maydon va raqib ko'rinadigan umumiy ko'rinishga qaytish
@@ -7008,6 +7279,7 @@ function gameLoop(now) {
             cameraTargetX = camFocus.x;
             cameraTargetY = camFocus.y;
             cameraZoomTarget = camFocus.zoom;
+            if (hud) hud.style.opacity = '1';
         }
         
         setSoldierVisual(model, targetState);
@@ -8525,12 +8797,25 @@ setInterval(updateMenuWallpaper, 350);
 (function setupIntroScreen() {
     const introScreen = document.getElementById('intro-screen');
     if (!introScreen) return;
+    
+    // Agar bu sessiyada intro bir marta ko'rilgan bo'lsa, qayta ko'rsatilmaydi
+    try {
+        if (sessionStorage.getItem('kamonboz_intro_seen') === '1') {
+            introScreen.classList.add('hide');
+            introScreen.style.display = 'none';
+            if (introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
+            return;
+        }
+    } catch (_) {}
+    
     let introDismissed = false;
     const dismissIntro = (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         if (introDismissed) return;
         introDismissed = true;
+        try { sessionStorage.setItem('kamonboz_intro_seen', '1'); } catch (_) {}
         try { initAudio(); } catch (_) {}
+        try { tryLockLandscapeOrientation(); } catch (_) {}
         introScreen.classList.add('hide');
         if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
         setTimeout(() => {
@@ -8540,15 +8825,23 @@ setInterval(updateMenuWallpaper, 350);
 
     const handleIntroStartGame = safeModalAction((e) => {
         dismissIntro(e);
-        if (authModal) authModal.classList.add('hidden');
-        if (menuScreen) menuScreen.classList.add('hidden');
+        try { tryLockLandscapeOrientation(); } catch (_) {}
+        
+        // 1. Agar Telegramdan duel uchun havola orqali kirgan bo'lsa, duelga avtomatik ulanadi:
         if (typeof checkAutoJoinTelegramRoom === 'function' && checkAutoJoinTelegramRoom()) {
+            if (authModal) authModal.classList.add('hidden');
+            if (menuScreen) menuScreen.classList.add('hidden');
             return;
         }
-        const level = Math.max(1, singleCampaignLevel);
-        aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
-        gameMode = 'single';
-        startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+        
+        // 2. Havolasiz oddiy kirganda: Asosiy menyu ochilishi kerak (avtomatik level boshlanmaydi!):
+        gameMode = 'menu';
+        if (authModal) authModal.classList.add('hidden');
+        if (menuScreen) {
+            menuScreen.classList.remove('hidden');
+        }
+        if (typeof updateCampaignUI === 'function') updateCampaignUI();
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
     });
 
     const startBtn = document.getElementById('btn-intro-start');
@@ -8559,12 +8852,16 @@ setInterval(updateMenuWallpaper, 350);
 
     const handleBackgroundDismiss = (e) => {
         if (e.target === startBtn || (startBtn && startBtn.contains(e.target))) return;
-        dismissIntro(e);
+        handleIntroStartGame(e);
     };
     introScreen.addEventListener('click', handleBackgroundDismiss);
     introScreen.addEventListener('touchend', handleBackgroundDismiss, { passive: true });
-    // 4.5 soniyadan so'ng avtomatik o'tish
-    setTimeout(dismissIntro, 4500);
+    // 4.5 soniyadan so'ng avtomatik menyuga o'tish
+    setTimeout(() => {
+        if (!introDismissed) {
+            handleIntroStartGame();
+        }
+    }, 4500);
 })();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);
@@ -9361,8 +9658,9 @@ function spawnEmoteBubble(playerIndex, emoji) {
     v.y += modelHeight + 30;
     v.project(camera);
 
-    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-(v.y * 0.5) + 0.5) * window.innerHeight;
+    const vp = getAppViewport();
+    const x = (v.x * 0.5 + 0.5) * vp.width;
+    const y = (-(v.y * 0.5) + 0.5) * vp.height;
 
     const bubble = document.createElement('div');
     bubble.className = 'speech-bubble';

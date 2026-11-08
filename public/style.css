@@ -14,6 +14,35 @@ body, html {
     color: #fff;
 }
 
+#game-app-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body.force-landscape {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.force-landscape #game-app-root {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: translate(-50%, -50%) rotate(90deg) !important;
+    transform-origin: center center !important;
+    overflow: hidden !important;
+}
+
 :root {
     --menu-left-safe: max(8px, env(safe-area-inset-left));
     --menu-bottom-safe: max(8px, env(safe-area-inset-bottom));
@@ -195,6 +224,8 @@ body, html {
     min-width: clamp(72px, 14vw, 132px);
     border-radius: clamp(10px, 1.5vw, 16px);
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.28);
+    pointer-events: none;
+    user-select: none;
 }
 
 .wind-indicator span {
@@ -2742,53 +2773,53 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
    ============================================================ */
 
 @media screen and (orientation: portrait), screen and (max-aspect-ratio: 1/1) {
-    /* HUD paneli: tepada ixcham va chiroyli */
-    .hud {
+    /* HUD paneli: faqat haqiqiy portretda (force-landscape bo'lmaganda) */
+    body:not(.force-landscape) .hud {
         padding: 8px 10px !important;
         padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) !important;
         gap: 6px !important;
     }
-    .player-info {
+    body:not(.force-landscape) .player-info {
         min-width: 82px !important;
         max-width: 33vw !important;
         padding: 5px 8px !important;
     }
-    .player-info h2 {
+    body:not(.force-landscape) .player-info h2 {
         font-size: 0.74rem !important;
         margin-bottom: 2px !important;
     }
-    .hud-score {
+    body:not(.force-landscape) .hud-score {
         font-size: 0.70rem !important;
     }
-    .wind-indicator {
+    body:not(.force-landscape) .wind-indicator {
         padding: 4px 8px !important;
         font-size: 0.70rem !important;
     }
 
     /* O'yin ichidagi tugmalar portretda: pastki o'ng burchakda 2 qatorli ixcham dock */
-    .shield-btn {
+    body:not(.force-landscape) .shield-btn {
         bottom: 12px !important;
         right: 12px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.2rem !important;
     }
-    .super-btn {
+    body:not(.force-landscape) .super-btn {
         bottom: 12px !important;
         right: 62px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.2rem !important;
     }
-    .duck-btn {
+    body:not(.force-landscape) .duck-btn {
         bottom: 12px !important;
         right: 112px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .double-btn {
+    body:not(.force-landscape) .double-btn {
         bottom: 12px !important;
         right: 162px !important;
         width: 44px !important;
@@ -2797,28 +2828,28 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     }
 
     /* 2-qator (yuqoriroqda) */
-    .wall-btn {
+    body:not(.force-landscape) .wall-btn {
         bottom: 62px !important;
         right: 12px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .crow-btn {
+    body:not(.force-landscape) .crow-btn {
         bottom: 62px !important;
         right: 62px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .artillery-btn {
+    body:not(.force-landscape) .artillery-btn {
         bottom: 62px !important;
         right: 112px !important;
         width: 44px !important;
         height: 44px !important;
         font-size: 1.15rem !important;
     }
-    .fire-btn {
+    body:not(.force-landscape) .fire-btn {
         bottom: 62px !important;
         right: 162px !important;
         width: 44px !important;
@@ -2827,34 +2858,35 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     }
 
     /* Chap tomondagi tugmalar: Menyu, Ortga, Musiqa, Emote, Chat */
-    #in-game-menu-btn {
+    body:not(.force-landscape) #in-game-menu-btn {
         bottom: 12px !important;
         left: 12px !important;
         padding: 8px 10px !important;
         font-size: 0.72rem !important;
         min-height: 38px !important;
     }
-    #btn-in-game-back {
+    body:not(.force-landscape) #btn-in-game-back {
         bottom: 12px !important;
         left: 68px !important;
         padding: 8px 10px !important;
         font-size: 0.72rem !important;
         min-height: 38px !important;
     }
-    #music-toggle-btn {
+    body:not(.force-landscape) #music-toggle-btn {
         bottom: 56px !important;
         left: 12px !important;
         width: 38px !important;
         height: 38px !important;
         font-size: 1rem !important;
     }
-    .emote-btn {
+    body:not(.force-landscape) .emote-btn {
         bottom: 100px !important;
         left: 12px !important;
         width: 38px !important;
         height: 38px !important;
         font-size: 1rem !important;
     }
+}
     #btn-toggle-chat {
         bottom: 144px !important;
         left: 12px !important;

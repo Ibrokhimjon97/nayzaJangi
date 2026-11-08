@@ -27,6 +27,8 @@ app.use((req, res, next) => {
     next();
 });
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/ping', (req, res) => res.status(200).send('pong'));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', uptime: Math.floor(process.uptime()), timestamp: Date.now() }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const multer = require('multer');
@@ -1443,6 +1445,43 @@ server.listen(PORT, () => {
     } catch (e) {
         console.error('Telegram bot startup error:', e.message);
     }
+    try {
+        startKeepAlive();
+    } catch (e) {
+        console.error('Keep-alive startup error:', e.message);
+    }
 });
 
-// Force redeploy 1397934648782924301
+function startKeepAlive() {
+    const targetUrl = process.env.RENDER_EXTERNAL_URL || process.env.GAME_URL || 'https://nayza-jangi.onrender.com';
+    if (!targetUrl || targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1')) return;
+    
+    const pingEndpoint = `${targetUrl.replace(/\/$/, '')}/ping`;
+    const PING_INTERVAL = 10 * 60 * 1000; // Har 10 daqiqada (Render 15 daqiqa harakatsizlikda uxlaydi)
+    const https = require('https');
+
+    console.log(`[Keep-Alive] Render uyg'oq turishi uchun avto-ping yoqildi: ${pingEndpoint}`);
+
+    // Ilk pingni 2 daqiqadan so'ng yuborish
+    setTimeout(() => {
+        pingOnce(pingEndpoint, https);
+    }, 2 * 60 * 1000);
+
+    // Keyingi pinglarni har 10 daqiqada davomiy yuborish
+    setInterval(() => {
+        pingOnce(pingEndpoint, https);
+    }, PING_INTERVAL);
+}
+
+function pingOnce(endpoint, https) {
+    try {
+        const client = endpoint.startsWith('https') ? https : http;
+        const req = client.get(endpoint, (res) => {
+            res.resume();
+        });
+        req.on('error', () => {});
+        req.setTimeout(15000, () => req.destroy());
+    } catch (_) {}
+}
+
+// Force redeploy 1397934648782924302
