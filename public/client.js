@@ -7963,6 +7963,8 @@ function showGameOver(winnerIndex, data) {
     if (btnGameOverRating && !btnGameOverRating._boundRating) {
         btnGameOverRating._boundRating = true;
         btnGameOverRating.addEventListener('click', (e) => {
+            returnToGameOverAfterModal = true;
+            if (gameOverScreen) gameOverScreen.classList.add('hidden');
             if (btnRating) {
                 btnRating.click();
             } else if (typeof openModalSafely === 'function' && ratingModal) {
@@ -11484,6 +11486,8 @@ document.addEventListener('pointerdown', (e) => {
     }
 }, { passive: true });
 
+let returnToGameOverAfterModal = false;
+
 const ALL_MODAL_IDS = [
     'daily-quests-modal',
     'daily-rewards-modal',
@@ -11498,7 +11502,8 @@ const ALL_MODAL_IDS = [
     'level-select-modal',
     'character-select-modal',
     'game-options-modal',
-    'friend-add-modal'
+    'friend-add-modal',
+    'duel-invites-modal'
 ];
 
 function updateTelegramBackButton() {
@@ -11590,7 +11595,10 @@ function closeModalSafely(modalEl, e) {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
     }
-    if (menuScreen) {
+    if (returnToGameOverAfterModal) {
+        returnToGameOverAfterModal = false;
+        if (gameOverScreen) gameOverScreen.classList.remove('hidden');
+    } else if (menuScreen) {
         menuScreen.classList.remove('hidden');
         // Prevent delayed mobile touch click from triggering underlying menu buttons
         menuScreen.style.pointerEvents = 'none';
@@ -14486,82 +14494,98 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Universal smooth touch/drag scroll for menu and modals
+// Universal smooth touch/drag scroll for menu, modals and lists (both X and Y directions)
 (function setupMenuTouchScroll() {
     let scrollStartY = 0;
     let scrollStartX = 0;
+    let lastMoveX = 0;
+    let lastMoveY = 0;
     let initialScrollTop = 0;
+    let initialScrollLeft = 0;
     let isScrollDragging = false;
+    let dragAxis = null; // 'x' or 'y'
+    let canScrollX = false;
+    let canScrollY = false;
     let activeScrollPanel = null;
     let lastMoveTime = 0;
-    let lastMoveY = 0;
     let scrollVelocity = 0;
     let isTouchActive = false;
 
     function getActiveScrollTarget(rawTarget) {
-        if (rawTarget && typeof rawTarget.closest === 'function') {
-            // NEVER intercept horizontal carousels or their items with vertical modal drag!
-            if (rawTarget.closest('#menu-cards-carousel, .menu-carousel-wrapper, .menu-card, #lang-carousel-track, .lang-carousel-wrapper, .lang-card, .duel-invites-tabs')) {
-                return null;
-            }
-            const grid = rawTarget.closest('#level-grid');
-            if (grid) return grid;
-            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable], .custom-select-menu, #profile-modal, #level-select-modal, .modal-panel');
-            if (scrollable) return scrollable;
-        }
+        if (!rawTarget) return null;
 
-        const charModal = document.getElementById('character-select-modal');
-        if (charModal && !charModal.classList.contains('hidden') && charModal.offsetParent !== null) {
-            const roster = document.getElementById('char-select-roster');
-            if (roster) return roster;
-            return charModal;
-        }
-
-        const profModal = document.getElementById('profile-modal');
-        if (profModal && !profModal.classList.contains('hidden') && profModal.offsetParent !== null) {
-            return profModal;
-        }
-
-        const lvlModal = document.getElementById('level-select-modal');
-        if (lvlModal && !lvlModal.classList.contains('hidden') && lvlModal.offsetParent !== null) {
-            const grid = document.getElementById('level-grid');
-            if (grid) return grid;
-            return lvlModal;
-        }
-
-        if (typeof gameMode !== 'undefined' && gameMode !== 'menu') {
-            const activeModals = [
-                document.getElementById('profile-modal'),
-                document.getElementById('settings-modal'),
-                document.getElementById('rating-modal'),
-                document.getElementById('shop-modal'),
-                document.getElementById('about-modal'),
-                document.getElementById('help-modal'),
-                document.getElementById('daily-rewards-modal'),
-                document.getElementById('daily-quests-modal')
-            ];
-            for (const m of activeModals) {
-                if (m && !m.classList.contains('hidden') && m.offsetParent !== null) return m;
-            }
+        // 1. Never intercept horizontal main menu card carousel or language track
+        if (rawTarget.closest && rawTarget.closest('#menu-cards-carousel, .menu-carousel-wrapper, #lang-carousel-track, .lang-carousel-wrapper')) {
             return null;
         }
 
+        // 2. Character Select: Touch anywhere inside character modal -> scroll the roster grid horizontally
+        const charModal = document.getElementById('character-select-modal');
+        if (charModal && !charModal.classList.contains('hidden') && charModal.offsetParent !== null) {
+            if (rawTarget.closest && rawTarget.closest('#character-select-modal')) {
+                return document.getElementById('char-select-roster') || charModal;
+            }
+        }
+
+        // 3. Rating Modal: Touch anywhere inside rating modal -> scroll leaderboard list
+        const ratingModal = document.getElementById('rating-modal');
+        if (ratingModal && !ratingModal.classList.contains('hidden') && ratingModal.offsetParent !== null) {
+            if (rawTarget.closest && rawTarget.closest('#rating-modal')) {
+                const lbList = document.getElementById('leaderboard-list');
+                if (lbList && (lbList.scrollHeight > lbList.clientHeight || lbList.clientHeight > 0)) {
+                    return lbList;
+                }
+                return ratingModal;
+            }
+        }
+
+        // 4. Duel Invites Modal: Touch anywhere inside invites modal -> scroll active invites list
+        const duelModal = document.getElementById('duel-invites-modal');
+        if (duelModal && !duelModal.classList.contains('hidden') && duelModal.offsetParent !== null) {
+            if (rawTarget.closest && rawTarget.closest('#duel-invites-modal')) {
+                // If clicked directly on the tabs switch buttons, don't hijack as list scroll
+                if (rawTarget.closest && rawTarget.closest('.duel-invites-tabs')) {
+                    return null;
+                }
+                const inList = document.getElementById('incoming-invites-container');
+                const outList = document.getElementById('outgoing-invites-container');
+                if (inList && !inList.classList.contains('hidden')) return inList;
+                if (outList && !outList.classList.contains('hidden')) return outList;
+                return duelModal;
+            }
+        }
+
+        // 5. Look up the DOM tree from rawTarget for closest scrollable element
+        if (rawTarget.closest) {
+            const specific = rawTarget.closest(
+                '#char-select-roster, .char-roster-grid, #leaderboard-list, ' +
+                '#incoming-invites-container, #outgoing-invites-container, .duel-invites-list, ' +
+                '#level-grid, .custom-select-menu, .modal-panel, .center-panel, [data-scrollable]'
+            );
+            if (specific) return specific;
+        }
+
+        // 6. Check open modals by active visibility
         const candidatePanels = [
-            document.getElementById('profile-modal'),
-            document.getElementById('single-mode-modal'),
-            document.getElementById('multi-menu'),
-            document.getElementById('settings-modal'),
+            document.getElementById('duel-invites-modal'),
             document.getElementById('rating-modal'),
+            document.getElementById('profile-modal'),
+            document.getElementById('level-select-modal'),
             document.getElementById('shop-modal'),
+            document.getElementById('settings-modal'),
             document.getElementById('daily-rewards-modal'),
             document.getElementById('daily-quests-modal'),
             document.getElementById('about-modal'),
             document.getElementById('help-modal'),
-            document.getElementById('auth-modal')
+            document.getElementById('single-mode-modal'),
+            document.getElementById('multi-menu'),
+            document.getElementById('menu-screen')
         ];
 
         for (const p of candidatePanels) {
             if (p && !p.classList.contains('hidden') && p.offsetParent !== null) {
+                const inner = p.querySelector && p.querySelector('.duel-invites-list:not(.hidden), #leaderboard-list, #level-grid, .char-roster-grid');
+                if (inner) return inner;
                 return p;
             }
         }
@@ -14573,29 +14597,41 @@ document.addEventListener('keydown', (e) => {
         if (!activeScrollPanel) return;
 
         const vpos = getPointerPos({ clientX, clientY });
-        scrollStartY = vpos.y;
         scrollStartX = vpos.x;
-        initialScrollTop = activeScrollPanel.scrollTop;
-        isScrollDragging = false;
-        lastMoveTime = performance.now();
+        scrollStartY = vpos.y;
+        lastMoveX = vpos.x;
         lastMoveY = vpos.y;
+        initialScrollLeft = activeScrollPanel.scrollLeft || 0;
+        initialScrollTop = activeScrollPanel.scrollTop || 0;
+        isScrollDragging = false;
+        dragAxis = null;
         scrollVelocity = 0;
+        lastMoveTime = performance.now();
+
+        // Check if panel can scroll horizontally (X) or vertically (Y)
+        const isRoster = (activeScrollPanel.id === 'char-select-roster' || activeScrollPanel.classList.contains('char-roster-grid'));
+        canScrollX = isRoster || (activeScrollPanel.scrollWidth > activeScrollPanel.clientWidth + 4);
+        canScrollY = !isRoster && (activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 || activeScrollPanel.id === 'leaderboard-list' || activeScrollPanel.classList.contains('duel-invites-list'));
     }
 
     function handleDragMove(clientX, clientY, rawEvent) {
         if (!activeScrollPanel) return;
         const vpos = getPointerPos({ clientX, clientY });
-        const dy = vpos.y - scrollStartY;
         const dx = vpos.x - scrollStartX;
+        const dy = vpos.y - scrollStartY;
 
-        // If swipe movement is primarily horizontal, cancel vertical interception so horizontal scroll works cleanly
-        if (Math.abs(dx) > Math.abs(dy) * 1.2 && !isScrollDragging) {
-            activeScrollPanel = null;
-            return;
-        }
-
-        if (!isScrollDragging && (Math.abs(dy) > 7 && Math.abs(dy) > Math.abs(dx))) {
-            isScrollDragging = true;
+        if (!isScrollDragging) {
+            // Determine drag direction once 4px threshold is exceeded
+            if (canScrollX && Math.abs(dx) >= 4 && Math.abs(dx) >= Math.abs(dy)) {
+                isScrollDragging = true;
+                dragAxis = 'x';
+            } else if (canScrollY && Math.abs(dy) >= 4) {
+                isScrollDragging = true;
+                dragAxis = 'y';
+            } else if (canScrollX && Math.abs(dx) >= 4) {
+                isScrollDragging = true;
+                dragAxis = 'x';
+            }
         }
 
         if (isScrollDragging) {
@@ -14605,23 +14641,32 @@ document.addEventListener('keydown', (e) => {
             }
             const now = performance.now();
             const dt = Math.max(1, now - lastMoveTime);
-            scrollVelocity = (vpos.y - lastMoveY) / dt;
-            lastMoveTime = now;
-            lastMoveY = vpos.y;
 
-            activeScrollPanel.scrollTop = initialScrollTop - dy;
+            if (dragAxis === 'x') {
+                scrollVelocity = (vpos.x - lastMoveX) / dt;
+                lastMoveX = vpos.x;
+                activeScrollPanel.scrollLeft = initialScrollLeft - dx;
+            } else {
+                scrollVelocity = (vpos.y - lastMoveY) / dt;
+                lastMoveY = vpos.y;
+                activeScrollPanel.scrollTop = initialScrollTop - dy;
+            }
+            lastMoveTime = now;
         }
     }
 
     function handleDragEnd() {
         if (!activeScrollPanel) return;
         if (isScrollDragging) {
-            // Apply gentle momentum if velocity was significant
-            const momentum = scrollVelocity * 120;
-            if (Math.abs(momentum) > 10) {
-                activeScrollPanel.scrollBy({ top: -momentum, behavior: 'smooth' });
+            const momentum = scrollVelocity * 140;
+            if (Math.abs(momentum) > 8) {
+                if (dragAxis === 'x') {
+                    activeScrollPanel.scrollBy({ left: -momentum, behavior: 'smooth' });
+                } else {
+                    activeScrollPanel.scrollBy({ top: -momentum, behavior: 'smooth' });
+                }
             }
-            // Suppress the follow-up click so release doesn't tap random buttons inside the modal
+            // Suppress the follow-up click so releasing finger doesn't tap random buttons or select unintended cards
             const suppressEvent = (e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -14634,6 +14679,7 @@ document.addEventListener('keydown', (e) => {
             }, 280);
         }
         isScrollDragging = false;
+        dragAxis = null;
         activeScrollPanel = null;
     }
 
@@ -15208,17 +15254,38 @@ function initDuelInvitesUI() {
     const closeInvitesX = document.getElementById('btn-close-invites-x');
     const closeInvitesBtn = document.getElementById('btn-close-invites');
 
-    const openInvites = (e) => {
-        if (e) e.stopPropagation();
-        if (invitesModal) {
+    const openInvites = safeModalAction((e) => {
+        if (typeof openModalSafely === 'function' && invitesModal) {
+            fetchDuelInvites();
+            openModalSafely(invitesModal, e);
+        } else if (invitesModal) {
             invitesModal.classList.remove('hidden');
             fetchDuelInvites();
         }
-    };
-    if (btnDuelInvites) btnDuelInvites.addEventListener('click', openInvites);
-    if (btnTopInvites) btnTopInvites.addEventListener('click', openInvites);
-    if (closeInvitesX) closeInvitesX.addEventListener('click', () => invitesModal && invitesModal.classList.add('hidden'));
-    if (closeInvitesBtn) closeInvitesBtn.addEventListener('click', () => invitesModal && invitesModal.classList.add('hidden'));
+    });
+    if (btnDuelInvites) {
+        btnDuelInvites.addEventListener('click', openInvites);
+        btnDuelInvites.addEventListener('touchend', openInvites, { passive: false });
+    }
+    if (btnTopInvites) {
+        btnTopInvites.addEventListener('click', openInvites);
+        btnTopInvites.addEventListener('touchend', openInvites, { passive: false });
+    }
+    const handleCloseInvites = safeModalAction((e) => {
+        if (typeof closeModalSafely === 'function' && invitesModal) {
+            closeModalSafely(invitesModal, e);
+        } else if (invitesModal) {
+            invitesModal.classList.add('hidden');
+        }
+    });
+    if (closeInvitesX) {
+        closeInvitesX.addEventListener('click', handleCloseInvites);
+        closeInvitesX.addEventListener('touchend', handleCloseInvites, { passive: false });
+    }
+    if (closeInvitesBtn) {
+        closeInvitesBtn.addEventListener('click', handleCloseInvites);
+        closeInvitesBtn.addEventListener('touchend', handleCloseInvites, { passive: false });
+    }
 
     // 2. Tablar
     const tabInc = document.getElementById('tab-incoming-invites');

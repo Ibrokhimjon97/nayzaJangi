@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=102">
+    <link rel="stylesheet" href="style.css?v=103">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script>
         // Telegram orqali duel yoki xona havolasi bilan kirilganda menyuni oldindan yashirib qo'yish
@@ -835,20 +835,18 @@
             <div id="rating-modal" class="screen hidden panel center-panel">
                 <button type="button" id="btn-close-rating-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2 id="txt-rating-title">Sizning Reytingingiz</h2>
-                <div class="stats-summary"
-                    style="margin: 14px 0 10px; font-size: 1.05rem; text-align: left; line-height: 1.7;">
+                <div class="stats-summary">
                     <p>🏆 <span id="txt-score-lbl">Ball:</span> <b id="stat-score" style="color: #f59e0b;">0</b></p>
                     <p>⚔️ <span id="txt-games-lbl">O'yinlar:</span> <b id="stat-games">0</b></p>
                     <p>✅ <span id="txt-wins-lbl">G'alabalar:</span> <b id="stat-wins" style="color: #10b981;">0</b></p>
                 </div>
 
-                <div class="leaderboard-search-wrap" style="margin: 6px 0 10px;">
+                <div class="leaderboard-search-wrap">
                     <input type="text" id="leaderboard-search-input" class="leaderboard-search-input"
                         placeholder="🔍 O'yinchini qidirish (ism bo'yicha)...">
                 </div>
 
-                <div id="leaderboard-list"
-                    style="margin: 4px 0 14px; text-align: left; max-height: 220px; overflow-y: auto; font-size: 0.95rem; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px;">
+                <div id="leaderboard-list" class="leaderboard-list scrollable" data-scrollable="true">
                     Reyting yuklanmoqda...
                 </div>
                 <button id="btn-close-rating" class="primary-btn" style="background: #475569;">Yopish</button>
@@ -865,11 +863,11 @@
                             id="tab-outgoing-badge" class="tab-badge">0</span></button>
                 </div>
 
-                <div id="incoming-invites-container" class="duel-invites-list">
+                <div id="incoming-invites-container" class="duel-invites-list scrollable" data-scrollable="true">
                     <p class="empty-invites-hint">Kelgan duel takliflari yo'q</p>
                 </div>
 
-                <div id="outgoing-invites-container" class="duel-invites-list hidden">
+                <div id="outgoing-invites-container" class="duel-invites-list scrollable hidden" data-scrollable="true">
                     <p class="empty-invites-hint">Yuborilgan takliflar yo'q</p>
                 </div>
 
@@ -1410,7 +1408,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=102"></script>
+    <script src="client.js?v=103"></script>
     <script>
         // Mobile fullscreen & auto-landscape on first user interaction
         function tryFullscreenAndLandscape() {
