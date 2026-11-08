@@ -712,7 +712,8 @@ const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 5, transparent
 const starField = new THREE.Points(starGeo, starMat);
 scene.add(starField);
 
-const groundGeo = new THREE.BoxGeometry(15000, 200, 1000);
+const groundGeo = new THREE.BoxGeometry(40000, 15000, 2000);
+groundGeo.translate(0, -7400, 0);
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9, metalness: 0.1 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.position.y = -400;
@@ -2034,7 +2035,7 @@ function buildMap(mapType, weather = 'sunny') {
 
     // Yer ustki o't/qum qatlami (gradient effekt) - sahnani boyitadi.
     if (!window._groundTopLayer) {
-        const gtGeo = new THREE.PlaneGeometry(15000, 40);
+        const gtGeo = new THREE.PlaneGeometry(40000, 80);
         const gtMat = new THREE.MeshBasicMaterial({ color: 0x7dd956, transparent: true, opacity: 0.7, depthWrite: false });
         window._groundTopLayer = new THREE.Mesh(gtGeo, gtMat);
         window._groundTopLayer.position.set(0, ground.position.y + 100, 5);
@@ -2204,10 +2205,10 @@ function buildMap(mapType, weather = 'sunny') {
         fog: false,
         depthWrite: false
     });
-    const backdropW = 12000; // Juda keng - o'q qanchalik uzoqqa uchmasin, fon ko'rinadi
-    const backdropH = backdropW * 0.22;
+    const backdropW = 40000; // Juda keng va baland - barcha rejimlar va portretda to'liq qoplaydi
+    const backdropH = 15000;
     const backdropPlane = new THREE.Mesh(new THREE.PlaneGeometry(backdropW, backdropH), backdropMat);
-    backdropPlane.position.set(0, ground.position.y + 90 + backdropH * 0.32, -700);
+    backdropPlane.position.set(0, ground.position.y + 100 + backdropH * 0.48, -700);
     scene.add(backdropPlane);
     mapBackdrops.push(backdropPlane);
 
@@ -2936,7 +2937,7 @@ function getFocusCameraTarget(turnIndex) {
     // o'yinchi raqib qayerda turganini aniq ko'rib turadi.
     const p3OffsetExtra = (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) ? (pos3Offset / 2) : 0;
     const centerX = p3OffsetExtra;
-    const centerY = isPortrait ? -35 : 0;
+    const centerY = isPortrait ? -85 : 0;
     return {
         x: centerX,
         y: centerY,
@@ -2960,14 +2961,13 @@ function updateCameraBounds() {
     
     // Jang maydoni kengligi: o'yinchi va raqib(lar) orasidagi masofa
     const battleDist = (typeof currentBattleDistance === 'number') ? currentBattleDistance : 2600;
-    const neededWidth = battleDist + (p3Model ? (pos3Offset + 380) : 260) + 400;
-    const minWorldWidth = Math.max(2800, neededWidth);
+    const neededWidth = battleDist + (p3Model ? (pos3Offset + 240) : 180) + 120;
+    const minWorldWidth = Math.max(2600, neededWidth);
     const zoomX = (frustumSize * aspect) / minWorldWidth;
 
     if (isPortrait) {
-        // Portret rejimida ekran tor bo'lgani sababli ikkala jangchi ekranga to'liq sig'ishi uchun
-        // kenglik bo'yicha masshtab hisoblanadi (uzoqlashtirilgan umumiy ko'rinish)
-        baseZoom = Math.min(zoomX * 1.05, 1.0);
+        // Portret rejimida ikkala jangchi ekranga to'liq sig'adi va ekran vertikal bo'yicha to'la to'ldiriladi
+        baseZoom = Math.min(zoomX * 1.18, 0.6);
     } else {
         // Landshaft (albom) rejimida butun maydon keng ko'rinadi
         const mobileZoomBoost = isMobileView ? 1.08 : 1.0;
@@ -4500,6 +4500,8 @@ function startSinglePlayer(opts) {
     waitingScreen.classList.add('hidden');
     menuScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
+    updateTelegramBackButton();
+    updateTelegramBackButton();
     chatContainer.classList.add('hidden');
     btnToggleChat.classList.add('hidden');
     isPaused = false;
@@ -5760,6 +5762,7 @@ socket.on('gameStart', (data) => {
     multiMenu.classList.add('hidden');
     menuScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
+    updateTelegramBackButton();
     isPaused = false;
     isDragging = false;
     isWallPlacementMode = false;
@@ -6989,14 +6992,14 @@ function gameLoop(now) {
                 targetState = 'load';
             }
             
-            // Aiming zoom logic: kamon tortayotganda faqat o'yinchi yaqinlashadi, raqib ko'rinmaydi
+            // Aiming zoom logic: kamon tortayotganda o'yinchi mo'tadil yaqinlashadi, haddan tashqari yaqin kelmaydi
             if (cameraState === 'static' || cameraState === 'aiming' || cameraState === 'recover' || cameraState === 'normal') {
                 cameraState = 'aiming';
                 const isPortrait = isPortraitMode();
-                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 110 : 85) : (isPortrait ? -110 : -85)); 
-                cameraTargetY = model.position.y + 130;
-                // Yaqindan ko'rinish
-                cameraZoomTarget = isPortrait ? 1.45 : 1.75;
+                cameraTargetX = model.position.x + (idx === 0 ? (isPortrait ? 60 : 70) : (isPortrait ? -60 : -70)); 
+                cameraTargetY = model.position.y + (isPortrait ? 85 : 95);
+                // Yaqindan mo'tadil ko'rinish
+                cameraZoomTarget = isPortrait ? Math.min(baseZoom * 1.35, 0.65) : Math.min(baseZoom * 1.3, 1.15);
             }
         } else if (!isDragging && cameraState === 'aiming') {
             // Revert back when stopped aiming: yana butun maydon va raqib ko'rinadigan umumiy ko'rinishga qaytish
@@ -7769,8 +7772,79 @@ const ALL_MODAL_IDS = [
     'multi-menu',
     'single-mode-modal',
     'level-select-modal',
-    'game-options-modal'
+    'game-options-modal',
+    'friend-add-modal'
 ];
+
+function updateTelegramBackButton() {
+    if (!window.Telegram?.WebApp?.BackButton) return;
+    try {
+        const isModalOpen = ALL_MODAL_IDS.some(id => {
+            const el = document.getElementById(id);
+            return el && !el.classList.contains('hidden');
+        });
+        const inGameModalEl = document.getElementById('in-game-modal');
+        const isInGameModalOpen = inGameModalEl && !inGameModalEl.classList.contains('hidden');
+        const isInGame = gameScreen && !gameScreen.classList.contains('hidden');
+
+        if (isModalOpen || isInGameModalOpen || isInGame) {
+            window.Telegram.WebApp.BackButton.show();
+        } else {
+            window.Telegram.WebApp.BackButton.hide();
+        }
+    } catch (e) {
+        console.warn('Telegram BackButton error:', e);
+    }
+}
+
+function handleGlobalBack() {
+    // 1. Agar biron menyu modali ochiq bo'lsa, uni yopamiz
+    for (const id of ALL_MODAL_IDS) {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) {
+            closeModalSafely(el);
+            updateTelegramBackButton();
+            return;
+        }
+    }
+    
+    // 2. Agar o'yin (jang) ekranida bo'lsa:
+    const inGameModalEl = document.getElementById('in-game-modal');
+    const isInGameModalOpen = inGameModalEl && !inGameModalEl.classList.contains('hidden');
+    const isInGame = gameScreen && !gameScreen.classList.contains('hidden');
+
+    if (isInGame) {
+        if (isInGameModalOpen) {
+            // Menyu ochiq turganda yana ortga bosilsa - asosiy menyuga chiqish
+            inGameModalEl.classList.add('hidden');
+            location.reload();
+        } else {
+            // O'yin ichida turgan paytda - o'yin ichki menyusini ochamiz
+            if (inGameMenuBtn) {
+                inGameMenuBtn.click();
+            } else if (inGameModalEl) {
+                inGameModalEl.classList.remove('hidden');
+            }
+        }
+        updateTelegramBackButton();
+        return;
+    }
+
+    updateTelegramBackButton();
+}
+
+if (window.Telegram?.WebApp?.BackButton) {
+    try {
+        window.Telegram.WebApp.BackButton.onClick(handleGlobalBack);
+    } catch (e) {
+        console.warn('Telegram BackButton onClick error:', e);
+    }
+}
+
+const btnInGameBack = document.getElementById('btn-in-game-back');
+if (btnInGameBack) {
+    btnInGameBack.addEventListener('click', handleGlobalBack);
+}
 
 function closeModalSafely(modalEl, e) {
     if (e) {
@@ -7792,6 +7866,7 @@ function closeModalSafely(modalEl, e) {
         }, 400);
     }
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    updateTelegramBackButton();
 }
 
 function openModalSafely(modalEl, e) {
@@ -7816,6 +7891,7 @@ function openModalSafely(modalEl, e) {
     }
     if (menuScreen) menuScreen.classList.add('hidden');
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    updateTelegramBackButton();
 }
 
 // Settings Modal

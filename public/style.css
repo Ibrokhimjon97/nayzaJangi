@@ -115,6 +115,7 @@ body, html {
     row-gap: 0;
     width: 100%;
     padding: clamp(8px, 2vw, 20px) clamp(10px, 3vw, 40px);
+    padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
     transition: opacity 0.3s;
 }
 
@@ -779,16 +780,31 @@ body, html {
     bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
     z-index: 125;
     width: auto;
-    min-width: clamp(64px, 8vw, 92px);
-    padding: clamp(6px, 1vw, 10px) clamp(8px, 1.4vw, 15px) !important;
+    min-width: clamp(56px, 7vw, 80px);
+    padding: clamp(6px, 1vw, 10px) clamp(8px, 1.4vw, 14px) !important;
     font-size: clamp(0.64rem, 0.9vw, 0.9rem) !important;
     border-radius: clamp(10px, 1.4vw, 14px) !important;
     margin: 0;
 }
 
+#btn-in-game-back {
+    pointer-events: auto;
+    position: absolute;
+    left: max(calc(var(--menu-left-safe) + 84px), clamp(90px, 10.5vw, 120px));
+    bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
+    z-index: 125;
+    width: auto;
+    min-width: clamp(56px, 7vw, 80px);
+    padding: clamp(6px, 1vw, 10px) clamp(8px, 1.4vw, 14px) !important;
+    font-size: clamp(0.64rem, 0.9vw, 0.9rem) !important;
+    border-radius: clamp(10px, 1.4vw, 14px) !important;
+    margin: 0;
+    background: linear-gradient(180deg, #475569, #334155);
+}
+
 #music-toggle-btn {
     position: absolute;
-    left: max(calc(var(--menu-left-safe) + 72px), clamp(78px, 9.5vw, 110px));
+    left: max(calc(var(--menu-left-safe) + 168px), clamp(174px, 19vw, 204px));
     bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
     z-index: 126;
     width: clamp(40px, 5.5vw, 50px);
@@ -918,6 +934,7 @@ body, html {
 
     .hud {
         padding: 8px 10px;
+        padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr);
         column-gap: 4px;
     }
@@ -975,44 +992,102 @@ body, html {
         line-height: 1.2;
     }
 
+    /* Landshaft rejimida barcha 8 ta tugma bir xil o'lchamda, qator bo'lib, ustma-ust tushmaydi */
     .shield-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.5rem;
-        bottom: 8px;
-        right: 12px;
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 10px !important;
     }
 
     .super-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.4rem;
-        bottom: 8px;
-        right: 70px;
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 62px !important;
     }
 
     .duck-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.2rem;
-        bottom: 8px;
-        right: 128px;
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 114px !important;
     }
 
     .double-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.05rem;
-        bottom: 8px;
-        right: 186px;
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.1rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 166px !important;
     }
 
     .wall-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.1rem;
-        bottom: 8px;
-        right: 238px;
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 218px !important;
+    }
+
+    .crow-btn {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 270px !important;
+    }
+
+    .artillery-btn {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 322px !important;
+    }
+
+    .fire-btn {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.15rem !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        right: 374px !important;
+    }
+
+    /* Chap tomondagi tugmalar landshaftda: Menyu, Ortga, Musiqa, Emote tartib bilan */
+    #in-game-menu-btn {
+        left: 8px !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        min-width: 48px !important;
+        padding: 5px 8px !important;
+        font-size: 0.65rem !important;
+    }
+
+    #btn-in-game-back {
+        left: 62px !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        min-width: 48px !important;
+        padding: 5px 8px !important;
+        font-size: 0.65rem !important;
+    }
+
+    #music-toggle-btn {
+        left: 118px !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .emote-btn {
+        left: 162px !important;
+        bottom: clamp(6px, 1.5vh, 12px) !important;
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1rem !important;
     }
 
 
@@ -1121,6 +1196,7 @@ body, html {
 
     .hud {
         padding: 6px 8px;
+        padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.2fr);
         column-gap: 3px;
     }
@@ -1173,6 +1249,7 @@ body, html {
     .hud {
         grid-template-columns: minmax(0, 1.15fr) minmax(54px, auto) minmax(0, 1.15fr);
         padding: 5px 6px;
+        padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         gap: 3px;
     }
 
@@ -1278,6 +1355,7 @@ body, html {
     .hud {
         grid-template-columns: minmax(0, 1.05fr) minmax(48px, auto) minmax(0, 1.05fr);
         padding: 4px 5px;
+        padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         column-gap: 2px;
     }
 
@@ -1313,59 +1391,99 @@ body, html {
     }
 
     #in-game-menu-btn {
-        min-width: 46px;
+        min-width: 44px;
         padding: 4px 6px !important;
         font-size: 0.58rem !important;
-        left: max(var(--menu-left-safe), 5px);
-        bottom: max(var(--menu-bottom-safe), 5px);
+        left: 5px !important;
+        bottom: 5px !important;
+    }
+
+    #btn-in-game-back {
+        min-width: 44px;
+        padding: 4px 6px !important;
+        font-size: 0.58rem !important;
+        left: 54px !important;
+        bottom: 5px !important;
     }
 
     #music-toggle-btn {
-        left: max(var(--menu-left-safe), 56px);
-        bottom: max(var(--menu-bottom-safe), 5px);
-        width: 36px;
-        height: 36px;
-        font-size: 0.88rem;
+        left: 104px !important;
+        bottom: 5px !important;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.88rem !important;
     }
 
     .emote-btn {
-        left: max(var(--menu-left-safe), 96px);
-        bottom: max(var(--menu-bottom-safe), 5px);
-        width: 36px;
-        height: 36px;
-        font-size: 0.95rem;
+        left: 144px !important;
+        bottom: 5px !important;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .shield-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 6px !important;
+        bottom: 5px !important;
+        font-size: 1rem !important;
     }
 
     .super-btn {
-        min-width: 42px;
-        min-height: 42px;
-        right: 50px;
-        bottom: 5px;
-        font-size: 1.1rem;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 51px !important;
+        bottom: 5px !important;
+        font-size: 1rem !important;
     }
 
     .duck-btn {
-        min-width: 42px;
-        min-height: 42px;
-        right: 98px;
-        bottom: 5px;
-        font-size: 0.95rem;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 96px !important;
+        bottom: 5px !important;
+        font-size: 0.95rem !important;
     }
 
     .double-btn {
-        min-width: 42px;
-        min-height: 42px;
-        right: 146px;
-        bottom: 5px;
-        font-size: 0.86rem;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 141px !important;
+        bottom: 5px !important;
+        font-size: 0.86rem !important;
     }
 
     .wall-btn {
-        min-width: 42px;
-        min-height: 42px;
-        right: 194px;
-        bottom: 5px;
-        font-size: 0.92rem;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 186px !important;
+        bottom: 5px !important;
+        font-size: 0.92rem !important;
+    }
+
+    .crow-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 231px !important;
+        bottom: 5px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .artillery-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 276px !important;
+        bottom: 5px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .fire-btn {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        right: 321px !important;
+        bottom: 5px !important;
+        font-size: 0.95rem !important;
     }
 
 
@@ -2425,7 +2543,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 .emote-btn {
     position: absolute;
     bottom: max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px));
-    left: max(calc(var(--menu-left-safe) + 124px), clamp(130px, 16vw, 168px));
+    left: max(calc(var(--menu-left-safe) + 218px), clamp(224px, 24vw, 256px));
     z-index: 126;
     font-size: clamp(1.05rem, 1.8vw, 1.35rem);
     background: rgba(30, 41, 59, 0.85);
@@ -2627,6 +2745,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     /* HUD paneli: tepada ixcham va chiroyli */
     .hud {
         padding: 8px 10px !important;
+        padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 38px)) !important;
         grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) !important;
         gap: 6px !important;
     }
@@ -2707,12 +2826,19 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         font-size: 1.15rem !important;
     }
 
-    /* Chap tomondagi tugmalar: Menyu, Musiqa, Emote, Chat */
+    /* Chap tomondagi tugmalar: Menyu, Ortga, Musiqa, Emote, Chat */
     #in-game-menu-btn {
         bottom: 12px !important;
         left: 12px !important;
-        padding: 8px 14px !important;
-        font-size: 0.74rem !important;
+        padding: 8px 10px !important;
+        font-size: 0.72rem !important;
+        min-height: 38px !important;
+    }
+    #btn-in-game-back {
+        bottom: 12px !important;
+        left: 68px !important;
+        padding: 8px 10px !important;
+        font-size: 0.72rem !important;
         min-height: 38px !important;
     }
     #music-toggle-btn {
