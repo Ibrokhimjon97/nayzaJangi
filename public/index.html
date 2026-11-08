@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=82">
+    <link rel="stylesheet" href="style.css?v=83">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -463,6 +463,87 @@
                     style="background: #475569; margin-top: 10px;">Yopish</button>
             </div>
 
+            <!-- Tilni Tanlash Modali (First Launch Language Selector Modal) -->
+            <div id="language-select-modal" class="screen hidden panel center-panel language-select-modal" data-scrollable="true">
+                <div class="lang-modal-header">
+                    <div class="lang-modal-icon">🌍</div>
+                    <h2 id="txt-lang-modal-title">Tilni tanlang / Choose Language</h2>
+                    <p id="txt-lang-modal-sub" class="lang-modal-subtitle">Davom etish uchun o'yin tilini tanlang</p>
+                </div>
+
+                <div class="lang-carousel-container">
+                    <button type="button" class="lang-nav-btn lang-nav-prev" id="btn-lang-prev" aria-label="Oldingi">‹</button>
+                    
+                    <div class="lang-carousel" id="lang-carousel-track" data-scrollable="true">
+                        <!-- 1. O'zbekcha -->
+                        <div class="lang-card" data-lang="uz">
+                            <div class="lang-card-flag">🇺🇿</div>
+                            <div class="lang-card-name">O'zbekcha</div>
+                            <div class="lang-card-desc">O'zbek tili</div>
+                            <button type="button" class="primary-btn lang-card-btn">Tanlash</button>
+                        </div>
+
+                        <!-- 2. Русский -->
+                        <div class="lang-card" data-lang="ru">
+                            <div class="lang-card-flag">🇷🇺</div>
+                            <div class="lang-card-name">Русский</div>
+                            <div class="lang-card-desc">Русский язык</div>
+                            <button type="button" class="primary-btn lang-card-btn">Выбрать</button>
+                        </div>
+
+                        <!-- 3. English -->
+                        <div class="lang-card" data-lang="en">
+                            <div class="lang-card-flag">🇬🇧</div>
+                            <div class="lang-card-name">English</div>
+                            <div class="lang-card-desc">Global language</div>
+                            <button type="button" class="primary-btn lang-card-btn">Select</button>
+                        </div>
+
+                        <!-- 4. Türkçe -->
+                        <div class="lang-card" data-lang="tr">
+                            <div class="lang-card-flag">🇹🇷</div>
+                            <div class="lang-card-name">Türkçe</div>
+                            <div class="lang-card-desc">Türk dili</div>
+                            <button type="button" class="primary-btn lang-card-btn">Seç</button>
+                        </div>
+
+                        <!-- 5. Azərbaycanca -->
+                        <div class="lang-card" data-lang="az">
+                            <div class="lang-card-flag">🇦🇿</div>
+                            <div class="lang-card-name">Azərbaycanca</div>
+                            <div class="lang-card-desc">Azərbaycan dili</div>
+                            <button type="button" class="primary-btn lang-card-btn">Seçin</button>
+                        </div>
+
+                        <!-- 6. Қазақша -->
+                        <div class="lang-card" data-lang="kk">
+                            <div class="lang-card-flag">🇰🇿</div>
+                            <div class="lang-card-name">Қазақша</div>
+                            <div class="lang-card-desc">Қазақ тілі</div>
+                            <button type="button" class="primary-btn lang-card-btn">Таңдау</button>
+                        </div>
+
+                        <!-- 7. Кыргызча -->
+                        <div class="lang-card" data-lang="ky">
+                            <div class="lang-card-flag">🇰🇬</div>
+                            <div class="lang-card-name">Кыргызча</div>
+                            <div class="lang-card-desc">Кыргыз тили</div>
+                            <button type="button" class="primary-btn lang-card-btn">Тандоо</button>
+                        </div>
+
+                        <!-- 8. Тоҷикӣ -->
+                        <div class="lang-card" data-lang="tg">
+                            <div class="lang-card-flag">🇹🇯</div>
+                            <div class="lang-card-name">Тоҷикӣ</div>
+                            <div class="lang-card-desc">Забони тоҷикӣ</div>
+                            <button type="button" class="primary-btn lang-card-btn">Интихоб</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="lang-nav-btn lang-nav-next" id="btn-lang-next" aria-label="Keyingi">›</button>
+                </div>
+            </div>
+
             <!-- Settings Modal -->
             <div id="settings-modal" class="screen hidden panel center-panel">
                 <button type="button" id="btn-close-settings-x" class="modal-close-x" aria-label="Yopish">✕</button>
@@ -471,14 +552,14 @@
                     <label id="txt-lang-lbl" style="display:block; margin-bottom:5px;">Dastur tili:</label>
                     <select id="select-lang"
                         style="width:100%; padding:8px; border-radius:5px; background:#334155; color:white; border:none; margin-bottom:15px;">
-                        <option value="uz">O'zbekcha</option>
-                        <option value="ru">Русский</option>
-                        <option value="en">English</option>
-                        <option value="tg">Тоҷикӣ</option>
-                        <option value="ky">Кыргызча</option>
-                        <option value="kk">Қазақша</option>
-                        <option value="tr">Türkçe</option>
-                        <option value="az">Azərbaycanca</option>
+                        <option value="uz">🇺🇿 O'zbekcha</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="tr">🇹🇷 Türkçe</option>
+                        <option value="az">🇦🇿 Azərbaycanca</option>
+                        <option value="kk">🇰🇿 Қазақша</option>
+                        <option value="ky">🇰🇬 Кыргызча</option>
+                        <option value="tg">🇹🇯 Тоҷикӣ</option>
                     </select>
                     <label id="txt-settings-music-volume" for="settings-music-volume"
                         style="display:block; margin-bottom:5px;">Fon musiqa balandligi:</label>
@@ -1232,7 +1313,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=82"></script>
+    <script src="client.js?v=83"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {

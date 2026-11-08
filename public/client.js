@@ -3652,12 +3652,13 @@ function updateCampaignUI() {
     const menuTierBadge = document.getElementById('menu-tier-badge');
     if (menuTierBadge) {
         const score = Number(myStats.score || 0);
-        let tier = "🥉 Bronza";
+                const t = (typeof translations !== 'undefined' && translations[myProfile?.lang]) ? translations[myProfile.lang] : {};
+        let tier = t.tierBronze || "🥉 Bronza";
         let tierColor = "#d97706";
-        if (score >= 3000) { tier = "👑 Afsona"; tierColor = "#ec4899"; }
-        else if (score >= 2000) { tier = "💎 Olmos"; tierColor = "#38bdf8"; }
-        else if (score >= 1200) { tier = "🥇 Oltin"; tierColor = "#eab308"; }
-        else if (score >= 600) { tier = "🥈 Kumush"; tierColor = "#94a3b8"; }
+        if (score >= 3000) { tier = t.tierLegend || "👑 Afsona"; tierColor = "#ec4899"; }
+        else if (score >= 2000) { tier = t.tierDiamond || "💎 Olmos"; tierColor = "#38bdf8"; }
+        else if (score >= 1200) { tier = t.tierGold || "🥇 Oltin"; tierColor = "#eab308"; }
+        else if (score >= 600) { tier = t.tierSilver || "🥈 Kumush"; tierColor = "#94a3b8"; }
         menuTierBadge.innerText = tier;
         menuTierBadge.style.color = tierColor;
     }
@@ -5655,15 +5656,18 @@ function startSinglePlayer(opts) {
     }
     updateSuperUI();
 
+        const botNames = { uz: "Kompyuter", ru: "Компьютер", en: "PC", tr: "Bilgisayar", az: "Kompüter", kk: "Компьютер", ky: "Компьютер", tg: "Компютер" };
+    const currentBotName = botNames[myProfile?.lang] || "Kompyuter";
+
     if (myPlayerIndex === 0) {
         p1Name.innerText = myProfile.name;
         document.getElementById('p1-flag').innerText = myProfile.flag;
-        p2Name.innerText = (translations[myProfile.lang].singleBtn.includes("Kompyuter") ? "Kompyuter" : "PC") + ` (Lv.${level})`;
+        p2Name.innerText = `${currentBotName} (Lv.${level})`;
         document.getElementById('p2-flag').innerText = "🤖";
     } else {
         p2Name.innerText = myProfile.name;
         document.getElementById('p2-flag').innerText = myProfile.flag;
-        p1Name.innerText = (translations[myProfile.lang].singleBtn.includes("Kompyuter") ? "Kompyuter" : "PC") + ` (Lv.${level})`;
+        p1Name.innerText = `${currentBotName} (Lv.${level})`;
         document.getElementById('p1-flag').innerText = "🤖";
     }
     applyHudSideRoles();
@@ -6821,6 +6825,7 @@ function returnToMainMenu() {
     if (menuScreen) menuScreen.classList.remove('hidden');
     if (typeof updateCampaignUI === 'function') updateCampaignUI();
     if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+        if (typeof checkFirstTimeLanguageModal === 'function') checkFirstTimeLanguageModal();
     if (typeof updateTelegramBackButton === 'function') updateTelegramBackButton();
 }
 
@@ -9266,30 +9271,133 @@ maybeApplyLegacy500Bonus(false);
 const translations = {
     uz: {
         title: "Nayza Jangi",
-        subtitle: "",
-        singleBtn: "Yakkalik o'yin (Kompyuterga qarshi)",
-        multiBtn: "Onlayn (Haqiqiy raqibga qarshi)",
-        aboutBtn: "O'yin haqida",
-        settings: "Sozlamalar",
-        rating: "Reyting",
+        subtitle: "Jang rejimini tanlang",
+        stageLabel: "Kampaniya",
+        scoreLabel: "Ball",
+        tierBronze: "🥉 Bronza",
+        tierSilver: "🥈 Kumush",
+        tierGold: "🥇 Oltin",
+        tierDiamond: "💎 Olmos",
+        tierLegend: "👑 Afsona",
+        topInvites: "⚔️ Takliflar",
+        topProfile: "👤 Profil",
+        topSettings: "⚙️ Sozlamalar",
+        topLogout: "🚪 Chiqish",
+
+        // Carousel Cardlari
+        cardSingleBadge: "⚔️ 100+ BOSQICH",
+        cardSingleName: "Kampaniya",
+        cardSingleDesc: "100 ta qiziqarli bosqich va qudratli sarkardalar bilan jang",
+        cardSingleBtn: "Yakkalik o'yin",
+
+        cardMultiBadge: "⚡ 1v1 JONLI",
+        cardMultiName: "Onlayn Duel",
+        cardMultiDesc: "Haqiqiy raqiblar va do'stlar bilan jonli nayza jangi",
+        cardMultiBtn: "Onlayn o'yin",
+
+        cardInvitesBadge: "⚔️ TAKLIFLAR",
+        cardInvitesName: "Duelga Takliflar",
+        cardInvitesDesc: "Kelgan takliflarni qabul qiling va jang vaqtini belgilang",
+        cardInvitesBtn: "Takliflar ro'yxati",
+
+        cardRewardsBadge: "🎁 BEPUL BONUS",
+        cardRewardsName: "Kunlik Sovg'alar",
+        cardRewardsDesc: "Har kuni kiring va bepul super kuchlar va resurslarni oling",
+        cardRewardsBtn: "Sovg'ani olish",
+
+        cardQuestsBadge: "🎯 KVESTLAR",
+        cardQuestsName: "Vazifalar",
+        cardQuestsDesc: "Topshiriqlarni bajaring va qo'shimcha ballar to'plang",
+        cardQuestsBtn: "Vazifalar",
+
+        cardShopBadge: "🛒 ARSENAL",
+        cardShopName: "Harbiy Do'kon",
+        cardShopDesc: "Super himoya, nayzalar va maxsus jangovar vositalar",
+        cardShopBtn: "Do'kon",
+
+        cardRatingBadge: "🏆 TOP-100",
+        cardRatingName: "Reyting",
+        cardRatingDesc: "Yetakchi kamonbozlar safiga kiring va chempionlikka erishing",
+        cardRatingBtn: "Reyting",
+
+        cardAboutBadge: "ℹ️ MA'LUMOT",
+        cardAboutName: "O'yin Haqida",
+        cardAboutDesc: "Qoidalar, muallif haqida va loyihani qo'llab-quvvatlash",
+        cardAboutBtn: "O'yin haqida",
+
+        // O'yin ichi (In-Game HUD)
+        inGameMenu: "Menyu",
+        inGameBack: "⬅ Ortga",
         wind: "SHAMOL",
-        waiting: "Kutilyapti...",
+        pause: "Pauza",
+        resume: "O'yinga qaytish",
+        sound: "Sozlamalar(ovoz)",
+        addFriend: "Do'stga qo'shish",
+        mainMenu: "Asosiy Menyu",
         yourTurn: "Sizning navbatingiz!",
         oppTurn: "Raqib navbati",
+        waiting: "Kutilyapti...",
         win: "Siz Yutdingiz! 🏆",
         lose: "Yutqazdingiz! 💀",
-        pause: "Pauza",
-        resume: "Davom etish",
-        sound: "Sozlamalar(ovoz)",
-        mainMenu: "Asosiy Menyu",
+        playAgainBtn: "Yana o'ynash",
+        menuBtn: "Bosh menyu",
+        rematchBtn: "⚔️ Revansh taklif qilish",
+        viewRatingBtn: "🏆 Reytingni ko'rish",
+        opponentLeft: "Raqib o'yinni tark etdi",
+
+        // Sozlamalar modali
+        settingsTitle: "Sozlamalar",
+        langLabel: "Dastur tili:",
+        musicVol: "Fon musiqa balandligi:",
+        sfxVol: "Maxsus effektlar (SFX) balandligi:",
+        musicTrack: "Fon musiqasi:",
+        helpBtn: "Yordam",
         save: "Saqlash",
         close: "Yopish",
-        playAgainBtn: "Yana o'ynash",
-        nextLevelBtn: "Keyingi bosqich",
-        menuBtn: "Bosh menyu",
+        settingsSaved: "Sozlamalar saqlandi!",
+
+        // Profil
+        profileTitle: "Profil",
+        nameLabel: "Ism:",
+        avatarLabel: "Avatar (Rasm):",
+        charLabel: "Qahramon:",
+        flagLabel: "Mamlakat bayrog'i:",
+        spearLabel: "Nayza modeli:",
+
+        // Yakkalik & Level modallari
+        singleModalTitle: "Yakkalik o'yin",
+        chooseMode: "Tanlang:",
+        continueLevel: "Avvalgi levelni davom etish",
+        selectLevel: "Level tanlash",
+        newGame: "Yangi o'yin boshlash",
+        cancel: "Bekor qilish",
+        levelSelectTitle: "Level tanlash",
         levelLabel: "Daraja",
         campaignStage: "Kampaniya bosqichi",
         resetCampaign: "Kampaniyani qayta boshlash",
+
+        // Onlayn multiplayer modal
+        multiModalTitle: "Onlayn O'yin",
+        createGame: "O'yin yaratish",
+        giveCodeToFriend: "Do'stingizga shu kodni bering:",
+        inviteViaTg: "📲 Telegramda do'stni chaqirish",
+        joinGame: "O'yinga qo'shilish",
+        enterCode: "KOD",
+        joinBtn: "Qo'shilish",
+        gameNotFound: "O'yin topilmadi!",
+        randomOpponent: "Tasodifiy raqib",
+        friendsTitle: "Do'stlar",
+        refreshBtn: "Yangilash",
+        noFriends: "Do'stlar yo'q.",
+        backBtn: "Orqaga",
+
+        // Qahramon tanlash
+        charSelectTitle: "Qahramoningizni tanlang",
+        charSelectSub: "Jangga kirishdan oldin jangchi modelini tanlang",
+        enterBattle: "⚔️ Jangga kirish",
+        selectedBadge: "Tanlangan",
+
+        // O'yin sozlamalari (Options)
         optionsTitle: "O'yin Sozlamalari",
         mapLabel: "Maydon (Xarita):",
         weatherLabel: "Ob-havo:",
@@ -9297,8 +9405,6 @@ const translations = {
         animalsLabel: "O'tlab yuruvchi hayvonlar",
         difficultyLabel: "Qiyinlik:",
         optionCharLabel: "Jangchi modeli:",
-        createGame: "O'yinni Yaratish",
-        cancel: "Bekor qilish",
         mapField: "🌿 Yashil Dala",
         mapCastle: "🏰 Qal'a",
         mapDesert: "🏜️ Cho'l",
@@ -9311,40 +9417,135 @@ const translations = {
         diffEasy: "Oson",
         diffNormal: "O'rtacha",
         diffHard: "Qiyin",
-        musicVolumeLabel: "Fon musiqa balandligi",
-        musicMuteLabel: "Ovozni o'chirish",
-        leaderboardLoading: "Reyting yuklanmoqda...",
-        leaderboardEmpty: "Hozircha reyting yo'q.",
-        charSelectTitle: "Qahramoningizni tanlang",
-        charSelectSub: "Jangga kirishdan oldin jangchi modelini tanlang",
-        enterBattle: "⚔️ Jangga kirish",
-        selectedBadge: "Tanlangan"
+
+        // Til tanlash modali
+        langModalTitle: "Tilni tanlang",
+        langModalSub: "Davom etish uchun o'yin tilini tanlang",
+        langSelectBtn: "Tanlash",
+        welcomeToast: "🇺🇿 O'zbek tili tanlandi! Xush kelibsiz!"
     },
+
     ru: {
         title: "Битва Копий",
-        subtitle: "Древние 3D Воины",
-        singleBtn: "Одиночная (Против ПК)",
-        multiBtn: "Онлайн (Против игрока)",
-        settings: "Настройки",
-        rating: "Рейтинг",
+        subtitle: "Выберите режим боя",
+        stageLabel: "Кампания",
+        scoreLabel: "Очки",
+        tierBronze: "🥉 Бронза",
+        tierSilver: "🥈 Серебро",
+        tierGold: "🥇 Золото",
+        tierDiamond: "💎 Алмаз",
+        tierLegend: "👑 Легенда",
+        topInvites: "⚔️ Приглашения",
+        topProfile: "👤 Профиль",
+        topSettings: "⚙️ Настройки",
+        topLogout: "🚪 Выход",
+
+        cardSingleBadge: "⚔️ 100+ ЭТАПОВ",
+        cardSingleName: "Кампания",
+        cardSingleDesc: "100 захватывающих уровней и битвы с боссами",
+        cardSingleBtn: "Одиночная игра",
+
+        cardMultiBadge: "⚡ 1v1 ОНЛАЙН",
+        cardMultiName: "Онлайн Дуэль",
+        cardMultiDesc: "Сражайтесь онлайн с реальными соперниками и друзьями",
+        cardMultiBtn: "Онлайн игра",
+
+        cardInvitesBadge: "⚔️ ПРИГЛАШЕНИЯ",
+        cardInvitesName: "Приглашения на Дуэль",
+        cardInvitesDesc: "Принимайте вызовы и назначайте время боя",
+        cardInvitesBtn: "Список приглашений",
+
+        cardRewardsBadge: "🎁 БЕСПЛАТНЫЙ БОНУС",
+        cardRewardsName: "Ежедневные Награды",
+        cardRewardsDesc: "Заходите каждый день и получайте бесплатные бонусы",
+        cardRewardsBtn: "Забрать награду",
+
+        cardQuestsBadge: "🎯 КВЕСТЫ",
+        cardQuestsName: "Задания",
+        cardQuestsDesc: "Выполняйте задания и зарабатывайте очки",
+        cardQuestsBtn: "Задания",
+
+        cardShopBadge: "🛒 АРСЕНАЛ",
+        cardShopName: "Оружейная",
+        cardShopDesc: "Супер щиты, копья и боевая экипировка",
+        cardShopBtn: "Магазин",
+
+        cardRatingBadge: "🏆 ТОП-100",
+        cardRatingName: "Рейтинг",
+        cardRatingDesc: "Войдите в число лучших копейщиков и завоюйте чемпионство",
+        cardRatingBtn: "Рейтинг",
+
+        cardAboutBadge: "ℹ️ ИНФОРМАЦИЯ",
+        cardAboutName: "Об Игре",
+        cardAboutDesc: "Правила, контакты автора и информация о проекте",
+        cardAboutBtn: "Об игре",
+
+        inGameMenu: "Меню",
+        inGameBack: "⬅ Назад",
         wind: "ВЕТЕР",
-        waiting: "Ожидание...",
-        yourTurn: "Ваш ход!",
-        oppTurn: "Ход противника",
-        win: "Вы победили! 🏆",
-        lose: "Вы проиграли! 💀",
         pause: "Пауза",
         resume: "Продолжить",
         sound: "Звук",
+        addFriend: "Добавить в друзья",
         mainMenu: "Главное меню",
+        yourTurn: "Ваш ход!",
+        oppTurn: "Ход противника",
+        waiting: "Ожидание...",
+        win: "Вы победили! 🏆",
+        lose: "Вы проиграли! 💀",
+        playAgainBtn: "Играть снова",
+        menuBtn: "Главное меню",
+        rematchBtn: "⚔️ Реванш",
+        viewRatingBtn: "🏆 Рейтинг",
+        opponentLeft: "Противник покинул игру",
+
+        settingsTitle: "Настройки",
+        langLabel: "Язык приложения:",
+        musicVol: "Громкость музыки:",
+        sfxVol: "Громкость спецэффектов (SFX):",
+        musicTrack: "Фоновая музыка:",
+        helpBtn: "Помощь",
         save: "Сохранить",
         close: "Закрыть",
-        playAgainBtn: "Играть снова",
-        nextLevelBtn: "Следующий этап",
-        menuBtn: "Главное меню",
+        settingsSaved: "Настройки сохранены!",
+
+        profileTitle: "Профиль",
+        nameLabel: "Имя:",
+        avatarLabel: "Аватар:",
+        charLabel: "Герой:",
+        flagLabel: "Флаг страны:",
+        spearLabel: "Модель копья:",
+
+        singleModalTitle: "Одиночная игра",
+        chooseMode: "Выберите:",
+        continueLevel: "Продолжить текущий уровень",
+        selectLevel: "Выбор уровня",
+        newGame: "Начать новую игру",
+        cancel: "Отмена",
+        levelSelectTitle: "Выбор уровня",
         levelLabel: "Уровень",
         campaignStage: "Этап кампании",
         resetCampaign: "Сбросить кампанию",
+
+        multiModalTitle: "Онлайн Игра",
+        createGame: "Создать игру",
+        giveCodeToFriend: "Передайте этот код другу:",
+        inviteViaTg: "📲 Позвать друга в Telegram",
+        joinGame: "Присоединиться",
+        enterCode: "КОД",
+        joinBtn: "Войти",
+        gameNotFound: "Игра не найдена!",
+        randomOpponent: "Случайный соперник",
+        friendsTitle: "Друзья",
+        refreshBtn: "Обновить",
+        noFriends: "Нет друзей.",
+        backBtn: "Назад",
+
+        charSelectTitle: "Выберите героя",
+        charSelectSub: "Выберите модель воина перед боем",
+        enterBattle: "⚔️ В бой",
+        selectedBadge: "Выбран",
+
         optionsTitle: "Настройки игры",
         mapLabel: "Карта:",
         weatherLabel: "Погода:",
@@ -9352,8 +9553,6 @@ const translations = {
         animalsLabel: "Пасущиеся животные",
         difficultyLabel: "Сложность:",
         optionCharLabel: "Модель воина:",
-        createGame: "Создать игру",
-        cancel: "Отмена",
         mapField: "🌿 Зеленое поле",
         mapCastle: "🏰 Замок",
         mapDesert: "🏜️ Пустыня",
@@ -9366,41 +9565,134 @@ const translations = {
         diffEasy: "Легко",
         diffNormal: "Нормально",
         diffHard: "Сложно",
-        musicVolumeLabel: "Громкость фоновой музыки",
-        musicMuteLabel: "Выключить звук",
-        leaderboardLoading: "Загрузка рейтинга...",
-        leaderboardEmpty: "Рейтинг пока пуст.",
-        charSelectTitle: "Выберите героя",
-        charSelectSub: "Выберите модель воина перед боем",
-        enterBattle: "⚔️ В бой",
-        selectedBadge: "Выбран"
+
+        langModalTitle: "Выберите язык",
+        langModalSub: "Выберите язык для продолжения игры",
+        langSelectBtn: "Выбрать",
+        welcomeToast: "🇷🇺 Русский язык выбран! Добро пожаловать!"
     },
+
     en: {
         title: "Spear Clash",
-        subtitle: "",
-        singleBtn: "Singleplayer (vs PC)",
-        multiBtn: "Online (vs Player)",
-        aboutBtn: "About game",
-        settings: "Settings",
-        rating: "Rating",
+        subtitle: "Choose game mode",
+        stageLabel: "Campaign",
+        scoreLabel: "Score",
+        tierBronze: "🥉 Bronze",
+        tierSilver: "🥈 Silver",
+        tierGold: "🥇 Gold",
+        tierDiamond: "💎 Diamond",
+        tierLegend: "👑 Legend",
+        topInvites: "⚔️ Invites",
+        topProfile: "👤 Profile",
+        topSettings: "⚙️ Settings",
+        topLogout: "🚪 Logout",
+
+        cardSingleBadge: "⚔️ 100+ STAGES",
+        cardSingleName: "Campaign",
+        cardSingleDesc: "100 exciting stages and epic boss battles",
+        cardSingleBtn: "Singleplayer",
+
+        cardMultiBadge: "⚡ 1v1 LIVE",
+        cardMultiName: "Online Duel",
+        cardMultiDesc: "Real-time spear battles with friends and players",
+        cardMultiBtn: "Online Play",
+
+        cardInvitesBadge: "⚔️ INVITES",
+        cardInvitesName: "Duel Invites",
+        cardInvitesDesc: "Accept challenges and schedule match times",
+        cardInvitesBtn: "View Invites",
+
+        cardRewardsBadge: "🎁 FREE BONUS",
+        cardRewardsName: "Daily Rewards",
+        cardRewardsDesc: "Claim free super powers and rewards every day",
+        cardRewardsBtn: "Claim Reward",
+
+        cardQuestsBadge: "🎯 QUESTS",
+        cardQuestsName: "Daily Quests",
+        cardQuestsDesc: "Complete quests to earn bonus points and XP",
+        cardQuestsBtn: "Quests",
+
+        cardShopBadge: "🛒 ARSENAL",
+        cardShopName: "Armory Shop",
+        cardShopDesc: "Super shields, spears and special battle gear",
+        cardShopBtn: "Shop",
+
+        cardRatingBadge: "🏆 TOP-100",
+        cardRatingName: "Leaderboard",
+        cardRatingDesc: "Join the top spearmen and claim the championship",
+        cardRatingBtn: "Leaderboard",
+
+        cardAboutBadge: "ℹ️ INFO",
+        cardAboutName: "About Game",
+        cardAboutDesc: "Rules, developer contacts and project details",
+        cardAboutBtn: "About",
+
+        inGameMenu: "Menu",
+        inGameBack: "⬅ Back",
         wind: "WIND",
-        waiting: "Waiting...",
-        yourTurn: "Your turn!",
-        oppTurn: "Opponent's turn",
-        win: "You Win! 🏆",
-        lose: "You Lose! 💀",
         pause: "Pause",
         resume: "Resume",
         sound: "Sound",
+        addFriend: "Add Friend",
         mainMenu: "Main Menu",
+        yourTurn: "Your turn!",
+        oppTurn: "Opponent's turn",
+        waiting: "Waiting...",
+        win: "You Win! 🏆",
+        lose: "You Lose! 💀",
+        playAgainBtn: "Play Again",
+        menuBtn: "Main Menu",
+        rematchBtn: "⚔️ Request Rematch",
+        viewRatingBtn: "🏆 View Rating",
+        opponentLeft: "Opponent left the match",
+
+        settingsTitle: "Settings",
+        langLabel: "App language:",
+        musicVol: "Background music volume:",
+        sfxVol: "Sound effects (SFX) volume:",
+        musicTrack: "Background music:",
+        helpBtn: "Help",
         save: "Save",
         close: "Close",
-        playAgainBtn: "Play Again",
-        nextLevelBtn: "Next Level",
-        menuBtn: "Main Menu",
+        settingsSaved: "Settings saved!",
+
+        profileTitle: "Profile",
+        nameLabel: "Name:",
+        avatarLabel: "Avatar:",
+        charLabel: "Hero:",
+        flagLabel: "Country flag:",
+        spearLabel: "Spear model:",
+
+        singleModalTitle: "Singleplayer",
+        chooseMode: "Choose:",
+        continueLevel: "Continue current level",
+        selectLevel: "Select Level",
+        newGame: "Start new game",
+        cancel: "Cancel",
+        levelSelectTitle: "Select Level",
         levelLabel: "Level",
         campaignStage: "Campaign stage",
         resetCampaign: "Reset campaign",
+
+        multiModalTitle: "Online Game",
+        createGame: "Create Game",
+        giveCodeToFriend: "Give this code to a friend:",
+        inviteViaTg: "📲 Invite via Telegram",
+        joinGame: "Join Game",
+        enterCode: "CODE",
+        joinBtn: "Join",
+        gameNotFound: "Game not found!",
+        randomOpponent: "Random Opponent",
+        friendsTitle: "Friends",
+        refreshBtn: "Refresh",
+        noFriends: "No friends yet.",
+        backBtn: "Back",
+
+        charSelectTitle: "Choose Your Hero",
+        charSelectSub: "Select warrior model before battle",
+        enterBattle: "⚔️ Enter Battle",
+        selectedBadge: "Selected",
+
         optionsTitle: "Game Options",
         mapLabel: "Map:",
         weatherLabel: "Weather:",
@@ -9408,8 +9700,6 @@ const translations = {
         animalsLabel: "Grazing animals",
         difficultyLabel: "Difficulty:",
         optionCharLabel: "Warrior model:",
-        createGame: "Create Game",
-        cancel: "Cancel",
         mapField: "🌿 Green Field",
         mapCastle: "🏰 Castle",
         mapDesert: "🏜️ Desert",
@@ -9422,183 +9712,1013 @@ const translations = {
         diffEasy: "Easy",
         diffNormal: "Normal",
         diffHard: "Hard",
-        musicVolumeLabel: "Background music volume",
-        musicMuteLabel: "Mute audio",
-        leaderboardLoading: "Loading leaderboard...",
-        leaderboardEmpty: "No leaderboard entries yet.",
-        charSelectTitle: "Choose Your Hero",
-        charSelectSub: "Select warrior model before battle",
-        enterBattle: "⚔️ Enter Battle",
-        selectedBadge: "Selected"
+
+        langModalTitle: "Choose Language",
+        langModalSub: "Select your preferred language to continue",
+        langSelectBtn: "Select",
+        welcomeToast: "🇬🇧 English language selected! Welcome!"
     },
-    tg: {
-        title: "Ҷанги Найза",
-        subtitle: "Сарбозони қадимии 3D",
-        singleBtn: "Бозии танҳо (бар зидди компютер)",
-        multiBtn: "Онлайн (бар зидди бозингар)",
-        settings: "Танзимот",
-        rating: "Рейтинг",
-        wind: "ШАМОЛ",
-        waiting: "Интизорӣ...",
-        yourTurn: "Навбати шумо!",
-        oppTurn: "Навбати рақиб",
-        win: "Шумо бурдед! 🏆",
-        lose: "Шумо бохтед! 💀",
-        pause: "Таваққуф",
-        resume: "Идома",
-        sound: "Садо",
-        mainMenu: "Менюи асосӣ",
-        save: "Сабт",
-        close: "Пӯшидан"
+
+    tr: {
+        title: "Mızrak Savaşı",
+        subtitle: "Savaş modunu seçin",
+        stageLabel: "Sefer",
+        scoreLabel: "Puan",
+        tierBronze: "🥉 Bronz",
+        tierSilver: "🥈 Gümüş",
+        tierGold: "🥇 Altın",
+        tierDiamond: "💎 Elmas",
+        tierLegend: "👑 Efsane",
+        topInvites: "⚔️ Davetler",
+        topProfile: "👤 Profil",
+        topSettings: "⚙️ Ayarlar",
+        topLogout: "🚪 Çıkış",
+
+        cardSingleBadge: "⚔️ 100+ AŞAMA",
+        cardSingleName: "Sefer",
+        cardSingleDesc: "100 heyecanlı aşama ve güçlü komutanlarla savaş",
+        cardSingleBtn: "Tek Kişilik",
+
+        cardMultiBadge: "⚡ 1v1 CANLI",
+        cardMultiName: "Çevrim İçi Düello",
+        cardMultiDesc: "Gerçek rakipler ve arkadaşlarla canlı mızrak savaşı",
+        cardMultiBtn: "Çevrim İçi",
+
+        cardInvitesBadge: "⚔️ DAVETLER",
+        cardInvitesName: "Düello Davetleri",
+        cardInvitesDesc: "Gelen davetleri kabul edin ve maç vaktini belirleyin",
+        cardInvitesBtn: "Davet Listesi",
+
+        cardRewardsBadge: "🎁 ÜCRETSİZ BONUS",
+        cardRewardsName: "Günlük Ödüller",
+        cardRewardsDesc: "Her gün giriş yapın ve bedava ödüller kazanın",
+        cardRewardsBtn: "Ödülü Al",
+
+        cardQuestsBadge: "🎯 GÖREVLER",
+        cardQuestsName: "Görevler",
+        cardQuestsDesc: "Görevleri tamamlayarak ekstra puan toplayın",
+        cardQuestsBtn: "Görevler",
+
+        cardShopBadge: "🛒 CEPHANELİK",
+        cardShopName: "Savaş Mağazası",
+        cardShopDesc: "Süper kalkanlar, mızraklar ve özel teçhizat",
+        cardShopBtn: "Mağaza",
+
+        cardRatingBadge: "🏆 TOP-100",
+        cardRatingName: "Lider Tablosu",
+        cardRatingDesc: "En iyi mızrak savaşçıları arasına katılın ve şampiyon olun",
+        cardRatingBtn: "Sıralama",
+
+        cardAboutBadge: "ℹ️ BİLGİ",
+        cardAboutName: "Oyun Hakkında",
+        cardAboutDesc: "Kurallar, geliştirici iletişim ve oyun detayları",
+        cardAboutBtn: "Hakkında",
+
+        inGameMenu: "Menü",
+        inGameBack: "⬅ Geri",
+        wind: "RÜZGAR",
+        pause: "Duraklat",
+        resume: "Devam et",
+        sound: "Ses Ayarları",
+        addFriend: "Arkadaş Ekle",
+        mainMenu: "Ana Menü",
+        yourTurn: "Sıra sende!",
+        oppTurn: "Rakibin sırası",
+        waiting: "Bekleniyor...",
+        win: "Kazandın! 🏆",
+        lose: "Kaybettin! 💀",
+        playAgainBtn: "Tekrar Oyna",
+        menuBtn: "Ana Menü",
+        rematchBtn: "⚔️ Rövanş İste",
+        viewRatingBtn: "🏆 Sıralamayı Gör",
+        opponentLeft: "Rakip oyundan ayrıldı",
+
+        settingsTitle: "Ayarlar",
+        langLabel: "Uygulama dili:",
+        musicVol: "Müzik seviyesi:",
+        sfxVol: "Özel efektler (SFX):",
+        musicTrack: "Fon müziği:",
+        helpBtn: "Yardım",
+        save: "Kaydet",
+        close: "Kapat",
+        settingsSaved: "Ayarlar kaydedildi!",
+
+        profileTitle: "Profil",
+        nameLabel: "İsim:",
+        avatarLabel: "Avatar:",
+        charLabel: "Kahraman:",
+        flagLabel: "Ülke bayrağı:",
+        spearLabel: "Mızrak modeli:",
+
+        singleModalTitle: "Tek Kişilik Oyun",
+        chooseMode: "Seçin:",
+        continueLevel: "Mevcut seviyeden devam et",
+        selectLevel: "Seviye seç",
+        newGame: "Yeni oyun başlat",
+        cancel: "İptal",
+        levelSelectTitle: "Seviye Seçimi",
+        levelLabel: "Seviye",
+        campaignStage: "Sefer aşaması",
+        resetCampaign: "Seferi sıfırla",
+
+        multiModalTitle: "Çevrim İçi Oyun",
+        createGame: "Oyun Oluştur",
+        giveCodeToFriend: "Bu kodu arkadaşına ver:",
+        inviteViaTg: "📲 Telegram ile çağır",
+        joinGame: "Oyuna Katıl",
+        enterCode: "KOD",
+        joinBtn: "Katıl",
+        gameNotFound: "Oyun bulunamadı!",
+        randomOpponent: "Rastgele Rakip",
+        friendsTitle: "Arkadaşlar",
+        refreshBtn: "Yenile",
+        noFriends: "Arkadaş yok.",
+        backBtn: "Geri",
+
+        charSelectTitle: "Kahramanınızı Seçin",
+        charSelectSub: "Savaştan önce savaşçı modelini seçin",
+        enterBattle: "⚔️ Savaşa Başla",
+        selectedBadge: "Seçildi",
+
+        optionsTitle: "Oyun Ayarları",
+        mapLabel: "Harita:",
+        weatherLabel: "Hava Durumu:",
+        birdsLabel: "Uçan Kuşlar (Engel)",
+        animalsLabel: "Otlayan hayvanlar",
+        difficultyLabel: "Zorluk:",
+        optionCharLabel: "Savaşçı modeli:",
+        mapField: "🌿 Yeşil Çayır",
+        mapCastle: "🏰 Kale",
+        mapDesert: "🏜️ Çöl",
+        mapWinter: "❄️ Kış",
+        weatherSunny: "☀️ Güneşli",
+        weatherNight: "🌙 Gece",
+        weatherRain: "🌧️ Yağmur",
+        weatherStorm: "⛈️ Fırtına",
+        weatherSnow: "❄️ Kar",
+        diffEasy: "Kolay",
+        diffNormal: "Normal",
+        diffHard: "Zor",
+
+        langModalTitle: "Dil Seçin",
+        langModalSub: "Devam etmek için bir dil seçin",
+        langSelectBtn: "Seç",
+        welcomeToast: "🇹🇷 Türkçe seçildi! Hoş geldiniz!"
     },
-    ky: {
-        title: "Найза Согушу",
-        subtitle: "Байыркы 3D Жоокерлер",
-        singleBtn: "Жалгыз ойун (ПКга каршы)",
-        multiBtn: "Онлайн (оюнчуга каршы)",
-        settings: "Жөндөөлөр",
-        rating: "Рейтинг",
-        wind: "ШАМАЛ",
-        waiting: "Күтүлүүдө...",
-        yourTurn: "Сиздин кезек!",
-        oppTurn: "Атаандаштын кезеги",
-        win: "Сиз жеңдиңиз! 🏆",
-        lose: "Сиз утулдуңуз! 💀",
-        pause: "Тыныгуу",
-        resume: "Улантуу",
-        sound: "Үн",
-        mainMenu: "Башкы меню",
-        save: "Сактоо",
-        close: "Жабуу"
+
+    az: {
+        title: "Nizə Döyüşü",
+        subtitle: "Döyüş rejimini seçin",
+        stageLabel: "Kampaniya",
+        scoreLabel: "Xal",
+        tierBronze: "🥉 Bürünc",
+        tierSilver: "🥈 Gümüş",
+        tierGold: "🥇 Qızıl",
+        tierDiamond: "💎 Almaz",
+        tierLegend: "👑 Əfsanə",
+        topInvites: "⚔️ Dəvətlər",
+        topProfile: "👤 Profil",
+        topSettings: "⚙️ Parametrlər",
+        topLogout: "🚪 Çıxış",
+
+        cardSingleBadge: "⚔️ 100+ MƏRHƏLƏ",
+        cardSingleName: "Kampaniya",
+        cardSingleDesc: "100 maraqlı mərhələ və sərkərdələrlə döyüş",
+        cardSingleBtn: "Tək Oyun",
+
+        cardMultiBadge: "⚡ 1v1 CANLI",
+        cardMultiName: "Onlayn Duel",
+        cardMultiDesc: "Həqiqi rəqiblər və dostlarla canlı nizə döyüşü",
+        cardMultiBtn: "Onlayn Oyun",
+
+        cardInvitesBadge: "⚔️ DƏVƏTLƏR",
+        cardInvitesName: "Duel Dəvətləri",
+        cardInvitesDesc: "Gələn dəvətləri qəbul edin və döyüş vaxtını təyin edin",
+        cardInvitesBtn: "Dəvətlər siyahısı",
+
+        cardRewardsBadge: "🎁 PULSUZ BONUS",
+        cardRewardsName: "Gündəlik Hədiyyələr",
+        cardRewardsDesc: "Hər gün daxil olun və pulsuz bonuslar qazanın",
+        cardRewardsBtn: "Hədiyyəni götür",
+
+        cardQuestsBadge: "🎯 TAPŞIRIQLAR",
+        cardQuestsName: "Tapşırıqlar",
+        cardQuestsDesc: "Tapşırıqları yerinə yetirin və xal qazanın",
+        cardQuestsBtn: "Tapşırıqlar",
+
+        cardShopBadge: "🛒 ARSENAL",
+        cardShopName: "Hərbi Mağaza",
+        cardShopDesc: "Super qalxanlar, nizələr və xüsusi ləvazimatlar",
+        cardShopBtn: "Mağaza",
+
+        cardRatingBadge: "🏆 TOP-100",
+        cardRatingName: "Liderlər Cədvəli",
+        cardRatingDesc: "Ən güclü döyüşçülər sırasına daxil olun və çempion olun",
+        cardRatingBtn: "Reytinq",
+
+        cardAboutBadge: "ℹ️ MƏLUMAT",
+        cardAboutName: "Oyun Haqqında",
+        cardAboutDesc: "Qaydalar, müəllif əlaqəsi və oyun məlumatları",
+        cardAboutBtn: "Haqqında",
+
+        inGameMenu: "Menyu",
+        inGameBack: "⬅ Geri",
+        wind: "KÜLƏK",
+        pause: "Fasilə",
+        resume: "Davam et",
+        sound: "Səs parametrləri",
+        addFriend: "Dost əlavə et",
+        mainMenu: "Əsas menyu",
+        yourTurn: "Sənin növbən!",
+        oppTurn: "Rəqibin növbəsi",
+        waiting: "Gözlənilir...",
+        win: "Qalib gəldin! 🏆",
+        lose: "Uduzdun! 💀",
+        playAgainBtn: "Yenidən Oyna",
+        menuBtn: "Əsas Menyu",
+        rematchBtn: "⚔️ Qisas istə",
+        viewRatingBtn: "🏆 Reytinqi Gör",
+        opponentLeft: "Rəqib oyunu tərk etdi",
+
+        settingsTitle: "Parametrlər",
+        langLabel: "Tətbiq dili:",
+        musicVol: "Musiqi səsi:",
+        sfxVol: "Xüsusi effektlər (SFX):",
+        musicTrack: "Fon musiqisi:",
+        helpBtn: "Kömək",
+        save: "Yadda saxla",
+        close: "Bağla",
+        settingsSaved: "Parametrlər saxlanıldı!",
+
+        profileTitle: "Profil",
+        nameLabel: "Ad:",
+        avatarLabel: "Avatar:",
+        charLabel: "Qəhrəman:",
+        flagLabel: "Ölkə bayrağı:",
+        spearLabel: "Nizə modeli:",
+
+        singleModalTitle: "Tək Oyun",
+        chooseMode: "Seçin:",
+        continueLevel: "Mövcud mərhələdən davam et",
+        selectLevel: "Mərhələ seçimi",
+        newGame: "Yeni oyun başlat",
+        cancel: "Ləğv et",
+        levelSelectTitle: "Mərhələ Seçimi",
+        levelLabel: "Mərhələ",
+        campaignStage: "Kampaniya mərhələsi",
+        resetCampaign: "Kampaniyanı sıfırla",
+
+        multiModalTitle: "Onlayn Oyun",
+        createGame: "Oyun Yarat",
+        giveCodeToFriend: "Bu kodu dostuna ver:",
+        inviteViaTg: "📲 Telegram ilə dəvət et",
+        joinGame: "Oyuna Qoşul",
+        enterCode: "KOD",
+        joinBtn: "Qoşul",
+        gameNotFound: "Oyun tapılmadı!",
+        randomOpponent: "Təsadüfi Rəqib",
+        friendsTitle: "Dostlar",
+        refreshBtn: "Yenilə",
+        noFriends: "Dost yoxdur.",
+        backBtn: "Geri",
+
+        charSelectTitle: "Qəhrəmanınızı seçin",
+        charSelectSub: "Döyüşdən əvvəl döyüşçü modelini seçin",
+        enterBattle: "⚔️ Döyüşə başla",
+        selectedBadge: "Seçildi",
+
+        optionsTitle: "Oyun Parametrləri",
+        mapLabel: "Xəritə:",
+        weatherLabel: "Hava:",
+        birdsLabel: "Uçan Quşlar (Maneə)",
+        animalsLabel: "Otlayan heyvanlar",
+        difficultyLabel: "Çətinlik:",
+        optionCharLabel: "Döyüşçü modeli:",
+        mapField: "🌿 Yaşıl Çöl",
+        mapCastle: "🏰 Qala",
+        mapDesert: "🏜️ Səhra",
+        mapWinter: "❄️ Qış",
+        weatherSunny: "☀️ Günəşli",
+        weatherNight: "🌙 Gecə",
+        weatherRain: "🌧️ Yağış",
+        weatherStorm: "⛈️ Fırtına",
+        weatherSnow: "❄️ Qar",
+        diffEasy: "Asan",
+        diffNormal: "Orta",
+        diffHard: "Çətin",
+
+        langModalTitle: "Dili Seçin",
+        langModalSub: "Davam etmək üçün oyun dilini seçin",
+        langSelectBtn: "Seçin",
+        welcomeToast: "🇦🇿 Azərbaycan dili seçildi! Xoş gəlmisiniz!"
     },
+
     kk: {
         title: "Найза Шайқасы",
-        subtitle: "Ежелгі 3D Жауынгерлер",
-        singleBtn: "Жеке ойын (ПК-ға қарсы)",
-        multiBtn: "Онлайн (ойыншыға қарсы)",
-        settings: "Баптаулар",
-        rating: "Рейтинг",
+        subtitle: "Шайқас режимін таңдаңыз",
+        stageLabel: "Кампания",
+        scoreLabel: "Ұпай",
+        tierBronze: "🥉 Қола",
+        tierSilver: "🥈 Күміс",
+        tierGold: "🥇 Алтын",
+        tierDiamond: "💎 Гауһар",
+        tierLegend: "👑 Аңыз",
+        topInvites: "⚔️ Шақырулар",
+        topProfile: "👤 Профиль",
+        topSettings: "⚙️ Баптаулар",
+        topLogout: "🚪 Шығу",
+
+        cardSingleBadge: "⚔️ 100+ КЕЗЕҢ",
+        cardSingleName: "Кампания",
+        cardSingleDesc: "100 қызықты кезең және бастықтармен шайқас",
+        cardSingleBtn: "Жеке ойын",
+
+        cardMultiBadge: "⚡ 1v1 ОНЛАЙН",
+        cardMultiName: "Онлайн Дуэль",
+        cardMultiDesc: "Нақты қарсыластармен және достармен тікелей найза шайқасы",
+        cardMultiBtn: "Онлайн ойнау",
+
+        cardInvitesBadge: "⚔️ ШАҚЫРУЛАР",
+        cardInvitesName: "Дуэльге Шақырулар",
+        cardInvitesDesc: "Келген шақыруларды қабылдап, шайқас уақытын белгілеңіз",
+        cardInvitesBtn: "Шақырулар тізімі",
+
+        cardRewardsBadge: "🎁 ТЕГІН БОНУС",
+        cardRewardsName: "Күнделікті Сыйлықтар",
+        cardRewardsDesc: "Күн сайын кіріп, тегін супер күштер мен ресурстар алыңыз",
+        cardRewardsBtn: "Сыйлықты алу",
+
+        cardQuestsBadge: "🎯 ТАПСЫРМАЛАР",
+        cardQuestsName: "Тапсырмалар",
+        cardQuestsDesc: "Тапсырмаларды орындап, қосымша ұпай жинаңыз",
+        cardQuestsBtn: "Тапсырмалар",
+
+        cardShopBadge: "🛒 АРСЕНАЛ",
+        cardShopName: "Әскери Дүкен",
+        cardShopDesc: "Супер қалқандар, найзалар және әскери керек-жарақтар",
+        cardShopBtn: "Дүкен",
+
+        cardRatingBadge: "🏆 ТОП-100",
+        cardRatingName: "Көшбасшылар Кестесі",
+        cardRatingDesc: "Үздік сарбаздар қатарына қосылып, чемпион болыңыз",
+        cardRatingBtn: "Рейтинг",
+
+        cardAboutBadge: "ℹ️ АҚПАРАТ",
+        cardAboutName: "Ойын Туралы",
+        cardAboutDesc: "Ережелер, автор байланысы және жоба туралы мәлімет",
+        cardAboutBtn: "Ақпарат",
+
+        inGameMenu: "Мәзір",
+        inGameBack: "⬅ Артқа",
         wind: "ЖЕЛ",
-        waiting: "Күтілуде...",
-        yourTurn: "Сіздің кезегіңіз!",
-        oppTurn: "Қарсылас кезегі",
-        win: "Сіз жеңдіңіз! 🏆",
-        lose: "Сіз жеңілдіңіз! 💀",
         pause: "Үзіліс",
         resume: "Жалғастыру",
         sound: "Дыбыс",
+        addFriend: "Дос қосу",
         mainMenu: "Басты мәзір",
+        yourTurn: "Сіздің кезегіңіз!",
+        oppTurn: "Қарсылас кезегі",
+        waiting: "Күтілуде...",
+        win: "Сіз жеңдіңіз! 🏆",
+        lose: "Сіз жеңілдіңіз! 💀",
+        playAgainBtn: "Қайта ойнау",
+        menuBtn: "Басты мәзір",
+        rematchBtn: "⚔️ Қайта шақыру",
+        viewRatingBtn: "🏆 Рейтингті көру",
+        opponentLeft: "Қарсылас ойыннан шығып кетті",
+
+        settingsTitle: "Баптаулар",
+        langLabel: "Қолданба тілі:",
+        musicVol: "Музыка дыбысы:",
+        sfxVol: "Арнайы эффектілер (SFX):",
+        musicTrack: "Фондық музыка:",
+        helpBtn: "Көмек",
         save: "Сақтау",
-        close: "Жабу"
+        close: "Жабу",
+        settingsSaved: "Баптаулар сақталды!",
+
+        profileTitle: "Профиль",
+        nameLabel: "Аты:",
+        avatarLabel: "Аватар:",
+        charLabel: "Батыр:",
+        flagLabel: "Мемлекет туы:",
+        spearLabel: "Найза үлгісі:",
+
+        singleModalTitle: "Жеке ойын",
+        chooseMode: "Таңдаңыз:",
+        continueLevel: "Ағымдағы кезеңді жалғастыру",
+        selectLevel: "Кезеңді таңдау",
+        newGame: "Жаңа ойын бастау",
+        cancel: "Болдырмау",
+        levelSelectTitle: "Кезең Таңдау",
+        levelLabel: "Кезең",
+        campaignStage: "Кампания кезеңі",
+        resetCampaign: "Кампанияны қайта бастау",
+
+        multiModalTitle: "Онлайн Ойын",
+        createGame: "Ойын құру",
+        giveCodeToFriend: "Бұл кодты досыңызға беріңіз:",
+        inviteViaTg: "📲 Telegram арқылы шақыру",
+        joinGame: "Ойынға қосылу",
+        enterCode: "КОД",
+        joinBtn: "Қосылу",
+        gameNotFound: "Ойын табылмады!",
+        randomOpponent: "Кездейсоқ қарсылас",
+        friendsTitle: "Достар",
+        refreshBtn: "Жаңарту",
+        noFriends: "Достар жоқ.",
+        backBtn: "Артқа",
+
+        charSelectTitle: "Батырыңызды таңдаңыз",
+        charSelectSub: "Шайқас алдында жауынгер моделін таңдаңыз",
+        enterBattle: "⚔️ Шайқасқа кіру",
+        selectedBadge: "Таңдалған",
+
+        optionsTitle: "Ойын Баптаулары",
+        mapLabel: "Карта:",
+        weatherLabel: "Ауа райы:",
+        birdsLabel: "Ұшатын құстар (кедергі)",
+        animalsLabel: "Жайылымдағы жануарлар",
+        difficultyLabel: "Қиындық:",
+        optionCharLabel: "Жауынгер үлгісі:",
+        mapField: "🌿 Жасыл Дала",
+        mapCastle: "🏰 Қамал",
+        mapDesert: "🏜️ Шөл",
+        mapWinter: "❄️ Қыс",
+        weatherSunny: "☀️ Ашық",
+        weatherNight: "🌙 Түн",
+        weatherRain: "🌧️ Жаңбыр",
+        weatherStorm: "⛈️ Дауыл",
+        weatherSnow: "❄️ Қар",
+        diffEasy: "Оңай",
+        diffNormal: "Орташа",
+        diffHard: "Қиын",
+
+        langModalTitle: "Тілді таңдаңыз",
+        langModalSub: "Ойынды жалғастыру үшін тілді таңдаңыз",
+        langSelectBtn: "Таңдау",
+        welcomeToast: "🇰🇿 Қазақ тілі таңдалды! Қош келдіңіз!"
     },
-    tr: {
-        title: "Mızrak Savaşı",
-        subtitle: "Antik 3D Savaşçılar",
-        singleBtn: "Tek Kişilik (Bilgisayara karşı)",
-        multiBtn: "Çevrim içi (Oyuncuya karşı)",
-        settings: "Ayarlar",
-        rating: "Sıralama",
-        wind: "RÜZGAR",
-        waiting: "Bekleniyor...",
-        yourTurn: "Sıra sende!",
-        oppTurn: "Rakibin sırası",
-        win: "Kazandın! 🏆",
-        lose: "Kaybettin! 💀",
-        pause: "Duraklat",
-        resume: "Devam et",
-        sound: "Ses",
-        mainMenu: "Ana Menü",
-        save: "Kaydet",
-        close: "Kapat"
+
+    ky: {
+        title: "Найза Согушу",
+        subtitle: "Согуш режимин тандаңыз",
+        stageLabel: "Кампания",
+        scoreLabel: "Упай",
+        tierBronze: "🥉 Коло",
+        tierSilver: "🥈 Күмүш",
+        tierGold: "🥇 Алтын",
+        tierDiamond: "💎 Алмаз",
+        tierLegend: "👑 Уламыш",
+        topInvites: "⚔️ Чакыруулар",
+        topProfile: "👤 Профиль",
+        topSettings: "⚙️ Жөндөөлөр",
+        topLogout: "🚪 Чыгуу",
+
+        cardSingleBadge: "⚔️ 100+ БАСКЫЧ",
+        cardSingleName: "Кампания",
+        cardSingleDesc: "100 кызыктуу деңгээл жана босстор менен салгылашуу",
+        cardSingleBtn: "Жалгыз оюн",
+
+        cardMultiBadge: "⚡ 1v1 ОНЛАЙН",
+        cardMultiName: "Онлайн Дуэль",
+        cardMultiDesc: "Чыныгы атаандаштар жана достор менен жандуу согуш",
+        cardMultiBtn: "Онлайн ойноо",
+
+        cardInvitesBadge: "⚔️ ЧАКЫРУУЛАР",
+        cardInvitesName: "Дуэлге Чакыруулар",
+        cardInvitesDesc: "Келген чакырууларды кабыл алып, согуш убактысын белгилеңиз",
+        cardInvitesBtn: "Чакыруулар тизмеси",
+
+        cardRewardsBadge: "🎁 АКЫСЫЗ БОНУС",
+        cardRewardsName: "Күндөлүк Сыйлыктар",
+        cardRewardsDesc: "Күн сайын кирип, бекер сыйлыктарды алыңыз",
+        cardRewardsBtn: "Сыйлыкты алуу",
+
+        cardQuestsBadge: "🎯 ТАПШЫРМАЛАР",
+        cardQuestsName: "Тапшырмалар",
+        cardQuestsDesc: "Тапшырмаларды аткарып, кошумча упай топтоңуз",
+        cardQuestsBtn: "Тапшырмалар",
+
+        cardShopBadge: "🛒 АРСЕНАЛ",
+        cardShopName: "Аскердик Дүкөн",
+        cardShopDesc: "Супер калкандар, найзалар жана согуштук буюмдар",
+        cardShopBtn: "Дүкөн",
+
+        cardRatingBadge: "🏆 ТОП-100",
+        cardRatingName: "Лидерлер Таблицасы",
+        cardRatingDesc: "Мыкты жоокерлер катарына кошулуп, чемпион болуңуз",
+        cardRatingBtn: "Рейтинг",
+
+        cardAboutBadge: "ℹ️ МААЛЫМАТ",
+        cardAboutName: "Оюн Жөнүндө",
+        cardAboutDesc: "Эрежелер, автор байланышы жана маалымат",
+        cardAboutBtn: "Маалымат",
+
+        inGameMenu: "Меню",
+        inGameBack: "⬅ Артка",
+        wind: "ШАМАЛ",
+        pause: "Тыныгуу",
+        resume: "Улантуу",
+        sound: "Үн",
+        addFriend: "Дос кошуу",
+        mainMenu: "Башкы меню",
+        yourTurn: "Сиздин кезек!",
+        oppTurn: "Атаандаштын кезеги",
+        waiting: "Күтүлүүдө...",
+        win: "Сиз жеңдиңиз! 🏆",
+        lose: "Сиз утулдуңуз! 💀",
+        playAgainBtn: "Кайра ойноо",
+        menuBtn: "Башкы меню",
+        rematchBtn: "⚔️ Кайра чакыруу",
+        viewRatingBtn: "🏆 Рейтингди көрүү",
+        opponentLeft: "Атаандаш оюндан чыгып кетти",
+
+        settingsTitle: "Жөндөөлөр",
+        langLabel: "Колдонмо тили:",
+        musicVol: "Музыка үнү:",
+        sfxVol: "Атайын эффекттер (SFX):",
+        musicTrack: "Фондук музыка:",
+        helpBtn: "Жардам",
+        save: "Сактоо",
+        close: "Жабуу",
+        settingsSaved: "Жөндөөлөр сакталды!",
+
+        profileTitle: "Профиль",
+        nameLabel: "Аты:",
+        avatarLabel: "Аватар:",
+        charLabel: "Баатыр:",
+        flagLabel: "Өлкө желеги:",
+        spearLabel: "Найза модели:",
+
+        singleModalTitle: "Жалгыз Оюн",
+        chooseMode: "Тандаңыз:",
+        continueLevel: "Азыркы деңгээлди улантуу",
+        selectLevel: "Деңгээлди тандоо",
+        newGame: "Жаңы оюн баштоо",
+        cancel: "Жокко чыгаруу",
+        levelSelectTitle: "Деңгээлди Тандоо",
+        levelLabel: "Деңгээл",
+        campaignStage: "Кампания баскычы",
+        resetCampaign: "Кампанияны кайра баштоо",
+
+        multiModalTitle: "Онлайн Оюн",
+        createGame: "Оюн түзүү",
+        giveCodeToFriend: "Бул кодду досуңузга бериңиз:",
+        inviteViaTg: "📲 Telegram аркылуу чакыруу",
+        joinGame: "Оюнга кошулуу",
+        enterCode: "КОД",
+        joinBtn: "Кошулуу",
+        gameNotFound: "Оюн табылган жок!",
+        randomOpponent: "Кокусунан атаандаш",
+        friendsTitle: "Достор",
+        refreshBtn: "Жаңылоо",
+        noFriends: "Достор жок.",
+        backBtn: "Артка",
+
+        charSelectTitle: "Баатырыңызды тандаңыз",
+        charSelectSub: "Согуштун алдында жоокердин моделин тандаңыз",
+        enterBattle: "⚔️ Согушка кирүү",
+        selectedBadge: "Тандалган",
+
+        optionsTitle: "Оюн Жөндөөлөрү",
+        mapLabel: "Карта:",
+        weatherLabel: "Аба ырайы:",
+        birdsLabel: "Учуучу куштар (тоскоолдук)",
+        animalsLabel: "Жайылган жаныбарлар",
+        difficultyLabel: "Кыйынчылык:",
+        optionCharLabel: "Жоокердин модели:",
+        mapField: "🌿 Жашыл Талаа",
+        mapCastle: "🏰 Сепил",
+        mapDesert: "🏜️ Чөл",
+        mapWinter: "❄️ Кыш",
+        weatherSunny: "☀️ Ачык",
+        weatherNight: "🌙 Түн",
+        weatherRain: "🌧️ Жамгыр",
+        weatherStorm: "⛈️ Бороон",
+        weatherSnow: "❄️ Кар",
+        diffEasy: "Оңой",
+        diffNormal: "Орточо",
+        diffHard: "Кыйын",
+
+        langModalTitle: "Тилди тандаңыз",
+        langModalSub: "Оюнду улантуу үчүн тилди тандаңыз",
+        langSelectBtn: "Тандоо",
+        welcomeToast: "🇰🇬 Кыргыз тили тандалды! Кош келиңиз!"
     },
-    az: {
-        title: "Nizə Döyüşü",
-        subtitle: "Qədim 3D Döyüşçülər",
-        singleBtn: "Tək oyun (Kompüterə qarşı)",
-        multiBtn: "Onlayn (Oyunçuya qarşı)",
-        settings: "Parametrlər",
-        rating: "Reytinq",
-        wind: "KÜLƏK",
-        waiting: "Gözlənilir...",
-        yourTurn: "Sənin növbən!",
-        oppTurn: "Rəqibin növbəsi",
-        win: "Qalib gəldin! 🏆",
-        lose: "Uduzdun! 💀",
-        pause: "Fasilə",
-        resume: "Davam et",
-        sound: "Səs",
-        mainMenu: "Əsas menyu",
-        save: "Yadda saxla",
-        close: "Bağla"
+
+    tg: {
+        title: "Ҷанги Найза",
+        subtitle: "Ҳолати ҷангро интихоб кунед",
+        stageLabel: "Кампания",
+        scoreLabel: "Хол",
+        tierBronze: "🥉 Биринҷӣ",
+        tierSilver: "🥈 Нуқра",
+        tierGold: "🥇 Тилло",
+        tierDiamond: "💎 Алмос",
+        tierLegend: "👑 Афсона",
+        topInvites: "⚔️ Даъватҳо",
+        topProfile: "👤 Профил",
+        topSettings: "⚙️ Танзимот",
+        topLogout: "🚪 Баромад",
+
+        cardSingleBadge: "⚔️ 100+ МАРҲИЛА",
+        cardSingleName: "Кампания",
+        cardSingleDesc: "100 марҳилаи шавқовар ва ҷанг бо саркардаҳо",
+        cardSingleBtn: "Бозии танҳо",
+
+        cardMultiBadge: "⚡ 1v1 ОНЛАЙН",
+        cardMultiName: "Дуэли Онлайн",
+        cardMultiDesc: "Ҷанги зиндаи найза бо рақибони воқеӣ ва дӯстон",
+        cardMultiBtn: "Бозии онлайн",
+
+        cardInvitesBadge: "⚔️ ДАЪВАТҲО",
+        cardInvitesName: "Даъватҳо ба Дуэл",
+        cardInvitesDesc: "Даъватҳоро қабул карда, вақти ҷангро муайян намоед",
+        cardInvitesBtn: "Рӯйхати даъватҳо",
+
+        cardRewardsBadge: "🎁 БОНУСИ РОЙГОН",
+        cardRewardsName: "Мукофотҳои Ҳаррӯза",
+        cardRewardsDesc: "Ҳар рӯз ворид шавед ва бонусҳои ройгон гиред",
+        cardRewardsBtn: "Гирифтани мукофот",
+
+        cardQuestsBadge: "🎯 СУПОРИШҲО",
+        cardQuestsName: "Супоришҳо",
+        cardQuestsDesc: "Супоришҳоро иҷро кунед ва хол ба даст оред",
+        cardQuestsBtn: "Супоришҳо",
+
+        cardShopBadge: "🛒 АРСЕНАЛ",
+        cardShopName: "Дӯкони Ҳарбӣ",
+        cardShopDesc: "Сипарҳои олӣ, найзаҳо ва лавозимоти ҷангӣ",
+        cardShopBtn: "Дӯкон",
+
+        cardRatingBadge: "🏆 ТОП-100",
+        cardRatingName: "Ҷадвали Пешсафон",
+        cardRatingDesc: "Ба сафи беҳтарин найзадорон ворид шуда қаҳрамон шавед",
+        cardRatingBtn: "Рейтинг",
+
+        cardAboutBadge: "ℹ️ МАЪЛУМОТ",
+        cardAboutName: "Дар Бораи Бозӣ",
+        cardAboutDesc: "Қоидаҳо, тамос бо муаллиф ва маълумоти лоиҳа",
+        cardAboutBtn: "Муфассал",
+
+        inGameMenu: "Меню",
+        inGameBack: "⬅ Бозгашт",
+        wind: "ШАМОЛ",
+        pause: "Таваққуф",
+        resume: "Идома",
+        sound: "Садо",
+        addFriend: "Илова ба дӯстон",
+        mainMenu: "Менюи асосӣ",
+        yourTurn: "Навбати шумо!",
+        oppTurn: "Навбати рақиб",
+        waiting: "Интизорӣ...",
+        win: "Шумо бурдед! 🏆",
+        lose: "Шумо бохтед! 💀",
+        playAgainBtn: "Бозии дубора",
+        menuBtn: "Менюи асосӣ",
+        rematchBtn: "⚔️ Даъвати дубора",
+        viewRatingBtn: "🏆 Дидани рейтинг",
+        opponentLeft: "Рақиб бозиро тарк кард",
+
+        settingsTitle: "Танзимот",
+        langLabel: "Забони барнома:",
+        musicVol: "Баландии мусиқӣ:",
+        sfxVol: "Баландии эффектҳо (SFX):",
+        musicTrack: "Мусиқии пасманзар:",
+        helpBtn: "Кӯмак",
+        save: "Сабт",
+        close: "Пӯшидан",
+        settingsSaved: "Танзимот сабт шуд!",
+
+        profileTitle: "Профил",
+        nameLabel: "Ном:",
+        avatarLabel: "Аватар:",
+        charLabel: "Қаҳрамон:",
+        flagLabel: "Парчами кишвар:",
+        spearLabel: "Модели найза:",
+
+        singleModalTitle: "Бозии Танҳо",
+        chooseMode: "Интихоб кунед:",
+        continueLevel: "Давом додани сатҳи ҷорӣ",
+        selectLevel: "Интихоби сатҳ",
+        newGame: "Оғози бозии нав",
+        cancel: "Бекор кардан",
+        levelSelectTitle: "Интихоби Сатҳ",
+        levelLabel: "Сатҳ",
+        campaignStage: "Марҳилаи кампания",
+        resetCampaign: "Аз нав оғоз кардан",
+
+        multiModalTitle: "Бозии Онлайн",
+        createGame: "Эҷоди бозӣ",
+        giveCodeToFriend: "Ин рамзро ба дӯстатон фиристед:",
+        inviteViaTg: "📲 Даъват тавассути Telegram",
+        joinGame: "Пайваст шудан",
+        enterCode: "РАМЗ",
+        joinBtn: "Пайваст шудан",
+        gameNotFound: "Бозӣ ёфт нашуд!",
+        randomOpponent: "Рақиби тасодуфӣ",
+        friendsTitle: "Дӯстон",
+        refreshBtn: "Навсозӣ",
+        noFriends: "Дӯстон нестанд.",
+        backBtn: "Бозгашт",
+
+        charSelectTitle: "Қаҳрамони худро интихоб кунед",
+        charSelectSub: "Пеш аз ҷанг модели сарбозро интихоб намоед",
+        enterBattle: "⚔️ Вориди ҷанг",
+        selectedBadge: "Интихобшуда",
+
+        optionsTitle: "Танзимоти Бозӣ",
+        mapLabel: "Харита:",
+        weatherLabel: "Обу ҳаво:",
+        birdsLabel: "Паррандагони парвозкунанда (монеа)",
+        animalsLabel: "Ҳайвоноти чарогоҳ",
+        difficultyLabel: "Мушкилӣ:",
+        optionCharLabel: "Модели сарбоз:",
+        mapField: "🌿 Майдони Сабз",
+        mapCastle: "🏰 Қалъа",
+        mapDesert: "🏜️ Биёбон",
+        mapWinter: "❄️ Зимистон",
+        weatherSunny: "☀️ Офтобӣ",
+        weatherNight: "🌙 Шаб",
+        weatherRain: "🌧️ Борон",
+        weatherStorm: "⛈️ Тӯфон",
+        weatherSnow: "❄️ Барф",
+        diffEasy: "Осон",
+        diffNormal: "Миёна",
+        diffHard: "Мушкил",
+
+        langModalTitle: "Забонро интихоб кунед",
+        langModalSub: "Барои идома забони бозиро интихоб намоед",
+        langSelectBtn: "Интихоб",
+        welcomeToast: "🇹🇯 Забони тоҷикӣ интихоб шуд! Хуш омадед!"
     }
 };
 
 function applyLanguage() {
-    const t = translations[myProfile.lang] || translations.uz;
+    const langKey = (typeof myProfile !== 'undefined' && myProfile && myProfile.lang) ? myProfile.lang : 'uz';
+    const t = translations[langKey] || translations.uz;
     const tf = (key, fallback = '') => t[key] ?? translations.en[key] ?? translations.uz[key] ?? fallback;
-    document.querySelector('h1').innerText = t.title;
-    const subtitleEl = document.getElementById('txt-subtitle');
-    if (subtitleEl) subtitleEl.innerText = tf('subtitle', '');
-    document.getElementById('btn-single').innerText = t.singleBtn;
-    document.getElementById('btn-multi').innerText = t.multiBtn;
-    if (document.getElementById('btn-profile')) document.getElementById('btn-profile').innerText = "Profil";
-    if (btnAbout) btnAbout.innerText = tf('aboutBtn', "O'yin haqida");
-    document.getElementById('btn-settings').innerText = t.settings;
-    if (document.getElementById('btn-shop')) document.getElementById('btn-shop').innerText = "Do'kon";
-    document.getElementById('btn-rating').innerText = t.rating;
-    if (document.getElementById('btn-logout')) document.getElementById('btn-logout').innerText = "Akkauntdan chiqish";
-    document.getElementById('txt-settings-title').innerText = t.settings;
-    if (document.getElementById('txt-profile-title')) document.getElementById('txt-profile-title').innerText = "Profil";
-    document.getElementById('txt-rating-title').innerText = t.rating;
-    document.getElementById('btn-save-settings').innerText = t.save;
-    if (document.getElementById('btn-save-profile')) document.getElementById('btn-save-profile').innerText = t.save;
-    if (document.getElementById('btn-open-help')) document.getElementById('btn-open-help').innerText = "Yordam";
-    if (document.getElementById('txt-settings-music-volume')) document.getElementById('txt-settings-music-volume').innerText = "Fon musiqa balandligi:";
-    if (document.getElementById('txt-settings-sfx-volume')) document.getElementById('txt-settings-sfx-volume').innerText = "Maxsus effektlar (SFX) balandligi:";
-    if (document.getElementById('txt-settings-music-track')) document.getElementById('txt-settings-music-track').innerText = "Fon musiqasi:";
-    document.getElementById('btn-close-rating').innerText = t.close;
-    if (restartBtn) restartBtn.innerText = tf('playAgainBtn', "Yana o'ynash");
-    if (menuBtn) menuBtn.innerText = tf('menuBtn', "Bosh menyu");
-    document.getElementById('txt-wind').innerText = t.wind;
-    document.getElementById('btn-resume').innerText = t.resume;
+
+    // 1. Asosiy Menyu Sarlavhasi va Ta'rifi (AAA Carousel Header)
+    const carouselTitleEl = document.querySelector('.menu-carousel-title');
+    if (carouselTitleEl) carouselTitleEl.innerText = tf('title', "Nayza Jangi");
+    const carouselSubEl = document.querySelector('.menu-carousel-subtitle');
+    if (carouselSubEl) carouselSubEl.innerText = tf('subtitle', "Jang rejimini tanlang");
+
+    // 2. Yuqori Bar (Top Bar) Tugmalari va Matnlari
+    const btnTopInvites = document.getElementById('btn-top-invites');
+    if (btnTopInvites) {
+        const badgeEl = document.getElementById('top-invites-badge');
+        const badgeHtml = badgeEl ? badgeEl.outerHTML : '<span id="top-invites-badge" class="badge-pill" style="display:none;">0</span>';
+        btnTopInvites.innerHTML = `${tf('topInvites', '⚔️ Takliflar')} ${badgeHtml}`;
+    }
+    const btnProfileEl = document.getElementById('btn-profile');
+    if (btnProfileEl) btnProfileEl.innerText = tf('topProfile', "👤 Profil");
+    const btnSettingsEl = document.getElementById('btn-settings');
+    if (btnSettingsEl) btnSettingsEl.innerText = tf('topSettings', "⚙️ Sozlamalar");
+    const btnLogoutEl = document.getElementById('btn-logout');
+    if (btnLogoutEl) btnLogoutEl.innerText = tf('topLogout', "🚪 Chiqish");
+
+    // 3. Carousel Barcha Cardlari (Cards Translation)
+    // Card 1: Singleplayer (Kampaniya)
+    const cardSingle = document.querySelector('.menu-card[data-card="single"]');
+    if (cardSingle) {
+        const badge = cardSingle.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardSingleBadge', "⚔️ 100+ BOSQICH");
+        const name = cardSingle.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardSingleName', "Kampaniya");
+        const desc = cardSingle.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardSingleDesc', "100 ta qiziqarli bosqich va qudratli sarkardalar bilan jang");
+        const btn = cardSingle.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardSingleBtn', "Yakkalik o'yin");
+    }
+
+    // Card 2: Multiplayer (Onlayn Duel)
+    const cardMulti = document.querySelector('.menu-card[data-card="multi"]');
+    if (cardMulti) {
+        const badge = cardMulti.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardMultiBadge', "⚡ 1v1 JONLI");
+        const name = cardMulti.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardMultiName', "Onlayn Duel");
+        const desc = cardMulti.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardMultiDesc', "Haqiqiy raqiblar va do'stlar bilan jonli nayza jangi");
+        const btn = cardMulti.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardMultiBtn', "Onlayn o'yin");
+    }
+
+    // Card 2.5: Duelga Takliflar
+    const cardInvites = document.querySelector('.menu-card[data-card="invites"]');
+    if (cardInvites) {
+        const badge = document.getElementById('badge-duel-invites');
+        if (badge) {
+            const countSpan = document.getElementById('txt-duel-invites-count');
+            const countHtml = countSpan ? countSpan.outerHTML : '<span id="txt-duel-invites-count" class="duel-count-pill" style="display:none;">0</span>';
+            badge.innerHTML = `${tf('cardInvitesBadge', '⚔️ TAKLIFLAR')} ${countHtml}`;
+        }
+        const name = cardInvites.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardInvitesName', "Duelga Takliflar");
+        const desc = cardInvites.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardInvitesDesc', "Kelgan takliflarni qabul qiling va jang vaqtini belgilang");
+        const btn = cardInvites.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardInvitesBtn', "Takliflar ro'yxati");
+    }
+
+    // Card 3: Kunlik Sovg'alar
+    const cardRewards = document.querySelector('.menu-card[data-card="rewards"]');
+    if (cardRewards) {
+        const badge = cardRewards.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardRewardsBadge', "🎁 BEPUL BONUS");
+        const name = cardRewards.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardRewardsName', "Kunlik Sovg'alar");
+        const desc = cardRewards.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardRewardsDesc', "Har kuni kiring va bepul super kuchlar va resurslarni oling");
+        const btn = cardRewards.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardRewardsBtn', "Sovg'ani olish");
+    }
+
+    // Card 4: Vazifalar
+    const cardQuests = document.querySelector('.menu-card[data-card="quests"]');
+    if (cardQuests) {
+        const badge = cardQuests.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardQuestsBadge', "🎯 KVESTLAR");
+        const name = cardQuests.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardQuestsName', "Vazifalar");
+        const desc = cardQuests.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardQuestsDesc', "Topshiriqlarni bajaring va qo'shimcha ballar to'plang");
+        const btn = cardQuests.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardQuestsBtn', "Vazifalar");
+    }
+
+    // Card 5: Harbiy Do'kon
+    const cardShop = document.querySelector('.menu-card[data-card="shop"]');
+    if (cardShop) {
+        const badge = cardShop.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardShopBadge', "🛒 ARSENAL");
+        const name = cardShop.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardShopName', "Harbiy Do'kon");
+        const desc = cardShop.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardShopDesc', "Super himoya, nayzalar va maxsus jangovar vositalar");
+        const btn = cardShop.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardShopBtn', "Do'kon");
+    }
+
+    // Card 6: Reyting
+    const cardRating = document.querySelector('.menu-card[data-card="rating"]');
+    if (cardRating) {
+        const badge = cardRating.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardRatingBadge', "🏆 TOP-100");
+        const name = cardRating.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardRatingName', "Reyting");
+        const desc = cardRating.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardRatingDesc', "Yetakchi kamonbozlar safiga kiring va chempionlikka erishing");
+        const btn = cardRating.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardRatingBtn', "Reyting");
+    }
+
+    // Card 7: O'yin Haqida
+    const cardAbout = document.querySelector('.menu-card[data-card="about"]');
+    if (cardAbout) {
+        const badge = cardAbout.querySelector('.menu-card-badge');
+        if (badge) badge.innerText = tf('cardAboutBadge', "ℹ️ MA'LUMOT");
+        const name = cardAbout.querySelector('.menu-card-name');
+        if (name) name.innerText = tf('cardAboutName', "O'yin Haqida");
+        const desc = cardAbout.querySelector('.menu-card-description');
+        if (desc) desc.innerText = tf('cardAboutDesc', "Qoidalar, muallif haqida va loyihani qo'llab-quvvatlash");
+        const btn = cardAbout.querySelector('.menu-card-btn');
+        if (btn) btn.innerText = tf('cardAboutBtn', "O'yin haqida");
+    }
+
+    // 4. In-Game Boshqaruv Tugmalari (HUD Buttons)
+    const igMenuBtn = document.getElementById('in-game-menu-btn');
+    if (igMenuBtn) igMenuBtn.innerText = tf('inGameMenu', "Menyu");
+    const igBackBtn = document.getElementById('btn-in-game-back');
+    if (igBackBtn) igBackBtn.innerText = tf('inGameBack', "⬅ Ortga");
+    const igResumeBtn = document.getElementById('btn-resume');
+    if (igResumeBtn) igResumeBtn.innerText = tf('resume', "O'yinga qaytish");
+    const igSoundBtn = document.getElementById('btn-toggle-sound');
+    if (igSoundBtn) igSoundBtn.innerText = tf('sound', "Sozlamalar(ovoz)");
+    const igAddFriendBtn = document.getElementById('btn-add-friend');
+    if (igAddFriendBtn) igAddFriendBtn.innerText = tf('addFriend', "Do'stga qo'shish");
+    const igExitBtn = document.getElementById('btn-exit-menu');
+    if (igExitBtn) igExitBtn.innerText = tf('mainMenu', "Asosiy Menyu");
+    const txtIgTitle = document.getElementById('txt-ig-menu-title');
+    if (txtIgTitle) txtIgTitle.innerText = tf('inGameMenu', "Menyu");
+    const txtWind = document.getElementById('txt-wind');
+    if (txtWind) txtWind.innerText = tf('wind', "SHAMOL");
     const pauseBtnEl = document.getElementById('btn-pause');
-    if (pauseBtnEl) pauseBtnEl.innerText = t.pause;
-    document.getElementById('btn-toggle-sound').innerText = t.sound;
-    document.getElementById('btn-exit-menu').innerText = t.mainMenu;
-    document.getElementById('txt-ig-menu-title').innerText = t.settings;
-    if (document.getElementById('txt-campaign-stage')) document.getElementById('txt-campaign-stage').innerText = tf('campaignStage');
-    if (btnResetCampaign) btnResetCampaign.innerText = tf('resetCampaign');
-    if (document.getElementById('txt-options-title')) document.getElementById('txt-options-title').innerText = tf('optionsTitle');
-    if (document.getElementById('txt-map-lbl')) document.getElementById('txt-map-lbl').innerText = tf('mapLabel');
-    if (document.getElementById('txt-weather-lbl')) document.getElementById('txt-weather-lbl').innerText = tf('weatherLabel');
-    if (document.getElementById('txt-birds-lbl')) document.getElementById('txt-birds-lbl').innerText = tf('birdsLabel');
-    if (document.getElementById('txt-animals-lbl')) document.getElementById('txt-animals-lbl').innerText = tf('animalsLabel');
-    if (difficultyWrap) difficultyWrap.innerText = tf('difficultyLabel');
-    if (document.getElementById('txt-char-opt-lbl')) document.getElementById('txt-char-opt-lbl').innerText = tf('optionCharLabel');
-    if (btnConfirmCreate) btnConfirmCreate.innerText = tf('createGame');
-    if (btnCancelOptions) btnCancelOptions.innerText = tf('cancel');
-    if (document.getElementById('opt-map-field')) document.getElementById('opt-map-field').innerText = tf('mapField');
-    if (document.getElementById('opt-map-castle')) document.getElementById('opt-map-castle').innerText = tf('mapCastle');
-    if (document.getElementById('opt-map-desert')) document.getElementById('opt-map-desert').innerText = tf('mapDesert');
-    if (document.getElementById('opt-map-winter')) document.getElementById('opt-map-winter').innerText = tf('mapWinter');
-    if (document.getElementById('opt-weather-sunny')) document.getElementById('opt-weather-sunny').innerText = tf('weatherSunny');
-    if (document.getElementById('opt-weather-night')) document.getElementById('opt-weather-night').innerText = tf('weatherNight');
-    if (document.getElementById('opt-weather-rain')) document.getElementById('opt-weather-rain').innerText = tf('weatherRain');
-    if (document.getElementById('opt-weather-storm')) document.getElementById('opt-weather-storm').innerText = tf('weatherStorm');
-    if (document.getElementById('opt-weather-snow')) document.getElementById('opt-weather-snow').innerText = tf('weatherSnow');
-    if (document.getElementById('opt-diff-easy')) document.getElementById('opt-diff-easy').innerText = tf('diffEasy');
-    if (document.getElementById('opt-diff-normal')) document.getElementById('opt-diff-normal').innerText = tf('diffNormal');
-    if (document.getElementById('opt-diff-hard')) document.getElementById('opt-diff-hard').innerText = tf('diffHard');
-    if (document.getElementById('txt-music-volume')) document.getElementById('txt-music-volume').innerText = tf('musicVolumeLabel');
-    if (document.getElementById('txt-music-mute')) document.getElementById('txt-music-mute').innerText = tf('musicMuteLabel');
-    if (document.getElementById('txt-char-select-title')) document.getElementById('txt-char-select-title').innerText = tf('charSelectTitle', 'Qahramoningizni tanlang');
-    if (document.getElementById('txt-char-select-sub')) document.getElementById('txt-char-select-sub').innerText = tf('charSelectSub', 'Jangga kirishdan oldin jangchi modelini tanlang');
+    if (pauseBtnEl) pauseBtnEl.innerText = tf('pause', "Pauza");
+
+    // 5. Sozlamalar Modali (Settings Modal)
+    const txtSettingsTitle = document.getElementById('txt-settings-title');
+    if (txtSettingsTitle) txtSettingsTitle.innerText = tf('settingsTitle', "Sozlamalar");
+    const txtLangLbl = document.getElementById('txt-lang-lbl');
+    if (txtLangLbl) txtLangLbl.innerText = tf('langLabel', "Dastur tili:");
+    const txtMusicVol = document.getElementById('txt-settings-music-volume');
+    if (txtMusicVol) txtMusicVol.innerText = tf('musicVol', "Fon musiqa balandligi:");
+    const txtSfxVol = document.getElementById('txt-settings-sfx-volume');
+    if (txtSfxVol) txtSfxVol.innerText = tf('sfxVol', "Maxsus effektlar (SFX) balandligi:");
+    const txtMusicTrack = document.getElementById('txt-settings-music-track');
+    if (txtMusicTrack) txtMusicTrack.innerText = tf('musicTrack', "Fon musiqasi:");
+    const btnHelp = document.getElementById('btn-open-help');
+    if (btnHelp) btnHelp.innerText = tf('helpBtn', "Yordam");
+    const btnSaveSettings = document.getElementById('btn-save-settings');
+    if (btnSaveSettings) btnSaveSettings.innerText = tf('save', "Saqlash");
+
+    // 6. Profil Modali
+    const txtProfileTitle = document.getElementById('txt-profile-title');
+    if (txtProfileTitle) txtProfileTitle.innerText = tf('profileTitle', "Profil");
+    const btnSaveProfile = document.getElementById('btn-save-profile');
+    if (btnSaveProfile) btnSaveProfile.innerText = tf('save', "Saqlash");
+
+    // 7. Yakkalik & Level Tanlash Modali
+    const singleModalH2 = document.querySelector('#single-mode-modal h2');
+    if (singleModalH2) singleModalH2.innerText = tf('singleModalTitle', "Yakkalik o'yin");
+    const btnSingleCont = document.getElementById('btn-single-continue');
+    if (btnSingleCont) btnSingleCont.innerText = tf('continueLevel', "Avvalgi levelni davom etish");
+    const btnSingleSel = document.getElementById('btn-single-select-level');
+    if (btnSingleSel) btnSingleSel.innerText = tf('selectLevel', "Level tanlash");
+    const btnSingleNew = document.getElementById('btn-single-new');
+    if (btnSingleNew) btnSingleNew.innerText = tf('newGame', "Yangi o'yin boshlash");
+    const btnSingleCancel = document.getElementById('btn-single-cancel');
+    if (btnSingleCancel) btnSingleCancel.innerText = tf('cancel', "Bekor qilish");
+
+    const levelSelectH2 = document.querySelector('#level-select-modal h2');
+    if (levelSelectH2) levelSelectH2.innerText = tf('levelSelectTitle', "Level tanlash");
+    const btnLevelCancel = document.getElementById('btn-level-select-cancel');
+    if (btnLevelCancel) btnLevelCancel.innerText = tf('cancel', "Bekor qilish");
+
+    // 8. Onlayn Multiplayer Modali
+    const txtMultiTitle = document.getElementById('txt-multi-title');
+    if (txtMultiTitle) txtMultiTitle.innerText = tf('multiModalTitle', "Onlayn O'yin");
+    const btnMultiCreate = document.getElementById('btn-multi-create');
+    if (btnMultiCreate) btnMultiCreate.innerText = tf('createGame', "O'yin yaratish");
+    const btnMultiJoinShow = document.getElementById('btn-multi-join-show');
+    if (btnMultiJoinShow) btnMultiJoinShow.innerText = tf('joinGame', "O'yinga qo'shilish");
+    const btnMultiJoin = document.getElementById('btn-multi-join');
+    if (btnMultiJoin) btnMultiJoin.innerText = tf('joinBtn', "Qo'shilish");
+    const btnMultiRandom = document.getElementById('btn-multi-random');
+    if (btnMultiRandom) btnMultiRandom.innerText = tf('randomOpponent', "Tasodifiy raqib");
+    const txtFriendsTitle = document.getElementById('txt-friends-title');
+    if (txtFriendsTitle) txtFriendsTitle.innerText = tf('friendsTitle', "Do'stlar");
+    const btnRefreshFriends = document.getElementById('btn-refresh-friends');
+    if (btnRefreshFriends) btnRefreshFriends.innerText = tf('refreshBtn', "Yangilash");
+    const btnMultiBack = document.getElementById('btn-multi-back');
+    if (btnMultiBack) btnMultiBack.innerText = tf('backBtn', "Orqaga");
+
+    // 9. Qahramon Tanlash Modali
+    const txtCharSelectTitle = document.getElementById('txt-char-select-title');
+    if (txtCharSelectTitle) txtCharSelectTitle.innerText = tf('charSelectTitle', "Qahramoningizni tanlang");
+    const txtCharSelectSub = document.getElementById('txt-char-select-sub');
+    if (txtCharSelectSub) txtCharSelectSub.innerText = tf('charSelectSub', "Jangga kirishdan oldin jangchi modelini tanlang");
     const btnCharConfirmEl = document.getElementById('btn-char-select-confirm');
     if (btnCharConfirmEl) {
         const span = btnCharConfirmEl.querySelector('span');
-        if (span) span.innerText = tf('enterBattle', '⚔️ Jangga kirish');
+        if (span) span.innerText = tf('enterBattle', "⚔️ Jangga kirish");
     }
-    updateCampaignUI();
+    const btnCharCancelEl = document.getElementById('btn-char-select-cancel');
+    if (btnCharCancelEl) {
+        const span = btnCharCancelEl.querySelector('span');
+        if (span) span.innerText = tf('cancel', "Bekor qilish");
+    }
+
+    // 10. O'yin Tugashi (Game Over & Rematch)
+    if (restartBtn) restartBtn.innerText = tf('playAgainBtn', "Yana o'ynash");
+    if (menuBtn) menuBtn.innerText = tf('menuBtn', "Bosh menyu");
+    const rematchBtnEl = document.getElementById('rematch-btn');
+    if (rematchBtnEl) rematchBtnEl.innerText = tf('rematchBtn', "⚔️ Revansh taklif qilish");
+    const btnGameOverRating = document.getElementById('btn-game-over-rating');
+    if (btnGameOverRating) btnGameOverRating.innerText = tf('viewRatingBtn', "🏆 Reytingni ko'rish");
+
+    // 11. O'yin Sozlamalari (Options)
+    if (document.getElementById('txt-campaign-stage')) document.getElementById('txt-campaign-stage').innerText = tf('campaignStage', "Kampaniya");
+    if (btnResetCampaign) btnResetCampaign.innerText = tf('resetCampaign', "Kampaniyani qayta boshlash");
+    if (document.getElementById('txt-options-title')) document.getElementById('txt-options-title').innerText = tf('optionsTitle', "O'yin Sozlamalari");
+    if (document.getElementById('txt-map-lbl')) document.getElementById('txt-map-lbl').innerText = tf('mapLabel', "Maydon (Xarita):");
+    if (document.getElementById('txt-weather-lbl')) document.getElementById('txt-weather-lbl').innerText = tf('weatherLabel', "Ob-havo:");
+    if (document.getElementById('txt-birds-lbl')) document.getElementById('txt-birds-lbl').innerText = tf('birdsLabel', "Havoda Uchuvchi Qushlar (To'siq)");
+    if (document.getElementById('txt-animals-lbl')) document.getElementById('txt-animals-lbl').innerText = tf('animalsLabel', "O'tlab yuruvchi hayvonlar");
+    if (difficultyWrap) difficultyWrap.innerText = tf('difficultyLabel', "Qiyinlik:");
+    if (document.getElementById('txt-char-opt-lbl')) document.getElementById('txt-char-opt-lbl').innerText = tf('optionCharLabel', "Jangchi modeli:");
+    if (btnConfirmCreate) btnConfirmCreate.innerText = tf('createGame', "O'yinni Yaratish");
+    if (btnCancelOptions) btnCancelOptions.innerText = tf('cancel', "Bekor qilish");
+    if (document.getElementById('opt-map-field')) document.getElementById('opt-map-field').innerText = tf('mapField', "🌿 Yashil Dala");
+    if (document.getElementById('opt-map-castle')) document.getElementById('opt-map-castle').innerText = tf('mapCastle', "🏰 Qal'a");
+    if (document.getElementById('opt-map-desert')) document.getElementById('opt-map-desert').innerText = tf('mapDesert', "🏜️ Cho'l");
+    if (document.getElementById('opt-map-winter')) document.getElementById('opt-map-winter').innerText = tf('mapWinter', "❄️ Qish");
+    if (document.getElementById('opt-weather-sunny')) document.getElementById('opt-weather-sunny').innerText = tf('weatherSunny', "☀️ Quyoshli");
+    if (document.getElementById('opt-weather-night')) document.getElementById('opt-weather-night').innerText = tf('weatherNight', "🌙 Tun");
+    if (document.getElementById('opt-weather-rain')) document.getElementById('opt-weather-rain').innerText = tf('weatherRain', "🌧️ Yomg'ir");
+    if (document.getElementById('opt-weather-storm')) document.getElementById('opt-weather-storm').innerText = tf('weatherStorm', "⛈️ Jala");
+    if (document.getElementById('opt-weather-snow')) document.getElementById('opt-weather-snow').innerText = tf('weatherSnow', "❄️ Qor");
+    if (document.getElementById('opt-diff-easy')) document.getElementById('opt-diff-easy').innerText = tf('diffEasy', "Oson");
+    if (document.getElementById('opt-diff-normal')) document.getElementById('opt-diff-normal').innerText = tf('diffNormal', "O'rtacha");
+    if (document.getElementById('opt-diff-hard')) document.getElementById('opt-diff-hard').innerText = tf('diffHard', "Qiyin");
+    if (document.getElementById('txt-music-volume')) document.getElementById('txt-music-volume').innerText = tf('musicVol', "Fon musiqa balandligi");
+    if (document.getElementById('txt-music-mute')) document.getElementById('txt-music-mute').innerText = tf('musicMuteLabel', "Ovozni o'chirish");
+
+    // 12. Profil va Kampaniya UI qatlamlarini yangilash
+    if (typeof updateCampaignUI === 'function') updateCampaignUI();
 }
 
 // Universal Safe Modal Management with Ghost Click Shield, Full Modal Isolation & Mobile Scroll Protection
@@ -10292,7 +11412,8 @@ function handleSaveSettings(e) {
     }
 
     closeModalSafely(settingsModal, e);
-    showCenterNotice("Sozlamalar saqlandi!", 1500);
+    const t = (typeof translations !== 'undefined' && translations[myProfile.lang]) ? translations[myProfile.lang] : translations.uz;
+    showCenterNotice(t.settingsSaved || "Sozlamalar saqlandi!", 1500);
 }
 
 if (btnSaveSettings) {
@@ -12653,6 +13774,90 @@ document.addEventListener('keydown', (e) => {
 // =========================================================
 // ZAMONAVIY CARD CAROUSEL LOGIKASI (AAA O'YINLAR USLUBIDA)
 // =========================================================
+
+// =========================================================
+// ILK BOR KIRGANDA TILNI TANLASH KARUSELI (FIRST-TIME LANGUAGE CAROUSEL)
+// =========================================================
+function initLanguageCarousel() {
+    const modal = document.getElementById('language-select-modal');
+    if (!modal) return;
+
+    const track = document.getElementById('lang-carousel-track');
+    const prevBtn = document.getElementById('btn-lang-prev');
+    const nextBtn = document.getElementById('btn-lang-next');
+
+    if (prevBtn && track) {
+        prevBtn.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            track.scrollBy({ left: -160, behavior: 'smooth' });
+        });
+    }
+    if (nextBtn && track) {
+        nextBtn.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            track.scrollBy({ left: 160, behavior: 'smooth' });
+        });
+    }
+
+    const cards = modal.querySelectorAll('.lang-card');
+    cards.forEach(card => {
+        const lang = card.getAttribute('data-lang');
+        const handleSelect = safeModalAction((e) => {
+            if (e) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            }
+            selectLanguageChoice(lang);
+        });
+        card.addEventListener('click', handleSelect);
+        card.addEventListener('touchend', handleSelect, { passive: false });
+    });
+}
+
+function selectLanguageChoice(lang) {
+    if (!translations[lang]) lang = 'uz';
+    myProfile.lang = lang;
+    try {
+        localStorage.setItem('nayza_language_selected', 'true');
+    } catch (_) { }
+
+    const selectLang = document.getElementById('select-lang');
+    if (selectLang) selectLang.value = lang;
+
+    saveProfile();
+
+    const modal = document.getElementById('language-select-modal');
+    if (modal) closeModalSafely(modal);
+
+    const t = translations[lang] || translations.uz;
+    showCenterNotice(t.welcomeToast || "Xush kelibsiz!", 2200);
+}
+
+function checkFirstTimeLanguageModal() {
+    try {
+        const selected = localStorage.getItem('nayza_language_selected');
+        if (!selected) {
+            const langModal = document.getElementById('language-select-modal');
+            if (langModal) {
+                const introScreen = document.getElementById('intro-screen');
+                if (!introScreen || introScreen.classList.contains('hide')) {
+                    openModalSafely(langModal);
+                } else {
+                    const waitIntro = setInterval(() => {
+                        const curIntro = document.getElementById('intro-screen');
+                        if (!curIntro || curIntro.classList.contains('hide')) {
+                            clearInterval(waitIntro);
+                            if (!localStorage.getItem('nayza_language_selected')) {
+                                openModalSafely(langModal);
+                            }
+                        }
+                    }, 250);
+                }
+            }
+        }
+    } catch (_) { }
+}
+
 function setupMenuCarousel() {
     const carousel = document.getElementById('menu-cards-carousel');
     if (!carousel) return;
@@ -13317,6 +14522,8 @@ function checkDuelUrlParams() {
 // Initialization logic
 function _runPageInits() {
     setupMenuCarousel();
+    initLanguageCarousel();
+    checkFirstTimeLanguageModal();
     initDailyRewards();
     initDailyQuests();
     initEmotesUI();

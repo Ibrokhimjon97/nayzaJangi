@@ -6182,3 +6182,239 @@ body.force-landscape .custom-select-item {
     from { opacity: 0; transform: translate(-50%, -15px); }
     to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+/* ============================================================
+   FIRST-LAUNCH LANGUAGE SELECTION CAROUSEL MODAL
+   ============================================================ */
+.language-select-modal {
+    width: 94vw !important;
+    max-width: 680px !important;
+    max-height: 88vh !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.93)) !important;
+    border: 2px solid rgba(245, 158, 11, 0.4) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    padding: 22px 18px 24px !important;
+    z-index: 250 !important;
+    text-align: center;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.language-select-modal.hidden {
+    display: none !important;
+}
+
+.lang-modal-header {
+    margin-bottom: 14px;
+}
+
+.lang-modal-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 4px 10px rgba(245, 158, 11, 0.35));
+    animation: bounceSlow 2.5s ease-in-out infinite;
+}
+
+@keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.lang-modal-header h2 {
+    font-size: clamp(1.2rem, 3.2vw, 1.55rem);
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, #fef08a, #f59e0b, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+}
+
+.lang-modal-subtitle {
+    font-size: 0.86rem;
+    color: #94a3b8;
+    margin: 4px 0 0;
+}
+
+.lang-carousel-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+    box-sizing: border-box;
+}
+
+.lang-carousel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    padding: 10px 8px 16px;
+    width: 100%;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 158, 11, 0.45) transparent;
+}
+
+.lang-carousel::-webkit-scrollbar {
+    height: 6px;
+}
+
+.lang-carousel::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.45);
+    border-radius: 999px;
+}
+
+.lang-card {
+    flex: 0 0 135px;
+    scroll-snap-align: center;
+    background: linear-gradient(160deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.88));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 14px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-sizing: border-box;
+    user-select: none;
+}
+
+.lang-card:hover, .lang-card:active {
+    transform: translateY(-4px) scale(1.03);
+    border-color: #f59e0b;
+    box-shadow: 0 14px 30px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    background: linear-gradient(160deg, rgba(45, 60, 85, 0.85), rgba(20, 30, 52, 0.95));
+}
+
+.lang-card-flag {
+    font-size: 2.6rem;
+    line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+    transition: transform 0.22s ease;
+}
+
+.lang-card:hover .lang-card-flag {
+    transform: scale(1.12);
+}
+
+.lang-card-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.lang-card-desc {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.lang-card-btn {
+    width: 100% !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    padding: 0 8px !important;
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    box-shadow: 0 3px 0 #0369a1, 0 8px 16px rgba(14, 165, 233, 0.35) !important;
+    border: none !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+}
+
+.lang-card:hover .lang-card-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    box-shadow: 0 3px 0 #b45309, 0 8px 16px rgba(245, 158, 11, 0.45) !important;
+}
+
+.lang-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1.5px solid rgba(245, 158, 11, 0.5);
+    color: #fbbf24;
+    font-size: 1.6rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+}
+
+.lang-nav-btn:hover {
+    background: #f59e0b;
+    color: #0f172a;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.lang-nav-prev {
+    left: -12px;
+}
+
+.lang-nav-next {
+    right: -12px;
+}
+
+@media (max-width: 600px) {
+    .language-select-modal {
+        padding: 16px 12px 18px !important;
+        border-radius: 18px !important;
+    }
+    .lang-card {
+        flex: 0 0 118px;
+        padding: 10px 8px 10px;
+        border-radius: 14px;
+    }
+    .lang-card-flag {
+        font-size: 2.2rem;
+    }
+    .lang-card-name {
+        font-size: 0.9rem;
+    }
+    .lang-card-desc {
+        font-size: 0.68rem;
+    }
+    .lang-card-btn {
+        min-height: 32px !important;
+        height: 32px !important;
+        font-size: 0.75rem !important;
+    }
+    .lang-nav-btn {
+        display: none !important;
+    }
+}
