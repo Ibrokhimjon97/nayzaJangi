@@ -10961,14 +10961,21 @@ window.addEventListener('touchend', (e) => {
         lastScrollEndTime = Date.now();
         setTimeout(() => {
             isTouchScrolling = false;
-        }, 280);
+        }, 140);
+    } else {
+        isTouchScrolling = false;
     }
+}, { passive: true, capture: true });
+
+window.addEventListener('touchcancel', () => {
+    isTouchScrolling = false;
+    lastScrollEndTime = 0;
 }, { passive: true, capture: true });
 
 function safeModalAction(fn) {
     return function (e) {
         // Agar foydalanuvchi barmoq bilan menyuni / ekranni surgan (scroll qilgan) bo'lsa, tugma bosilmasligi shart!
-        if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) {
+        if (isTouchScrolling || (Date.now() - lastScrollEndTime < 150)) {
             return;
         }
         if (e && e.type === 'touchend') {
@@ -12462,7 +12469,12 @@ document.addEventListener('touchend', (e) => {
 
 // Prevent delayed synthetic click on touch devices from ghost-clicking elements underneath or firing after scroll
 document.addEventListener('click', (e) => {
-    if (isTouchScrolling || (Date.now() - lastScrollEndTime < 280)) {
+    // Tugmalar yoki menyu cardlari bosilganda click hodisasini to'sib qo'ymaslik
+    const isClickableTarget = e.target && typeof e.target.closest === 'function' &&
+        e.target.closest('button, .menu-card, .char-card, a, .custom-select-option');
+    if (isClickableTarget) return;
+
+    if (isTouchScrolling || (Date.now() - lastScrollEndTime < 180)) {
         e.stopPropagation();
         e.preventDefault();
         return;
@@ -14219,65 +14231,121 @@ function setupMenuCarousel() {
     
     if (cards.length === 0) return;
 
-    // Gorizontal touch va scroll sozlamalari
+    // Tezkor 1:1 barmoq bilan siljitish uchun vaqtinchalik smooth behaviourni o'chiramiz
+    carousel.style.scrollBehavior = 'auto';
     carousel.style.touchAction = 'pan-x';
-    carousel.style.overflowX = 'auto';
 
-    // Desktop/pointer sichqoncha bilan tortib surish (drag-to-scroll)
-    if (!carousel._hasPointerDrag) {
-        carousel._hasPointerDrag = true;
-        let isDown = false;
-        let startX = 0;
-        let scrollStartLeft = 0;
-        let velX = 0;
-        let lastX = 0;
-        let lastTime = 0;
+    // 1. Universal Touch & Mouse Swipe tizimi (telefon va kompyuter uchun)
+    if (!carousel._hasSwipeEngine) {
+        carousel._hasSwipeEngine = true;
+        let isDragging = false;
+        let startClientX = 0;
+        let startScrollLeft = 0;
+        let lastClientX = 0;
+        let lastMoveTime = 0;
+        let swipeVelocity = 0;
+        let hasMoved = false;
 
-        carousel.addEventListener('pointerdown', (e) => {
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            if (e.target && e.target.closest && e.target.closest('button')) return;
-            isDown = true;
-            startX = e.clientX;
-            scrollStartLeft = carousel.scrollLeft;
-            lastX = e.clientX;
-            lastTime = performance.now();
-            velX = 0;
-        }, { passive: true });
+        const handleStart = (clientX) => {
+            isDragging = true;
+            hasMoved = false;
+            startClientX = clientX;
+            lastClientX = clientX;
+            startScrollLeft = carousel.scrollLeft;
+            lastMoveTime = performance.now();
+            swipeVelocity = 0;
+        };
 
-        const endDrag = () => {
-            if (!isDown) return;
-            isDown = false;
-            if (Math.abs(velX) > 0.15) {
-                carousel.scrollBy({ left: -velX * 160, behavior: 'smooth' });
+        const handleMove = (clientX) => {
+            if (!isDragging) return;
+            const dx = clientX - startClientX;
+            if (Math.abs(dx) > 6) {
+                hasMoved = true;
+            }
+            if (hasMoved) {
+                carousel.scrollLeft = startScrollLeft - dx;
+                const now = performance.now();
+                const dt = Math.max(1, now - lastMoveTime);
+                swipeVelocity = (clientX - lastClientX) / dt;
+                lastClientX = clientX;
+                lastMoveTime = now;
             }
         };
 
-        window.addEventListener('pointerup', endDrag, { passive: true });
-        window.addEventListener('pointercancel', endDrag, { passive: true });
-
-        carousel.addEventListener('pointermove', (e) => {
-            if (!isDown) return;
-            const dx = e.clientX - startX;
-            if (Math.abs(dx) > 4) {
-                carousel.scrollLeft = scrollStartLeft - dx;
-                const now = performance.now();
-                const dt = Math.max(1, now - lastTime);
-                velX = (e.clientX - lastX) / dt;
-                lastX = e.clientX;
-                lastTime = now;
+        const handleEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            if (hasMoved) {
+                // Inersiya (momentum)
+                if (Math.abs(swipeVelocity) > 0.12) {
+                    const momentum = swipeVelocity * 220;
+                    carousel.scrollBy({ left: -momentum, behavior: 'smooth' });
+                }
             }
+        };
+
+        // Mobile touch hodisalari
+        carousel.addEventListener('touchstart', (e) => {
+            if (!e.touches || !e.touches[0]) return;
+            handleStart(e.touches[0].clientX);
         }, { passive: true });
+
+        carousel.addEventListener('touchmove', (e) => {
+            if (!e.touches || !e.touches[0]) return;
+            handleMove(e.touches[0].clientX);
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', () => {
+            handleEnd();
+        }, { passive: true });
+
+        carousel.addEventListener('touchcancel', () => {
+            handleEnd();
+        }, { passive: true });
+
+        // Desktop sichqoncha bilan tortib siljitish
+        carousel.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            if (e.target && e.target.closest && e.target.closest('button')) return;
+            handleStart(e.clientX);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            handleMove(e.clientX);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) handleEnd();
+        });
 
         // Sichqoncha g'ildiragi bilan gorizontal siljitish
         carousel.addEventListener('wheel', (e) => {
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
+            if (e.deltaY !== 0) {
                 e.preventDefault();
                 carousel.scrollLeft += e.deltaY;
             }
         }, { passive: false });
+
+        // Cardlar bosilishini boshqarish
+        cards.forEach(card => {
+            if (card._hasCardListener) return;
+            card._hasCardListener = true;
+
+            card.addEventListener('click', (e) => {
+                if (hasMoved) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                if (e.target.closest('button')) return; // Tugmaning o'zi bosilgan bo'lsa
+                const btn = card.querySelector('button');
+                if (btn) btn.click();
+            });
+        });
     }
 
-    // 1. Indikator nuqtalarni yaratish
+    // 2. Indikator nuqtalarni yaratish
     if (dotsContainer) {
         dotsContainer.innerHTML = '';
         cards.forEach((_, idx) => {
@@ -14294,7 +14362,7 @@ function setupMenuCarousel() {
         });
     }
 
-    // 2. Active nuqtani yangilash
+    // 3. Active nuqtani yangilash
     let scrollTimer = null;
     const updateActiveDot = () => {
         if (!dotsContainer) return;
@@ -14322,7 +14390,7 @@ function setupMenuCarousel() {
         scrollTimer = setTimeout(updateActiveDot, 60);
     }, { passive: true });
 
-    // 3. Chap va O'ng o'q tugmalari
+    // 4. Chap va O'ng o'q tugmalari
     const getScrollStep = () => {
         const card = cards[0];
         return card ? (card.clientWidth + 12) : 180;
@@ -14340,34 +14408,6 @@ function setupMenuCarousel() {
             carousel.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
         });
     }
-
-    // 4. Cardning istalgan joyiga bosganda ichidagi tegishli tugmani bosish
-    cards.forEach(card => {
-        if (card._hasCardListener) return;
-        card._hasCardListener = true;
-        let startX = 0;
-        let startY = 0;
-        let isDrag = false;
-
-        card.addEventListener('pointerdown', (e) => {
-            startX = e.clientX;
-            startY = e.clientY;
-            isDrag = false;
-        }, { passive: true });
-
-        card.addEventListener('pointermove', (e) => {
-            if (Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
-                isDrag = true;
-            }
-        }, { passive: true });
-
-        card.addEventListener('click', (e) => {
-            if (isDrag) return;
-            if (e.target.closest('button')) return; // Tugmaning o'zi bosilgan bo'lsa
-            const btn = card.querySelector('button');
-            if (btn) btn.click();
-        });
-    });
 }
 
 // =========================================================
