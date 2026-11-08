@@ -5792,8 +5792,14 @@ function throwSpear(angle, power) {
     // Faqat o'yinchining o'z otishini saqlaymiz (raqibniki emas).
     if (currentTurnIndex === myPlayerIndex) {
         triggerHaptic('medium');
-        const sX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
-        const sY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 270;
+        let sX = myPlayerIndex === 0 ? p1Model.position.x + 60 : p2Model.position.x - 60;
+        let sY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 270;
+        if (isArtilleryAiming) {
+            const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
+            const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
+            sX = (thrower ? thrower.position.x : 0) + (facingRight ? 550 : -550);
+            sY = (thrower ? thrower.position.y : 0) + 185;
+        }
         lastPlayerShot = { startX: sX, startY: sY, angle, power, wind: currentWind, playerIndex: myPlayerIndex };
         // Eski hint chizig'ini yangisi uchun tozalaymiz (keyingi navbatda chiziladi).
         clearHintTrajectory();
@@ -5836,7 +5842,9 @@ function throwSpear(angle, power) {
         artill = true;
         isArtilleryAiming = false;
         if (btnArtillery) btnArtillery.classList.remove('active');
-        if (myArtilleryCannon) myArtilleryCannon.visible = false;
+        setTimeout(() => {
+            if (myArtilleryCannon) myArtilleryCannon.visible = false;
+        }, 1000);
         artilleryCount--;
         myProfile.artillery = artilleryCount;
         saveProfile();
@@ -7895,18 +7903,28 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     let startY = thrower.position.y + 270;
 
     if (isArtillery) {
-        startX = thrower.position.x + (facingRight ? 200 : -200);
-        startY = thrower.position.y + 150;
+        startX = thrower.position.x + (facingRight ? 550 : -550);
+        startY = thrower.position.y + 185;
 
         if (playerIndex !== myPlayerIndex) {
             if (!window.enemyArtilleryCannon) {
                 const tex = loadTexture('artileriya.png');
                 const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), mat);
+                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(460, 253), mat);
                 scene.add(window.enemyArtilleryCannon);
             }
-            window.enemyArtilleryCannon.scale.set(1.6, 1.6, 1.6);
-            window.enemyArtilleryCannon.position.set(thrower.position.x + (facingRight ? 190 : -190), thrower.position.y + 200, thrower.position.z + 10);
+            const cannonOffset = 360;
+            window.enemyArtilleryCannon.scale.set(1.0, 1.0, 1.0);
+            window.enemyArtilleryCannon.position.set(
+                thrower.position.x + (facingRight ? cannonOffset : -cannonOffset),
+                thrower.position.y + 155,
+                thrower.position.z + 5
+            );
+            if (facingRight) {
+                window.enemyArtilleryCannon.rotation.y = Math.PI;
+            } else {
+                window.enemyArtilleryCannon.rotation.y = 0;
+            }
 
             window.enemyArtilleryCannon.visible = true;
 
@@ -8832,8 +8850,10 @@ function gameLoop(now) {
             let startY = p1Model.position.y + 270;
 
             if (isArtilleryAiming) {
-                startX = (myPlayerIndex === 0 ? p1Model.position.x : p2Model.position.x) + (myPlayerIndex === 0 ? 200 : -200);
-                startY = (myPlayerIndex === 0 ? p1Model.position.y : p2Model.position.y) + 150;
+                const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
+                const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
+                startX = (thrower ? thrower.position.x : 0) + (facingRight ? 550 : -550);
+                startY = (thrower ? thrower.position.y : 0) + 185;
             }
 
 
@@ -14641,15 +14661,21 @@ function _runPageInits() {
                 if (!myArtilleryCannon) {
                     const tex = loadTexture('artileriya.png');
                     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), mat);
+                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(460, 253), mat);
                     scene.add(myArtilleryCannon);
                 }
                 const playerGrp = myPlayerIndex === 0 ? p1Model : p2Model;
                 if (playerGrp) {
-                    myArtilleryCannon.scale.set(1.6, 1.6, 1.6);
-                    myArtilleryCannon.position.set(playerGrp.position.x + (myPlayerIndex === 0 ? 190 : -190), playerGrp.position.y + 200, playerGrp.position.z + 10);
+                    const facingRight = playerGrp.position.x < 0;
+                    const cannonOffset = 360;
+                    myArtilleryCannon.scale.set(1.0, 1.0, 1.0);
+                    myArtilleryCannon.position.set(
+                        playerGrp.position.x + (facingRight ? cannonOffset : -cannonOffset),
+                        playerGrp.position.y + 155,
+                        playerGrp.position.z + 5
+                    );
                     myArtilleryCannon.visible = true;
-                    if (myPlayerIndex === 0) {
+                    if (facingRight) {
                         myArtilleryCannon.rotation.y = Math.PI;
                     } else {
                         myArtilleryCannon.rotation.y = 0;
