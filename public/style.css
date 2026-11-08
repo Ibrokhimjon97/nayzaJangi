@@ -2287,37 +2287,13 @@ label,
     box-shadow: 0 0 16px rgba(125, 211, 252, 0.45);
 }
 
-/* Icon + label treatment for major CTA buttons */
-#btn-single::before {
-    content: "⚔ ";
-}
-
-#btn-multi::before {
-    content: "🌐 ";
-}
-
-#btn-about::before {
-    content: "ℹ️ ";
-}
-
-#btn-settings::before {
-    content: "⚙️ ";
-}
-
-#btn-profile::before {
-    content: "👤 ";
-}
-
-#btn-shop::before {
-    content: "🛒 ";
-}
-
-#btn-rating::before {
-    content: "🏆 ";
-}
-
-#btn-logout::before {
-    content: "🚪 ";
+/* Menu top action buttons should never duplicate icons */
+.menu-top-btn::before,
+#btn-settings::before,
+#btn-profile::before,
+#btn-logout::before,
+#btn-top-invites::before {
+    content: none !important;
 }
 
 #btn-single-continue::before {
@@ -5861,7 +5837,8 @@ body.force-landscape .custom-select-item {
 }
 
 /* Mobil Landshaft / Albomniy rejim (@media max-height: 540px yoki landscape) uchun maxsus o'ta qulay, to'liq ekran bo'ylab yoyiladigan parametrlar */
-@media screen and (orientation: landscape) and (max-height: 650px), screen and (max-height: 540px) {
+@media screen and (orientation: landscape) and (max-height: 650px),
+screen and (max-height: 540px) {
     #menu-screen.menu-carousel-screen:not(.hidden) {
         width: 98vw !important;
         max-width: 98vw !important;

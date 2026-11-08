@@ -5384,12 +5384,37 @@ function getPointerPos(e) {
 }
 
 // Har bir level boshlanishida bepul bonus kuch tanlash modali
-function showLevelBonusChestModal() {
+function showLevelBonusChestModal(onStartBattle) {
     const modal = document.getElementById('level-bonus-chest-modal');
     const container = document.getElementById('bonus-chests-row');
     const notice = document.getElementById('bonus-reveal-notice');
     const btnSkip = document.getElementById('btn-skip-bonus-chest');
-    if (!modal || !container) return;
+    if (!modal || !container) {
+        if (typeof onStartBattle === 'function') onStartBattle();
+        return;
+    }
+
+    let battleStarted = false;
+    let autoCloseTimer = null;
+    const triggerStartBattle = () => {
+        if (battleStarted) return;
+        battleStarted = true;
+        if (autoCloseTimer) clearTimeout(autoCloseTimer);
+        modal.classList.add('hidden');
+        if (typeof onStartBattle === 'function') onStartBattle();
+    };
+
+    // Tugmaning boshlang'ich holati: "O'tkazib yuborish ➔"
+    if (btnSkip) {
+        btnSkip.innerText = "O'tkazib yuborish ➔";
+        btnSkip.style.background = "#334155";
+        btnSkip.style.color = "#cbd5e1";
+        btnSkip.style.boxShadow = "none";
+        btnSkip.onclick = (e) => {
+            if (e) e.preventDefault();
+            triggerStartBattle();
+        };
+    }
 
     // Har bir level uchun 3 ta bepul kuch:
     // 1) Qush urib tushiradigan o'q (crowhunt)
@@ -5483,6 +5508,19 @@ function showLevelBonusChestModal() {
                 notice.classList.remove('hidden');
             }
 
+            // Sandiq tanlangach "O'tkazib yuborish" tugmasi "O'yinni boshlash" ga aylanadi:
+            if (btnSkip) {
+                btnSkip.innerText = "⚔️ O'yinni boshlash";
+                btnSkip.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                btnSkip.style.color = "#ffffff";
+                btnSkip.style.boxShadow = "0 4px 16px rgba(16, 185, 129, 0.5)";
+                btnSkip.onclick = (ev) => {
+                    if (ev) ev.preventDefault();
+                    triggerStartBattle();
+                    showCenterNotice(`+1 ${reward.name} ${reward.icon} qo'shildi!`, 2200);
+                };
+            }
+
             // Qolgan sandiqlarni ham ochib ko'rsatamiz
             setTimeout(() => {
                 container.querySelectorAll('.bonus-chest-card').forEach((otherCard, oIdx) => {
@@ -5502,24 +5540,17 @@ function showLevelBonusChestModal() {
                 });
             }, 300);
 
-            // 1.3 soniyadan so'ng modal yopiladi va jang boshlanadi
-            setTimeout(() => {
-                modal.classList.add('hidden');
+            // 1.8 soniyadan so'ng avtomatik modal yopiladi va jang boshlanadi (agar o'yinchi tugmani bosmagan bo'lsa)
+            autoCloseTimer = setTimeout(() => {
+                triggerStartBattle();
                 showCenterNotice(`+1 ${reward.name} ${reward.icon} qo'shildi!`, 2200);
-            }, 1300);
+            }, 1800);
         };
 
         card.addEventListener('click', pickChest);
         card.addEventListener('touchend', pickChest, { passive: false });
         container.appendChild(card);
     });
-
-    if (btnSkip) {
-        btnSkip.onclick = (e) => {
-            if (e) e.preventDefault();
-            modal.classList.add('hidden');
-        };
-    }
 
     modal.classList.remove('hidden');
 }
@@ -5696,14 +5727,22 @@ function startSinglePlayer(opts) {
     prevTurnIndex = -2;
     updateCampaignUI();
     setTimeout(() => { if (typeof checkDailyAutoPopup === 'function') checkDailyAutoPopup(); }, 500);
-    updateTurn(myPlayerIndex, generateWind());
+    // Har bir level boshlanishida 3 ta sandiqdan 1 ta bepul bonus kuch taklif qilinadi.
+    // O'yinchi bonus kuchni tanlab bo'lgach (yoki o'tkazib yuborgach) keyin jang boshlanadi!
+    isPaused = true;
+    currentTurnIndex = -1;
     if (!isLooping) {
         isLooping = true;
         lastTime = performance.now();
         requestAnimationFrame(gameLoop);
     }
-    // Har bir level boshlanishida 3 ta sandiqdan 1 ta bepul bonus kuch taklif qilinadi
-    showLevelBonusChestModal();
+
+    const startBattleAfterBonus = () => {
+        isPaused = false;
+        updateTurn(myPlayerIndex, generateWind());
+    };
+
+    showLevelBonusChestModal(startBattleAfterBonus);
 }
 
 function generateWind() {
@@ -5819,8 +5858,8 @@ function throwSpear(angle, power) {
         if (isArtilleryAiming) {
             const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
             const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
-            sX = (thrower ? thrower.position.x : 0) + (facingRight ? 550 : -550);
-            sY = (thrower ? thrower.position.y : 0) + 185;
+            sX = (thrower ? thrower.position.x : 0) + (facingRight ? 570 : -570);
+            sY = (thrower ? thrower.position.y : 0) + 175;
         }
         lastPlayerShot = { startX: sX, startY: sY, angle, power, wind: currentWind, playerIndex: myPlayerIndex };
         // Eski hint chizig'ini yangisi uchun tozalaymiz (keyingi navbatda chiziladi).
@@ -7842,9 +7881,16 @@ function updateTurn(turnIndex, wind) {
     const turnChanged = turnIndex !== prevTurnIndex;
     prevTurnIndex = turnIndex;
     currentTurnIndex = turnIndex;
-    if (turnIndex !== myPlayerIndex && isWallPlacementMode) {
-        isWallPlacementMode = false;
-        isWallDragActive = false;
+    if (turnIndex !== myPlayerIndex) {
+        if (isWallPlacementMode) {
+            isWallPlacementMode = false;
+            isWallDragActive = false;
+        }
+        if (isArtilleryAiming) {
+            isArtilleryAiming = false;
+            if (btnArtillery) btnArtillery.classList.remove('active');
+            if (myArtilleryCannon) myArtilleryCannon.visible = false;
+        }
     }
     if (gameMode === 'single' && turnIndex === myPlayerIndex) singleShotLocked = false;
     currentWind = wind;
@@ -7955,22 +8001,22 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
     let startY = thrower.position.y + 270;
 
     if (isArtillery) {
-        startX = thrower.position.x + (facingRight ? 550 : -550);
-        startY = thrower.position.y + 185;
+        startX = thrower.position.x + (facingRight ? 570 : -570);
+        startY = thrower.position.y + 175;
 
         if (playerIndex !== myPlayerIndex) {
             if (!window.enemyArtilleryCannon) {
                 const tex = loadTexture('artileriya.png');
                 const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(460, 253), mat);
+                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(350, 192), mat);
                 scene.add(window.enemyArtilleryCannon);
             }
-            const cannonOffset = 360;
+            const cannonOffset = 440;
             window.enemyArtilleryCannon.scale.set(1.0, 1.0, 1.0);
             window.enemyArtilleryCannon.position.set(
                 thrower.position.x + (facingRight ? cannonOffset : -cannonOffset),
-                thrower.position.y + 155,
-                thrower.position.z + 5
+                thrower.position.y + 115,
+                thrower.position.z - 2
             );
             if (facingRight) {
                 window.enemyArtilleryCannon.rotation.y = Math.PI;
@@ -8542,10 +8588,11 @@ function gameLoop(now) {
         }
 
         if (isDuck) {
-            // O'tirganda: bo'yi pastayadi, eni ixcham bo'ladi (katta bo'lib cho'zilmaydi),
-            // va eng muhimi: oyoqlari qat'iy yer sathida turadi (yer ostiga kirmaydi)
-            mod.userData.torso.scale.y = 0.72;
-            mod.userData.torso.scale.x = 0.82;
+            // O'tirganda model sun'iy ravishda kichrayib (kichik bo'lib) qolmasligi uchun
+            // o'zining tabiiy mutanosibligini (scale.x: 1.0, scale.y: 1.0) to'liq saqlaydi!
+            // Har bir qahramonning o'tirgan chiroyli maxsus teksturasi mavjud.
+            mod.userData.torso.scale.x = 1.0;
+            mod.userData.torso.scale.y = 1.0;
             mod.userData.torso.position.y = 0;
         } else {
             mod.userData.torso.scale.y = breath;
@@ -8906,8 +8953,8 @@ function gameLoop(now) {
             if (isArtilleryAiming) {
                 const thrower = myPlayerIndex === 0 ? p1Model : p2Model;
                 const facingRight = thrower ? thrower.position.x < 0 : (myPlayerIndex === 0);
-                startX = (thrower ? thrower.position.x : 0) + (facingRight ? 550 : -550);
-                startY = (thrower ? thrower.position.y : 0) + 185;
+                startX = (thrower ? thrower.position.x : 0) + (facingRight ? 570 : -570);
+                startY = (thrower ? thrower.position.y : 0) + 175;
             }
 
 
@@ -11382,10 +11429,33 @@ function renderCharacterSelectRoster(activeId) {
             }
         };
 
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let hasMoved = false;
+
         card.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches[0]) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+            hasMoved = false;
             e.stopPropagation();
         }, { passive: true });
-        card.addEventListener('touchend', onSelect, { passive: false });
+
+        card.addEventListener('touchmove', (e) => {
+            if (e.touches && e.touches[0]) {
+                const dx = Math.abs(e.touches[0].clientX - touchStartX);
+                const dy = Math.abs(e.touches[0].clientY - touchStartY);
+                if (dx > 8 || dy > 8) {
+                    hasMoved = true;
+                }
+            }
+        }, { passive: true });
+
+        card.addEventListener('touchend', (e) => {
+            if (hasMoved) return;
+            onSelect(e);
+        }, { passive: false });
         card.addEventListener('click', onSelect);
 
         charSelectRoster.appendChild(card);
@@ -14858,18 +14928,18 @@ function _runPageInits() {
                 if (!myArtilleryCannon) {
                     const tex = loadTexture('artileriya.png');
                     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(460, 253), mat);
+                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(350, 192), mat);
                     scene.add(myArtilleryCannon);
                 }
                 const playerGrp = myPlayerIndex === 0 ? p1Model : p2Model;
                 if (playerGrp) {
                     const facingRight = playerGrp.position.x < 0;
-                    const cannonOffset = 360;
+                    const cannonOffset = 440;
                     myArtilleryCannon.scale.set(1.0, 1.0, 1.0);
                     myArtilleryCannon.position.set(
                         playerGrp.position.x + (facingRight ? cannonOffset : -cannonOffset),
-                        playerGrp.position.y + 155,
-                        playerGrp.position.z + 5
+                        playerGrp.position.y + 115,
+                        playerGrp.position.z - 2
                     );
                     myArtilleryCannon.visible = true;
                     if (facingRight) {
