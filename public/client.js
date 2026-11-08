@@ -285,6 +285,7 @@ const gameScreen = document.getElementById('game-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const disconnectScreen = document.getElementById('disconnect-screen');
 const winnerText = document.getElementById('winner-text');
+const btnNextLevel = document.getElementById('btn-next-level');
 const restartBtn = document.getElementById('restart-btn');
 const menuBtn = document.getElementById('menu-btn');
 const rematchBtn = document.getElementById('rematch-btn');
@@ -4549,6 +4550,7 @@ let isDragging = false;
 let dragStart = { x: 0, y: 0 };
 let dragCurrent = { x: 0, y: 0 };
 let aimSfxPlayed = false;
+let battleScoreEarned = 0; // Faqat shu jangda topilgan ball
 
 function flashHit(model) {
     model.userData.mats.forEach(mat => {
@@ -5586,6 +5588,7 @@ function startSinglePlayer(opts) {
     btnToggleChat.classList.add('hidden');
     isPaused = false;
     isDragging = false;
+    battleScoreEarned = 0;
     isWallPlacementMode = false;
     isWallDragActive = false;
     singleShotLocked = false;
@@ -6376,7 +6379,14 @@ function getScoreDeltaForHit(hitResult) {
 function addScore(delta) {
     if (!Number.isFinite(delta) || delta === 0) return;
     myStats.score = Number(myStats.score || 0) + delta;
+    if (delta > 0) {
+        battleScoreEarned += delta;
+    }
+    if (typeof myProfile !== 'undefined' && myProfile) {
+        myProfile.score = myStats.score;
+    }
     saveStats();
+    saveProfile();
     updateCampaignUI();
     updateShopUI();
     if (authPhone) {
@@ -7231,6 +7241,7 @@ socket.on('gameStart', (data) => {
     console.log('typeof data:', typeof data);
     clearRandomWaitTimer();
     gameMode = 'multi';
+    battleScoreEarned = 0;
     autoJoinExecuted = true;
     waitingScreen.classList.add('hidden');
     multiMenu.classList.add('hidden');
@@ -7253,6 +7264,7 @@ socket.on('gameStart', (data) => {
     updateTelegramBackButton();
     isPaused = false;
     isDragging = false;
+    battleScoreEarned = 0;
     isWallPlacementMode = false;
     isWallDragActive = false;
     setDefenseActive(false, false);
@@ -7664,7 +7676,7 @@ function showGameOver(winnerIndex, data) {
     // To'plangan ballni aks ettirish
     const scoreValEl = document.getElementById('game-over-score-val');
     if (scoreValEl) {
-        scoreValEl.innerText = String(currentScore || myProfile.score || 0);
+        scoreValEl.innerText = String(battleScoreEarned || 0);
     }
 
     // Reytingni ko'rish tugmasi hodisasi
@@ -7679,12 +7691,6 @@ function showGameOver(winnerIndex, data) {
                 openModalSafely(ratingModal, e);
             }
         });
-    }
-
-    if (restartBtn) {
-        const nextLabel = t.nextLevelBtn || "Keyingi bosqich";
-        const replayLabel = t.playAgainBtn || "Yana o'ynash";
-        restartBtn.innerText = (gameMode === 'single' && isMeWinner) ? nextLabel : replayLabel;
     }
 
     // Online rejimda revansh tugmasini ko'rsatish
@@ -7702,9 +7708,10 @@ function showGameOver(winnerIndex, data) {
         if (gameMode === 'multi') {
             addScore(100);
             showCenterNotice("+100 Ball qo'shildi! 🏆", 2500);
-        }
-        if (typeof checkQuestProgress === 'function') checkQuestProgress('win', 1);
-        if (gameMode === 'single') {
+        } else if (gameMode === 'single') {
+            const singleWinBonus = Math.min(150, 50 + (singleCampaignLevel * 2));
+            addScore(singleWinBonus);
+            showCenterNotice(`+${singleWinBonus} G'alaba bonusi! 🏆`, 2500);
             singleCampaignLevel += 1;
             localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
             try {
@@ -7717,8 +7724,25 @@ function showGameOver(winnerIndex, data) {
             } catch { }
             updateCampaignUI();
         }
+        if (typeof checkQuestProgress === 'function') checkQuestProgress('win', 1);
     } else {
         triggerHaptic('error');
+    }
+
+    const btnNextLvl = document.getElementById('btn-next-level');
+    if (btnNextLvl) {
+        if (gameMode === 'single' && isMeWinner) {
+            btnNextLvl.classList.remove('hidden');
+            btnNextLvl.innerText = `${t.nextLevelBtn || "Keyingi bosqich"} (${singleCampaignLevel}) ➔`;
+        } else {
+            btnNextLvl.classList.add('hidden');
+        }
+    }
+
+    if (restartBtn) {
+        const replayLabel = t.playAgainBtn || "Yana o'ynash";
+        const tryAgainLabel = t.tryAgainBtn || "Qayta urinish";
+        restartBtn.innerText = (gameMode === 'single' && !isMeWinner) ? tryAgainLabel : replayLabel;
     }
     myStats.games++;
     saveStats();
@@ -7761,20 +7785,35 @@ function spawnConfetti() {
     } catch (_) { }
 }
 
+if (btnNextLevel) {
+    const handleNextLevel = safeModalAction((e) => {
+        gameOverScreen.classList.add('hidden');
+        if (gameMode === 'single') {
+            const level = Math.max(1, singleCampaignLevel);
+            aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
+            startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
+            return;
+        }
+    });
+    btnNextLevel.addEventListener('click', handleNextLevel);
+    btnNextLevel.addEventListener('touchend', handleNextLevel, { passive: false });
+}
+
 if (restartBtn) {
     const handleRestartGame = safeModalAction((e) => {
         gameOverScreen.classList.add('hidden');
         if (gameMode === 'single') {
-            openCharacterSelectModal({
-                onConfirm: () => {
-                    const level = Math.max(1, singleCampaignLevel);
-                    aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
-                    startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
-                },
-                onCancel: () => {
-                    gameOverScreen.classList.remove('hidden');
-                }
-            });
+            const wasWinner = (winnerText && winnerText.style.color === 'rgb(34, 197, 94)');
+            let levelToPlay = singleCampaignLevel;
+            if (wasWinner && singleCampaignLevel > 1) {
+                // Agar o'yinchi yutgan bo'lsa, 'Yana o'ynash' avvalgi (yutgan) bosqichni qayta o'ynaydi
+                levelToPlay = singleCampaignLevel - 1;
+                singleCampaignLevel = levelToPlay;
+                localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+            }
+            const level = Math.max(1, levelToPlay);
+            aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
+            startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             return;
         }
         location.reload();
@@ -8455,7 +8494,17 @@ function checkCollision() {
 
         const isHit = lineSegmentIntersectsAABB(pX, pY, spear.x, spear.y, box.minX, box.maxX, box.minY, box.maxY);
         if (isHit) {
-            if (i === spear.playerIndex && spear.vy > 0) continue;
+            if (i === spear.playerIndex) {
+                const throwerPos = m.position;
+                const distFromSelf = Math.abs(spear.x - throwerPos.x);
+                // 1. Agar o'q otuvchi yaqinida bo'lsa (260px ichida), o'ziga tegishi MUMKIN EMAS
+                if (distFromSelf < 260) continue;
+                // 2. Agar o'q hali osmonga ko'tarilayotgan bo'lsa (vy > 0), o'ziga tegmasin
+                if (spear.vy > 0) continue;
+                // 3. Agar o'q otuvchidan uzoqlashayotgan bo'lsa (masalan pastga, sandiqqa yoki oldinga), o'ziga tegmasin
+                const isMovingAway = (spear.x > throwerPos.x && spear.vx > 0) || (spear.x < throwerPos.x && spear.vx < 0);
+                if (isMovingAway) continue;
+            }
 
             spear.active = false;
             const isSuicide = (i === spear.playerIndex);
@@ -11699,6 +11748,17 @@ if (btnSettings) {
 
 if (btnLogout) {
     const handleLogout = safeModalAction(() => {
+        // Telegram orqali kirilgan bo'lsa, o'yinni/mini-appni yopamiz (logout bo'lmasin!)
+        const tgApp = window.Telegram?.WebApp;
+        if (tgApp && typeof tgApp.close === 'function') {
+            try {
+                tgApp.close();
+                return;
+            } catch (err) {
+                console.warn('Telegram close error:', err);
+            }
+        }
+        // Agar Telegram bo'lmasa, oddiy brauzerda logout qilamiz
         authPhone = '';
         authUserCache = null;
         delete myProfile.phone;
@@ -14282,6 +14342,9 @@ function setupMenuCarousel() {
                     carousel.scrollBy({ left: -momentum, behavior: 'smooth' });
                 }
             }
+            setTimeout(() => {
+                hasMoved = false;
+            }, 50);
         };
 
         // Mobile touch hodisalari
@@ -14306,7 +14369,10 @@ function setupMenuCarousel() {
         // Desktop sichqoncha bilan tortib siljitish
         carousel.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            if (e.target && e.target.closest && e.target.closest('button')) return;
+            if (e.target && e.target.closest && e.target.closest('button')) {
+                hasMoved = false;
+                return;
+            }
             handleStart(e.clientX);
         });
 
@@ -14319,13 +14385,18 @@ function setupMenuCarousel() {
             if (isDragging) handleEnd();
         });
 
-        // Sichqoncha g'ildiragi bilan gorizontal siljitish
-        carousel.addEventListener('wheel', (e) => {
-            if (e.deltaY !== 0) {
+        // Sichqoncha g'ildiragi (wheel) bilan gorizontal siljitish
+        const handleWheel = (e) => {
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+            if (delta !== 0) {
                 e.preventDefault();
-                carousel.scrollLeft += e.deltaY;
+                carousel.scrollLeft += delta * 1.2;
             }
-        }, { passive: false });
+        };
+        carousel.addEventListener('wheel', handleWheel, { passive: false });
+        if (carousel.parentElement) {
+            carousel.parentElement.addEventListener('wheel', handleWheel, { passive: false });
+        }
 
         // Cardlar bosilishini boshqarish
         cards.forEach(card => {
@@ -14333,12 +14404,15 @@ function setupMenuCarousel() {
             card._hasCardListener = true;
 
             card.addEventListener('click', (e) => {
+                // Tugmaning o'zi bosilgan bo'lsa, card click aralashmasin
+                if (e.target && typeof e.target.closest === 'function' && e.target.closest('button')) {
+                    return;
+                }
                 if (hasMoved) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
                 }
-                if (e.target.closest('button')) return; // Tugmaning o'zi bosilgan bo'lsa
                 const btn = card.querySelector('button');
                 if (btn) btn.click();
             });
