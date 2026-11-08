@@ -2218,6 +2218,20 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Real-time nishon olish (Aim) sinxronizatsiyasi
+    socket.on('playerAimState', (data) => {
+        const roomName = socket.roomId;
+        const room = rooms[roomName];
+        if (!room || room.gameOver) return;
+        const playerIndex = room.players.indexOf(socket.id);
+        if (playerIndex === -1) return;
+        socket.to(roomName).emit('playerAimState', {
+            playerIndex,
+            isAiming: !!data?.isAiming,
+            dist: Number(data?.dist || 0)
+        });
+    });
+
     // Revansh so'rovi
     socket.on('rematchRequest', (data) => {
         const roomName = data?.roomName || socket.roomId;
@@ -2230,27 +2244,30 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Revansh qabul qilindi
+    // Revansh qabul qilindi - to'g'ridan-to'g'ri yangi duelni boshlash
     socket.on('rematchAccept', (data) => {
         console.log('rematchAccept received, data:', data);
         const roomName = data?.roomName || socket.roomId;
         console.log('roomName from data or socket.roomId:', roomName);
         const room = rooms[roomName];
-        if (!room || !room.players) {
-            console.log('Room not found or no players');
+        if (!room || !room.players || room.players.length < 2) {
+            console.log('Room not found or not enough players');
             return;
         }
 
         // Xonani qayta ishga tushirish
         clearRoomTurnTimer(roomName);
+        clearCoinTossTimer(roomName);
         room.gameOver = false;
-        room.turnIndex = 0;
+        room.turnIndex = -1;
         room.wind = generateWind();
         room.inFlight = false;
         room.health = [100, 100];
         room.shield = [5, 5];
-        room.super = [room.super[0], room.super[1]];
         room.walls = [{ active: false, x: 0, hp: 0 }, { active: false, x: 0, hp: 0 }];
+        room.defending = [false, false];
+        room.ducking = [false, false];
+        room.jumping = [false, false];
 
         // Ikkala o'yinchiga yangi o'yin boshlandi xabari
         io.to(roomName).emit('rematchStart');
@@ -2258,8 +2275,9 @@ io.on('connection', (socket) => {
         // O'yin ma'lumotlarini yuborish - startGame funksiyasidan foydalanish
         const player1 = io.sockets.sockets.get(room.players[0]);
         const player2 = io.sockets.sockets.get(room.players[1]);
-        console.log('player1:', player1 ? 'found' : 'not found', 'player2:', player2 ? 'found' : 'not found');
         if (player1 && player2) {
+            player1.roomId = roomName;
+            player2.roomId = roomName;
             startGame(player1, player2, roomName);
         }
     });

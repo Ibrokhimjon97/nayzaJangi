@@ -5075,11 +5075,25 @@ function handleStart(e) {
     aimSfxPlayed = false;
     dragStart = getPointerPos(e);
     dragCurrent = { ...dragStart };
+    if (gameMode === 'multi' && socket && socket.connected) {
+        socket.emit('playerAimState', { isAiming: true, dist: 0 });
+    }
 }
 
+let lastAimEmitTime = 0;
 function handleMove(e) {
     if (!isDragging) return;
     dragCurrent = getPointerPos(e);
+    if (gameMode === 'multi' && socket && socket.connected) {
+        const now = performance.now();
+        if (now - lastAimEmitTime > 70) {
+            lastAimEmitTime = now;
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragCurrent.y - dragStart.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            socket.emit('playerAimState', { isAiming: true, dist });
+        }
+    }
 }
 
 function computeShotPower(distance) {
@@ -5095,6 +5109,9 @@ function handleEnd(e) {
     if (!isDragging) return;
     isDragging = false;
     aimSfxPlayed = false;
+    if (gameMode === 'multi' && socket && socket.connected) {
+        socket.emit('playerAimState', { isAiming: false, dist: 0 });
+    }
 
     const dx = dragStart.x - dragCurrent.x;
     const dy = dragCurrent.y - dragStart.y;
@@ -7608,9 +7625,27 @@ socket.on('superIntercept', (data) => {
     }
 });
 
+socket.on('playerAimState', (data) => {
+    if (!data || typeof data.playerIndex !== 'number') return;
+    if (data.playerIndex === myPlayerIndex) return;
+    const oppModel = modelForPlayer(data.playerIndex);
+    if (!oppModel) return;
+    if (data.isAiming) {
+        const state = (data.dist && data.dist > 50) ? 'aim' : (data.dist > 10 ? 'load' : 'aim');
+        setSoldierVisual(oppModel, state);
+    } else {
+        const isDef = isDefenseActiveForPlayer(data.playerIndex);
+        const isDck = isDuckActiveForPlayer(data.playerIndex);
+        setSoldierVisual(oppModel, isDck ? 'duck' : (isDef ? 'defend' : 'idle'));
+    }
+});
+
 socket.on('spearThrown', (data) => {
     const { playerIndex, angle, power, isArtillery, isFire } = data;
-    setModelActionState(modelForPlayer(playerIndex), 'aim', 800);
+    const thrower = modelForPlayer(playerIndex);
+    if (thrower) {
+        setModelActionState(thrower, 'afterShot', 950);
+    }
     if (isFire) pendingFireShot = true;
     startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
@@ -7622,13 +7657,11 @@ socket.on('groundHit', (data) => {
     resetCameraAfterImpact();
     if (controlsPanel) controlsPanel.classList.remove('disabled');
     if (hud) hud.style.opacity = '1';
-    if (spear && spear.playerIndex !== myPlayerIndex) {
-        if (spear.isArtillery) {
-            triggerCinematicExplosion(data.hitX, data.hitY);
-        } else {
-            stickSpear(null, data.hitX, data.hitY, data.hitAngle);
-            playSfx('ground');
-        }
+    if (spear && spear.isArtillery) {
+        triggerCinematicExplosion(data.hitX, data.hitY);
+    } else {
+        stickSpear(null, data.hitX, data.hitY, data.hitAngle);
+        playSfx('ground');
     }
 });
 
@@ -7648,43 +7681,45 @@ socket.on('hitRegistered', (data) => {
         screenShake = Math.max(screenShake, 16);
     }
 
-    if (spear && spear.playerIndex !== myPlayerIndex) {
-        hideFlyingSpear();
-        if (spear.isArtillery) {
-            triggerCinematicExplosion(hitX, hitY);
-            showDamageText(hitX, hitY + 80, `-${damage}`, false, true);
-            if (damage > 0) knockDownModel(targetModel);
+    // Har ikki o'yinchida ham o'q tegishi, yiqilishi va zarba effektlari ko'rinadi
+    hideFlyingSpear();
+    if (spear && spear.isArtillery) {
+        triggerCinematicExplosion(hitX, hitY);
+        showDamageText(hitX, hitY + 80, `-${damage}`, false, true);
+        if (damage > 0 && targetModel) knockDownModel(targetModel);
+    } else if (targetModel) {
+        flashHit(targetModel);
+        if (duckDodged) {
+            showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
+        } else if (jumpDodged) {
+            showDamageText(hitX, hitY + 80, "SAKRAB QUTULDI! 🤾", false, true);
+        } else if (isShieldHit) {
+            spawnParticles(hitX, hitY, 10, true);
+            const msg = shieldActiveBlock ? "🛡️ QALQON! BLOK" : `QALQONGA TEGDI! -${damage}`;
+            showDamageText(hitX, hitY + 80, msg, false, true);
+            playSfx(shieldActiveBlock ? 'shieldActive' : 'shieldPassive');
         } else {
-            flashHit(targetModel);
-            if (duckDodged) {
-                showDamageText(hitX, hitY + 80, "BOSHNI EGIB QUTULDI!", false, true);
-            } else if (jumpDodged) {
-                showDamageText(hitX, hitY + 80, "SAKRAB QUTULDI! 🤾", false, true);
-            } else if (isShieldHit) {
-                spawnParticles(hitX, hitY, 10, true);
-                const msg = shieldActiveBlock ? "🛡️ QALQON! BLOK" : `QALQONGA TEGDI! -${damage}`;
-                showDamageText(hitX, hitY + 80, msg, false, true);
-                playSfx(shieldActiveBlock ? 'shieldActive' : 'shieldPassive');
+            let isCrit = damage >= 40;
+            spawnParticles(hitX, hitY, isCrit ? 40 : 20);
+            if (hitZone === 'head') {
+                playSfx('headHit');
+                if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
+                screenShake = Math.max(screenShake, 18);
+            } else if (hitZone === 'leg') {
+                playSfx('legHit');
             } else {
-                let isCrit = damage >= 40;
-                spawnParticles(hitX, hitY, isCrit ? 40 : 20);
-                if (hitZone === 'head') {
-                    playSfx('headHit');
-                    if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
-                    screenShake = Math.max(screenShake, 18);
-                } else if (hitZone === 'leg') {
-                    playSfx('legHit');
-                } else {
-                    playSfx('ground', 0.9);
-                }
-                if (targetIndex === myPlayerIndex && damage > 0) {
-                    if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
-                }
-                let msg = "-" + damage;
-                if (isCrit) msg = "BOSHGA! " + msg;
-                if (shieldlessDefense) msg = "HIMOYA! " + msg;
-                showDamageText(hitX, hitY + 80, msg, isCrit);
-                if (damage > 0) knockDownModel(targetModel);
+                playSfx('ground', 0.9);
+            }
+            if (targetIndex === myPlayerIndex && damage > 0) {
+                if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
+            }
+            let msg = "-" + damage;
+            if (isCrit) msg = "BOSHGA! " + msg;
+            if (shieldlessDefense) msg = "HIMOYA! " + msg;
+            showDamageText(hitX, hitY + 80, msg, isCrit);
+            if (damage > 0) {
+                knockDownModel(targetModel);
+                setSoldierVisual(targetModel, 'hurt');
             }
         }
     }
@@ -7799,6 +7834,12 @@ socket.on('rematchStart', () => {
     // O'yinni qayta boshlash
     gameOverScreen.classList.add('hidden');
     if (rematchModal) rematchModal.classList.add('hidden');
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.setProperty('display', 'none', 'important');
+    }
+    gameScreen.classList.remove('hidden');
+    gameMode = 'multi';
     if (rematchBtn) {
         rematchBtn.innerText = "Revansh";
         rematchBtn.disabled = false;
@@ -7806,11 +7847,14 @@ socket.on('rematchStart', () => {
     // O'yin holatini qayta boshlash
     myHealth = 100;
     enemyHealth = 100;
+    myShield = 5;
+    enemyShield = 5;
     mySuper = myProfile.superPowers || 5;
     myCrow = myProfile.crowhunt || 0;
     artilleryCount = myProfile.artillery || 0;
     updateSuperUI();
     updateHealthUI();
+    updateShieldUI();
     myDefenseActive = false;
     enemyDefenseActive = false;
     myDuckActive = false;
@@ -7818,12 +7862,17 @@ socket.on('rematchStart', () => {
     setDefenseActive(false, false);
     setDuckActive(false, false);
     resetJumpStates();
-    currentTurnIndex = 0;
+    currentTurnIndex = -1;
     prevTurnIndex = -2;
     isWallPlacementMode = false;
     isWallDragActive = false;
     singleShotLocked = false;
     resetWeapon();
+    if (!isLooping) {
+        isLooping = true;
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
 });
 
 // Revansh rad etildi
@@ -8099,22 +8148,10 @@ if (rematchBtn) {
 if (btnRematchAccept) {
     const handleRematchAccept = safeModalAction((e) => {
         if (rematchModal) rematchModal.classList.add('hidden');
-        openCharacterSelectModal({
-            onConfirm: () => {
-                if (socket && socket.connected) {
-                    socket.emit('rematchAccept', { roomName: currentRoomName, charType: myProfile.charType });
-                }
-            },
-            onCancel: () => {
-                if (socket && socket.connected) {
-                    socket.emit('rematchDecline', { roomName: currentRoomName });
-                }
-                gameOverScreen.classList.add('hidden');
-                menuScreen.classList.remove('hidden');
-                gameMode = 'menu';
-                if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-            }
-        });
+        if (socket && socket.connected) {
+            socket.emit('rematchAccept', { roomName: currentRoomName, charType: myProfile.charType });
+            showCenterNotice("⚔️ Revansh qabul qilindi! O'yin qayta boshlanmoqda...", 2000);
+        }
     });
     btnRematchAccept.addEventListener('click', handleRematchAccept);
     btnRematchAccept.addEventListener('touchend', handleRematchAccept, { passive: false });
@@ -12613,22 +12650,21 @@ function updateMenuWallpaper() {
 // Ekran holatlari turli joylarda o'zgargani uchun, doimiy yengil kuzatuv qo'yamiz.
 setInterval(updateMenuWallpaper, 350);
 
-// --- Kirish intro ekrani logikasi ---
+// --- Kirish intro ekrani va Asset Preloader logikasi ---
 (function setupIntroScreen() {
     const introScreen = document.getElementById('intro-screen');
     if (!introScreen) return;
 
-    // Agar Telegramdan duel kodi bilan kirilgan bo'lsa yoki avval ko'rilgan bo'lsa, introni umuman ko'rsatmaymiz
-    try {
-        if ((typeof getPendingRoomCode === 'function' && getPendingRoomCode()) || sessionStorage.getItem('kamonboz_intro_seen') === '1') {
-            introScreen.classList.add('hide');
-            introScreen.style.display = 'none';
-            if (introScreen.parentNode) introScreen.parentNode.removeChild(introScreen);
-            return;
-        }
-    } catch (_) { }
+    const fillEl = document.getElementById('intro-loader-fill');
+    const percentEl = document.getElementById('intro-loader-percent');
+    const statusEl = document.getElementById('intro-loader-status');
+    const startBtn = document.getElementById('btn-intro-start');
 
     let introDismissed = false;
+    let isPreloadDone = false;
+    let currentDisplayPercent = 0;
+    let targetPercent = 0;
+
     const dismissIntro = (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         if (introDismissed) return;
@@ -12670,24 +12706,160 @@ setInterval(updateMenuWallpaper, 350);
         }
     });
 
-    const startBtn = document.getElementById('btn-intro-start');
     if (startBtn) {
         startBtn.addEventListener('click', handleIntroStartGame);
         startBtn.addEventListener('touchend', handleIntroStartGame, { passive: false });
     }
 
     const handleBackgroundDismiss = (e) => {
+        if (currentDisplayPercent < 100) return;
         if (e.target === startBtn || (startBtn && startBtn.contains(e.target))) return;
         handleIntroStartGame(e);
     };
     introScreen.addEventListener('click', handleBackgroundDismiss);
     introScreen.addEventListener('touchend', handleBackgroundDismiss, { passive: true });
-    // 4.5 soniyadan so'ng avtomatik menyuga o'tish
-    setTimeout(() => {
-        if (!introDismissed) {
-            handleIntroStartGame();
+
+    // Preloader assets ro'yxati (o'yin grafikasi va tovushlari)
+    const assetsToPreload = [
+        'walpaper.png',
+        'daraxtkatta.png',
+        'daraxtkichkina.png',
+        'qarga.png',
+        'devortusiq.png',
+        'Qala.png',
+        'bulut-Photoroom.png',
+        'artileriya.png',
+        'sandik.png',
+        'Kamonlik%20Usmoniy/kamonlik%201.png',
+        'Kamonlik%20Usmoniy/kamonlik%20monjal.png',
+        'Kamonlik%20Usmoniy/kamonlik%20uq%20uzdi.png',
+        'Kamonlik%20Usmoniy/kamonlik%202%20himoya.png',
+        'Kamonlik%20Usmoniy/yaradorkamonbozqalqonli.png',
+        'Kamonlik%20Usmoniy/Otirgan%20qalqonli%20kamonboz.png',
+        'Nayzalik%20Usmoniy/Jangchi%20nayza%201.png',
+        'Nayzalik%20Usmoniy/Jangchi%20nayza%202.png',
+        'Nayzalik%20Usmoniy/Jangchi%20nayza%203.png',
+        'Nayzalik%20Usmoniy/Jangchi%20nayza%204.png',
+        'Nayzalik%20Usmoniy/qalqonnayzautirgan.png',
+        'jumong/stand.png',
+        'jumong/aim.png',
+        'jumong/afterShot.png',
+        'jumong/hurt.png',
+        'jumong/defend.png',
+        'jumong/dead.png',
+        'jumong/walk1.png',
+        'jumong/walk2.png',
+        'avatars/jumong.png',
+        'avatars/archer_ottoman.png',
+        'avatars/spear_ottoman.png',
+        'sounds/hit.mp3',
+        'sounds/bow_shoot.mp3',
+        'sounds/spear_throw.mp3',
+        'sounds/headshot.mp3',
+        'sounds/win.mp3',
+        'sounds/lose.mp3'
+    ];
+
+    let totalAssets = assetsToPreload.length;
+    let loadedAssets = 0;
+
+    function updatePreloaderUI() {
+        if (fillEl) fillEl.style.width = currentDisplayPercent + '%';
+        if (percentEl) percentEl.textContent = Math.round(currentDisplayPercent) + '%';
+        if (statusEl) {
+            if (currentDisplayPercent < 35) {
+                statusEl.textContent = "Grafika fayllari yuklanmoqda...";
+            } else if (currentDisplayPercent < 70) {
+                statusEl.textContent = "Jangchilar va qurollar tayyorlanmoqda...";
+            } else if (currentDisplayPercent < 100) {
+                statusEl.textContent = "Ovoz va animatsiyalar sozlanmoqda...";
+            } else {
+                statusEl.textContent = "Tayyor! ⚔️";
+            }
         }
-    }, 4500);
+    }
+
+    const animInterval = setInterval(() => {
+        if (currentDisplayPercent < targetPercent) {
+            const step = Math.max(1, Math.ceil((targetPercent - currentDisplayPercent) * 0.25));
+            currentDisplayPercent = Math.min(targetPercent, currentDisplayPercent + step);
+            updatePreloaderUI();
+        }
+
+        if (currentDisplayPercent >= 100 && !isPreloadDone) {
+            isPreloadDone = true;
+            clearInterval(animInterval);
+            updatePreloaderUI();
+            if (startBtn) {
+                startBtn.classList.remove('hidden');
+                startBtn.style.opacity = '1';
+                startBtn.style.pointerEvents = 'auto';
+            }
+            // Agar Telegramda bo'lsa yoki avval ko'rilgan bo'lsa, 700ms dan keyin avtomatik o'yinga kirish
+            setTimeout(() => {
+                if (!introDismissed) {
+                    handleIntroStartGame();
+                }
+            }, 750);
+        }
+    }, 30);
+
+    const onAssetItemDone = () => {
+        loadedAssets++;
+        targetPercent = Math.min(100, Math.floor((loadedAssets / totalAssets) * 100));
+    };
+
+    // Assetlarni birma-bir xavfsiz yuklab keshga joylash
+    assetsToPreload.forEach(src => {
+        const isAudio = src.endsWith('.mp3') || src.endsWith('.wav') || src.endsWith('.ogg');
+        if (isAudio) {
+            try {
+                const aud = new Audio();
+                aud.preload = 'auto';
+                let resolved = false;
+                const done = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        onAssetItemDone();
+                    }
+                };
+                aud.addEventListener('canplaythrough', done, { once: true });
+                aud.addEventListener('error', done, { once: true });
+                aud.src = src;
+                aud.load();
+                setTimeout(done, 1500);
+            } catch (_) {
+                onAssetItemDone();
+            }
+        } else {
+            const img = new Image();
+            let resolved = false;
+            const done = () => {
+                if (!resolved) {
+                    resolved = true;
+                    onAssetItemDone();
+                }
+            };
+            img.onload = done;
+            img.onerror = done;
+            img.src = src;
+            setTimeout(done, 2000);
+        }
+    });
+
+    // Maxsus modellarni ham yuklash
+    if (typeof fetchCustomModels === 'function') {
+        fetchCustomModels().then(() => {
+            onAssetItemDone();
+        }).catch(() => {
+            onAssetItemDone();
+        });
+    }
+
+    // Safety fallback: Eng ko'pi bilan 3.2 soniyada to'liq yuklab tugatadi
+    setTimeout(() => {
+        targetPercent = 100;
+    }, 3200);
 })();
 socket.on('connect', () => {
     socket.emit('registerProfile', myProfile);

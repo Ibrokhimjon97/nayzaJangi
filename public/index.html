@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=101">
+    <link rel="stylesheet" href="style.css?v=102">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script>
         // Telegram orqali duel yoki xona havolasi bilan kirilganda menyuni oldindan yashirib qo'yish
@@ -22,7 +22,7 @@
             if (_s.indexOf('duel_room=') !== -1 || _s.indexOf('room=') !== -1 || _s.indexOf('code=') !== -1 || _s.indexOf('startapp=') !== -1 || _h.indexOf('duel_') !== -1 || _h.indexOf('tgWebAppStartParam=') !== -1) {
                 document.documentElement.classList.add('direct-duel-active');
             }
-        } catch (_) {}
+        } catch (_) { }
     </script>
     <style>
         #menu-screen p {
@@ -98,15 +98,23 @@
         <div id="canvas-container"></div>
         <!-- Menyu/auth fonidagi to'liq ekran wallpaper (canvas ustida, UI ostida) -->
         <div id="menu-wallpaper"></div>
-        <!-- Kirish intro ekrani (wallpaper) -->
+        <!-- Kirish intro ekrani (wallpaper & preloader) -->
         <div id="intro-screen">
             <div id="intro-overlay"></div>
             <div id="intro-content">
-                <div class="intro-loader-bar">
-                    <div class="intro-loader-fill"></div>
+                <div class="intro-preloader-box">
+                    <h1 class="intro-game-title">KAMONBOZ</h1>
+                    <div class="intro-game-sub">NAYZA JANGI</div>
+                    <div class="intro-loader-bar">
+                        <div id="intro-loader-fill" class="intro-loader-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="intro-loader-meta">
+                        <span id="intro-loader-status" class="intro-loader-status">O'yin fayllari yuklanmoqda...</span>
+                        <span id="intro-loader-percent" class="intro-loader-percent">0%</span>
+                    </div>
+                    <button id="btn-intro-start" class="primary-btn intro-start-btn hidden">⚔️ O'yinni boshlash</button>
+                    <div id="intro-hint" class="hidden">Ekranga teging</div>
                 </div>
-                <button id="btn-intro-start" class="primary-btn">Boshlash</button>
-                <div id="intro-hint">Ekranga teging</div>
             </div>
         </div>
         <div id="ui-layer">
@@ -172,18 +180,24 @@
                         <div class="menu-user-info">
                             <span class="menu-user-name" id="menu-player-name">Jangchi</span>
                             <div class="menu-user-sub">
-                                <span class="menu-level-chip"><span id="txt-campaign-stage" style="display:none;">Kampaniya</span>Lv.<b id="campaign-level-text">1</b></span>
+                                <span class="menu-level-chip"><span id="txt-campaign-stage"
+                                        style="display:none;">Kampaniya</span>Lv.<b
+                                        id="campaign-level-text">1</b></span>
                                 <span id="menu-tier-badge" class="menu-tier-chip">🥉 Bronza</span>
-                                <span class="menu-score-chip"><span id="txt-menu-score" style="display:none;">Ball</span>⭐ <b id="menu-score-text">0</b></span>
+                                <span class="menu-score-chip"><span id="txt-menu-score"
+                                        style="display:none;">Ball</span>⭐ <b id="menu-score-text">0</b></span>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="menu-top-actions">
-                        <button id="btn-top-invites" class="menu-top-btn btn-top-invites" title="Duelga takliflar">⚔️ Takliflar <span id="top-invites-badge" class="badge-pill" style="display:none;">0</span></button>
+                        <button id="btn-top-invites" class="menu-top-btn btn-top-invites" title="Duelga takliflar">⚔️
+                            Takliflar <span id="top-invites-badge" class="badge-pill"
+                                style="display:none;">0</span></button>
                         <button id="btn-profile" class="menu-top-btn" title="Profil">👤 Profil</button>
                         <button id="btn-settings" class="menu-top-btn" title="Sozlamalar">⚙️ Sozlamalar</button>
-                        <button id="btn-logout" class="menu-top-btn menu-top-btn-danger" title="Chiqish">🚪 Chiqish</button>
+                        <button id="btn-logout" class="menu-top-btn menu-top-btn-danger" title="Chiqish">🚪
+                            Chiqish</button>
                     </div>
                 </div>
 
@@ -218,13 +232,15 @@
 
                     <!-- Card 3: Duelga Takliflar -->
                     <div class="menu-card" data-card="invites">
-                        <div class="menu-card-badge badge-rose" id="badge-duel-invites">⚔️ TAKLIFLAR <span id="txt-duel-invites-count" class="duel-count-pill" style="display:none;">0</span></div>
+                        <div class="menu-card-badge badge-rose" id="badge-duel-invites">⚔️ TAKLIFLAR <span
+                                id="txt-duel-invites-count" class="duel-count-pill" style="display:none;">0</span></div>
                         <div class="menu-card-icon-box icon-rose">
                             <span class="menu-card-emoji">📜</span>
                         </div>
                         <h3 class="menu-card-name">Duelga Takliflar</h3>
                         <p class="menu-card-description">Kelgan takliflarni qabul qiling va vaqtni belgilang</p>
-                        <button id="btn-duel-invites" class="primary-btn menu-card-btn btn-rose">Takliflar ro'yxati</button>
+                        <button id="btn-duel-invites" class="primary-btn menu-card-btn btn-rose">Takliflar
+                            ro'yxati</button>
                     </div>
 
                     <!-- Card 4: Kunlik Sovg'alar -->
@@ -235,7 +251,8 @@
                         </div>
                         <h3 class="menu-card-name">Kunlik Sovg'alar</h3>
                         <p class="menu-card-description">Har kuni kiring va bepul super kuchlar oling</p>
-                        <button id="btn-daily-rewards" class="primary-btn menu-card-btn btn-amber">Sovg'ani olish</button>
+                        <button id="btn-daily-rewards" class="primary-btn menu-card-btn btn-amber">Sovg'ani
+                            olish</button>
                     </div>
 
                     <!-- Card 5: Kunlik Vazifalar -->
@@ -354,7 +371,8 @@
             <div id="character-select-modal" class="hidden panel center-panel char-select-modal" data-scrollable="true">
                 <div class="char-select-header">
                     <h2 id="txt-char-select-title">Qahramoningizni tanlang</h2>
-                    <p id="txt-char-select-sub" class="char-select-subtitle">Jangga kirishdan oldin jangchi modelini tanlang</p>
+                    <p id="txt-char-select-sub" class="char-select-subtitle">Jangga kirishdan oldin jangchi modelini
+                        tanlang</p>
                 </div>
 
                 <div id="char-select-roster" class="char-roster-grid" data-scrollable="true">
@@ -394,40 +412,60 @@
                 <h2 id="txt-about-title">ℹ️ O'yin haqida</h2>
                 <div style="text-align:left; color:#cbd5e1; font-size:0.92rem; line-height:1.5;">
                     <!-- Qisqacha o'yin haqida ma'lumot -->
-                    <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;">
+                    <div
+                        style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;">
                         <p style="margin: 0; color: #f1f5f9; font-size: 0.92rem; line-height: 1.55;">
-                            🏹 <b>Nayza Jangi (Kamonboz)</b> — sharqona jang san'ati ruhidagi hayajonli 3D taktik duel o'yini.
-                            Shamol kuchi va masofani aniq hisoblab, mohir kamonchi hamda nayzabozlaringiz bilan dushmanga qarshi o'q uzing, super qurollar, qalqon va devorlardan foydalanib g'alaba qozoning!
+                            🏹 <b>Nayza Jangi (Kamonboz)</b> — sharqona jang san'ati ruhidagi hayajonli 3D taktik duel
+                            o'yini.
+                            Shamol kuchi va masofani aniq hisoblab, mohir kamonchi hamda nayzabozlaringiz bilan
+                            dushmanga qarshi o'q uzing, super qurollar, qalqon va devorlardan foydalanib g'alaba
+                            qozoning!
                         </p>
                     </div>
 
                     <!-- Muallif -->
-                    <div style="margin-bottom: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                    <div
+                        style="margin-bottom: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
                         <span style="color: #94a3b8; font-size: 0.85rem;">Muallif:</span>
-                        <div style="font-weight: 700; color: #f8fafc; font-size: 0.95rem;">To'raboyev Ibrohimjon Bahtiyor o'g'li</div>
+                        <div style="font-weight: 700; color: #f8fafc; font-size: 0.95rem;">To'raboyev Ibrohimjon
+                            Bahtiyor o'g'li</div>
                     </div>
 
                     <!-- Muallif bilan aloqa uchun email -->
-                    <div style="margin-bottom: 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(3, 105, 161, 0.2)); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                    <div
+                        style="margin-bottom: 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(3, 105, 161, 0.2)); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
                         <div>
-                            <div style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin-bottom: 2px;">Muallif bilan aloqa uchun:</div>
-                            <a href="mailto:Abiturientlaruchun@gmail.com" id="author-email-link" style="color: #ffffff; text-decoration: underline; font-weight: 700; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 6px;">
+                            <div style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin-bottom: 2px;">
+                                Muallif bilan aloqa uchun:</div>
+                            <a href="mailto:Abiturientlaruchun@gmail.com" id="author-email-link"
+                                style="color: #ffffff; text-decoration: underline; font-weight: 700; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 6px;">
                                 <span>📧</span> <span id="author-email-text">Abiturientlaruchun@gmail.com</span>
                             </a>
                         </div>
-                        <button id="btn-copy-email" type="button" class="primary-btn copy-icon-btn" style="padding: 6px 12px; font-size: 0.8rem; min-height: auto; background: #0284c7;" title="Email manzilini nusxalash">📋 Nusxalash</button>
+                        <button id="btn-copy-email" type="button" class="primary-btn copy-icon-btn"
+                            style="padding: 6px 12px; font-size: 0.8rem; min-height: auto; background: #0284c7;"
+                            title="Email manzilini nusxalash">📋 Nusxalash</button>
                     </div>
 
                     <!-- Donate bo'limi -->
-                    <div style="font-size: 0.84rem; color: #fbbf24; font-weight: 700; margin: 10px 0 6px;">Loyiha rivojiga hissa qo'shish (Donate):</div>
+                    <div style="font-size: 0.84rem; color: #fbbf24; font-weight: 700; margin: 10px 0 6px;">Loyiha
+                        rivojiga hissa qo'shish (Donate):</div>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background: rgba(0,0,0,0.3); padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
-                            <span><b>Donate (Humo):</b> <span id="donate-humo" style="font-family: monospace; color: #38bdf8; letter-spacing: 0.5px;">9860010123943010</span></span>
-                            <button id="btn-copy-humo" class="primary-btn copy-icon-btn" style="padding:5px 9px; font-size:0.75rem; min-height:auto;" aria-label="Humo raqamini nusxalash">📋</button>
+                        <div
+                            style="display:flex; align-items:center; justify-content:space-between; gap:8px; background: rgba(0,0,0,0.3); padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                            <span><b>Donate (Humo):</b> <span id="donate-humo"
+                                    style="font-family: monospace; color: #38bdf8; letter-spacing: 0.5px;">9860010123943010</span></span>
+                            <button id="btn-copy-humo" class="primary-btn copy-icon-btn"
+                                style="padding:5px 9px; font-size:0.75rem; min-height:auto;"
+                                aria-label="Humo raqamini nusxalash">📋</button>
                         </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background: rgba(0,0,0,0.3); padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
-                            <span><b>Donate (Visa):</b> <span id="donate-visa" style="font-family: monospace; color: #a78bfa; letter-spacing: 0.5px;">4916990300521363</span></span>
-                            <button id="btn-copy-visa" class="primary-btn copy-icon-btn" style="padding:5px 9px; font-size:0.75rem; min-height:auto;" aria-label="Visa raqamini nusxalash">📋</button>
+                        <div
+                            style="display:flex; align-items:center; justify-content:space-between; gap:8px; background: rgba(0,0,0,0.3); padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                            <span><b>Donate (Visa):</b> <span id="donate-visa"
+                                    style="font-family: monospace; color: #a78bfa; letter-spacing: 0.5px;">4916990300521363</span></span>
+                            <button id="btn-copy-visa" class="primary-btn copy-icon-btn"
+                                style="padding:5px 9px; font-size:0.75rem; min-height:auto;"
+                                aria-label="Visa raqamini nusxalash">📋</button>
                         </div>
                     </div>
                 </div>
@@ -465,7 +503,8 @@
             </div>
 
             <!-- Tilni Tanlash Modali (First Launch Language Selector Modal) -->
-            <div id="language-select-modal" class="screen hidden panel center-panel language-select-modal" data-scrollable="true">
+            <div id="language-select-modal" class="screen hidden panel center-panel language-select-modal"
+                data-scrollable="true">
                 <div class="lang-modal-header">
                     <div class="lang-modal-icon">🌍</div>
                     <h2 id="txt-lang-modal-title">Tilni tanlang / Choose Language</h2>
@@ -473,8 +512,9 @@
                 </div>
 
                 <div class="lang-carousel-container">
-                    <button type="button" class="lang-nav-btn lang-nav-prev" id="btn-lang-prev" aria-label="Oldingi">‹</button>
-                    
+                    <button type="button" class="lang-nav-btn lang-nav-prev" id="btn-lang-prev"
+                        aria-label="Oldingi">‹</button>
+
                     <div class="lang-carousel" id="lang-carousel-track" data-scrollable="true">
                         <!-- 1. O'zbekcha -->
                         <div class="lang-card" data-lang="uz">
@@ -541,7 +581,8 @@
                         </div>
                     </div>
 
-                    <button type="button" class="lang-nav-btn lang-nav-next" id="btn-lang-next" aria-label="Keyingi">›</button>
+                    <button type="button" class="lang-nav-btn lang-nav-next" id="btn-lang-next"
+                        aria-label="Keyingi">›</button>
                 </div>
             </div>
 
@@ -794,14 +835,16 @@
             <div id="rating-modal" class="screen hidden panel center-panel">
                 <button type="button" id="btn-close-rating-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2 id="txt-rating-title">Sizning Reytingingiz</h2>
-                <div class="stats-summary" style="margin: 14px 0 10px; font-size: 1.05rem; text-align: left; line-height: 1.7;">
+                <div class="stats-summary"
+                    style="margin: 14px 0 10px; font-size: 1.05rem; text-align: left; line-height: 1.7;">
                     <p>🏆 <span id="txt-score-lbl">Ball:</span> <b id="stat-score" style="color: #f59e0b;">0</b></p>
                     <p>⚔️ <span id="txt-games-lbl">O'yinlar:</span> <b id="stat-games">0</b></p>
                     <p>✅ <span id="txt-wins-lbl">G'alabalar:</span> <b id="stat-wins" style="color: #10b981;">0</b></p>
                 </div>
 
                 <div class="leaderboard-search-wrap" style="margin: 6px 0 10px;">
-                    <input type="text" id="leaderboard-search-input" class="leaderboard-search-input" placeholder="🔍 O'yinchini qidirish (ism bo'yicha)...">
+                    <input type="text" id="leaderboard-search-input" class="leaderboard-search-input"
+                        placeholder="🔍 O'yinchini qidirish (ism bo'yicha)...">
                 </div>
 
                 <div id="leaderboard-list"
@@ -816,27 +859,31 @@
                 <button type="button" id="btn-close-invites-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2>⚔️ Duelga Takliflar</h2>
                 <div class="duel-invites-tabs">
-                    <button type="button" class="duel-tab-btn active" id="tab-incoming-invites">📥 Kelgan takliflar <span id="tab-incoming-badge" class="tab-badge">0</span></button>
-                    <button type="button" class="duel-tab-btn" id="tab-outgoing-invites">📤 Yuborilganlar <span id="tab-outgoing-badge" class="tab-badge">0</span></button>
+                    <button type="button" class="duel-tab-btn active" id="tab-incoming-invites">📥 Kelgan takliflar
+                        <span id="tab-incoming-badge" class="tab-badge">0</span></button>
+                    <button type="button" class="duel-tab-btn" id="tab-outgoing-invites">📤 Yuborilganlar <span
+                            id="tab-outgoing-badge" class="tab-badge">0</span></button>
                 </div>
-                
+
                 <div id="incoming-invites-container" class="duel-invites-list">
                     <p class="empty-invites-hint">Kelgan duel takliflari yo'q</p>
                 </div>
-                
+
                 <div id="outgoing-invites-container" class="duel-invites-list hidden">
                     <p class="empty-invites-hint">Yuborilgan takliflar yo'q</p>
                 </div>
-                
-                <button type="button" id="btn-close-invites" class="primary-btn" style="background:#475569; margin-top:12px;">Yopish</button>
+
+                <button type="button" id="btn-close-invites" class="primary-btn"
+                    style="background:#475569; margin-top:12px;">Yopish</button>
             </div>
 
             <!-- Jang Vaqtini Belgilash Modali -->
             <div id="schedule-duel-modal" class="screen hidden panel center-panel schedule-modal">
                 <button type="button" id="btn-close-schedule-x" class="modal-close-x" aria-label="Yopish">✕</button>
                 <h2>⏰ Jang Vaqtini Belgilang</h2>
-                <p id="txt-schedule-subtitle" style="color:#94a3b8; font-size:0.92rem; margin-bottom:14px;">Raqib bilan qachon duel o'tkazmoqchisiz?</p>
-                
+                <p id="txt-schedule-subtitle" style="color:#94a3b8; font-size:0.92rem; margin-bottom:14px;">Raqib bilan
+                    qachon duel o'tkazmoqchisiz?</p>
+
                 <div class="schedule-quick-options">
                     <button type="button" class="schedule-time-preset active" data-minutes="0">⚡ Darhol (Hozir)</button>
                     <button type="button" class="schedule-time-preset" data-minutes="5">⏳ 5 daqiqadan so'ng</button>
@@ -844,25 +891,32 @@
                     <button type="button" class="schedule-time-preset" data-minutes="30">⏳ 30 daqiqadan so'ng</button>
                     <button type="button" class="schedule-time-preset" data-minutes="60">⏳ 1 soatdan so'ng</button>
                 </div>
-                
+
                 <div style="margin: 14px 0 10px; text-align: left;">
-                    <label for="input-custom-schedule-time" style="font-size:0.86rem; color:#cbd5e1; display:block; margin-bottom:4px;">Yoki aniq soatni tanlang:</label>
+                    <label for="input-custom-schedule-time"
+                        style="font-size:0.86rem; color:#cbd5e1; display:block; margin-bottom:4px;">Yoki aniq soatni
+                        tanlang:</label>
                     <input type="time" id="input-custom-schedule-time" class="schedule-time-input">
                 </div>
-                
+
                 <div style="display:flex; gap:8px; margin-top:14px;">
-                    <button type="button" id="btn-confirm-schedule" class="primary-btn" style="background: linear-gradient(135deg, #10b981, #059669); flex:1;">✅ Tasdiqlash va Yuborish</button>
-                    <button type="button" id="btn-cancel-schedule" class="primary-btn" style="background: #475569; width:90px;">Bekor</button>
+                    <button type="button" id="btn-confirm-schedule" class="primary-btn"
+                        style="background: linear-gradient(135deg, #10b981, #059669); flex:1;">✅ Tasdiqlash va
+                        Yuborish</button>
+                    <button type="button" id="btn-cancel-schedule" class="primary-btn"
+                        style="background: #475569; width:90px;">Bekor</button>
                 </div>
             </div>
 
             <!-- O'yinchi Profili va Statistikasi Modali -->
             <div id="player-profile-modal" class="screen hidden panel center-panel player-profile-screen">
-                <button type="button" id="btn-close-player-profile-x" class="modal-close-x" aria-label="Yopish">✕</button>
-                
+                <button type="button" id="btn-close-player-profile-x" class="modal-close-x"
+                    aria-label="Yopish">✕</button>
+
                 <div class="player-profile-header">
                     <div class="player-profile-avatar-wrap">
-                        <img id="player-profile-avatar-img" class="player-profile-avatar-img" style="display:none;" alt="avatar">
+                        <img id="player-profile-avatar-img" class="player-profile-avatar-img" style="display:none;"
+                            alt="avatar">
                         <span id="player-profile-avatar-fallback" class="player-profile-avatar-emoji">👤</span>
                     </div>
                     <div class="player-profile-main-info">
@@ -873,7 +927,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="player-profile-stats-grid">
                     <div class="profile-stat-box stat-score">
                         <span class="profile-stat-label">Umumiy Ball (XP)</span>
@@ -900,10 +954,12 @@
                         <b id="player-profile-winrate" class="profile-stat-val" style="color:#38bdf8;">0%</b>
                     </div>
                 </div>
-                
+
                 <div class="player-profile-actions">
-                    <button type="button" id="btn-profile-challenge-duel" class="primary-btn btn-challenge">⚔️ Duelga taklif qilish</button>
-                    <button type="button" id="btn-profile-add-friend" class="primary-btn btn-add-friend">👥 Do'stlarga qo'shish</button>
+                    <button type="button" id="btn-profile-challenge-duel" class="primary-btn btn-challenge">⚔️ Duelga
+                        taklif qilish</button>
+                    <button type="button" id="btn-profile-add-friend" class="primary-btn btn-add-friend">👥 Do'stlarga
+                        qo'shish</button>
                 </div>
             </div>
 
@@ -912,8 +968,10 @@
                 <h2>👥 Do'stlik Taklifi</h2>
                 <p id="txt-friend-confirm-msg" style="margin: 14px 0; font-size:1.05rem;"></p>
                 <div style="display:flex; gap:10px; justify-content:center;">
-                    <button type="button" id="btn-friend-confirm-yes" class="primary-btn" style="background:#10b981; flex:1;">✅ Roziman</button>
-                    <button type="button" id="btn-friend-confirm-no" class="primary-btn" style="background:#ef4444; flex:1;">❌ Rad etish</button>
+                    <button type="button" id="btn-friend-confirm-yes" class="primary-btn"
+                        style="background:#10b981; flex:1;">✅ Roziman</button>
+                    <button type="button" id="btn-friend-confirm-no" class="primary-btn"
+                        style="background:#ef4444; flex:1;">❌ Rad etish</button>
                 </div>
             </div>
 
@@ -988,14 +1046,22 @@
             </div>
 
             <!-- Jang maydoniga kirish loading progress bar ekrani -->
-            <div id="battle-loading-overlay" class="screen hidden" style="position:fixed; inset:0; z-index:999999; background:radial-gradient(circle at center, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:none; flex-direction:column; align-items:center; justify-content:center; color:#fff;">
+            <div id="battle-loading-overlay" class="screen hidden"
+                style="position:fixed; inset:0; z-index:999999; background:radial-gradient(circle at center, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:none; flex-direction:column; align-items:center; justify-content:center; color:#fff;">
                 <div style="font-size:3rem; margin-bottom:10px; animation:bounce 1s infinite alternate;">⚔️</div>
-                <h2 id="battle-loading-title" style="font-size:1.35rem; font-weight:800; color:#fbbf24; margin:0 0 6px; text-shadow:0 2px 10px rgba(0,0,0,0.7); letter-spacing:0.5px;">Jang maydoniga kirilmoqda...</h2>
-                <p id="battle-loading-status" style="color:#94a3b8; font-size:0.82rem; margin:0 0 16px;">O'yinchi modellari va ovozlar yuklanmoqda</p>
-                <div style="width:min(280px, 80vw); height:12px; background:rgba(255,255,255,0.12); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.22); box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);">
-                    <div id="battle-loading-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #f59e0b, #10b981); border-radius:999px; transition:width 0.22s ease;"></div>
+                <h2 id="battle-loading-title"
+                    style="font-size:1.35rem; font-weight:800; color:#fbbf24; margin:0 0 6px; text-shadow:0 2px 10px rgba(0,0,0,0.7); letter-spacing:0.5px;">
+                    Jang maydoniga kirilmoqda...</h2>
+                <p id="battle-loading-status" style="color:#94a3b8; font-size:0.82rem; margin:0 0 16px;">O'yinchi
+                    modellari va ovozlar yuklanmoqda</p>
+                <div
+                    style="width:min(280px, 80vw); height:12px; background:rgba(255,255,255,0.12); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.22); box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);">
+                    <div id="battle-loading-bar"
+                        style="width:0%; height:100%; background:linear-gradient(90deg, #f59e0b, #10b981); border-radius:999px; transition:width 0.22s ease;">
+                    </div>
                 </div>
-                <span id="battle-loading-pct" style="margin-top:8px; font-size:0.75rem; color:#cbd5e1; font-weight:600;">0%</span>
+                <span id="battle-loading-pct"
+                    style="margin-top:8px; font-size:0.75rem; color:#cbd5e1; font-weight:600;">0%</span>
             </div>
 
             <div id="game-screen" class="screen hidden" style="pointer-events: none;">
@@ -1026,7 +1092,8 @@
                         id="turn-timer-text">25</span>s</div>
 
                 <!-- Scheduled Duel 2-Minute Forfeit Countdown Banner -->
-                <div id="duel-waiting-forfeit-banner" class="duel-waiting-forfeit-banner hidden" style="pointer-events: auto;">
+                <div id="duel-waiting-forfeit-banner" class="duel-waiting-forfeit-banner hidden"
+                    style="pointer-events: auto;">
                     <span class="pulse-icon">⏳</span>
                     <div class="waiting-text-group">
                         <b id="txt-duel-waiting-title">Raqib maydonga kutilmoqda...</b>
@@ -1045,15 +1112,20 @@
                     <span id="super-count" class="shield-count">5</span>
                 </button>
                 <button id="duck-button" class="icon-btn duck-btn" style="pointer-events: auto;"
-                    aria-label="O'tirish (Cho'qqayib himoyalanish)" title="O'tirish / Cho'qqayish (Boshni egib qutulish)">
-                    <svg viewBox="0 0 48 48" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" class="duck-svg-icon">
-                        <path d="M5 43H43" stroke="rgba(255,255,255,0.75)" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M5 11L37 11M30 7L38 11L30 15" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="21" cy="20" r="4.5" fill="#f8fafc"/>
-                        <path d="M21 24.5L25 32.5" stroke="#f8fafc" stroke-width="4.2" stroke-linecap="round"/>
-                        <path d="M25 32.5L15 36.5L9 43" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M25 32.5L31 37.5L33 43" stroke="#cbd5e1" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M22 28L17 34" stroke="#94a3b8" stroke-width="3.2" stroke-linecap="round"/>
+                    aria-label="O'tirish (Cho'qqayib himoyalanish)"
+                    title="O'tirish / Cho'qqayish (Boshni egib qutulish)">
+                    <svg viewBox="0 0 48 48" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"
+                        class="duck-svg-icon">
+                        <path d="M5 43H43" stroke="rgba(255,255,255,0.75)" stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M5 11L37 11M30 7L38 11L30 15" stroke="#fbbf24" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="21" cy="20" r="4.5" fill="#f8fafc" />
+                        <path d="M21 24.5L25 32.5" stroke="#f8fafc" stroke-width="4.2" stroke-linecap="round" />
+                        <path d="M25 32.5L15 36.5L9 43" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M25 32.5L31 37.5L33 43" stroke="#cbd5e1" stroke-width="3.8" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M22 28L17 34" stroke="#94a3b8" stroke-width="3.2" stroke-linecap="round" />
                     </svg>
                 </button>
                 <button id="jump-button" class="icon-btn jump-btn" style="pointer-events: auto;" aria-label="Sakrash">
@@ -1194,18 +1266,24 @@
                 </div>
 
                 <!-- Har bir level boshida Bepul Bonus Sandiq Modali -->
-                <div id="level-bonus-chest-modal" class="modal-overlay hidden" style="pointer-events: auto; z-index: 9999;">
+                <div id="level-bonus-chest-modal" class="modal-overlay hidden"
+                    style="pointer-events: auto; z-index: 9999;">
                     <div class="panel center-panel modal-panel bonus-chest-panel">
-                        <h2 style="font-size: 1.35rem; color: #f59e0b; margin-bottom: 4px; text-shadow: 0 0 12px rgba(245,158,11,0.5);">🎁 Bepul Bonus Kuch!</h2>
-                        <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0 0 14px;">Sandiqlardan birini tanlang va ushbu level uchun maxsus bepul kuchga ega bo'ling!</p>
-                        
+                        <h2
+                            style="font-size: 1.35rem; color: #f59e0b; margin-bottom: 4px; text-shadow: 0 0 12px rgba(245,158,11,0.5);">
+                            🎁 Bepul Bonus Kuch!</h2>
+                        <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0 0 14px;">Sandiqlardan birini tanlang va
+                            ushbu level uchun maxsus bepul kuchga ega bo'ling!</p>
+
                         <div class="bonus-chests-row" id="bonus-chests-row">
                             <!-- 3 ta sandiq JS orqali generatsiya qilinadi -->
                         </div>
 
                         <div id="bonus-reveal-notice" class="bonus-reveal-notice hidden"></div>
 
-                        <button type="button" id="btn-skip-bonus-chest" class="primary-btn" style="background: #334155; margin-top: 14px; font-size: 0.85rem; padding: 6px 16px; width: auto; min-height: 36px;">O'tkazib yuborish ➔</button>
+                        <button type="button" id="btn-skip-bonus-chest" class="primary-btn"
+                            style="background: #334155; margin-top: 14px; font-size: 0.85rem; padding: 6px 16px; width: auto; min-height: 36px;">O'tkazib
+                            yuborish ➔</button>
                     </div>
                 </div>
 
@@ -1216,9 +1294,13 @@
                             <span class="coin-badge-icon">🪙</span>
                             <h2>Birinchi zarba uchun Qur'a!</h2>
                         </div>
-                        
+
                         <p class="coin-toss-rules" id="coin-toss-rules-text">
-                            <strong>Qur'a shartlari:</strong> Birinchi o'q uzish huquqini aniqlash uchun tanga tashlanadi. O'zingizga ma'qul tomonni tanlang: <strong>Rasm</strong> yoki <strong>Raqam</strong>. Agar ikkalangiz ham bir xil tomonni tanlasangiz, kim <em>birinchi</em> tanlagan bo'lsa o'shanga biriktiriladi va ikkinchi tomon raqibga avtomatik o'tadi!
+                            <strong>Qur'a shartlari:</strong> Birinchi o'q uzish huquqini aniqlash uchun tanga
+                            tashlanadi. O'zingizga ma'qul tomonni tanlang: <strong>Rasm</strong> yoki
+                            <strong>Raqam</strong>. Agar ikkalangiz ham bir xil tomonni tanlasangiz, kim
+                            <em>birinchi</em> tanlagan bo'lsa o'shanga biriktiriladi va ikkinchi tomon raqibga avtomatik
+                            o'tadi!
                         </p>
 
                         <!-- Tanlov tugmalari bloki -->
@@ -1286,12 +1368,13 @@
                     <strong id="game-over-score-val">0</strong> ⭐
                 </div>
                 <button id="btn-next-level" class="primary-btn hidden"
-                    style="background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 8px;">Keyingi bosqich ➔</button>
+                    style="background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 8px;">Keyingi bosqich
+                    ➔</button>
                 <button id="restart-btn" class="primary-btn">Yana o'ynash</button>
-                <button id="rematch-btn" class="primary-btn hidden"
-                    style="background: #8b5cf6; margin-top: 8px;">⚔️ Revansh taklif qilish</button>
-                <button id="btn-game-over-rating" class="primary-btn"
-                    style="background: #d97706; margin-top: 8px;">🏆 Reytingni ko'rish</button>
+                <button id="rematch-btn" class="primary-btn hidden" style="background: #8b5cf6; margin-top: 8px;">⚔️
+                    Revansh taklif qilish</button>
+                <button id="btn-game-over-rating" class="primary-btn" style="background: #d97706; margin-top: 8px;">🏆
+                    Reytingni ko'rish</button>
                 <button id="menu-btn" class="primary-btn" style="background: #475569; margin-top: 10px;">🏠 Bosh
                     menyu</button>
             </div>
@@ -1327,7 +1410,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=101"></script>
+    <script src="client.js?v=102"></script>
     <script>
         // Mobile fullscreen & auto-landscape on first user interaction
         function tryFullscreenAndLandscape() {
@@ -1343,14 +1426,14 @@
                 }
                 const el = document.documentElement;
                 if (document.fullscreenElement == null) {
-                    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-                    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(() => {});
-                    else if (el.mozRequestFullScreen) el.mozRequestFullScreen().catch(() => {});
+                    if (el.requestFullscreen) el.requestFullscreen().catch(() => { });
+                    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(() => { });
+                    else if (el.mozRequestFullScreen) el.mozRequestFullScreen().catch(() => { });
                 }
                 if (screen.orientation && typeof screen.orientation.lock === 'function') {
-                    screen.orientation.lock('landscape').catch(() => {});
+                    screen.orientation.lock('landscape').catch(() => { });
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
         document.addEventListener('touchstart', tryFullscreenAndLandscape, { passive: true, once: true });
         document.addEventListener('click', tryFullscreenAndLandscape, { passive: true, once: true });
