@@ -2869,7 +2869,7 @@ function buildHintTrajectory() {
     let simVx = shot.power * Math.cos(rad);
     if (shot.playerIndex === 1) simVx = -simVx;
     let simVy = shot.power * Math.sin(rad);
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 75; i++) {
         points.push(new THREE.Vector3(simX, simY, -2));
         simX += simVx * 0.05;
         simY += simVy * 0.05;
@@ -4327,6 +4327,14 @@ function handleMove(e) {
     dragCurrent = getPointerPos(e);
 }
 
+function computeShotPower(distance) {
+    if (distance <= 0) return 0;
+    // Dinamik kuch: ekranning markazidan tortganda mo'tadil, 
+    // uzoqroqdan/ekranning narigi tomonidan tortganda esa o'q uzoqqa va kuchli uchishi uchun kengaytirilgan diapazon
+    const base = distance * 8.5 + 220;
+    return Math.min(3600, Math.max(350, base));
+}
+
 function handleEnd(e) {
     isWallDragActive = false;
     if (!isDragging) return;
@@ -4339,14 +4347,12 @@ function handleEnd(e) {
     let distance = Math.sqrt(dx*dx + dy*dy);
     if (distance < 10) return; 
     
-    let power = Math.min(distance * 4, 2000); 
+    let power = computeShotPower(distance); 
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
     
     if (myPlayerIndex === 1) angle = 180 - angle;
     if (angle < -20) angle = -20;
     if (angle > 110) angle = 110;
-            
-            
 
     throwSpear(angle, power);
 }
@@ -4380,6 +4386,11 @@ if (window.PointerEvent) {
         if (isUiTarget(e.target)) return;
         if (e.touches && e.touches[0]) handleStart(e.touches[0]);
     }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+        if (isDragging && e.cancelable) {
+            e.preventDefault();
+        }
+    }, { passive: false });
     document.addEventListener('pointermove', (e) => {
         if (isWallPlacementMode && isWallDragActive) {
             const myWall = wallStates[myPlayerIndex];
@@ -4899,7 +4910,7 @@ function fireEnemyVolleyShot() {
             power += windComp;
             let angle = baseAngle + (Math.random() - 0.5) * 5;
             angle = Math.max(-20, Math.min(110, angle));
-            power = Math.max(700, Math.min(2000, power));
+            power = Math.max(700, Math.min(3600, power));
             
             setModelActionState(shooter, 'aim', 1000);
             setTimeout(() => {
@@ -4924,7 +4935,7 @@ function fireEnemyVolleyShot() {
     
     // 100% aniqlik
     angle = Math.max(-20, Math.min(110, angle));
-    power = Math.max(700, Math.min(2000, power));
+    power = Math.max(700, Math.min(3600, power));
     
     // AI o'q otishidan oldin mo'ljalga olish holatini ko'rsatish
     setModelActionState(shooter, 'aim', 1000);
@@ -5500,7 +5511,7 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
     let angle = (rad * 180) / Math.PI;
     angle += desiredDir * angleOffsetDeg;
     angle = Math.max(-20, Math.min(110, angle));
-    power = Math.max(700, Math.min(2000, power));
+    power = Math.max(700, Math.min(3600, power));
     return { angle, power };
 }
 
@@ -7520,22 +7531,19 @@ function gameLoop(now) {
             let simX = startX;
             let simY = startY;
             const distance = Math.sqrt(dx*dx + dy*dy);
-            const power = Math.min(distance * 4, 2000);
+            const power = computeShotPower(distance);
             let angle = Math.atan2(dy, dx) * (180 / Math.PI);
             
             if (myPlayerIndex === 1) angle = 180 - angle;
             if (angle < -20) angle = -20;
             if (angle > 110) angle = 110;
-            
-            
-            
 
             const rad = angle * (Math.PI / 180);
             let simVx = power * Math.cos(rad);
             if (myPlayerIndex === 1) simVx = -simVx;
             let simVy = power * Math.sin(rad);
             
-            for(let i=0; i<30; i++) {
+            for(let i=0; i<110; i++) {
                 points.push(new THREE.Vector3(simX, simY, 0));
                 simX += simVx * 0.05;
                 simY += simVy * 0.05;
@@ -10482,6 +10490,159 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Universal smooth touch/drag scroll for menu and modals
+(function setupMenuTouchScroll() {
+    let scrollStartY = 0;
+    let scrollStartX = 0;
+    let initialScrollTop = 0;
+    let isScrollDragging = false;
+    let activeScrollPanel = null;
+    let lastMoveTime = 0;
+    let lastMoveY = 0;
+    let scrollVelocity = 0;
+    let isTouchActive = false;
+
+    function getActiveScrollTarget() {
+        if (typeof gameMode !== 'undefined' && gameMode !== 'menu') {
+            const activeModals = [
+                document.getElementById('settings-modal'),
+                document.getElementById('rating-modal'),
+                document.getElementById('shop-modal'),
+                document.getElementById('about-modal'),
+                document.getElementById('help-modal'),
+                document.getElementById('daily-rewards-modal'),
+                document.getElementById('daily-quests-modal')
+            ];
+            for (const m of activeModals) {
+                if (m && !m.classList.contains('hidden') && m.offsetParent !== null) return m;
+            }
+            return null;
+        }
+
+        const candidatePanels = [
+            document.getElementById('single-mode-modal'),
+            document.getElementById('multi-menu'),
+            document.getElementById('level-select-modal'),
+            document.getElementById('settings-modal'),
+            document.getElementById('rating-modal'),
+            document.getElementById('shop-modal'),
+            document.getElementById('daily-rewards-modal'),
+            document.getElementById('daily-quests-modal'),
+            document.getElementById('about-modal'),
+            document.getElementById('help-modal'),
+            document.getElementById('auth-modal'),
+            document.getElementById('menu-screen')
+        ];
+
+        for (const p of candidatePanels) {
+            if (p && !p.classList.contains('hidden') && p.offsetParent !== null) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    function handleDragStart(clientX, clientY) {
+        activeScrollPanel = getActiveScrollTarget();
+        if (!activeScrollPanel) return;
+
+        const vpos = getPointerPos({ clientX, clientY });
+        scrollStartY = vpos.y;
+        scrollStartX = vpos.x;
+        initialScrollTop = activeScrollPanel.scrollTop;
+        isScrollDragging = false;
+        lastMoveTime = performance.now();
+        lastMoveY = vpos.y;
+        scrollVelocity = 0;
+    }
+
+    function handleDragMove(clientX, clientY, rawEvent) {
+        if (!activeScrollPanel) return;
+        const vpos = getPointerPos({ clientX, clientY });
+        const dy = vpos.y - scrollStartY;
+        const dx = vpos.x - scrollStartX;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!isScrollDragging && (dist > 6 || Math.abs(dy) > 4)) {
+            isScrollDragging = true;
+        }
+
+        if (isScrollDragging) {
+            activeScrollPanel.scrollTop = initialScrollTop - dy;
+            
+            const now = performance.now();
+            const dt = now - lastMoveTime;
+            if (dt > 8) {
+                scrollVelocity = (vpos.y - lastMoveY) / dt;
+                lastMoveTime = now;
+                lastMoveY = vpos.y;
+            }
+            if (rawEvent && rawEvent.cancelable) {
+                rawEvent.preventDefault();
+            }
+        }
+    }
+
+    function handleDragEnd() {
+        if (isScrollDragging) {
+            if (activeScrollPanel && Math.abs(scrollVelocity) > 0.12) {
+                const momentum = scrollVelocity * 160;
+                activeScrollPanel.scrollBy({ top: -momentum, behavior: 'smooth' });
+            }
+
+            const suppressClick = (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+            };
+            window.addEventListener('click', suppressClick, { capture: true, once: true });
+            setTimeout(() => {
+                window.removeEventListener('click', suppressClick, { capture: true });
+            }, 250);
+        }
+        isScrollDragging = false;
+        activeScrollPanel = null;
+    }
+
+    // Touch events for mobile & Telegram WebApp
+    window.addEventListener('touchstart', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        isTouchActive = true;
+        handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }, { capture: true, passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY, e);
+    }, { capture: true, passive: false });
+
+    window.addEventListener('touchend', () => {
+        handleDragEnd();
+        setTimeout(() => { isTouchActive = false; }, 350);
+    }, { capture: true, passive: true });
+
+    window.addEventListener('touchcancel', () => {
+        handleDragEnd();
+        setTimeout(() => { isTouchActive = false; }, 350);
+    }, { capture: true, passive: true });
+
+    // Mouse events for desktop testing / click-drag
+    window.addEventListener('mousedown', (e) => {
+        if (isTouchActive || e.button !== 0) return;
+        handleDragStart(e.clientX, e.clientY);
+    }, { capture: true });
+
+    window.addEventListener('mousemove', (e) => {
+        if (isTouchActive || !activeScrollPanel) return;
+        handleDragMove(e.clientX, e.clientY, e);
+    }, { capture: true });
+
+    window.addEventListener('mouseup', () => {
+        if (isTouchActive) return;
+        handleDragEnd();
+    }, { capture: true });
+})();
 
 // Initialization logic
 function _runPageInits() {

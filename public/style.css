@@ -6,7 +6,8 @@
     user-select: none;
 }
 
-body, html {
+body,
+html {
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -41,6 +42,27 @@ body.force-landscape #game-app-root {
     transform: translate(-50%, -50%) rotate(90deg) !important;
     transform-origin: center center !important;
     overflow: hidden !important;
+}
+
+body.force-landscape #menu-screen,
+body.force-landscape .center-panel,
+body.force-landscape .modal-panel {
+    max-height: min(86vw, 360px) !important;
+    max-width: min(86vh, 540px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 16px 20px !important;
+    padding-bottom: 45px !important;
+}
+
+body.force-landscape #menu-screen .primary-btn,
+body.force-landscape .center-panel .primary-btn,
+body.force-landscape .modal-panel .primary-btn {
+    min-height: 42px !important;
+    margin-bottom: 7px !important;
+    font-size: 0.92rem !important;
+    padding: 6px 12px !important;
 }
 
 body.force-landscape .hud {
@@ -141,7 +163,8 @@ body.force-landscape .emote-btn {
     height: 100%;
     z-index: 10000;
     pointer-events: none;
-    touch-action: auto; /* Allow children to manage touch */
+    touch-action: auto;
+    /* Allow children to manage touch */
 }
 
 .screen {
@@ -166,7 +189,7 @@ body.force-landscape .emote-btn {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     pointer-events: auto;
     touch-action: manipulation;
 }
@@ -188,14 +211,32 @@ body.force-landscape .emote-btn {
 }
 
 @keyframes popIn {
-    0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.9);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 @keyframes turnPulse {
-    0% { transform: translateX(-50%) scale(1); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255,255,255,0.12); }
-    35% { transform: translateX(-50%) scale(1.04); box-shadow: 0 10px 28px rgba(16, 185, 129, 0.34), inset 0 1px 0 rgba(255,255,255,0.22); }
-    100% { transform: translateX(-50%) scale(1); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255,255,255,0.12); }
+    0% {
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    35% {
+        transform: translateX(-50%) scale(1.04);
+        box-shadow: 0 10px 28px rgba(16, 185, 129, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
 }
 
 .center-panel h1 {
@@ -222,9 +263,20 @@ body.force-landscape .emote-btn {
     transition: opacity 0.3s;
 }
 
-.hud #p1-info { grid-column: 1; justify-self: start; }
-.hud .wind-indicator { grid-column: 2; justify-self: center; }
-.hud #p2-info { grid-column: 3; justify-self: end; }
+.hud #p1-info {
+    grid-column: 1;
+    justify-self: start;
+}
+
+.hud .wind-indicator {
+    grid-column: 2;
+    justify-self: center;
+}
+
+.hud #p2-info {
+    grid-column: 3;
+    justify-self: end;
+}
 
 .player-info {
     text-align: center;
@@ -232,7 +284,7 @@ body.force-landscape .emote-btn {
     backdrop-filter: blur(8px);
     padding: clamp(6px, 1.5vw, 15px) clamp(8px, 2vw, 22px);
     border-radius: clamp(10px, 1.6vw, 16px);
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     min-width: clamp(90px, 18vw, 180px);
     max-width: clamp(120px, 27vw, 240px);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -378,7 +430,7 @@ body.force-landscape .emote-btn {
     border-radius: 999px;
     border: 1px solid rgba(16, 185, 129, 0.4);
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 95, 70, 0.24));
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     position: fixed;
@@ -411,7 +463,7 @@ body.force-landscape .emote-btn {
     color: #fee2e2;
     border-color: rgba(239, 68, 68, 0.45);
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(127, 29, 29, 0.24));
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 #controls-panel p {
@@ -429,7 +481,7 @@ body.force-landscape .emote-btn {
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     text-transform: none;
     letter-spacing: 0.4px;
     position: relative;
@@ -448,16 +500,18 @@ body.force-landscape .emote-btn {
 .primary-btn::after {
     content: '';
     position: absolute;
-    top: 0; left: -100%;
-    width: 50%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transform: skewX(-20deg);
     transition: 0.5s;
 }
 
 .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 15px 28px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255,255,255,0.35);
+    box-shadow: 0 15px 28px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     filter: saturate(1.1);
 }
 
@@ -480,14 +534,19 @@ body.force-landscape .emote-btn {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Modal and Chat */
 .icon-btn {
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
     font-size: clamp(0.95rem, 1.8vw, 1.35rem);
     width: clamp(34px, 6vw, 50px);
@@ -545,8 +604,8 @@ body.force-landscape .emote-btn {
     height: clamp(48px, 9vw, 66px);
     font-size: clamp(1.1rem, 2.4vw, 1.7rem);
     border-color: rgba(148, 163, 184, 0.75);
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(30,41,59,0.92));
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255,255,255,0.18);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.22), rgba(30, 41, 59, 0.92));
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255, 255, 255, 0.18);
 }
 
 .jump-btn {
@@ -558,8 +617,8 @@ body.force-landscape .emote-btn {
     height: clamp(48px, 9vw, 66px);
     font-size: clamp(1.1rem, 2.4vw, 1.7rem);
     border-color: rgba(56, 189, 248, 0.75);
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(14, 116, 144, 0.92));
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255,255,255,0.18);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25), rgba(14, 116, 144, 0.92));
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.38), inset 0 2px 6px rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -568,7 +627,7 @@ body.force-landscape .emote-btn {
 }
 
 .jump-btn.active {
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(6, 182, 212, 0.95));
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(6, 182, 212, 0.95));
     box-shadow: 0 0 24px rgba(56, 189, 248, 0.85);
     transform: translateY(-8px) scale(1.08);
 }
@@ -582,7 +641,7 @@ body.force-landscape .emote-btn {
     height: clamp(48px, 9vw, 66px);
     font-size: clamp(1rem, 2.1vw, 1.45rem);
     border-color: rgba(168, 85, 247, 0.75);
-    background: radial-gradient(circle at 30% 30%, rgba(233,213,255,0.24), rgba(46,16,101,0.92));
+    background: radial-gradient(circle at 30% 30%, rgba(233, 213, 255, 0.24), rgba(46, 16, 101, 0.92));
 }
 
 .wall-btn {
@@ -598,7 +657,7 @@ body.force-landscape .emote-btn {
 }
 
 .double-btn.active {
-    background: radial-gradient(circle at 30% 30%, rgba(233,213,255,0.4), rgba(76,29,149,0.98));
+    background: radial-gradient(circle at 30% 30%, rgba(233, 213, 255, 0.4), rgba(76, 29, 149, 0.98));
     box-shadow: 0 0 24px rgba(168, 85, 247, 0.65);
     transform: scale(0.96);
 }
@@ -654,8 +713,8 @@ body.force-landscape .emote-btn {
 }
 
 .shop-item {
-    background: linear-gradient(145deg, rgba(15,23,42,0.56), rgba(30,41,59,0.4));
-    border: 1px solid rgba(148,163,184,0.24);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.56), rgba(30, 41, 59, 0.4));
+    border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 12px;
     padding: 12px;
     margin-bottom: 10px;
@@ -721,7 +780,7 @@ body.force-landscape .emote-btn {
 }
 
 .duck-btn.active {
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), rgba(71,85,105,0.95));
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), rgba(71, 85, 105, 0.95));
     box-shadow: 0 0 24px rgba(148, 163, 184, 0.65);
     transform: scale(0.96);
 }
@@ -730,7 +789,7 @@ body.force-landscape .emote-btn {
     width: 62%;
     height: 62%;
     object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
     pointer-events: none;
 }
 
@@ -773,8 +832,10 @@ body.force-landscape .emote-btn {
 
 .modal-overlay {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
     z-index: 200;
@@ -830,7 +891,7 @@ body.force-landscape .emote-btn {
     height: 250px;
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -870,15 +931,29 @@ body.force-landscape .emote-btn {
 #level-select-modal::-webkit-scrollbar,
 .center-panel::-webkit-scrollbar,
 .modal-panel::-webkit-scrollbar {
-    width: 6px; /* Give it some width so it's usable if seen */
+    width: 6px;
+    /* Give it some width so it's usable if seen */
     height: 0;
-    display: block; /* Show scrollbar on mobile */
+    display: block;
+    /* Show scrollbar on mobile */
+}
+
+#menu-screen::-webkit-scrollbar,
+.center-panel::-webkit-scrollbar,
+.modal-panel::-webkit-scrollbar {
+    width: 6px !important;
+    display: block !important;
 }
 
 #menu-screen::-webkit-scrollbar-thumb,
 .center-panel::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+    background: rgba(251, 191, 36, 0.45) !important;
+    border-radius: 4px !important;
+}
+
+#menu-screen {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(251, 191, 36, 0.45) transparent;
 }
 
 .center-panel,
@@ -972,8 +1047,8 @@ body.force-landscape .emote-btn {
 
 .chat-form {
     display: flex;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: rgba(0,0,0,0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .chat-form input {
@@ -1004,7 +1079,7 @@ body.force-landscape .emote-btn {
     display: flex;
     gap: 6px;
     padding: 6px 8px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -1014,7 +1089,7 @@ body.force-landscape .emote-btn {
 }
 
 .chat-emoji-btn {
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(15, 23, 42, 0.65);
     color: #e2e8f0;
     border-radius: 14px;
@@ -1035,14 +1110,18 @@ body.force-landscape .emote-btn {
     padding: 2px 6px;
     border-radius: 10px;
     pointer-events: none;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
 @media screen and (max-width: 900px) and (orientation: landscape) {
-    html, body {
+
+    html,
+    body {
         overflow-y: auto;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge Legacy */
+        scrollbar-width: none;
+        /* Firefox */
+        -ms-overflow-style: none;
+        /* IE/Edge Legacy */
     }
 
     html::-webkit-scrollbar,
@@ -1279,7 +1358,8 @@ body.force-landscape .emote-btn {
         max-height: 85vh;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-y !important; /* Force pan-y for mobile scrolls */
+        touch-action: pan-y !important;
+        /* Force pan-y for mobile scrolls */
         pointer-events: auto !important;
     }
 
@@ -1343,10 +1423,14 @@ body.force-landscape .emote-btn {
 }
 
 @media screen and (max-width: 900px) and (orientation: portrait) {
-    html, body {
+
+    html,
+    body {
         overflow-y: auto;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge Legacy */
+        scrollbar-width: none;
+        /* Firefox */
+        -ms-overflow-style: none;
+        /* IE/Edge Legacy */
     }
 
     html::-webkit-scrollbar,
@@ -1357,7 +1441,8 @@ body.force-landscape .emote-btn {
     }
 }
 
-@media screen and (max-width: 760px), screen and (max-height: 430px) {
+@media screen and (max-width: 760px),
+screen and (max-height: 430px) {
     .primary-btn {
         font-size: 0.78rem;
         line-height: 1.15;
@@ -1430,7 +1515,8 @@ body.force-landscape .emote-btn {
     }
 }
 
-@media screen and (max-width: 620px), screen and (max-height: 390px) {
+@media screen and (max-width: 620px),
+screen and (max-height: 390px) {
     .hud {
         grid-template-columns: minmax(0, 1.15fr) minmax(54px, auto) minmax(0, 1.15fr);
         padding: 4px 6px;
@@ -1564,7 +1650,8 @@ body.force-landscape .emote-btn {
     }
 }
 
-@media screen and (max-width: 520px), screen and (max-height: 340px) {
+@media screen and (max-width: 520px),
+screen and (max-height: 340px) {
     .hud {
         grid-template-columns: minmax(0, 1.05fr) minmax(48px, auto) minmax(0, 1.05fr);
         padding: 4px 5px;
@@ -1749,7 +1836,8 @@ body.force-landscape .emote-btn {
     --ui-panel-border: rgba(148, 163, 184, 0.26);
 }
 
-body, html {
+body,
+html {
     background:
         radial-gradient(1200px 600px at 20% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
         radial-gradient(1000px 520px at 90% 110%, rgba(99, 102, 241, 0.16), transparent 60%),
@@ -1771,7 +1859,8 @@ body, html {
     border-radius: 22px;
 }
 
-.center-panel h1, .center-panel h2 {
+.center-panel h1,
+.center-panel h2 {
     letter-spacing: 0.4px;
 }
 
@@ -1787,7 +1876,7 @@ body, html {
     letter-spacing: 0.2px;
     border: 1px solid rgba(147, 197, 253, 0.34);
     background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
-    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.34), inset 0 1px 0 rgba(255,255,255,0.28);
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .primary-btn:hover {
@@ -1798,7 +1887,8 @@ body, html {
     transform: translateY(1px) scale(0.995);
 }
 
-input, select {
+input,
+select {
     background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.88)) !important;
     color: var(--ui-text-main) !important;
     border: 1px solid rgba(148, 163, 184, 0.45) !important;
@@ -1810,7 +1900,10 @@ select option {
     background: #1e293b;
 }
 
-label, .shop-item-desc, .player-info .status, #menu-screen p {
+label,
+.shop-item-desc,
+.player-info .status,
+#menu-screen p {
     color: var(--ui-text-muted) !important;
 }
 
@@ -1828,6 +1921,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     .center-panel {
         width: min(82vw, 680px);
     }
+
     .primary-btn {
         min-height: 50px;
         font-size: 1.02rem;
@@ -1839,10 +1933,12 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         width: min(96vw, 520px);
         padding: 16px;
     }
+
     .primary-btn {
         min-height: 42px;
         font-size: 0.9rem;
     }
+
     .controls {
         width: min(74vw, 320px);
     }
@@ -1850,7 +1946,16 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 
 /* --- Steam-grade visual polish pass --- */
 #menu-screen {
-    position: relative;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: min(88vh, 560px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding-bottom: 45px !important;
     isolation: isolate;
 }
 
@@ -1869,8 +1974,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes menuAuraShift {
-    0% { transform: translateY(-4px) scale(1); opacity: 0.85; }
-    100% { transform: translateY(6px) scale(1.04); opacity: 1; }
+    0% {
+        transform: translateY(-4px) scale(1);
+        opacity: 0.85;
+    }
+
+    100% {
+        transform: translateY(6px) scale(1.04);
+        opacity: 1;
+    }
 }
 
 #menu-screen h1 {
@@ -1890,18 +2002,53 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* Icon + label treatment for major CTA buttons */
-#btn-single::before { content: "⚔ "; }
-#btn-multi::before { content: "🌐 "; }
-#btn-about::before { content: "ℹ️ "; }
-#btn-settings::before { content: "⚙️ "; }
-#btn-profile::before { content: "👤 "; }
-#btn-shop::before { content: "🛒 "; }
-#btn-rating::before { content: "🏆 "; }
-#btn-logout::before { content: "🚪 "; }
-#btn-single-continue::before { content: "▶ "; }
-#btn-single-new::before { content: "✨ "; }
-#btn-multi-create::before { content: "➕ "; }
-#btn-multi-random::before { content: "🎯 "; }
+#btn-single::before {
+    content: "⚔ ";
+}
+
+#btn-multi::before {
+    content: "🌐 ";
+}
+
+#btn-about::before {
+    content: "ℹ️ ";
+}
+
+#btn-settings::before {
+    content: "⚙️ ";
+}
+
+#btn-profile::before {
+    content: "👤 ";
+}
+
+#btn-shop::before {
+    content: "🛒 ";
+}
+
+#btn-rating::before {
+    content: "🏆 ";
+}
+
+#btn-logout::before {
+    content: "🚪 ";
+}
+
+#btn-single-continue::before {
+    content: "▶ ";
+}
+
+#btn-single-new::before {
+    content: "✨ ";
+}
+
+#btn-multi-create::before {
+    content: "➕ ";
+}
+
+#btn-multi-random::before {
+    content: "🎯 ";
+}
 
 #menu-screen .primary-btn,
 #multi-menu .primary-btn,
@@ -1921,8 +2068,13 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes overlayFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes modalRiseIn {
@@ -1931,6 +2083,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         transform: translate(-50%, -46%) scale(0.97);
         filter: saturate(0.9);
     }
+
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
@@ -1941,7 +2094,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 /* --- Competitive HUD polish --- */
 .player-info {
     border: 1px solid rgba(125, 211, 252, 0.24);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.34), inset 0 1px 0 rgba(255,255,255,0.1);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .player-info h2 {
@@ -1954,7 +2107,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* Ability cluster feels like single action bar */
-.shield-btn, .super-btn, .duck-btn, .jump-btn, .double-btn, .wall-btn, .crow-btn, .artillery-btn, .fire-btn {
+.shield-btn,
+.super-btn,
+.duck-btn,
+.jump-btn,
+.double-btn,
+.wall-btn,
+.crow-btn,
+.artillery-btn,
+.fire-btn {
     bottom: clamp(10px, 2.2vh, 22px);
 }
 
@@ -2058,8 +2219,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes abilityPulse {
-    0% { transform: scale(0.82); opacity: 0.95; }
-    100% { transform: scale(1.18); opacity: 0; }
+    0% {
+        transform: scale(0.82);
+        opacity: 0.95;
+    }
+
+    100% {
+        transform: scale(1.18);
+        opacity: 0;
+    }
 }
 
 /* --- G'alaba konfetti effekti --- */
@@ -2082,6 +2250,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         transform: translate(0, -10vh) rotate(0deg);
         opacity: 1;
     }
+
     100% {
         transform: translate(var(--drift, 0px), 110vh) rotate(var(--spin, 360deg));
         opacity: 0.15;
@@ -2128,8 +2297,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes introRise {
-    from { opacity: 0; transform: translateY(28px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .intro-loader-bar {
@@ -2152,9 +2328,17 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes introLoad {
-    0% { width: 0; }
-    70% { width: 88%; }
-    100% { width: 100%; }
+    0% {
+        width: 0;
+    }
+
+    70% {
+        width: 88%;
+    }
+
+    100% {
+        width: 100%;
+    }
 }
 
 #btn-intro-start {
@@ -2165,13 +2349,22 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     padding: 16px 30px;
     background: linear-gradient(135deg, #fbbf24, #f59e0b 45%, #ef4444) !important;
     border: 2px solid rgba(255, 240, 200, 0.55);
-    box-shadow: 0 16px 40px rgba(239, 68, 68, 0.5), inset 0 2px 0 rgba(255,255,255,0.5);
+    box-shadow: 0 16px 40px rgba(239, 68, 68, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.5);
     animation: introBtnPulse 2s ease-in-out infinite;
 }
 
 @keyframes introBtnPulse {
-    0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 16px 40px rgba(239, 68, 68, 0.5), inset 0 2px 0 rgba(255,255,255,0.5); }
-    50% { transform: translateY(-3px) scale(1.03); box-shadow: 0 24px 52px rgba(239, 68, 68, 0.62), inset 0 2px 0 rgba(255,255,255,0.6); }
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 16px 40px rgba(239, 68, 68, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    50% {
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 0 24px 52px rgba(239, 68, 68, 0.62), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+    }
 }
 
 #intro-hint {
@@ -2180,13 +2373,20 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     color: #f1f5f9;
     letter-spacing: 1px;
     opacity: 0.75;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
     animation: introHintFade 1.6s ease-in-out infinite;
 }
 
 @keyframes introHintFade {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.9; }
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.9;
+    }
 }
 
 /* To'liq ekran wallpaper - menyu/auth/profil ortida ko'rinadi (canvas ustida, UI ostida) */
@@ -2234,8 +2434,15 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 @keyframes fireBtnGlow {
-    0%, 100% { box-shadow: 0 0 22px rgba(249, 115, 22, 0.6); }
-    50% { box-shadow: 0 0 34px rgba(249, 115, 22, 0.95); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 22px rgba(249, 115, 22, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 0 34px rgba(249, 115, 22, 0.95);
+    }
 }
 
 .fire-btn.broken {
@@ -2243,7 +2450,8 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     opacity: 0.5;
 }
 
-@media screen and (max-width: 620px), screen and (max-height: 390px) {
+@media screen and (max-width: 620px),
+screen and (max-height: 390px) {
     .fire-btn {
         width: 42px;
         height: 42px;
@@ -2283,7 +2491,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 #campaign-progress-panel {
     background: linear-gradient(145deg, rgba(2, 6, 23, 0.55), rgba(30, 41, 59, 0.42)) !important;
     border: 1px solid rgba(148, 163, 184, 0.28);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* === O'yin uslubidagi 3D tugmalar === */
@@ -2302,7 +2510,8 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     border: none;
     overflow: visible;
     transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
-    touch-action: pan-y !important; /* Barmoq bilan button ustidan ushlab scroll qilishga imkon berish */
+    touch-action: pan-y !important;
+    /* Barmoq bilan button ustidan ushlab scroll qilishga imkon berish */
 }
 
 /* Har bir tugma ostida "qalin" pastki qirra (3D bevel effekti) */
@@ -2312,7 +2521,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     inset: 0;
     border-radius: inherit;
     padding: 1.5px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.25));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.05) 45%, rgba(0, 0, 0, 0.25));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -2334,53 +2543,65 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 6px 0 #047857, 0 14px 26px rgba(5, 150, 105, 0.5) !important;
 }
+
 #btn-multi {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 6px 0 #075985, 0 14px 26px rgba(2, 132, 199, 0.5) !important;
 }
+
 #btn-daily-rewards {
     background: linear-gradient(180deg, #fbbf24, #d97706) !important;
     box-shadow: 0 6px 0 #92400e, 0 14px 26px rgba(217, 119, 6, 0.5) !important;
 }
+
 #btn-daily-quests {
     background: linear-gradient(180deg, #22d3ee, #0891b2) !important;
     box-shadow: 0 6px 0 #0e7490, 0 14px 26px rgba(8, 145, 178, 0.5) !important;
 }
+
 #btn-profile {
     background: linear-gradient(180deg, #2dd4bf, #0d9488) !important;
     box-shadow: 0 6px 0 #115e59, 0 14px 26px rgba(13, 148, 136, 0.5) !important;
 }
+
 #btn-about {
     background: linear-gradient(180deg, #818cf8, #4f46e5) !important;
     box-shadow: 0 6px 0 #3730a3, 0 14px 26px rgba(79, 70, 229, 0.5) !important;
 }
+
 #btn-settings {
     background: linear-gradient(180deg, #94a3b8, #475569) !important;
     box-shadow: 0 6px 0 #1e293b, 0 14px 26px rgba(71, 85, 105, 0.5) !important;
 }
+
 #btn-shop {
     background: linear-gradient(180deg, #c084fc, #7c3aed) !important;
     box-shadow: 0 6px 0 #5b21b6, 0 14px 26px rgba(124, 58, 237, 0.5) !important;
 }
+
 #btn-rating {
     background: linear-gradient(180deg, #fbbf24, #d97706) !important;
     box-shadow: 0 6px 0 #92400e, 0 14px 26px rgba(217, 119, 6, 0.5) !important;
 }
+
 #btn-logout {
     background: linear-gradient(180deg, #f87171, #dc2626) !important;
     box-shadow: 0 6px 0 #991b1b, 0 14px 26px rgba(220, 38, 38, 0.5) !important;
 }
 
 #menu-screen .primary-btn:active {
-    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 6px 14px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Tugma ikonkalari kattaroq va aniqroq */
 #btn-single::first-letter,
-#btn-multi::first-letter { font-size: 1.2em; }
+#btn-multi::first-letter {
+    font-size: 1.2em;
+}
 
 /* Asosiy ikki tugmani (Yakkalik/Onlayn) ajratib ko'rsatamiz */
-#btn-single, #btn-multi {
+#btn-single,
+#btn-multi {
     min-height: 62px;
     font-size: clamp(0.95rem, 1.6vw, 1.15rem);
 }
@@ -2412,9 +2633,10 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     border: none;
     overflow: visible;
-    box-shadow: 0 5px 0 rgba(0,0,0,0.3), 0 10px 22px rgba(0,0,0,0.35);
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3), 0 10px 22px rgba(0, 0, 0, 0.35);
     transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
 }
+
 /* 3D bevel border effekti */
 #multi-menu .primary-btn::before,
 #single-mode-modal .primary-btn::before,
@@ -2438,12 +2660,13 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     inset: 0;
     border-radius: inherit;
     padding: 1.5px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.2));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.05) 45%, rgba(0, 0, 0, 0.2));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
 }
+
 #multi-menu .primary-btn:active,
 #single-mode-modal .primary-btn:active,
 #game-options-modal .primary-btn:active,
@@ -2462,9 +2685,10 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 #waiting-screen .primary-btn:active,
 #disconnect-screen .primary-btn:active {
     transform: translateY(3px) scale(0.99);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 5px 12px rgba(0,0,0,0.35);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 5px 12px rgba(0, 0, 0, 0.35);
     filter: brightness(0.92);
 }
+
 #multi-menu .primary-btn:hover,
 #single-mode-modal .primary-btn:hover,
 #game-options-modal .primary-btn:hover,
@@ -2484,7 +2708,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 #disconnect-screen .primary-btn:hover {
     transform: translateY(-2px);
     filter: brightness(1.08) saturate(1.1);
-    box-shadow: 0 7px 0 rgba(0,0,0,0.25), 0 14px 28px rgba(0,0,0,0.4);
+    box-shadow: 0 7px 0 rgba(0, 0, 0, 0.25), 0 14px 28px rgba(0, 0, 0, 0.4);
 }
 
 /* === Har bir modal tugmasiga individual rang gradientlari === */
@@ -2493,16 +2717,25 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #btn-single-select-level {
     background: linear-gradient(180deg, #a78bfa, #7c3aed) !important;
     box-shadow: 0 5px 0 #5b21b6, 0 12px 24px rgba(124, 58, 237, 0.45) !important;
 }
+
 #btn-single-new {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 5px 0 #075985, 0 12px 24px rgba(2, 132, 199, 0.45) !important;
 }
-#btn-single-cancel, #btn-cancel-options, #btn-multi-back, #btn-level-select-cancel,
-#btn-close-shop, #btn-close-about, #btn-close-help, #btn-save-settings {
+
+#btn-single-cancel,
+#btn-cancel-options,
+#btn-multi-back,
+#btn-level-select-cancel,
+#btn-close-shop,
+#btn-close-about,
+#btn-close-help,
+#btn-save-settings {
     background: linear-gradient(180deg, #94a3b8, #475569) !important;
     box-shadow: 0 5px 0 #1e293b, 0 12px 24px rgba(71, 85, 105, 0.45) !important;
 }
@@ -2512,14 +2745,17 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #btn-multi-join-show {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 5px 0 #075985, 0 12px 24px rgba(2, 132, 199, 0.45) !important;
 }
+
 #btn-multi-random {
     background: linear-gradient(180deg, #c084fc, #7c3aed) !important;
     box-shadow: 0 5px 0 #5b21b6, 0 12px 24px rgba(124, 58, 237, 0.45) !important;
 }
+
 #btn-multi-join {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
@@ -2530,14 +2766,17 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #btn-toggle-sound {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 5px 0 #075985, 0 12px 24px rgba(2, 132, 199, 0.45) !important;
 }
+
 #btn-add-friend {
     background: linear-gradient(180deg, #818cf8, #4f46e5) !important;
     box-shadow: 0 5px 0 #3730a3, 0 12px 24px rgba(79, 70, 229, 0.45) !important;
 }
+
 #btn-exit-menu {
     background: linear-gradient(180deg, #f87171, #dc2626) !important;
     box-shadow: 0 5px 0 #991b1b, 0 12px 24px rgba(220, 38, 38, 0.45) !important;
@@ -2548,10 +2787,12 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #rematch-btn {
     background: linear-gradient(180deg, #c084fc, #7c3aed) !important;
     box-shadow: 0 5px 0 #5b21b6, 0 12px 24px rgba(124, 58, 237, 0.45) !important;
 }
+
 #menu-btn {
     background: linear-gradient(180deg, #94a3b8, #475569) !important;
     box-shadow: 0 5px 0 #1e293b, 0 12px 24px rgba(71, 85, 105, 0.45) !important;
@@ -2562,6 +2803,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #btn-create-custom-model {
     background: linear-gradient(180deg, #c084fc, #7c3aed) !important;
     box-shadow: 0 5px 0 #5b21b6, 0 12px 24px rgba(124, 58, 237, 0.45) !important;
@@ -2572,10 +2814,12 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 5px 0 #075985, 0 12px 24px rgba(2, 132, 199, 0.45) !important;
 }
+
 #btn-auth-register {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
+
 #btn-auth-reset {
     background: linear-gradient(180deg, #fbbf24, #d97706) !important;
     box-shadow: 0 5px 0 #92400e, 0 12px 24px rgba(217, 119, 6, 0.45) !important;
@@ -2586,33 +2830,43 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     background: linear-gradient(180deg, #38bdf8, #0284c7) !important;
     box-shadow: 0 4px 0 #075985, 0 10px 20px rgba(2, 132, 199, 0.4) !important;
 }
+
 #btn-buy-double {
     background: linear-gradient(180deg, #c084fc, #7c3aed) !important;
     box-shadow: 0 4px 0 #5b21b6, 0 10px 20px rgba(124, 58, 237, 0.4) !important;
 }
+
 #btn-buy-fire {
     background: linear-gradient(180deg, #fb923c, #ea580c) !important;
     box-shadow: 0 4px 0 #9a3412, 0 10px 20px rgba(234, 88, 12, 0.4) !important;
 }
+
 #btn-buy-wall {
     background: linear-gradient(180deg, #2dd4bf, #0d9488) !important;
     box-shadow: 0 4px 0 #115e59, 0 10px 20px rgba(13, 148, 136, 0.4) !important;
 }
+
 #btn-buy-artillery {
     background: linear-gradient(180deg, #f87171, #dc2626) !important;
     box-shadow: 0 4px 0 #991b1b, 0 10px 20px rgba(220, 38, 38, 0.4) !important;
 }
+
 #btn-buy-crowhunt {
     background: linear-gradient(180deg, #a78bfa, #7c3aed) !important;
     box-shadow: 0 4px 0 #5b21b6, 0 10px 20px rgba(124, 58, 237, 0.4) !important;
 }
 
 /* Friend invite/add modals */
-#btn-friend-invite-accept, #btn-friend-add-accept, #btn-rematch-accept {
+#btn-friend-invite-accept,
+#btn-friend-add-accept,
+#btn-rematch-accept {
     background: linear-gradient(180deg, #34d399, #059669) !important;
     box-shadow: 0 5px 0 #047857, 0 12px 24px rgba(5, 150, 105, 0.45) !important;
 }
-#btn-friend-invite-decline, #btn-friend-add-decline, #btn-rematch-decline {
+
+#btn-friend-invite-decline,
+#btn-friend-add-decline,
+#btn-rematch-decline {
     background: linear-gradient(180deg, #94a3b8, #475569) !important;
     box-shadow: 0 5px 0 #1e293b, 0 12px 24px rgba(71, 85, 105, 0.45) !important;
 }
@@ -2642,7 +2896,8 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 }
 
 /* Modal panellarni ham tiniqroq, rang-barang qilamiz */
-.center-panel, .modal-panel {
+.center-panel,
+.modal-panel {
     backdrop-filter: blur(11px) saturate(1.18);
     -webkit-backdrop-filter: blur(11px) saturate(1.18);
 }
@@ -2651,27 +2906,35 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
 .player-info {
     background: linear-gradient(155deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.55)) !important;
     border: 1px solid rgba(125, 211, 252, 0.4) !important;
-    box-shadow: 0 8px 22px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.14) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
+
 .player-info.active {
     border-color: #34d399 !important;
-    box-shadow: 0 0 24px rgba(52, 211, 153, 0.45), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    box-shadow: 0 0 24px rgba(52, 211, 153, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
+
 .wind-indicator {
     background: linear-gradient(155deg, rgba(15, 23, 42, 0.72), rgba(30, 41, 59, 0.55)) !important;
     border: 1px solid rgba(251, 191, 36, 0.4) !important;
-    box-shadow: 0 8px 22px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.14) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
 
 /* O'yin ichidagi pastki qobiliyat tugmalari - yorqinroq va aniqroq */
 .icon-btn {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
     border-width: 2px !important;
 }
 
 @media screen and (max-width: 900px) {
-    #menu-screen .primary-btn { min-height: 48px; }
-    #btn-single, #btn-multi { min-height: 54px; }
+    #menu-screen .primary-btn {
+        min-height: 48px;
+    }
+
+    #btn-single,
+    #btn-multi {
+        min-height: 54px;
+    }
 }
 
 
@@ -2690,24 +2953,35 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     border-radius: 14px;
     cursor: pointer;
     backdrop-filter: blur(6px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     transition: transform 0.15s ease, opacity 0.25s ease, box-shadow 0.15s ease;
     animation: skipBtnPulse 2s ease-in-out infinite;
     pointer-events: auto;
 }
+
 .skip-cinematic-btn:hover {
     transform: scale(1.06);
-    box-shadow: 0 8px 28px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 8px 28px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
+
 .skip-cinematic-btn:active {
     transform: scale(0.95);
 }
+
 .skip-cinematic-btn.hidden {
     display: none !important;
 }
+
 @keyframes skipBtnPulse {
-    0%, 100% { border-color: rgba(56, 189, 248, 0.5); }
-    50% { border-color: rgba(251, 191, 36, 0.7); }
+
+    0%,
+    100% {
+        border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    50% {
+        border-color: rgba(251, 191, 36, 0.7);
+    }
 }
 
 /* === Raqib resurslari paneli (request 7) === */
@@ -2720,7 +2994,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     gap: 6px;
     align-items: center;
     background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 5px 10px;
     font-size: 0.72rem;
@@ -2728,11 +3002,13 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     backdrop-filter: blur(4px);
     pointer-events: none;
 }
+
 .enemy-resources-panel .res-item {
     display: flex;
     align-items: center;
     gap: 2px;
 }
+
 .enemy-resources-panel .res-item .res-count {
     font-weight: 700;
     color: #fbbf24;
@@ -2761,15 +3037,22 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     pointer-events: none;
     transition: all 0.25s ease;
 }
+
 .turn-timer-badge.timer-warning {
     border-color: #ef4444;
     color: #ef4444;
     box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
     animation: timerPulse 0.6s infinite alternate ease-in-out;
 }
+
 @keyframes timerPulse {
-    0% { transform: translateX(-50%) scale(1); }
-    100% { transform: translateX(-50%) scale(1.15); }
+    0% {
+        transform: translateX(-50%) scale(1);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1.15);
+    }
 }
 
 /* === Screen Vignette & Dramatic Flashes === */
@@ -2784,10 +3067,12 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     opacity: 0;
     transition: opacity 0.3s ease;
 }
+
 .screen-vignette.vignette-damage {
     opacity: 1;
     background: radial-gradient(circle at center, transparent 40%, rgba(220, 38, 38, 0.45) 85%, rgba(185, 28, 28, 0.8) 100%);
 }
+
 .screen-vignette.vignette-headshot {
     opacity: 1;
     background: radial-gradient(circle at center, transparent 35%, rgba(245, 158, 11, 0.4) 80%, rgba(217, 119, 6, 0.75) 100%);
@@ -2812,9 +3097,11 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     transition: transform 0.15s, background 0.2s;
 }
+
 .emote-btn:active {
     transform: scale(0.92);
 }
+
 .emote-picker {
     position: absolute;
     bottom: calc(max(var(--menu-bottom-safe), clamp(8px, 2vh, 20px)) + clamp(50px, 6.5vh, 66px));
@@ -2829,6 +3116,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
 }
+
 .emote-choice {
     background: transparent;
     border: none;
@@ -2838,7 +3126,9 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     transition: transform 0.15s;
     user-select: none;
 }
-.emote-choice:hover, .emote-choice:active {
+
+.emote-choice:hover,
+.emote-choice:active {
     transform: scale(1.3);
 }
 
@@ -2857,6 +3147,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     animation: popBubble 2.5s ease-out forwards;
     white-space: nowrap;
 }
+
 .speech-bubble::after {
     content: '';
     position: absolute;
@@ -2869,12 +3160,32 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     display: block;
     width: 0;
 }
+
 @keyframes popBubble {
-    0% { transform: translate(-50%, -100%) scale(0.2); opacity: 0; }
-    15% { transform: translate(-50%, -115%) scale(1.15); opacity: 1; }
-    25% { transform: translate(-50%, -110%) scale(1); opacity: 1; }
-    80% { transform: translate(-50%, -130%) scale(1); opacity: 1; }
-    100% { transform: translate(-50%, -160%) scale(0.7); opacity: 0; }
+    0% {
+        transform: translate(-50%, -100%) scale(0.2);
+        opacity: 0;
+    }
+
+    15% {
+        transform: translate(-50%, -115%) scale(1.15);
+        opacity: 1;
+    }
+
+    25% {
+        transform: translate(-50%, -110%) scale(1);
+        opacity: 1;
+    }
+
+    80% {
+        transform: translate(-50%, -130%) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -160%) scale(0.7);
+        opacity: 0;
+    }
 }
 
 /* === Daily Rewards & Quests Modals === */
@@ -2884,6 +3195,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     gap: 10px;
     margin: 15px 0;
 }
+
 .daily-reward-card {
     background: #1e293b;
     border: 2px solid #334155;
@@ -2893,16 +3205,19 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     position: relative;
     transition: all 0.2s ease;
 }
+
 .daily-reward-card.active {
     border-color: #f59e0b;
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), #1e293b);
     box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
     transform: scale(1.04);
 }
+
 .daily-reward-card.claimed {
     opacity: 0.6;
     border-color: #10b981;
 }
+
 .daily-reward-card.claimed::after {
     content: '✓';
     position: absolute;
@@ -2911,15 +3226,18 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     color: #10b981;
     font-weight: 800;
 }
+
 .daily-day-title {
     font-size: 0.75rem;
     color: #94a3b8;
     margin-bottom: 4px;
 }
+
 .daily-reward-icon {
     font-size: 1.6rem;
     margin: 4px 0;
 }
+
 .daily-reward-val {
     font-size: 0.82rem;
     font-weight: 700;
@@ -2934,9 +3252,10 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     max-height: 250px;
     overflow-y: auto;
 }
+
 .quest-item {
     background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 10px 12px;
     text-align: left;
@@ -2945,19 +3264,23 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     align-items: center;
     gap: 10px;
 }
+
 .quest-info {
     flex: 1;
 }
+
 .quest-title {
     font-size: 0.92rem;
     font-weight: 600;
     color: #f1f5f9;
 }
+
 .quest-reward {
     font-size: 0.8rem;
     color: #fbbf24;
     margin-top: 2px;
 }
+
 .quest-progress-bg {
     width: 100%;
     height: 6px;
@@ -2966,12 +3289,14 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     margin-top: 6px;
     overflow: hidden;
 }
+
 .quest-progress-fill {
     height: 100%;
     background: #10b981;
     border-radius: 3px;
     transition: width 0.3s;
 }
+
 .quest-claim-btn {
     padding: 6px 12px;
     font-size: 0.82rem;
@@ -2983,6 +3308,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
     cursor: pointer;
     min-width: 75px;
 }
+
 .quest-claim-btn:disabled {
     background: #475569;
     cursor: not-allowed;
@@ -2995,7 +3321,9 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
    o'yinchi barcha tugmalarni qulay bosa oladi va maydon to'liq ko'rinadi.
    ============================================================ */
 
-@media screen and (orientation: portrait), screen and (max-aspect-ratio: 1/1) {
+@media screen and (orientation: portrait),
+screen and (max-aspect-ratio: 1/1) {
+
     /* HUD paneli: faqat haqiqiy portretda (force-landscape bo'lmaganda) */
     body:not(.force-landscape) .hud {
         padding: 8px 10px !important;
@@ -3003,18 +3331,22 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) !important;
         gap: 6px !important;
     }
+
     body:not(.force-landscape) .player-info {
         min-width: 82px !important;
         max-width: 33vw !important;
         padding: 5px 8px !important;
     }
+
     body:not(.force-landscape) .player-info h2 {
         font-size: 0.74rem !important;
         margin-bottom: 2px !important;
     }
+
     body:not(.force-landscape) .hud-score {
         font-size: 0.70rem !important;
     }
+
     body:not(.force-landscape) .wind-indicator {
         padding: 4px 8px !important;
         font-size: 0.70rem !important;
@@ -3028,6 +3360,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.2rem !important;
     }
+
     body:not(.force-landscape) .super-btn {
         bottom: 12px !important;
         right: 62px !important;
@@ -3035,6 +3368,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.2rem !important;
     }
+
     body:not(.force-landscape) .duck-btn {
         bottom: 12px !important;
         right: 112px !important;
@@ -3042,6 +3376,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
+
     body:not(.force-landscape) .jump-btn {
         bottom: 12px !important;
         right: 162px !important;
@@ -3049,6 +3384,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
+
     body:not(.force-landscape) .double-btn {
         bottom: 12px !important;
         right: 212px !important;
@@ -3065,6 +3401,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
+
     body:not(.force-landscape) .crow-btn {
         bottom: 62px !important;
         right: 62px !important;
@@ -3072,6 +3409,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
+
     body:not(.force-landscape) .artillery-btn {
         bottom: 62px !important;
         right: 112px !important;
@@ -3079,6 +3417,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 44px !important;
         font-size: 1.15rem !important;
     }
+
     body:not(.force-landscape) .fire-btn {
         bottom: 62px !important;
         right: 162px !important;
@@ -3095,6 +3434,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         font-size: 0.72rem !important;
         min-height: 38px !important;
     }
+
     body:not(.force-landscape) #btn-in-game-back {
         bottom: 12px !important;
         left: 68px !important;
@@ -3102,6 +3442,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         font-size: 0.72rem !important;
         min-height: 38px !important;
     }
+
     body:not(.force-landscape) #music-toggle-btn {
         bottom: 56px !important;
         left: 12px !important;
@@ -3109,6 +3450,7 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         height: 38px !important;
         font-size: 1rem !important;
     }
+
     body:not(.force-landscape) .emote-btn {
         bottom: 100px !important;
         left: 12px !important;
@@ -3117,32 +3459,35 @@ label, .shop-item-desc, .player-info .status, #menu-screen p {
         font-size: 1rem !important;
     }
 }
-    #btn-toggle-chat {
-        bottom: 144px !important;
-        left: 12px !important;
-        width: 38px !important;
-        height: 38px !important;
-        font-size: 1rem !important;
-    }
 
-    /* Navbat indikatori: tugmalar ustida markazda erkin turadi */
-    .controls {
-        bottom: 116px !important;
-        width: auto !important;
-        max-width: 90vw !important;
-        padding: 4px 8px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        pointer-events: none !important;
-    }
-    .controls p {
-        display: none !important; /* Portretda ortiqcha matn ekranni to'sib qo'ymasligi uchun yashiriladi */
-    }
-    #turn-indicator {
-        font-size: 0.82rem !important;
-        padding: 5px 14px !important;
-        pointer-events: auto !important;
-    }
+#btn-toggle-chat {
+    bottom: 144px !important;
+    left: 12px !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1rem !important;
 }
 
+/* Navbat indikatori: tugmalar ustida markazda erkin turadi */
+.controls {
+    bottom: 116px !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    padding: 4px 8px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    pointer-events: none !important;
+}
+
+.controls p {
+    display: none !important;
+    /* Portretda ortiqcha matn ekranni to'sib qo'ymasligi uchun yashiriladi */
+}
+
+#turn-indicator {
+    font-size: 0.82rem !important;
+    padding: 5px 14px !important;
+    pointer-events: auto !important;
+}
+}
