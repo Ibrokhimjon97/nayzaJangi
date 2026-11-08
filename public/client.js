@@ -5462,10 +5462,15 @@ function showLevelBonusChestModal(onStartBattle) {
         btnSkip.style.background = "#334155";
         btnSkip.style.color = "#cbd5e1";
         btnSkip.style.boxShadow = "none";
-        btnSkip.onclick = (e) => {
-            if (e) e.preventDefault();
+        const handleSkip = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             triggerStartBattle();
         };
+        btnSkip.onclick = handleSkip;
+        btnSkip.ontouchend = handleSkip;
     }
 
     // Har bir level uchun 3 ta bepul kuch:
@@ -5566,11 +5571,16 @@ function showLevelBonusChestModal(onStartBattle) {
                 btnSkip.style.background = "linear-gradient(135deg, #10b981, #059669)";
                 btnSkip.style.color = "#ffffff";
                 btnSkip.style.boxShadow = "0 4px 16px rgba(16, 185, 129, 0.5)";
-                btnSkip.onclick = (ev) => {
-                    if (ev) ev.preventDefault();
+                const handleStartBattle = (ev) => {
+                    if (ev) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    }
                     triggerStartBattle();
                     showCenterNotice(`+1 ${reward.name} ${reward.icon} qo'shildi!`, 2200);
                 };
+                btnSkip.onclick = handleStartBattle;
+                btnSkip.ontouchend = handleStartBattle;
             }
 
             // Qolgan sandiqlarni ham ochib ko'rsatamiz
@@ -5592,11 +5602,11 @@ function showLevelBonusChestModal(onStartBattle) {
                 });
             }, 300);
 
-            // 1.8 soniyadan so'ng avtomatik modal yopiladi va jang boshlanadi (agar o'yinchi tugmani bosmagan bo'lsa)
+            // 5 soniyadan so'ng avtomatik modal yopiladi va jang boshlanadi (agar o'yinchi tugmani bosmagan bo'lsa)
             autoCloseTimer = setTimeout(() => {
                 triggerStartBattle();
                 showCenterNotice(`+1 ${reward.name} ${reward.icon} qo'shildi!`, 2200);
-            }, 1800);
+            }, 5000);
         };
 
         card.addEventListener('click', pickChest);
