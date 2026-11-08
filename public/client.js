@@ -5073,7 +5073,13 @@ function handleStart(e) {
     const target = e && e.target;
     const hasClosest = target && typeof target.closest === 'function';
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
-    if (isCoinTossActive || isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) return;
+    if (isCoinTossActive || isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) {
+        if (gameMode === 'multi' && currentTurnIndex !== myPlayerIndex && currentTurnIndex >= 0 && !isCoinTossActive && !isAnimating) {
+            showCenterNotice("Hozir raqib navbati! Iltimos, kuting... ⏳", 1500);
+            if (typeof triggerHaptic === 'function') triggerHaptic('warning');
+        }
+        return;
+    }
     if (gameMode === 'single' && singleShotLocked) return;
     if (isPointerOnMyWall(e)) {
         isWallPlacementMode = true;
@@ -5123,24 +5129,18 @@ function getAimParameters(dragStart, dragCurrent, isRightSide) {
 
     const power = computeShotPower(distance);
 
-    // Otuvchining maydondagi tomoniga qarab orqaga tortish (slingshot):
-    // Chap tomondagi jangchi (o'ngga otadi): barmog'ini chapga (rawDx < 0) tortishi = kamon ipini orqaga tortish.
-    // O'ng tomondagi jangchi (chapga otadi): barmog'ini o'ngga (rawDx > 0) tortishi = kamon ipini orqaga tortish.
-    let pullX = isRightSide ? rawDx : -rawDx;
-    let pullY = rawDy; // Barmog'ini pastga tortish kamon uchini yuqoriga ko'taradi
+    // Gorizontal va vertikal siljishlarni har qanday yo'nalish uchun xavfsiz hisoblash:
+    // O'yinchi barmoqni chapga yoki o'ngga surishidan qat'iy nazar, otish quvvati va burchagi raqib tomon yo'naltiriladi.
+    const hDist = Math.max(12, Math.abs(rawDx));
+    // Vertikal tortish: pastga tortsa (slingshot) ham, yuqoriga sursa (direct swipe) ham balandlik burchagi hisoblanadi.
+    const vDist = Math.abs(rawDy);
 
-    // Agar o'yinchi orqaga tortish o'rniga to'g'ridan-to'g'ri raqib tomon surgan bo'lsa (direct swipe):
-    if (pullX < 0) {
-        pullX = -pullX;
-        pullY = -rawDy;
-    }
+    let angle = Math.atan2(vDist, hDist) * (180 / Math.PI);
 
-    let angle = Math.atan2(pullY, pullX) * (180 / Math.PI);
-
-    // Kamon burchagi o'q doimo raqib tomonga yo'nalishi uchun -15° (pastga to'g'ri) dan 85° (baland osmonga) oralig'ida bo'ladi.
-    // 90° dan oshishiga aslo yo'l qo'yilmaydi (chunki 90° dan oshsa o'q o'zidan teskari orqa tomonga uchib ketadi).
-    if (angle < -15) angle = -15;
-    if (angle > 85) angle = 85;
+    // Agar o'yinchi deyarli to'g'ri gorizontal tortgan bo'lsa, pastga to'g'ri otilmasligi uchun eng kamida 5° ko'tariladi
+    if (angle < 5) angle = 5;
+    // O'q hech qachon teskari (orqaga) uchmasligi uchun maksimal burchak 80°
+    if (angle > 80) angle = 80;
 
     return { angle, power, distance };
 }
@@ -7485,6 +7485,15 @@ socket.on('coinFlipStart', (data) => {
 socket.on('coinFlipComplete', (data) => {
     hideCoinTossModal();
     updateTurn(data.turnIndex, data.wind);
+    if (gameMode === 'multi') {
+        if (data.turnIndex === myPlayerIndex) {
+            showCenterNotice("Qur'ada g'alaba! Otish navbati sizda, vaqt ketyapti! 🏹⏳", 2800);
+            if (typeof triggerHaptic === 'function') triggerHaptic('medium');
+            playSfx('button', 0.9);
+        } else {
+            showCenterNotice("Qur'a yakunlandi. Raqib navbati, kuting... ⏳", 2200);
+        }
+    }
 });
 
 socket.on('gameStart', (data) => {
@@ -7929,6 +7938,10 @@ socket.on('turnTimerStart', (data) => {
     if (typeof startTurnTimerUI === 'function') {
         startTurnTimerUI(data?.duration || 30);
     }
+    if (gameMode === 'multi' && data && typeof data.turnIndex === 'number' && data.turnIndex === myPlayerIndex) {
+        showCenterNotice("Otish navbati sizda, vaqt ketyapti! 🏹⏳", 2500);
+        if (typeof triggerHaptic === 'function') triggerHaptic('medium');
+    }
 });
 
 socket.on('turnTimedOut', (data) => {
@@ -8283,6 +8296,12 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.classList.add('turn-self');
         turnIndicator.classList.remove('turn-opponent');
 
+        if (turnChanged && gameMode === 'multi') {
+            showCenterNotice("Otish navbati sizda, vaqt ketyapti! 🏹⏳", 2500);
+            if (typeof triggerHaptic === 'function') triggerHaptic('medium');
+            playSfx('button', 0.9);
+        }
+
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
             camera.position.y = cameraTargetY;
@@ -8304,6 +8323,10 @@ function updateTurn(turnIndex, wind) {
         turnIndicator.innerText = "Raqib navbati";
         turnIndicator.classList.add('turn-opponent');
         turnIndicator.classList.remove('turn-self');
+
+        if (turnChanged && gameMode === 'multi') {
+            showCenterNotice("Raqib navbati, kuting... ⏳", 2000);
+        }
 
         if (isOnlineTurnFocus) {
             camera.position.x = cameraTargetX;
