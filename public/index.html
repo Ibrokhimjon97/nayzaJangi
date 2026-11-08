@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Nayza Jangi - 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css?v=64">
+    <link rel="stylesheet" href="style.css?v=65">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         #menu-screen p {
@@ -242,9 +242,7 @@
 
         <div id="level-select-modal" class="screen hidden panel center-panel">
             <h2>Level tanlash</h2>
-            <div id="level-grid"
-                style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-top:15px; max-height:300px; overflow-y:auto;">
-            </div>
+            <div id="level-grid" data-scrollable="true"></div>
             <button id="btn-level-select-cancel" class="primary-btn" style="background:#475569; margin-top:15px;">Bekor
                 qilish</button>
         </div>
@@ -847,7 +845,7 @@
     <!-- Three.js Library -->
     <script src="vendor/three.min.js"></script>
     <script src="vendor/socket.io.min.js"></script>
-    <script src="client.js?v=64"></script>
+    <script src="client.js?v=65"></script>
     <script>
         // Mobile fullscreen & auto-landscape
         function tryFullscreenAndLandscape() {

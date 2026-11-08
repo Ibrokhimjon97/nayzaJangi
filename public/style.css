@@ -3518,3 +3518,68 @@ screen and (max-aspect-ratio: 1/1) {
     pointer-events: auto !important;
 }
 }
+
+/* ============================================================
+   LEVEL SELECT MODAL & LEVEL GRID MOBILE TOUCH SCROLL (v65)
+   ============================================================ */
+#level-select-modal {
+    max-width: min(94vw, 520px) !important;
+    max-height: min(88vh, 520px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 16px 18px !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+}
+
+#level-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+    max-height: 280px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain;
+    padding-right: 4px;
+    box-sizing: border-box !important;
+}
+
+#level-grid::-webkit-scrollbar {
+    width: 6px !important;
+    display: block !important;
+}
+
+#level-grid::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border-radius: 4px !important;
+}
+
+#level-grid::-webkit-scrollbar-thumb {
+    background: rgba(14, 165, 233, 0.75) !important;
+    border-radius: 4px !important;
+}
+
+body.force-landscape #level-select-modal {
+    max-height: min(86vw, 360px) !important;
+    max-width: min(88vh, 540px) !important;
+    padding: 12px 16px !important;
+}
+
+body.force-landscape #level-grid {
+    max-height: min(48vw, 195px) !important;
+    gap: 6px !important;
+}
+
+@media (max-height: 520px) {
+    #level-select-modal {
+        max-height: 94vh !important;
+        padding: 10px 14px !important;
+    }
+    #level-grid {
+        max-height: 180px !important;
+        gap: 6px !important;
+    }
+}

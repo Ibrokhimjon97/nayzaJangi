@@ -2086,16 +2086,13 @@ function buildMap(mapType, weather = 'sunny') {
     weatherType = weather;
     createWeatherSystem(weatherType);
 
-    // Yer ustki o't/qum qatlami (gradient effekt) - sahnani boyitadi.
-    if (!window._groundTopLayer) {
-        const gtGeo = new THREE.PlaneGeometry(40000, 80);
-        const gtMat = new THREE.MeshBasicMaterial({ color: 0x7dd956, transparent: true, opacity: 0.7, depthWrite: false });
-        window._groundTopLayer = new THREE.Mesh(gtGeo, gtMat);
-        window._groundTopLayer.position.set(0, ground.position.y + 100, 5);
-        scene.add(window._groundTopLayer);
+    // Yer ustki sun'iy oq chiziq olib tashlandi (foydalanuvchi so'roviga ko'ra)
+    if (window._groundTopLayer) {
+        scene.remove(window._groundTopLayer);
+        if (window._groundTopLayer.geometry) window._groundTopLayer.geometry.dispose();
+        if (window._groundTopLayer.material) window._groundTopLayer.material.dispose();
+        window._groundTopLayer = null;
     }
-    window._groundTopLayer.material.color.setHex(groundTopColor);
-    window._groundTopLayer.material.opacity = (weather === 'night') ? 0.4 : 0.65;
 
     // Quyosh/oy diski va yulduzlarni ob-havoga moslashtiramiz.
     if (typeof sunSprite !== 'undefined' && sunSprite) {
@@ -2862,21 +2859,23 @@ function buildHintTrajectory() {
     clearHintTrajectory();
     if (!lastPlayerShot) return;
     const shot = lastPlayerShot;
-    const points = [];
     let simX = shot.startX;
     let simY = shot.startY;
     const rad = shot.angle * (Math.PI / 180);
     let simVx = shot.power * Math.cos(rad);
     if (shot.playerIndex === 1) simVx = -simVx;
     let simVy = shot.power * Math.sin(rad);
+    const allPoints = [];
     for (let i = 0; i < 75; i++) {
-        points.push(new THREE.Vector3(simX, simY, -2));
+        allPoints.push(new THREE.Vector3(simX, simY, -2));
         simX += simVx * 0.05;
         simY += simVy * 0.05;
         simVy -= GRAVITY * 0.05;
         simVx += (shot.wind * 30) * 0.05;
         if (simY < ground.position.y + 100) break;
     }
+    const halfCount = Math.max(5, Math.min(28, Math.floor(allPoints.length * 0.45)));
+    const points = allPoints.slice(0, halfCount);
     if (points.length < 2) return;
     const geo = new THREE.BufferGeometry().setFromPoints(points);
     // Yordamchi hint: xira moviy/siyohrang, nuqtali chiziq.
@@ -3284,6 +3283,17 @@ function areAllies(indexA, indexB) {
 function applyDamageToTarget(targetIndex, damage) {
     if (targetIndex === myPlayerIndex) {
         myHealth -= damage;
+        if (myHealth <= 0) {
+            myHealth = 0;
+            const myModel = modelForPlayer(myPlayerIndex);
+            if (myModel) {
+                myModel.userData.isKnockedDown = true;
+                setSoldierVisual(myModel, 'hurt');
+                if (myModel.userData.planeMesh && myModel.userData.planeMesh.material) {
+                    myModel.userData.planeMesh.material.opacity = 0.45;
+                }
+            }
+        }
     } else if (p3Model && targetIndex === 2) {
         enemy2Health -= damage;
         if (enemy2Health <= 0) {
@@ -4269,27 +4279,51 @@ function stickSpear(targetModel, hitX, hitY, angle) {
 }
 
 function knockDownModel(model) {
-    if (!model || model.userData.isKnockedDown) return;
+    if (!model || !model.userData || model.userData.isKnockedDown) return;
 
     model.userData.isKnockedDown = true;
-    if (model.userData.isOttomanArcher) {
+    const modelIndex = getPlayerIndexByModel(model);
+    const isDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
+
+    // Barcha 2D sprite qahramonlar (Kamonchi, Nayzachi, Maxsus modellar)
+    if (model.userData.isOttomanUnit || model.userData.isOttomanArcher || model.userData.isOttomanSpearman || model.userData.isCustomModel) {
         setSoldierVisual(model, 'hurt');
-        setTimeout(() => {
-            model.userData.isKnockedDown = false;
-            setSoldierVisual(model, 'idle');
-        }, 900);
+        // Agar o'lgan bo'lsa, yiqilgan (yarador) holatda qoladi, qaytib o'rnidan turmaydi
+        if (!isDead) {
+            setTimeout(() => {
+                if (model && model.userData) {
+                    // Qayta tekshiramiz: agar shu vaqt ichida o'lgan bo'lsa turmasin
+                    const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
+                    if (!stillDead) {
+                        model.userData.isKnockedDown = false;
+                        const def = modelIndex >= 0 && isDefenseActiveForPlayer(modelIndex);
+                        setSoldierVisual(model, def ? 'defend' : 'idle');
+                    }
+                }
+            }, 900);
+        }
         return;
     }
+
+    // 3D modellar uchun: 90 daraja yiqilganda yer tagiga kirib ketmasligi uchun
+    // Yer usti yuzi ground.position.y + 100 da joylashgan. Model yuzasi yer ustida turishi shart.
     const originalY = model.position.y;
     const direction = model.position.x > 0 ? -1 : 1;
     model.rotation.z = direction * Math.PI / 2;
-    model.position.y = ground.position.y + 115;
+    model.position.y = ground.position.y + 100 + 180;
 
-    setTimeout(() => {
-        model.rotation.z = 0;
-        model.position.y = originalY;
-        model.userData.isKnockedDown = false;
-    }, 1500);
+    if (!isDead) {
+        setTimeout(() => {
+            if (model && model.userData) {
+                const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
+                if (!stillDead) {
+                    model.rotation.z = 0;
+                    model.position.y = originalY;
+                    model.userData.isKnockedDown = false;
+                }
+            }
+        }, 1500);
+    }
 }
 
 function breakShield(model) {
@@ -6241,6 +6275,13 @@ socket.on('hitRegistered', (data) => {
     } else {
         enemyHealth = newHealth; enemyShield = newShield;
     }
+    if (newHealth <= 0 && targetModel) {
+        targetModel.userData.isKnockedDown = true;
+        setSoldierVisual(targetModel, 'hurt');
+        if (targetModel.userData.planeMesh && targetModel.userData.planeMesh.material) {
+            targetModel.userData.planeMesh.material.opacity = 0.45;
+        }
+    }
     updateShieldUI();
     if ((shieldBroke || newShield <= 0) && !targetModel.userData.shieldBroken) breakShield(targetModel);
     updateHealthUI();
@@ -6680,11 +6721,11 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
             if (!window.enemyArtilleryCannon) {
                 const tex = loadTexture('artileriya.png');
                 const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat);
+                window.enemyArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), mat);
                 scene.add(window.enemyArtilleryCannon);
             }
-            window.enemyArtilleryCannon.scale.set(1.5, 1.5, 1.5);
-            window.enemyArtilleryCannon.position.set(thrower.position.x + (facingRight ? 150 : -150), thrower.position.y + 60, thrower.position.z + 10);
+            window.enemyArtilleryCannon.scale.set(1.6, 1.6, 1.6);
+            window.enemyArtilleryCannon.position.set(thrower.position.x + (facingRight ? 190 : -190), thrower.position.y + 200, thrower.position.z + 10);
                         
             window.enemyArtilleryCannon.visible = true;
             
@@ -7527,7 +7568,6 @@ function gameLoop(now) {
             
             
             
-            const points = [];
             let simX = startX;
             let simY = startY;
             const distance = Math.sqrt(dx*dx + dy*dy);
@@ -7542,15 +7582,19 @@ function gameLoop(now) {
             let simVx = power * Math.cos(rad);
             if (myPlayerIndex === 1) simVx = -simVx;
             let simVy = power * Math.sin(rad);
-            
+
+            const allPoints = [];
             for(let i=0; i<110; i++) {
-                points.push(new THREE.Vector3(simX, simY, 0));
+                allPoints.push(new THREE.Vector3(simX, simY, 0));
                 simX += simVx * 0.05;
                 simY += simVy * 0.05;
                 simVy -= GRAVITY * 0.05;
                 simVx += (currentWind * 30) * 0.05;
                 if(simY < ground.position.y + 100) break;
             }
+            // Trayektoriya to'liq ko'rsatilmasin, faqat yo'nalish uchun yarimgacha (45%) ko'rsatilsin
+            const halfCount = Math.max(5, Math.min(32, Math.floor(allPoints.length * 0.45)));
+            const points = allPoints.slice(0, halfCount);
             
             const geo = new THREE.BufferGeometry().setFromPoints(points);
             const mat = new THREE.LineDashedMaterial({ color: 0xff2d2d, dashSize: 30, gapSize: 15, linewidth: 3 });
@@ -10503,7 +10547,21 @@ document.addEventListener('keydown', (e) => {
     let scrollVelocity = 0;
     let isTouchActive = false;
 
-    function getActiveScrollTarget() {
+    function getActiveScrollTarget(rawTarget) {
+        if (rawTarget && typeof rawTarget.closest === 'function') {
+            const grid = rawTarget.closest('#level-grid');
+            if (grid) return grid;
+            const scrollable = rawTarget.closest('#level-grid, .scrollable, [data-scrollable]');
+            if (scrollable) return scrollable;
+        }
+
+        const lvlModal = document.getElementById('level-select-modal');
+        if (lvlModal && !lvlModal.classList.contains('hidden') && lvlModal.offsetParent !== null) {
+            const grid = document.getElementById('level-grid');
+            if (grid) return grid;
+            return lvlModal;
+        }
+
         if (typeof gameMode !== 'undefined' && gameMode !== 'menu') {
             const activeModals = [
                 document.getElementById('settings-modal'),
@@ -10523,7 +10581,6 @@ document.addEventListener('keydown', (e) => {
         const candidatePanels = [
             document.getElementById('single-mode-modal'),
             document.getElementById('multi-menu'),
-            document.getElementById('level-select-modal'),
             document.getElementById('settings-modal'),
             document.getElementById('rating-modal'),
             document.getElementById('shop-modal'),
@@ -10543,8 +10600,8 @@ document.addEventListener('keydown', (e) => {
         return null;
     }
 
-    function handleDragStart(clientX, clientY) {
-        activeScrollPanel = getActiveScrollTarget();
+    function handleDragStart(clientX, clientY, rawTarget) {
+        activeScrollPanel = getActiveScrollTarget(rawTarget);
         if (!activeScrollPanel) return;
 
         const vpos = getPointerPos({ clientX, clientY });
@@ -10566,9 +10623,13 @@ document.addEventListener('keydown', (e) => {
 
         if (!isScrollDragging && (dist > 6 || Math.abs(dy) > 4)) {
             isScrollDragging = true;
+            isTouchScrolling = true;
+            lastScrollEndTime = Date.now();
         }
 
         if (isScrollDragging) {
+            isTouchScrolling = true;
+            lastScrollEndTime = Date.now();
             activeScrollPanel.scrollTop = initialScrollTop - dy;
             
             const now = performance.now();
@@ -10586,20 +10647,26 @@ document.addEventListener('keydown', (e) => {
 
     function handleDragEnd() {
         if (isScrollDragging) {
+            isTouchScrolling = true;
+            lastScrollEndTime = Date.now();
+            setTimeout(() => { isTouchScrolling = false; }, 280);
+
             if (activeScrollPanel && Math.abs(scrollVelocity) > 0.12) {
                 const momentum = scrollVelocity * 160;
                 activeScrollPanel.scrollBy({ top: -momentum, behavior: 'smooth' });
             }
 
-            const suppressClick = (ev) => {
+            const suppressEvent = (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
                 ev.stopImmediatePropagation();
             };
-            window.addEventListener('click', suppressClick, { capture: true, once: true });
+            window.addEventListener('click', suppressEvent, { capture: true, once: true });
+            window.addEventListener('touchend', suppressEvent, { capture: true, once: true });
             setTimeout(() => {
-                window.removeEventListener('click', suppressClick, { capture: true });
-            }, 250);
+                window.removeEventListener('click', suppressEvent, { capture: true });
+                window.removeEventListener('touchend', suppressEvent, { capture: true });
+            }, 280);
         }
         isScrollDragging = false;
         activeScrollPanel = null;
@@ -10609,7 +10676,7 @@ document.addEventListener('keydown', (e) => {
     window.addEventListener('touchstart', (e) => {
         if (!e.touches || !e.touches[0]) return;
         isTouchActive = true;
-        handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+        handleDragStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
     }, { capture: true, passive: true });
 
     window.addEventListener('touchmove', (e) => {
@@ -10630,7 +10697,7 @@ document.addEventListener('keydown', (e) => {
     // Mouse events for desktop testing / click-drag
     window.addEventListener('mousedown', (e) => {
         if (isTouchActive || e.button !== 0) return;
-        handleDragStart(e.clientX, e.clientY);
+        handleDragStart(e.clientX, e.clientY, e.target);
     }, { capture: true });
 
     window.addEventListener('mousemove', (e) => {
@@ -10667,13 +10734,13 @@ function _runPageInits() {
                 if (!myArtilleryCannon) {
                     const tex = loadTexture('artileriya.png');
                     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat);
+                    myArtilleryCannon = new THREE.Mesh(new THREE.PlaneGeometry(280, 240), mat);
                     scene.add(myArtilleryCannon);
                 }
                 const playerGrp = myPlayerIndex === 0 ? p1Model : p2Model;
                 if (playerGrp) {
-                    myArtilleryCannon.scale.set(1.5, 1.5, 1.5);
-                    myArtilleryCannon.position.set(playerGrp.position.x + (myPlayerIndex === 0 ? 150 : -150), playerGrp.position.y + 60, playerGrp.position.z + 10);
+                    myArtilleryCannon.scale.set(1.6, 1.6, 1.6);
+                    myArtilleryCannon.position.set(playerGrp.position.x + (myPlayerIndex === 0 ? 190 : -190), playerGrp.position.y + 200, playerGrp.position.z + 10);
                     myArtilleryCannon.visible = true;
                     if (myPlayerIndex === 0) {
                         myArtilleryCannon.rotation.y = Math.PI;
