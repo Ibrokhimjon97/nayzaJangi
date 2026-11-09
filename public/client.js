@@ -141,6 +141,10 @@ function loadTexture(url, options = {}) {
                 console.warn('BG removal failed for', url, e);
             }
         }
+        loadedTex.generateMipmaps = true;
+        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
+        loadedTex.magFilter = THREE.LinearFilter;
+        loadedTex.anisotropy = 8;
         loadedTex.needsUpdate = true;
     }, undefined, (err) => {
         console.error('Texture load error:', url, err);
@@ -758,7 +762,7 @@ const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSi
 camera.position.set(0, 0, 1000);
 
 const renderer = new THREE.WebGLRenderer({
-    antialias: !MOBILE_PERF_MODE,
+    antialias: true,
     powerPreference: MOBILE_PERF_MODE ? "default" : "high-performance",
     precision: MOBILE_PERF_MODE ? "mediump" : "highp",
     stencil: false,
@@ -767,7 +771,7 @@ const renderer = new THREE.WebGLRenderer({
 
 function getPreferredPixelRatio() {
     const dpr = window.devicePixelRatio || 1;
-    return Math.min(dpr, MOBILE_PERF_MODE ? 1.35 : 2.0);
+    return Math.min(dpr, MOBILE_PERF_MODE ? 1.75 : 2.0);
 }
 
 renderer.setSize(initialVp.width, initialVp.height);
@@ -7172,6 +7176,11 @@ function returnToMainMenu() {
     }
     if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
 
+    // Reset touch scrolling and throttles so all menu buttons respond immediately
+    isTouchScrolling = false;
+    lastScrollEndTime = 0;
+    lastModalActionTime = 0;
+
     // Barcha o'yin ekranlarini yashirish
     if (gameScreen) gameScreen.classList.add('hidden');
     if (inGameModal) inGameModal.classList.add('hidden');
@@ -7184,9 +7193,11 @@ function returnToMainMenu() {
     if (aboutModal) aboutModal.classList.add('hidden');
     if (settingsModal) settingsModal.classList.add('hidden');
     if (profileModal) profileModal.classList.add('hidden');
-    for (const id of ALL_MODAL_IDS) {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
+    if (typeof ALL_MODAL_IDS !== 'undefined' && Array.isArray(ALL_MODAL_IDS)) {
+        for (const id of ALL_MODAL_IDS) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
     }
 
     // Intro ekranni yo'q qilish
@@ -7213,10 +7224,39 @@ function returnToMainMenu() {
     if (menuScreen) {
         menuScreen.style.removeProperty('display');
         menuScreen.style.removeProperty('pointer-events');
+        menuScreen.style.display = 'flex';
+        menuScreen.style.pointerEvents = 'auto';
+        menuScreen.style.opacity = '1';
+        menuScreen.style.visibility = 'visible';
         menuScreen.classList.remove('hidden');
     }
 
+    const carousel = document.getElementById('menu-cards-carousel');
+    if (carousel) {
+        carousel.style.removeProperty('display');
+        carousel.style.pointerEvents = 'auto';
+        carousel.style.opacity = '1';
+        carousel.style.visibility = 'visible';
+    }
+    const topBar = document.getElementById('campaign-progress-panel');
+    if (topBar) {
+        topBar.style.removeProperty('display');
+        topBar.style.pointerEvents = 'auto';
+        topBar.style.opacity = '1';
+        topBar.style.visibility = 'visible';
+    }
+
+    // Kamera holatini menyu uchun to'g'rilash (0, 60, 1000)
     cameraState = 'static';
+    if (camera) {
+        camera.position.set(0, 60, 1000);
+        camera.zoom = 1;
+        cameraTargetX = 0;
+        cameraTargetY = 60;
+        cameraZoomTarget = 1;
+        camera.updateProjectionMatrix();
+    }
+
     if (!isLooping) {
         isLooping = true;
         lastTime = performance.now();
@@ -7230,17 +7270,25 @@ function returnToMainMenu() {
 }
 
 if (btnExitMenu) {
-    const handleExitMenu = safeModalAction((e) => {
+    const handleExitMenu = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         returnToMainMenu();
-    });
+    };
     btnExitMenu.addEventListener('click', handleExitMenu);
     btnExitMenu.addEventListener('touchend', handleExitMenu, { passive: false });
 }
 const btnDisconnectHome = document.getElementById('btn-disconnect-home');
 if (btnDisconnectHome) {
-    const handleDiscHome = safeModalAction((e) => {
+    const handleDiscHome = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         returnToMainMenu();
-    });
+    };
     btnDisconnectHome.addEventListener('click', handleDiscHome);
     btnDisconnectHome.addEventListener('touchend', handleDiscHome, { passive: false });
 }
@@ -8036,15 +8084,8 @@ socket.on('rematchDeclined', () => {
         rematchBtn.disabled = true;
     }
     setTimeout(() => {
-        gameOverScreen.classList.add('hidden');
-        document.documentElement.classList.remove('direct-duel-active');
-        if (menuScreen) {
-            menuScreen.style.removeProperty('display');
-            menuScreen.classList.remove('hidden');
-        }
-        autoJoinExecuted = false;
-        gameMode = 'menu';
-    }, 2000);
+        returnToMainMenu();
+    }, 1800);
 });
 
 socket.on('turnTimerStart', (data) => {
@@ -8262,27 +8303,13 @@ if (restartBtn) {
 }
 
 if (menuBtn) {
-    const handleReturnToMenu = safeModalAction((e) => {
-        gameOverScreen.classList.add('hidden');
-        gameScreen.classList.add('hidden');
-        waitingScreen.classList.add('hidden');
-        multiMenu.classList.add('hidden');
-        disconnectScreen.classList.add('hidden');
-        inGameModal.classList.add('hidden');
-        if (aboutModal) aboutModal.classList.add('hidden');
-        if (settingsModal) settingsModal.classList.add('hidden');
-        if (profileModal) profileModal.classList.add('hidden');
-        if (singleModeModal) singleModeModal.classList.add('hidden');
-        document.documentElement.classList.remove('direct-duel-active');
-        if (menuScreen) {
-            menuScreen.style.removeProperty('display');
-            menuScreen.classList.remove('hidden');
+    const handleReturnToMenu = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
-        autoJoinExecuted = false;
-        gameMode = 'menu';
-        updateCampaignUI();
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    });
+        returnToMainMenu();
+    };
     menuBtn.addEventListener('click', handleReturnToMenu);
     menuBtn.addEventListener('touchend', handleReturnToMenu, { passive: false });
 }
@@ -8319,21 +8346,16 @@ if (btnRematchAccept) {
 
 // Revansh so'rovini rad etish
 if (btnRematchDecline) {
-    const handleRematchDecline = safeModalAction((e) => {
+    const handleRematchDecline = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (socket && socket.connected) {
             socket.emit('rematchDecline', { roomName: currentRoomName });
         }
-        if (rematchModal) rematchModal.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
-        document.documentElement.classList.remove('direct-duel-active');
-        if (menuScreen) {
-            menuScreen.style.removeProperty('display');
-            menuScreen.classList.remove('hidden');
-        }
-        autoJoinExecuted = false;
-        gameMode = 'menu';
-        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
-    });
+        returnToMainMenu();
+    };
     btnRematchDecline.addEventListener('click', handleRematchDecline);
     btnRematchDecline.addEventListener('touchend', handleRematchDecline, { passive: false });
 }
@@ -11570,7 +11592,7 @@ window.addEventListener('touchmove', (e) => {
     if (e.touches && e.touches[0]) {
         const dx = e.touches[0].clientX - touchStartX;
         const dy = e.touches[0].clientY - touchStartY;
-        if (Math.hypot(dx, dy) > 8) {
+        if (Math.hypot(dx, dy) > 16) {
             isTouchScrolling = true;
         }
     }
@@ -11581,7 +11603,7 @@ window.addEventListener('touchend', (e) => {
         lastScrollEndTime = Date.now();
         setTimeout(() => {
             isTouchScrolling = false;
-        }, 140);
+        }, 120);
     } else {
         isTouchScrolling = false;
     }
@@ -11595,14 +11617,14 @@ window.addEventListener('touchcancel', () => {
 function safeModalAction(fn) {
     return function (e) {
         // Agar foydalanuvchi barmoq bilan menyuni / ekranni surgan (scroll qilgan) bo'lsa, tugma bosilmasligi shart!
-        if (isTouchScrolling || (Date.now() - lastScrollEndTime < 150)) {
+        if (isTouchScrolling || (Date.now() - lastScrollEndTime < 100)) {
             return;
         }
         if (e && e.type === 'touchend') {
             const touch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
             if (touch) {
                 const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
-                if (dist > 8) {
+                if (dist > 18) {
                     isTouchScrolling = true;
                     lastScrollEndTime = Date.now();
                     return;
@@ -12350,18 +12372,21 @@ if (btnSettings) {
 }
 
 if (btnLogout) {
-    const handleLogout = safeModalAction(() => {
-        // Telegram orqali kirilgan bo'lsa, o'yinni/mini-appni yopamiz (logout bo'lmasin!)
+    const handleLogout = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
+        // Telegram orqali kirilgan bo'lsa, o'yinni/mini-appni yopishga harakat qilamiz
         const tgApp = window.Telegram?.WebApp;
         if (tgApp && typeof tgApp.close === 'function') {
             try {
                 tgApp.close();
-                return;
             } catch (err) {
                 console.warn('Telegram close error:', err);
             }
         }
-        // Agar Telegram bo'lmasa, oddiy brauzerda logout qilamiz
+        // Akkauntdan chiqish va profilni tozalash
         authPhone = '';
         authUserCache = null;
         delete myProfile.phone;
@@ -12369,12 +12394,17 @@ if (btnLogout) {
         localStorage.removeItem('nayza_auth_phone');
         localStorage.removeItem('nayza_auth_user');
         saveProfile();
-        menuScreen.classList.add('hidden');
-        if (authModal) authModal.classList.remove('hidden');
+        if (menuScreen) menuScreen.classList.add('hidden');
+        if (authModal) {
+            authModal.classList.remove('hidden');
+            authModal.style.removeProperty('display');
+            authModal.style.pointerEvents = 'auto';
+        }
         if (authPasswordInput) authPasswordInput.value = '';
         if (authPhoneInput) authPhoneInput.value = '';
         setAuthStatus("Siz akkauntdan chiqdingiz.");
-    });
+        if (typeof updateMenuWallpaper === 'function') updateMenuWallpaper();
+    };
     btnLogout.addEventListener('click', handleLogout);
     btnLogout.addEventListener('touchend', handleLogout, { passive: false });
 }

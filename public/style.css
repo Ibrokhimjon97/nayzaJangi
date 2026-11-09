@@ -620,8 +620,8 @@ body.force-landscape .fire-btn {
 }
 
 /* MUTLOQ YASHIRISH KAFOLATI (CSS SPECIFICITY FIX) */
-html.direct-duel-active #menu-screen,
-html.direct-duel-active #menu-screen.menu-carousel-screen,
+html.direct-duel-active #menu-screen.hidden,
+html.direct-duel-active #menu-screen.menu-carousel-screen.hidden,
 #menu-screen.hidden,
 #menu-screen.menu-carousel-screen.hidden,
 .menu-carousel-screen.hidden,
