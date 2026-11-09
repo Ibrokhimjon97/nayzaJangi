@@ -7743,3 +7743,17 @@ body.mobile-landscape .char-cancel-btn {
     font-size: 0.84rem !important;
     margin: 0 !important;
 }
+
+/* ============================================================
+   BATTERY & GPU OPTIMIZATION FOR MOBILE & TOUCH DEVICES
+   Disable expensive backdrop-filter: blur() over live WebGL canvas.
+   Eliminates high GPU compositor workload, thermal throttling and battery drain.
+   ============================================================ */
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+    *,
+    *::before,
+    *::after {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}

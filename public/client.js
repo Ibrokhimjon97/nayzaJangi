@@ -659,7 +659,28 @@ const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a0b2e);
 scene.fog = new THREE.FogExp2(0x1a0b2e, 0.00018);
-const MOBILE_PERF_MODE = IS_NATIVE_APP;
+const IS_MOBILE_ENV = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    Boolean(window.Telegram && window.Telegram.WebApp) ||
+    IS_NATIVE_APP ||
+    Boolean(window.matchMedia && window.matchMedia('(max-width: 950px)').matches);
+
+const MOBILE_PERF_MODE = IS_MOBILE_ENV;
+
+// Trayektoriya chizig'i uchun xotira kesh hovuzi (har kadrda yangi obyekt yaratilmaydi, CPU va batareya tejaladi):
+const MAX_TRAJ_POINTS = 120;
+const trajPositions = new Float32Array(MAX_TRAJ_POINTS * 3);
+const trajGeometry = new THREE.BufferGeometry();
+trajGeometry.setAttribute('position', new THREE.BufferAttribute(trajPositions, 3));
+trajGeometry.setDrawRange(0, 0);
+const trajMaterial = new THREE.LineDashedMaterial({
+    color: 0xff2d2d,
+    dashSize: 30,
+    gapSize: 15,
+    linewidth: 3
+});
+trajectoryLine = new THREE.Line(trajGeometry, trajMaterial);
+trajectoryLine.visible = false;
+scene.add(trajectoryLine);
 
 // Radial glow teksturasi - quyosh/oy diski va yorug'lik effektlari uchun.
 function makeRadialGlowTexture(innerColor = '#ffffff', outerColor = '#ffcc66') {
@@ -736,17 +757,25 @@ let aspect = initialVp.width / Math.max(1, initialVp.height);
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 3000);
 camera.position.set(0, 0, 1000);
 
-const renderer = new THREE.WebGLRenderer({ antialias: !MOBILE_PERF_MODE, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({
+    antialias: !MOBILE_PERF_MODE,
+    powerPreference: MOBILE_PERF_MODE ? "default" : "high-performance",
+    precision: MOBILE_PERF_MODE ? "mediump" : "highp",
+    stencil: false,
+    depth: true
+});
 
 function getPreferredPixelRatio() {
     const dpr = window.devicePixelRatio || 1;
-    return Math.min(dpr, MOBILE_PERF_MODE ? 1.6 : 2.5);
+    return Math.min(dpr, MOBILE_PERF_MODE ? 1.35 : 2.0);
 }
 
 renderer.setSize(initialVp.width, initialVp.height);
 renderer.setPixelRatio(getPreferredPixelRatio());
 renderer.shadowMap.enabled = !MOBILE_PERF_MODE;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+if (renderer.shadowMap.enabled) {
+    renderer.shadowMap.type = THREE.BasicShadowMap;
+}
 renderer.localClippingEnabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.18;
@@ -8978,23 +9007,44 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
 
 let isLooping = false;
 let isPaused = false;
-
+let lastRenderTimestamp = 0;
+const BATTLE_TARGET_FRAME_MS = 1000 / 60; // Max 60 FPS jang paytida (120Hz ekranlarda ham qizib ketmaydi)
+const MENU_TARGET_FRAME_MS = 1000 / 25;   // Max 25 FPS menyuda (ekstremal quvvat tejamkorlik)
 
 function gameLoop(now) {
-    if (isPaused) {
-        // Pauza paytida hech narsani yangilamaymiz, faqat sahnani qayta chizamiz.
-        // (Avval bu yerda `dt` e'lon qilinishidan oldin ishlatilib, crash bo'lardi.)
+    if (isLooping) requestAnimationFrame(gameLoop);
+    if (!now) now = performance.now();
+
+    // 1. Agar brauzer yoki Telegram orqa fonda bo'lsa (ekran o'chsa), GPU/CPU ishlatmaymiz:
+    if (document.hidden) {
         lastTime = now;
-        renderer.render(scene, camera);
-        if (isLooping) requestAnimationFrame(gameLoop);
+        lastRenderTimestamp = now;
         return;
     }
+
+    // 2. Kadrlar chastotasini cheklash (60 FPS jangda, 25 FPS menyuda):
+    const inBattle = gameScreen && !gameScreen.classList.contains('hidden');
+    const minFrameInterval = inBattle ? BATTLE_TARGET_FRAME_MS : MENU_TARGET_FRAME_MS;
+    const elapsedSinceLast = now - lastRenderTimestamp;
+    if (elapsedSinceLast < minFrameInterval) {
+        return;
+    }
+    lastRenderTimestamp = now - (elapsedSinceLast % minFrameInterval);
+
+    if (isPaused) {
+        lastTime = now;
+        renderer.render(scene, camera);
+        return;
+    }
+
     let timeScale = 1.0;
     if (!isAnimating && screenShake > 0) timeScale = 0.3;
     if (now < cinematicSlowUntil) timeScale *= 0.23;
     if (now < crowKillerCinematicUntil) timeScale *= 0.35; // Qush o'ldirish cinematic sekinlashtirish
 
-    const dt = ((now - lastTime) / 1000) * timeScale;
+    // Delta time ni max 0.05s (50ms) bilan cheklaymiz, tabdan qaytganda fizika sakrab ketmasligi uchun:
+    const rawDt = (now - lastTime) / 1000;
+    const dt = Math.min(0.05, Math.max(0.001, rawDt)) * timeScale;
     lastTime = now;
     mixers.forEach(m => m.update(dt));
 
@@ -9336,12 +9386,9 @@ function gameLoop(now) {
         if (screenShake < 0.5) screenShake = 0;
     }
 
-    // Trajectory Line
-    if (trajectoryLine) {
-        scene.remove(trajectoryLine);
-        trajectoryLine.geometry.dispose();
-        trajectoryLine.material.dispose();
-        trajectoryLine = null;
+    // Trajectory Line: Agar o'yinchi nishon olmagan bo'lsa, chiziqni yashiramiz (xotirani tejash)
+    if (!isDragging && trajectoryLine) {
+        trajectoryLine.visible = false;
     }
 
     // Update animation frames based on state
@@ -9444,9 +9491,13 @@ function gameLoop(now) {
             if (isRight) simVx = -simVx;
             let simVy = power * Math.sin(rad);
 
-            const allPoints = [];
-            for (let i = 0; i < 110; i++) {
-                allPoints.push(new THREE.Vector3(simX, simY, 0));
+            let count = 0;
+            const maxPoints = 110;
+            for (let i = 0; i < maxPoints; i++) {
+                trajPositions[i * 3] = simX;
+                trajPositions[i * 3 + 1] = simY;
+                trajPositions[i * 3 + 2] = 0;
+                count++;
                 simX += simVx * 0.05;
                 simY += simVy * 0.05;
                 simVy -= GRAVITY * 0.05;
@@ -9454,14 +9505,11 @@ function gameLoop(now) {
                 if (simY < ground.position.y + 100) break;
             }
             // Trayektoriya to'liq ko'rsatilmasin, faqat yo'nalish uchun yarimgacha (45%) ko'rsatilsin
-            const halfCount = Math.max(5, Math.min(32, Math.floor(allPoints.length * 0.45)));
-            const points = allPoints.slice(0, halfCount);
-
-            const geo = new THREE.BufferGeometry().setFromPoints(points);
-            const mat = new THREE.LineDashedMaterial({ color: 0xff2d2d, dashSize: 30, gapSize: 15, linewidth: 3 });
-            trajectoryLine = new THREE.Line(geo, mat);
+            const halfCount = Math.max(5, Math.min(32, Math.floor(count * 0.45)));
+            trajGeometry.setDrawRange(0, halfCount);
+            trajGeometry.attributes.position.needsUpdate = true;
             trajectoryLine.computeLineDistances();
-            scene.add(trajectoryLine);
+            trajectoryLine.visible = true;
 
             // 3D Usmoniy Kamonni mo'ljal olayotganda qo'lga keltirish va ipini tortish
             const myWeapon = getPlayerWeaponType(myPlayerIndex);
@@ -9552,7 +9600,6 @@ function gameLoop(now) {
     }
 
     renderer.render(scene, camera);
-    if (isLooping) requestAnimationFrame(gameLoop);
 }
 
 
@@ -12448,11 +12495,6 @@ if (btnCopyVisa) {
         copyDonateValue(value, btnCopyVisa);
     });
 }
-if (btnCopyEmail) {
-    btnCopyEmail.addEventListener('click', () => {
-        copyDonateValue('Abiturientlaruchun@gmail.com', btnCopyEmail);
-    });
-}
 
 if (btnBuySuper) {
     btnBuySuper.addEventListener('click', () => {
@@ -12836,26 +12878,31 @@ const _wallpaperScreenIds = [
     'level-select-modal', 'game-options-modal', 'waiting-screen', 'game-over-screen',
     'daily-rewards-modal', 'daily-quests-modal'
 ];
+let _cachedWallpaperElements = null;
+let _cachedIntroEl = null;
+let _cachedGameScreenEl = null;
+
 function updateMenuWallpaper() {
     if (!_menuWallpaperEl) return;
-    const introVisible = (() => {
-        const intro = document.getElementById('intro-screen');
-        return intro && !intro.classList.contains('hide');
-    })();
-    const gameVisible = (() => {
-        const gs = document.getElementById('game-screen');
-        return gs && !gs.classList.contains('hidden');
-    })();
+    if (!_cachedWallpaperElements) {
+        _cachedWallpaperElements = _wallpaperScreenIds.map(id => document.getElementById(id)).filter(Boolean);
+        _cachedIntroEl = document.getElementById('intro-screen');
+        _cachedGameScreenEl = document.getElementById('game-screen');
+    }
+    const introVisible = _cachedIntroEl && !_cachedIntroEl.classList.contains('hide');
+    const gameVisible = _cachedGameScreenEl && !_cachedGameScreenEl.classList.contains('hidden');
     let anyMenuVisible = false;
-    for (const id of _wallpaperScreenIds) {
-        const el = document.getElementById(id);
-        if (el && !el.classList.contains('hidden')) { anyMenuVisible = true; break; }
+    for (let i = 0; i < _cachedWallpaperElements.length; i++) {
+        if (!_cachedWallpaperElements[i].classList.contains('hidden')) {
+            anyMenuVisible = true;
+            break;
+        }
     }
     const shouldShow = !introVisible && !gameVisible && anyMenuVisible;
     _menuWallpaperEl.classList.toggle('show', shouldShow);
 }
-// Ekran holatlari turli joylarda o'zgargani uchun, doimiy yengil kuzatuv qo'yamiz.
-setInterval(updateMenuWallpaper, 350);
+// Ekran holatlari o'zgarganda yangilanadi (1500ms yengil interval CPU tejamkorlik uchun):
+setInterval(updateMenuWallpaper, 1500);
 
 // --- Kirish intro ekrani va Asset Preloader logikasi ---
 (function setupIntroScreen() {
