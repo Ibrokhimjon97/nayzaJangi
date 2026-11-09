@@ -1486,17 +1486,80 @@ io.on('connection', (socket) => {
         const roomName = `room_code_${code}`;
         socket.join(roomName);
         socket.roomId = roomName;
+        const myPlayerId = String(socket.profile?.playerId || socket.profile?.phone || socket.id);
         roomsByCode[code] = {
             player1: socket,
+            creatorPlayerId: myPlayerId,
+            creatorPhone: socket.profile?.phone || null,
             roomName: roomName,
-            options: data.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false }
+            options: data.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false },
+            createdAt: Date.now(),
+            disconnectedAt: null,
+            cleanupTimer: null,
+            pendingPlayer2: null
         };
+        console.log(`[CreateGame] Yangi xona yaratildi: ${code}, room: ${roomName}, creator: ${socket.profile?.name} (${myPlayerId})`);
         socket.emit('gameCreated', code);
+    });
+
+    socket.on('rebindCreatedRoom', (payload) => {
+        const rawCode = payload?.code;
+        const cleanCode = String(rawCode || '').replace(/^(room_code_|room_|duel_)/i, '').trim().toUpperCase();
+        if (payload?.profile) {
+            socket.profile = payload.profile;
+            bindOnlineProfile(socket.profile);
+        }
+        const targetCode = roomsByCode[cleanCode] ? cleanCode : (roomsByCode[rawCode] ? rawCode : null);
+        if (targetCode && roomsByCode[targetCode]) {
+            const r = roomsByCode[targetCode];
+            if (r.cleanupTimer) {
+                clearTimeout(r.cleanupTimer);
+                r.cleanupTimer = null;
+            }
+            r.disconnectedAt = null;
+            r.player1 = socket;
+            socket.join(r.roomName);
+            socket.roomId = r.roomName;
+            console.log(`[RebindCreatedRoom] Xona egasi qayta ulandi. Kod: ${targetCode}, socketId: ${socket.id}`);
+
+            // Agar pendingPlayer2 (xona egasini kutayotgan raqib) bo'lsa, o'yinni darhol boshlaymiz:
+            if (r.pendingPlayer2 && r.pendingPlayer2.connected) {
+                const player1 = socket;
+                const player2 = r.pendingPlayer2;
+                const roomName = r.roomName;
+                rooms[roomName] = { options: r.options };
+                delete roomsByCode[targetCode];
+                player1.join(roomName);
+                player1.roomId = roomName;
+                player2.join(roomName);
+                player2.roomId = roomName;
+                console.log(`[RebindCreatedRoom] Kutayotgan raqib bilan o'yin boshlanmoqda: ${roomName}`);
+                startGame(player1, player2, roomName);
+            } else {
+                socket.emit('gameCreated', targetCode);
+            }
+        }
+    });
+
+    socket.on('cancelCreatedRoom', (payload) => {
+        const rawCode = payload?.code;
+        const cleanCode = String(rawCode || '').replace(/^(room_code_|room_|duel_)/i, '').trim().toUpperCase();
+        const targetCode = roomsByCode[cleanCode] ? cleanCode : (roomsByCode[rawCode] ? rawCode : null);
+        if (targetCode && roomsByCode[targetCode]) {
+            if (roomsByCode[targetCode].cleanupTimer) {
+                clearTimeout(roomsByCode[targetCode].cleanupTimer);
+            }
+            if (roomsByCode[targetCode].pendingPlayer2 && roomsByCode[targetCode].pendingPlayer2.connected) {
+                roomsByCode[targetCode].pendingPlayer2.emit('joinError', { code: targetCode, reason: 'cancelled', message: "Xona egasi o'yinni bekor qildi." });
+            }
+            delete roomsByCode[targetCode];
+            console.log(`[CancelCreatedRoom] Xona bekor qilindi: ${targetCode}`);
+        }
     });
 
     socket.on('joinGame', (data) => {
         const { profile, code } = data || {};
-        const cleanCode = String(code || '').replace(/^(room_|duel_)/i, '').trim().toUpperCase();
+        const cleanCode = String(code || '').replace(/^(room_code_|room_|duel_)/i, '').trim().toUpperCase();
         socket.profile = profile || { name: "O'yinchi", flag: "🏳️", avatar: "👤" };
         bindOnlineProfile(socket.profile);
 
@@ -1504,18 +1567,48 @@ io.on('connection', (socket) => {
 
         if (targetCode && roomsByCode[targetCode]) {
             const roomData = roomsByCode[targetCode];
-            const player1 = roomData.player1;
+            let player1 = roomData.player1;
             const player2 = socket;
             const roomName = roomData.roomName;
+
+            // Agar player1 uzilgan bo'lsa, uning yangi reconnected socketini onlineByPlayerId dan qidiramiz
+            if ((!player1 || !player1.connected) && roomData.creatorPlayerId) {
+                const liveP1 = onlineByPlayerId.get(roomData.creatorPlayerId);
+                if (liveP1 && liveP1.connected) {
+                    player1 = liveP1;
+                    roomData.player1 = liveP1;
+                }
+            }
+
+            // Agar xona egasi hali Telegramdan qaytib ulanmagan bo'lsa:
+            if (!player1 || !player1.connected) {
+                roomData.pendingPlayer2 = player2;
+                socket.emit('waitingForCreator', { code: targetCode });
+                console.log(`[JoinGame] Xona egasi hali ulanmagan, player2 kutish holatida. Kod: ${targetCode}`);
+                return;
+            }
 
             // pre-fill room with options so startGame can read it
             rooms[roomName] = { options: roomData.options };
 
+            if (roomData.cleanupTimer) clearTimeout(roomData.cleanupTimer);
             delete roomsByCode[targetCode];
+
+            player1.join(roomName);
+            player1.roomId = roomName;
             player2.join(roomName);
+            player2.roomId = roomName;
+
+            console.log(`[JoinGame] Xonaga ulanildi va o'yin boshlandi. Kod: ${targetCode}, Room: ${roomName}`);
             startGame(player1, player2, roomName);
         } else {
-            socket.emit('joinError', { code: cleanCode || code });
+            // Agar ushbu xonada o'yin allaqachon boshlangan bo'lsa
+            const startedRoomName = `room_code_${cleanCode}`;
+            if (rooms[startedRoomName] && !rooms[startedRoomName].gameOver) {
+                socket.emit('joinError', { code: cleanCode || code, reason: 'already_started', message: "Ushbu xonada o'yin allaqachon boshlangan!" });
+            } else {
+                socket.emit('joinError', { code: cleanCode || code, reason: 'not_found', message: "Xona topilmadi yoki muddati o'tgan." });
+            }
         }
     });
 
@@ -1530,7 +1623,10 @@ io.on('connection', (socket) => {
         if (waitingQueue.length > 0) {
             const pickIndex = Math.floor(Math.random() * waitingQueue.length);
             const player1 = waitingQueue.splice(pickIndex, 1)[0];
-            if (!player1 || player1.id === socket.id) {
+            if (!player1 || player1.id === socket.id || !player1.connected) {
+                if (player1 && player1.id !== socket.id && player1.connected) {
+                    waitingQueue.push(player1);
+                }
                 waitingQueue.push(socket);
                 socket.emit('waiting');
                 return;
@@ -1782,14 +1878,22 @@ io.on('connection', (socket) => {
             inv.firstJoinTime = null;
             saveDuelInvites(allInvites);
 
+            let p1Socket = null;
+            let p2Socket = null;
             const roomClients = Array.from(io.sockets.adapter.rooms.get(inv.roomName) || []);
             if (roomClients.length >= 2) {
-                const p1Socket = io.sockets.sockets.get(roomClients[0]);
-                const p2Socket = io.sockets.sockets.get(roomClients[1]);
-                if (p1Socket && p2Socket) {
-                    rooms[inv.roomName] = { options: inv.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false } };
-                    startGame(p1Socket, p2Socket, inv.roomName);
-                }
+                p1Socket = io.sockets.sockets.get(roomClients[0]);
+                p2Socket = io.sockets.sockets.get(roomClients[1]);
+            }
+            if (!p1Socket || !p2Socket || !p1Socket.connected || !p2Socket.connected) {
+                const s1 = onlineByPlayerId.get(inv.joinedPlayers[0]);
+                const s2 = onlineByPlayerId.get(inv.joinedPlayers[1]);
+                if (s1 && s1.connected) { p1Socket = s1; p1Socket.join(inv.roomName); p1Socket.roomId = inv.roomName; }
+                if (s2 && s2.connected) { p2Socket = s2; p2Socket.join(inv.roomName); p2Socket.roomId = inv.roomName; }
+            }
+            if (p1Socket && p2Socket && p1Socket.connected && p2Socket.connected) {
+                rooms[inv.roomName] = { options: inv.options || { map: getRandomMap(), weather: getRandomWeather(), birds: true, birdCount: 20, animals: false } };
+                startGame(p1Socket, p2Socket, inv.roomName);
             }
         }
     });
@@ -2336,10 +2440,23 @@ io.on('connection', (socket) => {
             pendingFriendAddRequests.delete(socket.profile.playerId);
         }
 
-        // Clean up un-joined code rooms
+        // Clean up un-joined code rooms gracefully (3 daqiqa grace period beramiz, Telegramda taklif yuborayotgan bo'lishi mumkin)
         for (const code in roomsByCode) {
-            if (roomsByCode[code].player1.id === socket.id) {
-                delete roomsByCode[code];
+            const r = roomsByCode[code];
+            if (r.player1 && r.player1.id === socket.id) {
+                r.disconnectedAt = Date.now();
+                if (r.cleanupTimer) clearTimeout(r.cleanupTimer);
+                r.cleanupTimer = setTimeout(() => {
+                    if (roomsByCode[code] && roomsByCode[code].disconnectedAt) {
+                        if (roomsByCode[code].pendingPlayer2 && roomsByCode[code].pendingPlayer2.connected) {
+                            roomsByCode[code].pendingPlayer2.emit('joinError', { code, reason: 'timeout', message: "Xona egasi ulanmadi." });
+                        }
+                        delete roomsByCode[code];
+                        console.log(`[Cleanup] Xona muddati o'tib o'chirildi: ${code}`);
+                    }
+                }, 180000); // 3 daqiqa kutish
+            } else if (r.pendingPlayer2 && r.pendingPlayer2.id === socket.id) {
+                r.pendingPlayer2 = null;
             }
         }
 

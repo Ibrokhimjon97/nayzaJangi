@@ -1,7 +1,7 @@
 const https = require('https');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '9106876951:AAGNdM_B9imjCm0QvGylZsGwkjYW4iiKqRs';
-const GAME_URL = process.env.GAME_URL || 'https://nayza-jangi.onrender.com';
+const GAME_URL = process.env.GAME_URL || process.env.RENDER_EXTERNAL_URL || 'https://nayza-jangi.onrender.com';
 
 function apiRequest(method, payload) {
     return new Promise((resolve, reject) => {
@@ -69,12 +69,12 @@ async function handleUpdate(update) {
             const param = parts.length > 1 ? parts[1].trim() : '';
 
             if (param) {
-                const roomName = param.replace(/^room_/, '');
+                const roomName = param.replace(/^(room_code_|room_|duel_)/i, '').trim();
                 const playUrl = `${GAME_URL}?room=${encodeURIComponent(roomName)}`;
 
                 await apiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `⚔️ *Sizni Kamonboz dueliga chaqirishdi!*\n\nXona kodi: \`${roomName}\`\n\nQuyidagi tugmani bosing va to'g'ridan-to'g'ri jangga ulaning:`,
+                    text: `⚔️ *Sizni Kamonboz dueliga chaqirishdi!*\n\n🔑 Xona kodi: \`${roomName}\`\n\nQuyidagi tugmani bosing va to'g'ridan-to'g'ri jangga ulaning:`,
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
@@ -127,11 +127,16 @@ async function handleUpdate(update) {
         let roomCode = '';
         if (queryText.startsWith('duel_')) {
             roomCode = queryText.replace('duel_', '').trim();
+        } else if (queryText.startsWith('room_')) {
+            roomCode = queryText.replace('room_', '').trim();
+        } else if (queryText.startsWith('room_code_')) {
+            roomCode = queryText.replace('room_code_', '').trim();
         }
+        roomCode = roomCode.replace(/^(room_code_|room_|duel_)/i, '').trim();
 
         const playUrl = roomCode ? `${GAME_URL}?room=${encodeURIComponent(roomCode)}` : GAME_URL;
         const msgText = roomCode 
-            ? `🏹 *Men seni Kamonboz jangiga chaqiraman!*\n\nXona kodi: \`${roomCode}\`\nKuching yetsa, jangga qo'shil!`
+            ? `🏹 *Men seni Kamonboz jangiga chaqiraman!*\n\n🔑 Xona kodi: \`${roomCode}\`\n\n👇 To'g'ridan-to'g'ri jangga kirish uchun pastdagi tugmani bosing:`
             : `🏹 *Men seni Kamonboz dueliga chaqiraman!*\n\nKuching yetsa, jangga qo'shil va mahoratingni ko'rsat!`;
 
         await apiRequest('answerInlineQuery', {
