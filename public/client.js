@@ -3710,6 +3710,7 @@ let gameOptionsTargetMode = null;
 let turnHideTimer = null;
 let prevTurnIndex = -2;
 let singleCampaignLevel = parseInt(localStorage.getItem('nayza_single_level') || '1', 10);
+let singlePlayingLevel = singleCampaignLevel;
 let currentBattleDistance = Math.abs(pos2X - pos1X);
 let enemyVolleyQueue = [];
 let aiHitAccumulator = 0;
@@ -3730,12 +3731,27 @@ const aiProfiles = {
     hard: { angleJitter: 3, powerJitter: 90, shieldChance: 0.62, skillBias: 0.8 }
 };
 singleCampaignLevel = Math.max(1, Number.isFinite(singleCampaignLevel) ? singleCampaignLevel : 1);
+singlePlayingLevel = Math.max(1, Number.isFinite(singlePlayingLevel) ? singlePlayingLevel : singleCampaignLevel);
+
+function updateCampaignModalButtons() {
+    const maxUnlocked = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || String(singleCampaignLevel || 1), 10));
+    singleCampaignLevel = maxUnlocked;
+    const btnSingleCont = document.getElementById('btn-single-continue');
+    if (btnSingleCont) {
+        btnSingleCont.innerText = `Avvalgi levelni davom etish (Lv.${singleCampaignLevel}) ➔`;
+    }
+    const btnSingleSel = document.getElementById('btn-single-select-level');
+    if (btnSingleSel) {
+        btnSingleSel.innerText = `Bosqichni tanlash (1-${singleCampaignLevel}) 🗺️`;
+    }
+}
 
 function updateCampaignUI() {
     const t = translations[myProfile.lang] || translations.en || translations.uz;
     const levelWord = t.levelLabel || 'Daraja';
     if (campaignLevelText) campaignLevelText.innerText = `Lv.${singleCampaignLevel}`;
-    if (levelBadge) levelBadge.innerText = gameMode === 'single' ? `${levelWord} ${singleCampaignLevel}` : `${levelWord} -`;
+    if (levelBadge) levelBadge.innerText = gameMode === 'single' ? `${levelWord} ${singlePlayingLevel || singleCampaignLevel}` : `${levelWord} -`;
+    updateCampaignModalButtons();
     const menuScoreText = document.getElementById('menu-score-text');
     if (menuScoreText) {
         const score = Number(myStats.score || 0);
@@ -5857,7 +5873,8 @@ function startSinglePlayer(opts) {
     const pauseBtn = document.getElementById('btn-pause');
     if (pauseBtn) pauseBtn.innerText = (translations[myProfile.lang] || translations.uz).pause;
 
-    const level = Math.max(1, singleCampaignLevel);
+    const level = Math.max(1, singlePlayingLevel || singleCampaignLevel || 1);
+    singlePlayingLevel = level;
     campaignConfig = getCampaignConfig(level);
     currentBattleDistance = campaignConfig.distance;
     aiHitAccumulator = 0;
@@ -8189,19 +8206,26 @@ function showGameOver(winnerIndex, data) {
             addScore(100);
             showCenterNotice("+100 Ball qo'shildi! 🏆", 2500);
         } else if (gameMode === 'single') {
-            const singleWinBonus = Math.min(150, 50 + (singleCampaignLevel * 2));
+            const playedLvl = Math.max(1, singlePlayingLevel || singleCampaignLevel || 1);
+            const singleWinBonus = Math.min(150, 50 + (playedLvl * 2));
             addScore(singleWinBonus);
             showCenterNotice(`+${singleWinBonus} G'alaba bonusi! 🏆`, 2500);
-            singleCampaignLevel += 1;
-            localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
-            try {
-                const rawAuth = localStorage.getItem('nayza_auth_user');
-                const cachedAuth = rawAuth ? JSON.parse(rawAuth) : null;
-                if (cachedAuth) {
-                    cachedAuth.campaignLevel = Math.max(Number(cachedAuth.campaignLevel || 1), singleCampaignLevel);
-                    localStorage.setItem('nayza_auth_user', JSON.stringify(cachedAuth));
-                }
-            } catch { }
+
+            // Faqat avvalgi eng yuqori daraja yutilganda yangi bosqich ochiladi
+            const nextLvl = playedLvl + 1;
+            if (nextLvl > singleCampaignLevel) {
+                singleCampaignLevel = nextLvl;
+                localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+                try {
+                    const rawAuth = localStorage.getItem('nayza_auth_user');
+                    const cachedAuth = rawAuth ? JSON.parse(rawAuth) : null;
+                    if (cachedAuth) {
+                        cachedAuth.campaignLevel = Math.max(Number(cachedAuth.campaignLevel || 1), singleCampaignLevel);
+                        localStorage.setItem('nayza_auth_user', JSON.stringify(cachedAuth));
+                    }
+                } catch { }
+            }
+            singlePlayingLevel = nextLvl;
             updateCampaignUI();
         }
         if (typeof checkQuestProgress === 'function') checkQuestProgress('win', 1);
@@ -8213,7 +8237,7 @@ function showGameOver(winnerIndex, data) {
     if (btnNextLvl) {
         if (gameMode === 'single' && isMeWinner) {
             btnNextLvl.classList.remove('hidden');
-            btnNextLvl.innerText = `${t.nextLevelBtn || "Keyingi bosqich"} (${singleCampaignLevel}) ➔`;
+            btnNextLvl.innerText = `${t.nextLevelBtn || "Keyingi bosqich"} (${singlePlayingLevel}) ➔`;
         } else {
             btnNextLvl.classList.add('hidden');
         }
@@ -8269,7 +8293,8 @@ if (btnNextLevel) {
     const handleNextLevel = safeModalAction((e) => {
         gameOverScreen.classList.add('hidden');
         if (gameMode === 'single') {
-            const level = Math.max(1, singleCampaignLevel);
+            const level = Math.max(1, singlePlayingLevel || singleCampaignLevel || 1);
+            singlePlayingLevel = level;
             aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
             startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             return;
@@ -8284,14 +8309,13 @@ if (restartBtn) {
         gameOverScreen.classList.add('hidden');
         if (gameMode === 'single') {
             const wasWinner = (winnerText && winnerText.style.color === 'rgb(34, 197, 94)');
-            let levelToPlay = singleCampaignLevel;
-            if (wasWinner && singleCampaignLevel > 1) {
-                // Agar o'yinchi yutgan bo'lsa, 'Yana o'ynash' avvalgi (yutgan) bosqichni qayta o'ynaydi
-                levelToPlay = singleCampaignLevel - 1;
-                singleCampaignLevel = levelToPlay;
-                localStorage.setItem('nayza_single_level', String(singleCampaignLevel));
+            let levelToPlay = singlePlayingLevel;
+            if (wasWinner && singlePlayingLevel > 1) {
+                // Agar o'yinchi g'alaba qozongan bo'lsa, 'Yana o'ynash' aynan shu yutgan bosqichni qayta o'ynaydi
+                levelToPlay = singlePlayingLevel - 1;
             }
-            const level = Math.max(1, levelToPlay);
+            singlePlayingLevel = Math.max(1, levelToPlay);
+            const level = singlePlayingLevel;
             aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
             startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             return;
@@ -11852,6 +11876,18 @@ function updateTelegramBackButton() {
 }
 
 function handleGlobalBack() {
+    // 0. Agar levelSelectModal ochiq bo'lsa, uni yopib singleModeModal'ga qaytish
+    if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) {
+        levelSelectModal.classList.add('hidden');
+        if (singleModeModal) {
+            singleModeModal.classList.remove('hidden');
+            singleModeModal.style.removeProperty('display');
+            singleModeModal.style.pointerEvents = 'auto';
+        }
+        updateTelegramBackButton();
+        return;
+    }
+
     // 1. Agar biron menyu modali ochiq bo'lsa, uni yopamiz
     for (const id of ALL_MODAL_IDS) {
         const el = document.getElementById(id);
@@ -13318,7 +13354,7 @@ document.addEventListener('click', (e) => {
     }
 }, true);
 
-// Missing Event Listeners
+// Kampaniya (Yakkalik o'yin) va Level tanlash logikasi
 if (document.getElementById('btn-single')) {
     const handleSingle = (e) => {
         if (e) {
@@ -13326,26 +13362,12 @@ if (document.getElementById('btn-single')) {
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
         if (typeof initAudio === 'function') initAudio();
-        openCharacterSelectModal({
-            onConfirm: () => {
-                if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
-                gameMode = 'single';
-                singleCampaignLevel = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || '1', 10));
-                for (const id of ALL_MODAL_IDS) {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                }
-                if (levelSelectModal) levelSelectModal.classList.add('hidden');
-                if (singleModeModal) singleModeModal.classList.add('hidden');
-                if (menuScreen) menuScreen.classList.add('hidden');
-                aiDifficulty = singleCampaignLevel < 6 ? 'easy' : singleCampaignLevel < 15 ? 'normal' : 'hard';
-                startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
-            },
-            onCancel: () => {
-                gameMode = 'menu';
-                returnToMainMenu();
-            }
-        });
+        // O'yinchi Kampaniya kartasini bosganda, Yakkalik o'yin modali (bosqich tanlash/davom etish) ochiladi
+        const maxUnlocked = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || String(singleCampaignLevel || 1), 10));
+        singleCampaignLevel = maxUnlocked;
+        singlePlayingLevel = maxUnlocked;
+        if (typeof updateCampaignModalButtons === 'function') updateCampaignModalButtons();
+        openModalSafely(singleModeModal, e);
     };
     const btnSingle = document.getElementById('btn-single');
     btnSingle.addEventListener('click', handleSingle);
@@ -13361,6 +13383,7 @@ if (btnSingleContinue) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
+        singlePlayingLevel = Math.max(1, singleCampaignLevel);
         openCharacterSelectModal({
             onConfirm: () => {
                 for (const id of ALL_MODAL_IDS) {
@@ -13370,7 +13393,7 @@ if (btnSingleContinue) {
                 if (singleModeModal) singleModeModal.classList.add('hidden');
                 if (levelSelectModal) levelSelectModal.classList.add('hidden');
                 if (menuScreen) menuScreen.classList.add('hidden');
-                const level = Math.max(1, singleCampaignLevel);
+                const level = Math.max(1, singlePlayingLevel);
                 aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
@@ -13393,8 +13416,10 @@ if (btnSingleNew) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
+        singlePlayingLevel = 1;
         openCharacterSelectModal({
             onConfirm: () => {
+                singlePlayingLevel = 1;
                 singleCampaignLevel = 1;
                 localStorage.setItem('nayza_single_level', '1');
                 updateCampaignUI();
@@ -13422,28 +13447,42 @@ if (btnSingleNew) {
 }
 
 if (btnSingleCancel) {
-    const handleSingleCancel = safeModalAction((e) => closeModalSafely(singleModeModal, e));
+    const handleSingleCancel = (e) => closeModalSafely(singleModeModal, e);
     btnSingleCancel.addEventListener('click', handleSingleCancel);
     btnSingleCancel.addEventListener('touchend', handleSingleCancel, { passive: false });
 }
 
 if (btnSingleSelectLevel) {
-    const handleSelectLevel = safeModalAction((e) => {
+    const handleSelectLevel = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (singleModeModal) singleModeModal.classList.add('hidden');
         if (levelSelectModal) {
             levelSelectModal.classList.remove('hidden');
+            levelSelectModal.style.removeProperty('display');
+            levelSelectModal.style.pointerEvents = 'auto';
             renderLevelGrid();
         }
-    });
+    };
     btnSingleSelectLevel.addEventListener('click', handleSelectLevel);
     btnSingleSelectLevel.addEventListener('touchend', handleSelectLevel, { passive: false });
 }
 
 if (btnLevelSelectCancel) {
-    const handleLevelSelectCancel = safeModalAction((e) => {
+    const handleLevelSelectCancel = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         if (levelSelectModal) levelSelectModal.classList.add('hidden');
-        if (singleModeModal) singleModeModal.classList.remove('hidden');
-    });
+        if (singleModeModal) {
+            singleModeModal.classList.remove('hidden');
+            singleModeModal.style.removeProperty('display');
+            singleModeModal.style.pointerEvents = 'auto';
+        }
+    };
     btnLevelSelectCancel.addEventListener('click', handleLevelSelectCancel);
     btnLevelSelectCancel.addEventListener('touchend', handleLevelSelectCancel, { passive: false });
 }
@@ -13452,9 +13491,9 @@ function renderLevelGrid() {
     if (!levelGrid) return;
     levelGrid.innerHTML = '';
 
-    // Barcha levellar ochiq (qulfsiz). Joriy level alohida rangda belgilanadi.
-    const currentLevel = Math.max(1, singleCampaignLevel || 1);
-    // Har bir muhit uchun kichik emoji belgisi (level oldindan ko'rinishi).
+    const maxUnlocked = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || String(singleCampaignLevel || 1), 10));
+    singleCampaignLevel = maxUnlocked;
+
     const mapEmoji = {
         field: '🌿', castle: '🏰', desert: '🏜️', winter: '❄️', mountain: '⛰️',
         samarkand: '🕌', bukhara: '🏛️', istanbul: '🌉', oasis: '🌴', canyon: '🏕️', volcano: '🌋'
@@ -13462,37 +13501,65 @@ function renderLevelGrid() {
     const TOTAL_LEVELS = 100;
     for (let i = 1; i <= TOTAL_LEVELS; i++) {
         const levelBtn = document.createElement('button');
-        levelBtn.className = 'primary-btn';
+        levelBtn.className = 'primary-btn level-tile-btn';
         levelBtn.style.padding = '8px 4px';
         levelBtn.style.fontSize = '0.9rem';
-        levelBtn.style.minHeight = '40px';
+        levelBtn.style.minHeight = '44px';
         levelBtn.style.display = 'flex';
         levelBtn.style.flexDirection = 'column';
         levelBtn.style.alignItems = 'center';
         levelBtn.style.justifyContent = 'center';
-        levelBtn.style.lineHeight = '1.1';
+        levelBtn.style.lineHeight = '1.15';
+        levelBtn.style.borderRadius = '10px';
+        levelBtn.style.transition = 'transform 0.15s ease, filter 0.15s ease';
 
         const env = getCampaignEnvironment(i);
         const emoji = mapEmoji[env.map] || '⚔️';
-        // Boss levellar (50+ ikki dushman) qizil-binafsha bilan ajratiladi.
         const isBoss = i > 50;
-        levelBtn.style.background = (i === currentLevel)
-            ? 'linear-gradient(135deg, #f59e0b, #ef4444)'
-            : (isBoss
-                ? 'linear-gradient(135deg, #a855f7, #6d28d9)'
-                : 'linear-gradient(135deg, #10b981, #059669)');
-        levelBtn.innerHTML = `<span style="font-size:1rem;font-weight:800;">${i}</span><span style="font-size:0.72rem;opacity:0.9;">${emoji}${isBoss ? '⚔️' : ''}</span>`;
-        levelBtn.title = `Level ${i}${isBoss ? ' (2 dushman)' : ''}`;
+        const isCompleted = i < maxUnlocked;
+        const isCurrent = i === maxUnlocked;
+        const isLocked = i > maxUnlocked;
+
+        if (isCurrent) {
+            // Hozirgi eng yuqori ochilgan yangi bosqich
+            levelBtn.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+            levelBtn.style.border = '2px solid #fde047';
+            levelBtn.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.65)';
+            levelBtn.innerHTML = `<span style="font-size:1.05rem;font-weight:900;color:#ffffff;">${i}</span><span style="font-size:0.72rem;font-weight:700;">⚔️ ${emoji}${isBoss ? '🔥' : ''}</span>`;
+            levelBtn.title = `Level ${i} (Joriy bosqich${isBoss ? ', 2 dushman' : ''})`;
+        } else if (isCompleted) {
+            // Tugatilgan bosqich (foydalanuvchi xohlagan vaqt qayta o'ynay oladi)
+            levelBtn.style.background = isBoss
+                ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)'
+                : 'linear-gradient(135deg, #10b981, #059669)';
+            levelBtn.style.border = '1px solid rgba(255, 255, 255, 0.25)';
+            levelBtn.innerHTML = `<span style="font-size:0.95rem;font-weight:800;color:#ffffff;">${i}</span><span style="font-size:0.72rem;opacity:0.95;">⭐ ${emoji}</span>`;
+            levelBtn.title = `Level ${i} (Tugatilgan${isBoss ? ', 2 dushman' : ''})`;
+        } else {
+            // Qulflangan bosqich (avvalgisi tugatilmagan bo'lsa ochilmaydi)
+            levelBtn.style.background = 'linear-gradient(135deg, #334155, #1e293b)';
+            levelBtn.style.border = '1px solid rgba(148, 163, 184, 0.18)';
+            levelBtn.style.opacity = '0.55';
+            levelBtn.style.cursor = 'not-allowed';
+            levelBtn.innerHTML = `<span style="font-size:0.9rem;font-weight:700;color:#94a3b8;">${i}</span><span style="font-size:0.75rem;">🔒</span>`;
+            levelBtn.title = `Level ${i} (Qulflangan: avval ${i - 1}-bosqichni tugating)`;
+        }
+
         const handleLevelPick = (e) => {
             if (e) {
                 if (typeof e.preventDefault === 'function') e.preventDefault();
                 if (typeof e.stopPropagation === 'function') e.stopPropagation();
             }
+            if (isLocked) {
+                showCenterNotice(`🔒 ${i}-bosqich qulflangan! Avval ${i - 1}-bosqichni yakunlang.`, 2200);
+                if (typeof triggerHaptic === 'function') triggerHaptic('warning');
+                playSfx('woodHit', 0.5);
+                return;
+            }
+
+            singlePlayingLevel = i;
             openCharacterSelectModal({
                 onConfirm: () => {
-                    singleCampaignLevel = i;
-                    localStorage.setItem('nayza_single_level', String(i));
-                    if (typeof updateCampaignUI === 'function') updateCampaignUI();
                     for (const id of ALL_MODAL_IDS) {
                         const el = document.getElementById(id);
                         if (el) el.classList.add('hidden');
@@ -13509,6 +13576,7 @@ function renderLevelGrid() {
                 }
             });
         };
+
         levelBtn.addEventListener('click', handleLevelPick);
         levelBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
