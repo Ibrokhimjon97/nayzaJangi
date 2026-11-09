@@ -1522,6 +1522,11 @@ io.on('connection', (socket) => {
             socket.roomId = r.roomName;
             console.log(`[RebindCreatedRoom] Xona egasi qayta ulandi. Kod: ${targetCode}, socketId: ${socket.id}`);
 
+            if (r.pendingPlayer2Timer) {
+                clearTimeout(r.pendingPlayer2Timer);
+                r.pendingPlayer2Timer = null;
+            }
+
             // Agar pendingPlayer2 (xona egasini kutayotgan raqib) bo'lsa, o'yinni darhol boshlaymiz:
             if (r.pendingPlayer2 && r.pendingPlayer2.connected) {
                 const player1 = socket;
@@ -1548,6 +1553,9 @@ io.on('connection', (socket) => {
         if (targetCode && roomsByCode[targetCode]) {
             if (roomsByCode[targetCode].cleanupTimer) {
                 clearTimeout(roomsByCode[targetCode].cleanupTimer);
+            }
+            if (roomsByCode[targetCode].pendingPlayer2Timer) {
+                clearTimeout(roomsByCode[targetCode].pendingPlayer2Timer);
             }
             if (roomsByCode[targetCode].pendingPlayer2 && roomsByCode[targetCode].pendingPlayer2.connected) {
                 roomsByCode[targetCode].pendingPlayer2.emit('joinError', { code: targetCode, reason: 'cancelled', message: "Xona egasi o'yinni bekor qildi." });
@@ -1580,11 +1588,41 @@ io.on('connection', (socket) => {
                 }
             }
 
-            // Agar xona egasi hali Telegramdan qaytib ulanmagan bo'lsa:
+            // Agar xona egasi hali Telegramdan qaytib ulanmagan bo'lsa (oflayn):
             if (!player1 || !player1.connected) {
+                const disconnectedFor = roomData.disconnectedAt ? (Date.now() - roomData.disconnectedAt) : (Date.now() - roomData.createdAt);
+                if (disconnectedFor > 35000) {
+                    if (roomData.cleanupTimer) clearTimeout(roomData.cleanupTimer);
+                    if (roomData.pendingPlayer2Timer) clearTimeout(roomData.pendingPlayer2Timer);
+                    delete roomsByCode[targetCode];
+                    socket.emit('joinError', {
+                        code: targetCode,
+                        reason: 'creator_offline',
+                        message: "Sizni taklif qilgan o'yinchi oflayn (tarmoqda emas) yoki xona muddati o'tgan!"
+                    });
+                    console.log(`[JoinGame] Xona egasi oflayn, xona bekor qilindi: ${targetCode}`);
+                    return;
+                }
+
                 roomData.pendingPlayer2 = player2;
-                socket.emit('waitingForCreator', { code: targetCode });
-                console.log(`[JoinGame] Xona egasi hali ulanmagan, player2 kutish holatida. Kod: ${targetCode}`);
+                if (roomData.pendingPlayer2Timer) clearTimeout(roomData.pendingPlayer2Timer);
+                roomData.pendingPlayer2Timer = setTimeout(() => {
+                    if (roomData.pendingPlayer2 && roomData.pendingPlayer2.id === player2.id) {
+                        player2.emit('joinError', {
+                            code: targetCode,
+                            reason: 'creator_offline',
+                            message: "Sizni taklif qilgan o'yinchi oflayn bo'lgani sababli ulanib bo'lmadi."
+                        });
+                        roomData.pendingPlayer2 = null;
+                    }
+                }, 15000);
+
+                socket.emit('waitingForCreator', {
+                    code: targetCode,
+                    timeoutSeconds: 15,
+                    message: "⏳ Taklif qilgan o'yinchi hozir oflayn. Qaytishi kutilmoqda..."
+                });
+                console.log(`[JoinGame] Xona egasi hali ulanmagan, player2 kutish holatida (15s taymer). Kod: ${targetCode}`);
                 return;
             }
 
@@ -1592,6 +1630,7 @@ io.on('connection', (socket) => {
             rooms[roomName] = { options: roomData.options };
 
             if (roomData.cleanupTimer) clearTimeout(roomData.cleanupTimer);
+            if (roomData.pendingPlayer2Timer) clearTimeout(roomData.pendingPlayer2Timer);
             delete roomsByCode[targetCode];
 
             player1.join(roomName);
@@ -1607,7 +1646,7 @@ io.on('connection', (socket) => {
             if (rooms[startedRoomName] && !rooms[startedRoomName].gameOver) {
                 socket.emit('joinError', { code: cleanCode || code, reason: 'already_started', message: "Ushbu xonada o'yin allaqachon boshlangan!" });
             } else {
-                socket.emit('joinError', { code: cleanCode || code, reason: 'not_found', message: "Xona topilmadi yoki muddati o'tgan." });
+                socket.emit('joinError', { code: cleanCode || code, reason: 'creator_offline', message: "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!" });
             }
         }
     });
@@ -1823,12 +1862,12 @@ io.on('connection', (socket) => {
         const allInvites = loadDuelInvites();
         const inv = allInvites.find(i => i.id === inviteId || i.roomName === roomName);
         if (!inv) {
-            socket.emit('duelRoomError', { message: "Duel xonasi topilmadi yoki bekor qilingan!" });
+            socket.emit('duelRoomError', { reason: 'not_found', message: "Taklif qilgan o'yinchi onlayn emas yoki duel muddati o'tgan!" });
             return;
         }
 
         if (inv.status === 'forfeited' || inv.status === 'completed' || inv.status === 'cancelled') {
-            socket.emit('duelRoomError', { message: `Ushbu duel allaqachon tugagan (${inv.status})!` });
+            socket.emit('duelRoomError', { reason: 'ended', message: `Ushbu duel allaqachon tugagan (${inv.status})!` });
             return;
         }
 
@@ -1900,6 +1939,13 @@ io.on('connection', (socket) => {
 
     socket.on('cancelFind', () => {
         removeFromWaitingQueue(socket.id);
+        for (const code in roomsByCode) {
+            const r = roomsByCode[code];
+            if (r.pendingPlayer2 && r.pendingPlayer2.id === socket.id) {
+                if (r.pendingPlayer2Timer) clearTimeout(r.pendingPlayer2Timer);
+                r.pendingPlayer2 = null;
+            }
+        }
     });
 
     socket.on('throwSpear', (data) => {
@@ -2286,9 +2332,21 @@ io.on('connection', (socket) => {
 
     // O'yin ichidan menyuga qaytish (Leave room)
     socket.on('leaveRoom', (data) => {
+        for (const code in roomsByCode) {
+            const r = roomsByCode[code];
+            if (r.pendingPlayer2 && r.pendingPlayer2.id === socket.id) {
+                if (r.pendingPlayer2Timer) clearTimeout(r.pendingPlayer2Timer);
+                r.pendingPlayer2 = null;
+            }
+        }
         const roomName = data?.roomName || socket.roomId;
+        if (!roomName) return;
         const room = rooms[roomName];
-        if (!room) return;
+        if (!room) {
+            socket.leave(roomName);
+            socket.roomId = null;
+            return;
+        }
         clearRoomTurnTimer(roomName);
         clearCoinTossTimer(roomName);
         if (!room.gameOver && Array.isArray(room.players) && room.players.length === 2) {
@@ -2456,6 +2514,7 @@ io.on('connection', (socket) => {
                     }
                 }, 180000); // 3 daqiqa kutish
             } else if (r.pendingPlayer2 && r.pendingPlayer2.id === socket.id) {
+                if (r.pendingPlayer2Timer) clearTimeout(r.pendingPlayer2Timer);
                 r.pendingPlayer2 = null;
             }
         }

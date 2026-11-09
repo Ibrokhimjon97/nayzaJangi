@@ -5795,6 +5795,22 @@ function showBattleLoading(onComplete) {
 
 // Game Logic
 function startSinglePlayer(opts) {
+    gameMode = 'single';
+    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+    if (typeof clearRandomWaitTimer === 'function') clearRandomWaitTimer();
+    if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+        clearTimeout(waitingForCreatorTimer);
+        waitingForCreatorTimer = null;
+    }
+    if (socket && socket.connected) {
+        try {
+            socket.emit('leaveRoom', { roomName: currentRoomName });
+            socket.emit('cancelFind');
+        } catch (_) { }
+    }
+    currentRoomName = null;
+    currentCreatedRoomCode = null;
+
     showBattleLoading();
     if (authModal) authModal.classList.add('hidden');
     if (singleModeModal) singleModeModal.classList.add('hidden');
@@ -7150,6 +7166,11 @@ function returnToMainMenu() {
     hideCoinTossModal();
     if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
     if (typeof clearRandomWaitTimer === 'function') clearRandomWaitTimer();
+    if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+        clearTimeout(waitingForCreatorTimer);
+        waitingForCreatorTimer = null;
+    }
+    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
 
     // Barcha o'yin ekranlarini yashirish
     if (gameScreen) gameScreen.classList.add('hidden');
@@ -9647,7 +9668,38 @@ const LEGACY_BONUS_KEY = 'nayza_legacy_500_bonus_v1';
 let legacyBonusApplied = localStorage.getItem(LEGACY_BONUS_KEY) === '1';
 let authPhone = localStorage.getItem('nayza_auth_phone') || '';
 
+let inviteParamsCleared = false;
+
+function clearPendingInviteParams() {
+    inviteParamsCleared = true;
+    autoJoinExecuted = false;
+    currentCreatedRoomCode = null;
+    try { sessionStorage.removeItem('nayza_pending_room'); } catch (_) { }
+    // URL qidiruv va hash parametrlaridan xona ma'lumotlarini tozalaymiz
+    try {
+        if (window.history && window.history.replaceState) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('room');
+            url.searchParams.delete('code');
+            url.searchParams.delete('join');
+            url.searchParams.delete('startapp');
+            url.searchParams.delete('tgWebAppStartParam');
+            url.searchParams.delete('duel_room');
+            url.searchParams.delete('invite_id');
+            url.searchParams.delete('view');
+            window.history.replaceState({}, document.title, url.pathname);
+        }
+    } catch (_) { }
+    // Telegram start_param xotirasini ham tozalaymiz
+    try {
+        if (window.Telegram?.WebApp?.initDataUnsafe) {
+            window.Telegram.WebApp.initDataUnsafe.start_param = null;
+        }
+    } catch (_) { }
+}
+
 function getPendingUrlDuelOrRoom() {
+    if (inviteParamsCleared) return {};
     try {
         let duelRoom = null;
         let inviteId = null;
@@ -11846,6 +11898,8 @@ function closeModalSafely(modalEl, e) {
         if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     } else if (menuScreen) {
         menuScreen.classList.remove('hidden');
+        menuScreen.style.removeProperty('display');
+        menuScreen.style.removeProperty('pointer-events');
         // Prevent delayed mobile touch click from triggering underlying menu buttons
         menuScreen.style.pointerEvents = 'none';
         setTimeout(() => {
@@ -13244,6 +13298,8 @@ if (document.getElementById('btn-single')) {
         if (typeof initAudio === 'function') initAudio();
         openCharacterSelectModal({
             onConfirm: () => {
+                if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+                gameMode = 'single';
                 singleCampaignLevel = Math.max(1, parseInt(localStorage.getItem('nayza_single_level') || '1', 10));
                 for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
@@ -13253,11 +13309,11 @@ if (document.getElementById('btn-single')) {
                 if (singleModeModal) singleModeModal.classList.add('hidden');
                 if (menuScreen) menuScreen.classList.add('hidden');
                 aiDifficulty = singleCampaignLevel < 6 ? 'easy' : singleCampaignLevel < 15 ? 'normal' : 'hard';
-                gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
             onCancel: () => {
-                if (menuScreen) menuScreen.classList.remove('hidden');
+                gameMode = 'menu';
+                returnToMainMenu();
             }
         });
     };
@@ -13592,14 +13648,15 @@ if (btnMultiJoin) {
 if (btnMultiBack) {
     const handleMultiBack = (e) => {
         clearRandomWaitTimer();
+        if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
         if (currentCreatedRoomCode) {
             socket.emit('cancelCreatedRoom', { code: currentCreatedRoomCode });
             currentCreatedRoomCode = null;
         }
-        closeModalSafely(multiMenu, e);
         if (createCodeContainer) createCodeContainer.classList.add('hidden');
         if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
         if (joinError) joinError.style.display = 'none';
+        returnToMainMenu();
     };
     btnMultiBack.addEventListener('click', handleMultiBack);
     btnMultiBack.addEventListener('touchend', handleMultiBack, { passive: false });
@@ -13680,10 +13737,16 @@ if (document.getElementById('btn-cancel-multi')) {
     const handleCancelMulti = (e) => {
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         clearRandomWaitTimer();
-        socket.emit('cancelFind');
-        document.getElementById('waiting-screen').classList.add('hidden');
-        multiMenu.classList.remove('hidden');
-        document.getElementById('menu-screen').classList.add('hidden');
+        if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+            clearTimeout(waitingForCreatorTimer);
+            waitingForCreatorTimer = null;
+        }
+        if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+        if (socket && socket.connected) {
+            socket.emit('cancelFind');
+            socket.emit('leaveRoom', { roomName: currentRoomName });
+        }
+        returnToMainMenu();
     };
     document.getElementById('btn-cancel-multi').addEventListener('click', handleCancelMulti);
     document.getElementById('btn-cancel-multi').addEventListener('touchend', handleCancelMulti, { passive: false });
@@ -13725,6 +13788,7 @@ if (btnShareTg) {
 }
 
 function getPendingRoomCode() {
+    if (inviteParamsCleared) return null;
     let code = null;
     // 1. Telegram start_param (Mini App)
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
@@ -13822,28 +13886,60 @@ function checkAutoJoinTelegramRoom() {
     return true;
 }
 
+let waitingForCreatorTimer = null;
 socket.on('waitingForCreator', (data) => {
-    showCenterNotice("⏳ Xona egasi ulanishi kutilmoqda...", 3000);
+    const msg = data?.message || "⏳ Taklif qilgan o'yinchi hozir oflayn. Qaytishi kutilmoqda...";
+    showCenterNotice(msg, 3500);
     if (waitingScreen) {
         waitingScreen.classList.remove('hidden');
         waitingScreen.style.removeProperty('display');
         const waitTitle = waitingScreen.querySelector('h1, h2, .title');
-        if (waitTitle) waitTitle.innerText = "⏳ Xona egasi ulanishi kutilmoqda...";
+        if (waitTitle) waitTitle.innerText = msg;
     }
+    if (waitingForCreatorTimer) clearTimeout(waitingForCreatorTimer);
+    const timeoutSec = Number(data?.timeoutSeconds) || 15;
+    waitingForCreatorTimer = setTimeout(() => {
+        if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+        if (socket && socket.connected) {
+            socket.emit('cancelFind');
+        }
+        showCenterNotice("⚠️ Sizni taklif qilgan o'yinchi oflayn (tarmoqqa ulanmadi).", 4000);
+        returnToMainMenu();
+    }, timeoutSec * 1000);
 });
 
 socket.on('joinError', (err) => {
-    autoJoinExecuted = false;
-    try { sessionStorage.removeItem('nayza_pending_room'); } catch (_) { }
-    if (waitingScreen) waitingScreen.classList.add('hidden');
-    if (multiMenu) multiMenu.classList.remove('hidden');
-    if (joinCodeContainer) joinCodeContainer.classList.remove('hidden');
-    const msg = (err && err.message) ? err.message : "Xona topilmadi yoki o'yin boshlanib ketgan.";
+    if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+        clearTimeout(waitingForCreatorTimer);
+        waitingForCreatorTimer = null;
+    }
+    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+    if (waitingScreen) {
+        waitingScreen.classList.add('hidden');
+        waitingScreen.style.setProperty('display', 'none', 'important');
+    }
+    const msg = (err && err.message) ? err.message : "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!";
     if (joinError) {
         joinError.style.display = 'block';
         joinError.innerText = msg;
     }
-    showCenterNotice(`❌ ${msg}`, 3500);
+    showCenterNotice(`⚠️ ${msg}`, 4000);
+    returnToMainMenu();
+});
+
+socket.on('duelRoomError', (err) => {
+    if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+        clearTimeout(waitingForCreatorTimer);
+        waitingForCreatorTimer = null;
+    }
+    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+    if (waitingScreen) {
+        waitingScreen.classList.add('hidden');
+        waitingScreen.style.setProperty('display', 'none', 'important');
+    }
+    const msg = (err && err.message) ? err.message : "Taklif qilgan o'yinchi oflayn yoki duel muddati o'tgan!";
+    showCenterNotice(`⚠️ ${msg}`, 4000);
+    returnToMainMenu();
 });
 
 socket.on('waiting', () => {
@@ -15388,7 +15484,21 @@ function joinDuelRoomDirectly(inviteId, roomName) {
     }
     if (authModal) authModal.classList.add('hidden');
     if (multiMenu) multiMenu.classList.add('hidden');
-    if (waitingScreen) waitingScreen.classList.remove('hidden');
+    if (waitingScreen) {
+        waitingScreen.classList.remove('hidden');
+        waitingScreen.style.removeProperty('display');
+        const waitTitle = waitingScreen.querySelector('h1, h2, .title');
+        if (waitTitle) waitTitle.innerText = `⚔️ Duelga (${roomName}) ulanilmoqda...`;
+    }
+
+    if (typeof waitingForCreatorTimer !== 'undefined' && waitingForCreatorTimer) {
+        clearTimeout(waitingForCreatorTimer);
+    }
+    waitingForCreatorTimer = setTimeout(() => {
+        if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+        showCenterNotice("⚠️ Taklif qilgan o'yinchi oflayn yoki duel xonasi javob bermadi.", 4000);
+        returnToMainMenu();
+    }, 15000);
 
     if (socket && socket.connected) {
         showCenterNotice(`⚔️ Duelga (${roomName}) ulanilmoqda...`, 2500);

@@ -2862,8 +2862,17 @@ label,
 }
 
 @keyframes btnPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
-    50% { transform: scale(1.04); box-shadow: 0 0 22px rgba(245, 158, 11, 0.8); }
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 22px rgba(245, 158, 11, 0.8);
+    }
 }
 
 #btn-intro-start {
@@ -4860,7 +4869,8 @@ body.force-landscape .custom-select-item {
 }
 
 /* Onlayn Qur'a Tashlash Mobil Responsiveness */
-@media screen and (max-height: 520px), screen and (orientation: landscape) and (max-height: 600px) {
+@media screen and (max-height: 520px),
+screen and (orientation: landscape) and (max-height: 600px) {
     .coin-toss-panel {
         max-width: 440px !important;
         width: 95% !important;
@@ -4885,7 +4895,8 @@ body.force-landscape .custom-select-item {
     }
 
     .coin-toss-rules {
-        display: none !important; /* Landshaftda ortiqcha matn yashiriladi */
+        display: none !important;
+        /* Landshaftda ortiqcha matn yashiriladi */
     }
 
     .coin-choice-container {
@@ -5654,16 +5665,16 @@ body.mobile-landscape .coin-3d {
     }
 }
 
-    .char-select-actions {
-        margin-top: 8px !important;
-    }
+.char-select-actions {
+    margin-top: 8px !important;
+}
 
-    .char-confirm-btn,
-    .char-cancel-btn {
-        padding: 8px 12px !important;
-        font-size: 0.90rem !important;
-        min-height: 38px !important;
-    }
+.char-confirm-btn,
+.char-cancel-btn {
+    padding: 8px 12px !important;
+    font-size: 0.90rem !important;
+    min-height: 38px !important;
+}
 }
 
 /* ==========================================================================
@@ -6410,163 +6421,142 @@ body.mobile-landscape .coin-3d {
     }
 
     .menu-carousel-dots {
-    margin-top: 1px !important;
-    padding: 1px 0 !important;
-    flex-shrink: 0 !important;
-}
+        margin-top: 1px !important;
+        padding: 1px 0 !important;
+        flex-shrink: 0 !important;
+    }
 
-.carousel-arrow {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 0.95rem !important;
-    line-height: 24px !important;
-}
+    .carousel-arrow {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 0.95rem !important;
+        line-height: 24px !important;
+    }
 
-.carousel-arrow-left {
-    left: -4px !important;
-}
+    .carousel-arrow-left {
+        left: -4px !important;
+    }
 
-.carousel-arrow-right {
-    right: -4px !important;
-}
+    .carousel-arrow-right {
+        right: -4px !important;
+    }
 
-/* Barcha 7 ta modalning landshaftda sig'ishi va scroll bo'lishi */
-#daily-quests-modal,
-#about-modal,
-#daily-rewards-modal,
-#profile-modal,
-#settings-modal,
-#shop-modal,
-#rating-modal,
-#help-modal,
-#game-options-modal,
-#single-mode-modal,
-#level-select-modal,
-#multi-menu {
-    max-height: 94vh !important;
-    width: min(96vw, 540px) !important;
-    padding: 10px 14px 28px !important;
-    border-radius: 14px !important;
-}
+    /* Barcha 7 ta modalning landshaftda sig'ishi va scroll bo'lishi */
+    #daily-quests-modal,
+    #about-modal,
+    #daily-rewards-modal,
+    #profile-modal,
+    #settings-modal,
+    #shop-modal,
+    #rating-modal,
+    #help-modal,
+    #game-options-modal,
+    #single-mode-modal,
+    #level-select-modal,
+    #multi-menu {
+        max-height: 94vh !important;
+        width: min(96vw, 540px) !important;
+        padding: 10px 14px 28px !important;
+        border-radius: 14px !important;
+    }
 
-#daily-quests-modal h2,
-#about-modal h2,
-#daily-rewards-modal h2,
-#profile-modal h2,
-#settings-modal h2,
-#shop-modal h2,
-#rating-modal h2,
-#help-modal h2 {
-    font-size: 1.15rem !important;
-    margin-bottom: 4px !important;
-}
+    #daily-quests-modal h2,
+    #about-modal h2,
+    #daily-rewards-modal h2,
+    #profile-modal h2,
+    #settings-modal h2,
+    #shop-modal h2,
+    #rating-modal h2,
+    #help-modal h2 {
+        font-size: 1.15rem !important;
+        margin-bottom: 4px !important;
+    }
 
-/* Do'konda landshaftda mahsulotlar 2 ta ustun bo'lib sig'adi */
-#shop-modal .shop-items-container {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-    gap: 8px !important;
-    margin: 6px 0 !important;
-}
+    /* Do'konda landshaftda mahsulotlar 2 ta ustun bo'lib sig'adi */
+    #shop-modal .shop-items-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+        gap: 8px !important;
+        margin: 6px 0 !important;
+    }
 
-#shop-modal .shop-item {
-    padding: 8px 10px !important;
-    margin-bottom: 0 !important;
-}
+    #shop-modal .shop-item {
+        padding: 8px 10px !important;
+        margin-bottom: 0 !important;
+    }
 
-#shop-modal .shop-item-desc {
-    font-size: 0.72rem !important;
-    line-height: 1.25 !important;
-    margin-bottom: 4px !important;
-}
+    #shop-modal .shop-item-desc {
+        font-size: 0.72rem !important;
+        line-height: 1.25 !important;
+        margin-bottom: 4px !important;
+    }
 
-#shop-modal .shop-buy-btn {
-    padding: 6px 8px !important;
-    font-size: 0.76rem !important;
-    min-height: 30px !important;
-}
+    #shop-modal .shop-buy-btn {
+        padding: 6px 8px !important;
+        font-size: 0.76rem !important;
+        min-height: 30px !important;
+    }
 
-/* Kunlik sovg'alar: ixcham grid */
-.daily-rewards-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 5px !important;
-    margin: 6px 0 !important;
-}
+    /* Kunlik sovg'alar: ixcham grid */
+    .daily-rewards-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 5px !important;
+        margin: 6px 0 !important;
+    }
 
-.daily-reward-card {
-    padding: 5px 3px !important;
-    border-radius: 8px !important;
-}
+    .daily-reward-card {
+        padding: 5px 3px !important;
+        border-radius: 8px !important;
+    }
 
-.daily-reward-card .reward-day {
-    font-size: 0.68rem !important;
-}
+    .daily-reward-card .reward-day {
+        font-size: 0.68rem !important;
+    }
 
-.daily-reward-card .reward-icon {
-    font-size: 1.25rem !important;
-    margin: 1px 0 !important;
-}
+    .daily-reward-card .reward-icon {
+        font-size: 1.25rem !important;
+        margin: 1px 0 !important;
+    }
 
-.daily-reward-card .reward-amount {
-    font-size: 0.68rem !important;
-}
+    .daily-reward-card .reward-amount {
+        font-size: 0.68rem !important;
+    }
 
-/* Kvestlar: ixcham elementlar */
-.quest-item {
-    padding: 6px 8px !important;
-    gap: 6px !important;
-    margin-bottom: 5px !important;
-}
+    /* Kvestlar: ixcham elementlar */
+    .quest-item {
+        padding: 6px 8px !important;
+        gap: 6px !important;
+        margin-bottom: 5px !important;
+    }
 
-.quest-title {
-    font-size: 0.78rem !important;
-}
+    .quest-title {
+        font-size: 0.78rem !important;
+    }
 
-.quest-reward {
-    font-size: 0.7rem !important;
-}
+    .quest-reward {
+        font-size: 0.7rem !important;
+    }
 
-.quest-claim-btn {
-    padding: 4px 8px !important;
-    font-size: 0.72rem !important;
-    min-height: 28px !important;
-}
+    .quest-claim-btn {
+        padding: 4px 8px !important;
+        font-size: 0.72rem !important;
+        min-height: 28px !important;
+    }
 
-#leaderboard-list {
-    margin: 4px 0 14px;
-    text-align: left;
-    max-height: 220px;
-    overflow-y: auto;
-    font-size: 0.95rem;
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 10px;
-    padding: 10px;
-}
+    #leaderboard-list {
+        margin: 4px 0 14px;
+        text-align: left;
+        max-height: 220px;
+        overflow-y: auto;
+        font-size: 0.95rem;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 10px;
+        padding: 10px;
+    }
 
-/* Reyting modali: force-landscape va mobile-landscape */
-body.force-landscape #rating-modal,
-body.mobile-landscape #rating-modal {
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(94%, 560px) !important;
-    max-width: min(94%, 560px) !important;
-    height: min(92%, 350px) !important;
-    max-height: min(92%, 350px) !important;
-    padding: 8px 14px 8px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-y !important;
-    box-sizing: border-box !important;
-    z-index: 500 !important;
-}
-
-@media (orientation: landscape) and (max-height: 560px) {
-    #rating-modal {
+    /* Reyting modali: force-landscape va mobile-landscape */
+    body.force-landscape #rating-modal,
+    body.mobile-landscape #rating-modal {
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
@@ -6585,110 +6575,131 @@ body.mobile-landscape #rating-modal {
         box-sizing: border-box !important;
         z-index: 500 !important;
     }
-}
 
-body.force-landscape #rating-modal h2,
-body.mobile-landscape #rating-modal h2 {
-    flex-shrink: 0 !important;
-    margin: 0 0 2px !important;
-    font-size: 1.05rem !important;
-}
+    @media (orientation: landscape) and (max-height: 560px) {
+        #rating-modal {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: min(94%, 560px) !important;
+            max-width: min(94%, 560px) !important;
+            height: min(92%, 350px) !important;
+            max-height: min(92%, 350px) !important;
+            padding: 8px 14px 8px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            box-sizing: border-box !important;
+            z-index: 500 !important;
+        }
+    }
 
-body.force-landscape #rating-modal .stats-summary,
-body.mobile-landscape #rating-modal .stats-summary {
-    flex-shrink: 0 !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-around !important;
-    align-items: center !important;
-    gap: 8px !important;
-    margin: 2px 0 4px !important;
-    padding: 3px 8px !important;
-    background: rgba(0, 0, 0, 0.25) !important;
-    border-radius: 8px !important;
-    font-size: 0.82rem !important;
-    line-height: 1.3 !important;
-}
+    body.force-landscape #rating-modal h2,
+    body.mobile-landscape #rating-modal h2 {
+        flex-shrink: 0 !important;
+        margin: 0 0 2px !important;
+        font-size: 1.05rem !important;
+    }
 
-body.force-landscape #rating-modal .stats-summary p,
-body.mobile-landscape #rating-modal .stats-summary p {
-    margin: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-}
+    body.force-landscape #rating-modal .stats-summary,
+    body.mobile-landscape #rating-modal .stats-summary {
+        flex-shrink: 0 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 2px 0 4px !important;
+        padding: 3px 8px !important;
+        background: rgba(0, 0, 0, 0.25) !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem !important;
+        line-height: 1.3 !important;
+    }
 
-body.force-landscape #rating-modal .leaderboard-search-wrap,
-body.mobile-landscape #rating-modal .leaderboard-search-wrap {
-    flex-shrink: 0 !important;
-    margin: 2px 0 4px !important;
-}
+    body.force-landscape #rating-modal .stats-summary p,
+    body.mobile-landscape #rating-modal .stats-summary p {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
 
-body.force-landscape #rating-modal .leaderboard-search-input,
-body.mobile-landscape #rating-modal .leaderboard-search-input {
-    height: 28px !important;
-    padding: 3px 8px !important;
-    font-size: 0.78rem !important;
-}
+    body.force-landscape #rating-modal .leaderboard-search-wrap,
+    body.mobile-landscape #rating-modal .leaderboard-search-wrap {
+        flex-shrink: 0 !important;
+        margin: 2px 0 4px !important;
+    }
 
-body.force-landscape #rating-modal #leaderboard-list,
-body.mobile-landscape #rating-modal #leaderboard-list {
-    flex: 1 1 auto !important;
-    max-height: none !important;
-    min-height: 0 !important;
-    height: auto !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-y !important;
-    overscroll-behavior-y: contain !important;
-    padding: 4px 6px !important;
-    margin: 2px 0 4px !important;
-    font-size: 0.82rem !important;
-}
+    body.force-landscape #rating-modal .leaderboard-search-input,
+    body.mobile-landscape #rating-modal .leaderboard-search-input {
+        height: 28px !important;
+        padding: 3px 8px !important;
+        font-size: 0.78rem !important;
+    }
 
-body.force-landscape #rating-modal #btn-close-rating,
-body.mobile-landscape #rating-modal #btn-close-rating {
-    flex-shrink: 0 !important;
-    margin-top: 4px !important;
-    min-height: 32px !important;
-    height: 32px !important;
-    padding: 4px 12px !important;
-    font-size: 0.84rem !important;
-}
+    body.force-landscape #rating-modal #leaderboard-list,
+    body.mobile-landscape #rating-modal #leaderboard-list {
+        flex: 1 1 auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        height: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+        overscroll-behavior-y: contain !important;
+        padding: 4px 6px !important;
+        margin: 2px 0 4px !important;
+        font-size: 0.82rem !important;
+    }
 
-/* Sozlamalar va profil inputlari */
-#settings-modal input,
-#settings-modal select,
-#settings-modal label,
-#profile-modal input,
-#profile-modal select,
-#profile-modal label {
-    font-size: 0.8rem !important;
-    margin-bottom: 5px !important;
-    padding: 5px 8px !important;
-}
+    body.force-landscape #rating-modal #btn-close-rating,
+    body.mobile-landscape #rating-modal #btn-close-rating {
+        flex-shrink: 0 !important;
+        margin-top: 4px !important;
+        min-height: 32px !important;
+        height: 32px !important;
+        padding: 4px 12px !important;
+        font-size: 0.84rem !important;
+    }
 
-.primary-btn {
-    min-height: 36px !important;
-    padding: 6px 12px !important;
-    font-size: 0.88rem !important;
-    margin-bottom: 6px !important;
-}
+    /* Sozlamalar va profil inputlari */
+    #settings-modal input,
+    #settings-modal select,
+    #settings-modal label,
+    #profile-modal input,
+    #profile-modal select,
+    #profile-modal label {
+        font-size: 0.8rem !important;
+        margin-bottom: 5px !important;
+        padding: 5px 8px !important;
+    }
 
-.menu-card .menu-card-btn,
-.menu-card button.primary-btn {
-    min-height: 22px !important;
-    height: 22px !important;
-    max-height: 22px !important;
-    padding: 2px 4px !important;
-    font-size: 0.68rem !important;
-    line-height: 18px !important;
-    margin: 0 !important;
-    margin-top: auto !important;
-    margin-bottom: 0 !important;
-    border-radius: 6px !important;
-    width: 100% !important;
-}
+    .primary-btn {
+        min-height: 36px !important;
+        padding: 6px 12px !important;
+        font-size: 0.88rem !important;
+        margin-bottom: 6px !important;
+    }
+
+    .menu-card .menu-card-btn,
+    .menu-card button.primary-btn {
+        min-height: 22px !important;
+        height: 22px !important;
+        max-height: 22px !important;
+        padding: 2px 4px !important;
+        font-size: 0.68rem !important;
+        line-height: 18px !important;
+        margin: 0 !important;
+        margin-top: auto !important;
+        margin-bottom: 0 !important;
+        border-radius: 6px !important;
+        width: 100% !important;
+    }
 }
 
 /* O'ta ixcham landshaft ekranlar (bo'yi 360px dan kichik telefonlar) */
@@ -7608,6 +7619,7 @@ body.force-landscape #character-select-modal,
 body.mobile-landscape .char-select-modal,
 body.mobile-landscape #character-select-modal,
 @media (orientation: landscape) and (max-height: 650px) {
+
     .char-select-modal,
     #character-select-modal {
         position: fixed !important;
@@ -7749,7 +7761,9 @@ body.mobile-landscape .char-cancel-btn {
    Disable expensive backdrop-filter: blur() over live WebGL canvas.
    Eliminates high GPU compositor workload, thermal throttling and battery drain.
    ============================================================ */
-@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+@media (max-width: 1024px),
+(hover: none) and (pointer: coarse) {
+
     *,
     *::before,
     *::after {
