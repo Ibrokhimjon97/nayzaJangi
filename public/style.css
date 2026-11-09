@@ -6545,7 +6545,26 @@ body.mobile-landscape .coin-3d {
 
 /* Reyting modali: force-landscape va mobile-landscape */
 body.force-landscape #rating-modal,
-body.mobile-landscape #rating-modal,
+body.mobile-landscape #rating-modal {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(94%, 560px) !important;
+    max-width: min(94%, 560px) !important;
+    height: min(92%, 350px) !important;
+    max-height: min(92%, 350px) !important;
+    padding: 8px 14px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    box-sizing: border-box !important;
+    z-index: 500 !important;
+}
+
 @media (orientation: landscape) and (max-height: 560px) {
     #rating-modal {
         position: absolute !important;
@@ -6559,28 +6578,13 @@ body.mobile-landscape #rating-modal,
         padding: 8px 14px 8px !important;
         display: flex !important;
         flex-direction: column !important;
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
         box-sizing: border-box !important;
         z-index: 500 !important;
     }
-}
-
-body.force-landscape #rating-modal,
-body.mobile-landscape #rating-modal {
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(94%, 560px) !important;
-    max-width: min(94%, 560px) !important;
-    height: min(92%, 350px) !important;
-    max-height: min(92%, 350px) !important;
-    padding: 8px 14px 8px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-    z-index: 500 !important;
 }
 
 body.force-landscape #rating-modal h2,

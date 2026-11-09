@@ -13396,29 +13396,21 @@ if (btnMultiCreate) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
-        openCharacterSelectModal({
-            onConfirm: () => {
-                gameOptionsTargetMode = 'multiCreate';
-                for (const id of ALL_MODAL_IDS) {
-                    const el = document.getElementById(id);
-                    if (el && id !== 'multi-menu') el.classList.add('hidden');
-                }
-                if (multiMenu) multiMenu.classList.remove('hidden');
-                if (createCodeContainer) createCodeContainer.classList.remove('hidden');
-                if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
-                if (joinError) joinError.style.display = 'none';
-
-                const randomMaps = ['field', 'castle', 'registan', 'samarkand', 'bukhara', 'citadel', 'desert'];
-                const autoMap = randomMaps[Math.floor(Math.random() * randomMaps.length)];
-                socket.emit('createGame', {
-                    profile: myProfile,
-                    options: { map: autoMap, weather: 'sunny', birds: true, birdCount: 20, animals: false, charType: myProfile.charType }
-                });
-            },
-            onCancel: () => {
-                if (multiMenu) multiMenu.classList.remove('hidden');
-            }
-        });
+        gameOptionsTargetMode = 'multiCreate';
+        if (multiMenu) multiMenu.classList.add('hidden');
+        if (gameOptionsModal) {
+            gameOptionsModal.classList.remove('hidden');
+            if (difficultyWrap) difficultyWrap.style.display = 'none';
+            if (selectDifficulty) selectDifficulty.style.display = 'none';
+            const diffWrap = document.getElementById('custom-wrap-select-difficulty');
+            if (diffWrap) diffWrap.style.display = 'none';
+            const charOptWrap = document.getElementById('txt-char-opt-lbl');
+            if (charOptWrap) charOptWrap.style.display = 'none';
+            if (selectCharTypeOptions) selectCharTypeOptions.style.display = 'none';
+            const charSelectWrap = document.getElementById('custom-wrap-select-char-type-options');
+            if (charSelectWrap) charSelectWrap.style.display = 'none';
+            if (btnConfirmCreate) btnConfirmCreate.innerText = "Keyingisi: Qahramonni tanlash ➡️";
+        }
     };
     btnMultiCreate.addEventListener('click', handleMultiCreate);
     btnMultiCreate.addEventListener('touchend', (e) => {
@@ -13567,11 +13559,25 @@ if (btnConfirmCreate) {
             gameMode = 'single';
             startSinglePlayer({ map: mapVal, weather, birds, animals, difficulty });
         } else if (gameOptionsTargetMode === 'multiCreate') {
-            socket.emit('createGame', { profile: myProfile, options: { map: mapVal, weather, birds, animals, charType: myProfile.charType } });
-            multiMenu.classList.remove('hidden');
-            if (createCodeContainer) createCodeContainer.classList.remove('hidden');
-            if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
-            if (joinError) joinError.style.display = 'none';
+            openCharacterSelectModal({
+                onConfirm: () => {
+                    socket.emit('createGame', {
+                        profile: myProfile,
+                        options: { map: mapVal, weather, birds, birdCount: 20, animals, charType: myProfile.charType }
+                    });
+                    for (const id of ALL_MODAL_IDS) {
+                        const el = document.getElementById(id);
+                        if (el && id !== 'multi-menu') el.classList.add('hidden');
+                    }
+                    if (multiMenu) multiMenu.classList.remove('hidden');
+                    if (createCodeContainer) createCodeContainer.classList.remove('hidden');
+                    if (joinCodeContainer) joinCodeContainer.classList.add('hidden');
+                    if (joinError) joinError.style.display = 'none';
+                },
+                onCancel: () => {
+                    if (gameOptionsModal) gameOptionsModal.classList.remove('hidden');
+                }
+            });
         } else if (gameOptionsTargetMode === 'multiRandom') {
             socket.emit('findGame', { profile: myProfile, options: { map: mapVal, weather, birds, animals, charType: myProfile.charType } });
             waitingScreen.classList.remove('hidden');
@@ -14721,40 +14727,33 @@ document.addEventListener('keydown', (e) => {
             return null;
         }
 
-        // 2. Character Select: Touch anywhere inside character modal -> scroll the roster grid horizontally
+        // 2. Character Select: Touch anywhere on screen -> scroll the roster grid horizontally
         const charModal = document.getElementById('character-select-modal');
-        if (charModal && !charModal.classList.contains('hidden') && charModal.offsetParent !== null) {
-            if (rawTarget.closest && rawTarget.closest('#character-select-modal')) {
-                return document.getElementById('char-select-roster') || charModal;
-            }
+        if (charModal && !charModal.classList.contains('hidden')) {
+            return document.getElementById('char-select-roster') || charModal;
         }
 
-        // 3. Rating Modal: Touch anywhere inside rating modal -> scroll leaderboard list
+        // 3. Rating Modal: Touch anywhere on screen -> scroll leaderboard list
         const ratingModal = document.getElementById('rating-modal');
-        if (ratingModal && !ratingModal.classList.contains('hidden') && ratingModal.offsetParent !== null) {
-            if (rawTarget.closest && rawTarget.closest('#rating-modal')) {
-                const lbList = document.getElementById('leaderboard-list');
-                if (lbList && (lbList.scrollHeight > lbList.clientHeight || lbList.clientHeight > 0)) {
-                    return lbList;
-                }
-                return ratingModal;
+        if (ratingModal && !ratingModal.classList.contains('hidden')) {
+            if (rawTarget.closest && rawTarget.closest('input, textarea')) {
+                return null;
             }
+            const lbList = document.getElementById('leaderboard-list');
+            return lbList || ratingModal;
         }
 
-        // 4. Duel Invites Modal: Touch anywhere inside invites modal -> scroll active invites list
+        // 4. Duel Invites Modal: Touch anywhere on screen -> scroll active invites list
         const duelModal = document.getElementById('duel-invites-modal');
-        if (duelModal && !duelModal.classList.contains('hidden') && duelModal.offsetParent !== null) {
-            if (rawTarget.closest && rawTarget.closest('#duel-invites-modal')) {
-                // If clicked directly on the tabs switch buttons, don't hijack as list scroll
-                if (rawTarget.closest && rawTarget.closest('.duel-invites-tabs')) {
-                    return null;
-                }
-                const inList = document.getElementById('incoming-invites-container');
-                const outList = document.getElementById('outgoing-invites-container');
-                if (inList && !inList.classList.contains('hidden')) return inList;
-                if (outList && !outList.classList.contains('hidden')) return outList;
-                return duelModal;
+        if (duelModal && !duelModal.classList.contains('hidden')) {
+            if (rawTarget.closest && rawTarget.closest('.duel-invites-tabs, .modal-close-x, #btn-close-invites')) {
+                return null;
             }
+            const inList = document.getElementById('incoming-invites-container');
+            const outList = document.getElementById('outgoing-invites-container');
+            if (inList && !inList.classList.contains('hidden')) return inList;
+            if (outList && !outList.classList.contains('hidden')) return outList;
+            return duelModal;
         }
 
         // 5. Look up the DOM tree from rawTarget for closest scrollable element
@@ -14785,7 +14784,7 @@ document.addEventListener('keydown', (e) => {
         ];
 
         for (const p of candidatePanels) {
-            if (p && !p.classList.contains('hidden') && p.offsetParent !== null) {
+            if (p && !p.classList.contains('hidden') && p.style.display !== 'none') {
                 const inner = p.querySelector && p.querySelector('.duel-invites-list:not(.hidden), #leaderboard-list, #level-grid, .char-roster-grid');
                 if (inner) return inner;
                 return p;
@@ -14813,7 +14812,7 @@ document.addEventListener('keydown', (e) => {
         // Check if panel can scroll horizontally (X) or vertically (Y)
         const isRoster = (activeScrollPanel.id === 'char-select-roster' || activeScrollPanel.classList.contains('char-roster-grid'));
         canScrollX = isRoster || (activeScrollPanel.scrollWidth > activeScrollPanel.clientWidth + 4);
-        canScrollY = !isRoster && (activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 || activeScrollPanel.id === 'leaderboard-list' || activeScrollPanel.classList.contains('duel-invites-list'));
+        canScrollY = !isRoster && (activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 || activeScrollPanel.id === 'leaderboard-list' || activeScrollPanel.classList.contains('duel-invites-list') || activeScrollPanel.id === 'rating-modal');
     }
 
     function handleDragMove(clientX, clientY, rawEvent) {
@@ -15359,7 +15358,7 @@ async function openPlayerProfileModal(playerId, playerName, preloadedData = {}) 
     } else {
         avatarImg.style.display = 'none';
         avatarFallback.style.display = 'inline-block';
-        avatarFallback.innerText = activeProfileTarget.flag || '👤';
+        avatarFallback.innerText = activeProfileTarget.flag || '👤'; 
     }
 
     document.getElementById('player-profile-score').innerText = activeProfileTarget.score || 0;
