@@ -3694,6 +3694,10 @@ const jumpStates = [
 ];
 let isDoubleSpearActive = false;
 let pendingDoubleShot = null;
+let isDoubleShotInProgress = false;
+let primarySpearFinished = false;
+let secondarySpearFinished = false;
+let pendingPrimaryTargetIndex = null;
 let isFireSpearActive = false; // Olov nayza qobiliyati yoqilganmi
 let pendingFireShot = false;   // Joriy otish olov nayzami
 const SUPER_BUY_COST = 75;
@@ -3912,6 +3916,21 @@ function getEnemyIndices() {
     if (myPlayerIndex !== 0 && (enemyHealth > 0 || myPlayerIndex === 0)) enemies.push(0);
     if (myPlayerIndex !== 1 && (enemyHealth > 0 || myPlayerIndex === 1)) enemies.push(1);
     if (p3Model && myPlayerIndex !== 2 && enemy2Health > 0) enemies.push(2);
+    return enemies;
+}
+
+function getAliveEnemyIndices(forPlayerIndex = myPlayerIndex) {
+    if (gameMode !== 'single') {
+        return [forPlayerIndex === 0 ? 1 : 0];
+    }
+    const enemies = [];
+    if (forPlayerIndex === myPlayerIndex) {
+        if (myPlayerIndex !== 0 && enemyHealth > 0) enemies.push(0);
+        if (myPlayerIndex !== 1 && enemyHealth > 0) enemies.push(1);
+        if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) enemies.push(2);
+    } else {
+        if (myHealth > 0) enemies.push(myPlayerIndex);
+    }
     return enemies;
 }
 
@@ -6146,37 +6165,70 @@ function throwSpear(angle, power) {
         clearHintTrajectory();
     }
     pendingDoubleShot = null;
+    pendingPrimaryTargetIndex = null;
+    let isDouble = false;
     if (isDoubleSpearActive && Number(myProfile.doubleSpears || 0) > 0) {
         myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0) - 1);
+        isDouble = true;
+        isDoubleSpearActive = false;
+        const doubleBtn = document.getElementById('double-button');
+        if (doubleBtn) doubleBtn.classList.remove('active');
+        saveProfile();
+        updateSuperUI();
+
         const shooterIndex = currentTurnIndex;
-        const targetIndex = getDoubleShotTargetIndex(shooterIndex);
-        const shouldAssistDouble = Math.random() < 0.8;
-        if (shouldAssistDouble) {
-            const primaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
-            const secondaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 4.8, 0.97);
-            if (primaryAssisted && secondaryAssisted) {
-                angle = primaryAssisted.angle;
-                power = primaryAssisted.power;
-                pendingDoubleShot = {
-                    shooterIndex,
-                    angle: secondaryAssisted.angle,
-                    power: secondaryAssisted.power,
-                    wind: currentWind,
-                    forceHit: true,
-                    targetIndex
-                };
+        const aliveEnemies = getAliveEnemyIndices(shooterIndex);
+
+        // O'yinchi raqiblar tomoniga mo'ljallab otganini aniqlaymiz (kuch >= 400 va burchak -25..85)
+        const isAimingTowardsEnemies = (power >= 400 && angle >= -25 && angle <= 85);
+
+        if (isAimingTowardsEnemies && aliveEnemies.length > 0) {
+            if (aliveEnemies.length >= 2) {
+                // 2 ta raqib bo'lsa: ikkalasiga mo'ljallab otilsa ikkala raqibga ham bitadan tegsin!
+                const shot1 = computeTargetShot(shooterIndex, aliveEnemies[0], 28);
+                const shot2 = computeTargetShot(shooterIndex, aliveEnemies[1], 34);
+                if (shot1 && shot2) {
+                    angle = shot1.angle;
+                    power = shot1.power;
+                    pendingPrimaryTargetIndex = aliveEnemies[0];
+                    pendingDoubleShot = {
+                        shooterIndex,
+                        angle: shot2.angle,
+                        power: shot2.power,
+                        wind: currentWind,
+                        targetIndex: aliveEnemies[1],
+                        intendedTargetIndex: aliveEnemies[1]
+                    };
+                }
+            } else {
+                // 1 ta raqib bo'lsa: ikkala o'q (nayza yoki kamon o'qi) ham bitta raqibga tegsin!
+                const targetIdx = aliveEnemies[0];
+                const shot1 = computeTargetShot(shooterIndex, targetIdx, 27);
+                const shot2 = computeTargetShot(shooterIndex, targetIdx, 34);
+                if (shot1 && shot2) {
+                    angle = shot1.angle;
+                    power = shot1.power;
+                    pendingPrimaryTargetIndex = targetIdx;
+                    pendingDoubleShot = {
+                        shooterIndex,
+                        angle: shot2.angle,
+                        power: shot2.power,
+                        wind: currentWind,
+                        targetIndex: targetIdx,
+                        intendedTargetIndex: targetIdx
+                    };
+                }
             }
         }
+
         if (!pendingDoubleShot) {
             pendingDoubleShot = {
-                shooterIndex: currentTurnIndex,
-                angle: Math.max(-60, Math.min(85, angle + 5.5)),
-                power: Math.max(650, power * 0.94),
+                shooterIndex,
+                angle: Math.max(-60, Math.min(85, angle + 4.5)),
+                power: Math.max(650, power * 0.96),
                 wind: currentWind
             };
         }
-        saveProfile();
-        updateSuperUI();
     }
     let artill = false;
     if (isArtilleryAiming) {
@@ -6206,7 +6258,7 @@ function throwSpear(angle, power) {
     }
 
     if (gameMode === 'multi') {
-        socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot });
+        socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot, isDouble });
     } else if (gameMode === 'single') {
         if (!artill) {
             if (currentTurnIndex === 0) {
@@ -6716,6 +6768,56 @@ function getDoubleShotTargetIndex(shooterIndex) {
     return shooterIndex === 0 ? 1 : 0;
 }
 
+function computeTargetShot(shooterIndex, targetIndex, preferredAngleDeg = 30) {
+    const shooter = modelForPlayer(shooterIndex);
+    const target = modelForPlayer(targetIndex);
+    if (!shooter || !target) return null;
+    const dx = Math.abs(shooter.position.x - target.position.x);
+    const dir = target.position.x >= shooter.position.x ? 1 : -1;
+    const effectiveWind = currentWind * dir;
+    let angleDeg = preferredAngleDeg;
+    angleDeg = Math.max(15, Math.min(55, angleDeg));
+    const rad = angleDeg * Math.PI / 180;
+    const sin2 = Math.sin(2 * rad);
+    const sin = Math.sin(rad);
+    const K = (sin2 / GRAVITY) + (60 * effectiveWind * sin * sin / (GRAVITY * GRAVITY));
+    let power;
+    if (K <= 0) {
+        power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, sin2));
+    } else {
+        power = Math.sqrt(dx / K);
+    }
+    power = Math.max(700, Math.min(3600, power));
+    return { angle: angleDeg, power, targetIndex };
+}
+
+function checkTurnEndAfterAllShots() {
+    if (isDoubleShotInProgress && secondarySpear && secondarySpear.active) {
+        return; // Ikkinchi o'q hali havoda uchmoqda, navbatni o'tkazmay turamiz
+    }
+    isDoubleShotInProgress = false;
+    primarySpearFinished = false;
+    secondarySpearFinished = false;
+
+    if (gameMode === 'single') {
+        if (myHealth <= 0 || areAllEnemiesDead()) {
+            const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
+            setTimeout(() => showGameOver(winnerIndex), 1500);
+        } else {
+            advanceSingleTurnAfterShot();
+        }
+    }
+}
+
+function onSecondarySpearFinished() {
+    secondarySpearFinished = true;
+    if (secondarySpear) secondarySpear.active = false;
+    if (secondarySpearGroup) secondarySpearGroup.visible = false;
+    if (primarySpearFinished || !spear || !spear.active) {
+        checkTurnEndAfterAllShots();
+    }
+}
+
 function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powerScale = 1) {
     const shooter = modelForPlayer(shooterIndex);
     const target = modelForPlayer(targetIndex);
@@ -6737,99 +6839,16 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
 }
 
 function simulateDoubleSpearHit() {
-    if (!pendingDoubleShot) return null;
-    const shot = pendingDoubleShot;
-    pendingDoubleShot = null;
-    const shooter = modelForPlayer(shot.shooterIndex);
-    if (!shooter) return null;
-
-    const startX = shot.shooterIndex === 0 ? shooter.position.x + 60 : shooter.position.x - 60;
-    const startY = shooter.position.y + 270;
-    if (shot.forceHit && Number.isFinite(Number(shot.targetIndex))) {
-        const targetIndex = Number(shot.targetIndex);
-        const target = modelForPlayer(targetIndex);
-        if (target && !target.userData.isKnockedDown) {
-            const h = target.userData?.planeMesh?.geometry?.parameters?.height || 430;
-            const hitY = target.position.y + h * 0.62;
-            const hitX = target.position.x + (shot.shooterIndex === 0 ? -8 : 8);
-            const relY = hitY - target.position.y;
-            const hit = calculateHitResult(targetIndex, relY, false);
-            return {
-                targetIndex,
-                hitX,
-                hitY,
-                hitAngle: Math.atan2(hitY - startY, hitX - startX),
-                hitResult: hit,
-                path: [
-                    { x: startX, y: startY },
-                    { x: (startX + hitX) * 0.5, y: Math.max(startY, hitY) + 120 },
-                    { x: hitX, y: hitY }
-                ]
-            };
-        }
-    }
-    const rad = shot.angle * (Math.PI / 180);
-    let vx = shot.power * Math.cos(rad);
-    if (shot.shooterIndex === 1) vx = -vx;
-    let vy = shot.power * Math.sin(rad);
-    let x = startX;
-    let y = startY;
-    const dt = 0.028;
-    const targets = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
-    const path = [{ x: startX, y: startY }];
-
-    for (let i = 0; i < 220; i++) {
-        x += vx * dt;
-        y += vy * dt;
-        path.push({ x, y });
-        vy -= GRAVITY * dt;
-        vx += ((shot.wind || 0) * 30) * dt;
-        if (y <= ground.position.y + 100) {
-            return { hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: null, path };
-        }
-        for (let idx = 0; idx < targets.length; idx++) {
-            if (idx === shot.shooterIndex) continue;
-            const m = targets[idx];
-            if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
-            const h = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
-            if (Math.abs(x - m.position.x) < 55 && y > m.position.y + 30 && y < m.position.y + h) {
-                const relY = y - m.position.y;
-                const hit = calculateHitResult(idx, relY, false);
-                return { targetIndex: idx, hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: hit, path };
-            }
-        }
-    }
-    return { hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: null, path };
+    return null;
 }
 
 function spawnDoubleSpearVisual(doubleOutcome) {
-    if (!doubleOutcome || !Array.isArray(doubleOutcome.path) || doubleOutcome.path.length < 2) return;
-    const ghost = spearGroup.clone();
-    ghost.visible = true;
-    scene.add(ghost);
-    const path = doubleOutcome.path;
-    let idx = 0;
-    const tick = () => {
-        if (idx >= path.length - 1) {
-            scene.remove(ghost);
-            return;
-        }
-        const a = path[idx];
-        const b = path[idx + 1];
-        ghost.position.set(a.x, a.y, 0);
-        ghost.rotation.z = Math.atan2(b.y - a.y, b.x - a.x);
-        idx += 4;
-        requestAnimationFrame(tick);
-    };
-    tick();
+    // Obsolete: haqiqiy secondarySpear uchib boradi va uriladi
 }
 
 function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
     const finalAngle = spearGroup.rotation.z;
-    const doubleOutcome = simulateDoubleSpearHit();
-    const doubleShotFired = !!doubleOutcome;
-    const hasExtraHit = !!(doubleOutcome && doubleOutcome.hitResult);
-    if (doubleOutcome) spawnDoubleSpearVisual(doubleOutcome);
+    primarySpearFinished = true;
 
     if (hitOpponent) {
         const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
@@ -6842,7 +6861,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
             hitResult = calculateHitResult(targetIndex, 0, true);
             spawnParticles(hitX, hitY, 50);
         } else {
-            const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
+            const relativeY = hitY - targetModel.position.y;
             hitResult = calculateHitResult(targetIndex, relativeY, false);
 
             if (spear && spear.isArtillery) {
@@ -6861,7 +6880,6 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                     triggerCinematicExplosion(hitX, hitY);
                 }
             } else {
-                if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
                 // Olov nayza / o'qi: raqibga tekkanda kuchli yonish effekti va yuqori ziyon
                 if (spear && spear.isFire && !hitResult.duckDodged) {
                     if (hitResult.isShieldHit) {
@@ -6902,7 +6920,6 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         if (hitResult.hitZone === 'head') {
             if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
             if (typeof checkQuestProgress === 'function') checkQuestProgress('headshot', 1);
-            // Duplicate second headshot banner removed
             screenShake = Math.max(screenShake, 18);
         } else if (targetIndex === myPlayerIndex && hitResult.damage > 0) {
             if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
@@ -6917,7 +6934,6 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         }
 
         if (gameMode === 'single') {
-            const hitMyself = targetIndex === myPlayerIndex;
             if (hitResult.isShieldHit) {
                 setShieldForPlayer(targetIndex, shieldForPlayer(targetIndex) - 1);
                 const shieldHealth = shieldForPlayer(targetIndex);
@@ -6931,43 +6947,8 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 updateHealthUI();
             }
 
-            if (myHealth <= 0 || areAllEnemiesDead()) {
-                const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
-                setTimeout(() => showGameOver(winnerIndex), 1500);
-            } else {
-                if (!lastRecordedSecondaryHit && hasExtraHit) {
-                    const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
-                    const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
-                    const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
-                    playHitByResult(boostedExtraHit);
-                    showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
-                    if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
-                        addScore(getScoreDeltaForHit(boostedExtraHit));
-                    }
-                    if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
-                    if (boostedExtraHit.isShieldHit) {
-                        setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
-                        if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
-                    }
-                    if (boostedExtraHit.damage > 0) {
-                        applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
-                        updateHealthUI();
-                    }
-                }
-                advanceSingleTurnAfterShot();
-            }
+            checkTurnEndAfterAllShots();
         } else {
-            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
-                targetIndex: doubleOutcome.targetIndex,
-                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
-                hitZone: doubleOutcome.hitResult.hitZone || 'body',
-                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
-                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
-                hitX: doubleOutcome.hitX,
-                hitY: doubleOutcome.hitY,
-                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
-                hitAngle: doubleOutcome.hitAngle
-            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: true,
                 targetIndex: targetIndex,
@@ -6981,7 +6962,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
                 isFire: !!(spear && spear.isFire),
-                extraHit: finalExtra
+                extraHit: lastRecordedSecondaryHit
             });
         }
     } else {
@@ -6991,45 +6972,15 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         hideFlyingSpear();
 
         if (gameMode === 'single') {
-            if (!lastRecordedSecondaryHit && hasExtraHit) {
-                const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
-                const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
-                const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
-                playHitByResult(boostedExtraHit);
-                showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
-                if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
-                    addScore(getScoreDeltaForHit(boostedExtraHit));
-                }
-                if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
-                if (boostedExtraHit.isShieldHit) {
-                    setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
-                    if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
-                }
-                if (boostedExtraHit.damage > 0) {
-                    applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
-                    updateHealthUI();
-                }
-            }
-            advanceSingleTurnAfterShot();
+            checkTurnEndAfterAllShots();
         } else {
-            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
-                targetIndex: doubleOutcome.targetIndex,
-                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
-                hitZone: doubleOutcome.hitResult.hitZone || 'body',
-                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
-                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
-                hitX: doubleOutcome.hitX,
-                hitY: doubleOutcome.hitY,
-                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
-                hitAngle: doubleOutcome.hitAngle
-            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: false,
                 hitX,
                 hitY,
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
-                extraHit: finalExtra
+                extraHit: lastRecordedSecondaryHit
             });
         }
     }
@@ -7844,7 +7795,7 @@ socket.on('playerAimState', (data) => {
 });
 
 socket.on('spearThrown', (data) => {
-    const { playerIndex, angle, power, isArtillery, isFire } = data;
+    const { playerIndex, angle, power, isArtillery, isFire, isDouble } = data;
     remoteAimStates[playerIndex] = { isAiming: false, dist: 0, angle: 0 };
     if (typeof opponent3DBow !== 'undefined' && opponent3DBow) opponent3DBow.visible = false;
     const thrower = modelForPlayer(playerIndex);
@@ -7852,6 +7803,14 @@ socket.on('spearThrown', (data) => {
         setModelActionState(thrower, 'afterShot', 950);
     }
     if (isFire) pendingFireShot = true;
+    if (isDouble && playerIndex !== myPlayerIndex) {
+        pendingDoubleShot = {
+            shooterIndex: playerIndex,
+            angle: angle + 4.5,
+            power: power * 1.02,
+            wind: currentWind
+        };
+    }
     startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
 
@@ -8579,8 +8538,13 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         aiSuperTried: false,
         isArtillery: isArtillery,
         isFire: !isArtillery && pendingFireShot,
-        weaponType: getPlayerWeaponType(playerIndex)
+        weaponType: getPlayerWeaponType(playerIndex),
+        intendedTargetIndex: pendingPrimaryTargetIndex
     };
+    pendingPrimaryTargetIndex = null;
+    isDoubleShotInProgress = !!pendingDoubleShot;
+    primarySpearFinished = false;
+    secondarySpearFinished = !pendingDoubleShot;
     pendingFireShot = false;
 
     let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
@@ -8614,7 +8578,9 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
             active: true,
             playerIndex: playerIndex,
             shooterIndex: playerIndex,
-            isSecondary: true
+            isSecondary: true,
+            targetIndex: shot.targetIndex,
+            intendedTargetIndex: shot.intendedTargetIndex
         };
         secondarySpearGroup.position.set(startX, startY + 12, 0);
         secondarySpearGroup.visible = true;
@@ -8784,9 +8750,10 @@ function lineSegmentIntersectsAABB(x0, y0, x1, y1, minX, maxX, minY, maxY) {
     return tmin <= tmax && tmax >= 0 && tmin <= 1;
 }
 
-function getPlayerBoundingBox(playerIndex) {
+function getPlayerBoundingBox(playerIndex, allowKnockedDown = false) {
     const m = modelForPlayer(playerIndex);
-    if (!m || !m.userData || !m.visible || m.userData.isDead || m.userData.isKnockedDown) return null;
+    if (!m || !m.userData || !m.visible || m.userData.isDead) return null;
+    if (!allowKnockedDown && m.userData.isKnockedDown) return null;
 
     const isDucking = isDuckActiveForPlayer(playerIndex);
     const isJumping = isJumpActiveForPlayer(playerIndex);
@@ -8795,7 +8762,7 @@ function getPlayerBoundingBox(playerIndex) {
     const baseWidth = m.userData.planeWidth || m.userData?.planeMesh?.geometry?.parameters?.width || (m.userData.isOttomanSpearman ? 640 : (m.userData.isOttomanUnit ? 560 : 360));
 
     // When ducking/crouching, the warrior lowers down to ~52% of base standing height
-    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
+    const effectiveHeight = isDucking ? (baseHeight * 0.52) : (m.userData.isKnockedDown ? (baseHeight * 0.6) : baseHeight);
 
     // Body width: central silhouette of the sprite. When ducking, warrior is compact (~18% narrower)
     const widthFactor = m.userData.isCustomModel ? 0.44 : 0.36;
@@ -8841,6 +8808,7 @@ function checkSecondarySpearCollision() {
         } else {
             applyWallHit(wallOwner, hitX, hitY, false);
         }
+        onSecondarySpearFinished();
         return;
     }
 
@@ -8848,23 +8816,28 @@ function checkSecondarySpearCollision() {
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
-        if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
+        if (!m || !m.visible || m.userData.isDead) continue;
         if (i === secondarySpear.playerIndex) continue;
         if (areAllies(i, secondarySpear.playerIndex)) continue;
 
-        const box = getPlayerBoundingBox(i);
+        const box = getPlayerBoundingBox(i, true);
         if (!box) continue;
 
         const pX = (secondarySpear.prevX !== undefined) ? secondarySpear.prevX : secondarySpear.x;
         const pY = (secondarySpear.prevY !== undefined) ? secondarySpear.prevY : secondarySpear.y;
 
         const isHit = lineSegmentIntersectsAABB(pX, pY, secondarySpear.x, secondarySpear.y, box.minX, box.maxX, box.minY, box.maxY);
-        if (isHit) {
+        const isNearIntended = (secondarySpear.intendedTargetIndex === i) &&
+            Math.abs(secondarySpear.x - m.position.x) < 70 &&
+            (secondarySpear.y >= m.position.y - 20 && secondarySpear.y <= m.position.y + (box.baseHeight || 430));
+
+        if (isHit || isNearIntended) {
             const hitX = secondarySpear.x;
             const hitY = secondarySpear.y;
             secondarySpear.active = false;
             secondarySpearGroup.visible = false;
             applySecondarySpearHit(i, hitX, hitY);
+            onSecondarySpearFinished();
             return;
         }
     }
@@ -8874,6 +8847,7 @@ function checkSecondarySpearCollision() {
         secondarySpear.active = false;
         secondarySpearGroup.visible = false;
         stickSpear(null, secondarySpear.x, ground.position.y + 100, secondarySpearGroup.rotation.z);
+        onSecondarySpearFinished();
     }
 }
 
@@ -8998,7 +8972,11 @@ function checkCollision() {
         const pY = (spear.prevY !== undefined) ? spear.prevY : spear.y;
 
         const isHit = lineSegmentIntersectsAABB(pX, pY, spear.x, spear.y, box.minX, box.maxX, box.minY, box.maxY);
-        if (isHit) {
+        const isNearIntended = (spear.intendedTargetIndex === i) &&
+            Math.abs(spear.x - m.position.x) < 70 &&
+            (spear.y >= m.position.y - 20 && spear.y <= m.position.y + (box.baseHeight || 430));
+
+        if (isHit || isNearIntended) {
             if (i === spear.playerIndex) {
                 const throwerPos = m.position;
                 const distFromSelf = Math.abs(spear.x - throwerPos.x);
@@ -9060,7 +9038,8 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
                     });
                 }
             } else {
-                advanceSingleTurnAfterShot();
+                primarySpearFinished = true;
+                checkTurnEndAfterAllShots();
             }
         }
         return;
@@ -9422,9 +9401,10 @@ function gameLoop(now) {
         secondarySpearGroup.position.set(secondarySpear.x, secondarySpear.y, 0);
         secondarySpearGroup.rotation.z = Math.atan2(secondarySpear.vy, secondarySpear.vx);
         checkSecondarySpearCollision();
-        if (secondarySpear.active && (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200)) {
+        if (secondarySpear && secondarySpear.active && (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200)) {
             secondarySpear.active = false;
             secondarySpearGroup.visible = false;
+            onSecondarySpearFinished();
         }
     }
 

@@ -1949,7 +1949,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('throwSpear', (data) => {
-        const { angle, power, isArtillery, isFire } = data;
+        const { angle, power, isArtillery, isFire, isDouble } = data;
         const roomName = socket.roomId;
         const room = rooms[roomName];
 
@@ -1966,12 +1966,14 @@ io.on('connection', (socket) => {
             angle: angle,
             power: power,
             isArtillery: isArtillery,
-            isFire: !!isFire
+            isFire: !!isFire,
+            isDouble: !!isDouble
         });
         room.inFlight = true;
         room.flightStartTime = Date.now();
         room.inFlightIsFire = !!isFire;
         room.inFlightIsArtillery = !!isArtillery;
+        room.inFlightIsDouble = !!isDouble;
     });
 
     socket.on('useSuperPower', (payload) => {
@@ -2597,4 +2599,4 @@ function pingOnce(endpoint, https) {
     } catch (_) { }
 }
 
-// Force redeploy 1397934648782924302
+// Force redeploy qo'shnayza fix update
