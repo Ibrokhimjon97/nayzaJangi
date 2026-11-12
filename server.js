@@ -1316,12 +1316,20 @@ function handleRoomTurnTimeout(roomName) {
     const loserSocket = io.sockets.sockets.get(timedOutId);
     recordGameResult(winnerSocket, loserSocket, 'timeout_forfeit');
 
-    io.to(roomName).emit('gameOver', {
+    const gameOverPayload = {
         winnerIndex,
         winnerId,
         reason: 'timeout_forfeit',
         timedOutIndex
-    });
+    };
+
+    io.to(roomName).emit('gameOver', gameOverPayload);
+    if (winnerSocket && winnerSocket.connected) {
+        winnerSocket.emit('gameOver', gameOverPayload);
+    }
+    if (loserSocket && loserSocket.connected) {
+        loserSocket.emit('gameOver', gameOverPayload);
+    }
 }
 
 function removeFromWaitingQueue(socketId) {
@@ -1591,7 +1599,7 @@ io.on('connection', (socket) => {
             // Agar xona egasi hali Telegramdan qaytib ulanmagan bo'lsa (oflayn):
             if (!player1 || !player1.connected) {
                 const disconnectedFor = roomData.disconnectedAt ? (Date.now() - roomData.disconnectedAt) : (Date.now() - roomData.createdAt);
-                if (disconnectedFor > 35000) {
+                if (disconnectedFor > 600000) { // 10 daqiqadan ko'p o'tgan bo'lsa
                     if (roomData.cleanupTimer) clearTimeout(roomData.cleanupTimer);
                     if (roomData.pendingPlayer2Timer) clearTimeout(roomData.pendingPlayer2Timer);
                     delete roomsByCode[targetCode];
@@ -1600,12 +1608,13 @@ io.on('connection', (socket) => {
                         reason: 'creator_offline',
                         message: "Sizni taklif qilgan o'yinchi oflayn (tarmoqda emas) yoki xona muddati o'tgan!"
                     });
-                    console.log(`[JoinGame] Xona egasi oflayn, xona bekor qilindi: ${targetCode}`);
+                    console.log(`[JoinGame] Xona egasi oflayn (10 daqiqa o'tgan), xona bekor qilindi: ${targetCode}`);
                     return;
                 }
 
                 roomData.pendingPlayer2 = player2;
                 if (roomData.pendingPlayer2Timer) clearTimeout(roomData.pendingPlayer2Timer);
+                // 3 daqiqa (180 soniya) kutish imkoniyati beriladi:
                 roomData.pendingPlayer2Timer = setTimeout(() => {
                     if (roomData.pendingPlayer2 && roomData.pendingPlayer2.id === player2.id) {
                         player2.emit('joinError', {
@@ -1615,14 +1624,14 @@ io.on('connection', (socket) => {
                         });
                         roomData.pendingPlayer2 = null;
                     }
-                }, 15000);
+                }, 180000);
 
                 socket.emit('waitingForCreator', {
                     code: targetCode,
-                    timeoutSeconds: 15,
-                    message: "⏳ Taklif qilgan o'yinchi hozir oflayn. Qaytishi kutilmoqda..."
+                    timeoutSeconds: 180,
+                    message: "⏳ Taklif qilgan o'yinchi kutilmoqda... U qaytishi bilanoq jang boshlanadi!"
                 });
-                console.log(`[JoinGame] Xona egasi hali ulanmagan, player2 kutish holatida (15s taymer). Kod: ${targetCode}`);
+                console.log(`[JoinGame] Xona egasi hali ulanmagan, player2 kutish holatida (180s). Kod: ${targetCode}`);
                 return;
             }
 
@@ -2500,7 +2509,7 @@ io.on('connection', (socket) => {
             pendingFriendAddRequests.delete(socket.profile.playerId);
         }
 
-        // Clean up un-joined code rooms gracefully (3 daqiqa grace period beramiz, Telegramda taklif yuborayotgan bo'lishi mumkin)
+        // Clean up un-joined code rooms gracefully (10 daqiqa grace period beramiz, Telegramda taklif yuborayotgan bo'lishi mumkin)
         for (const code in roomsByCode) {
             const r = roomsByCode[code];
             if (r.player1 && r.player1.id === socket.id) {
@@ -2514,7 +2523,7 @@ io.on('connection', (socket) => {
                         delete roomsByCode[code];
                         console.log(`[Cleanup] Xona muddati o'tib o'chirildi: ${code}`);
                     }
-                }, 180000); // 3 daqiqa kutish
+                }, 600000); // 10 daqiqa kutish
             } else if (r.pendingPlayer2 && r.pendingPlayer2.id === socket.id) {
                 if (r.pendingPlayer2Timer) clearTimeout(r.pendingPlayer2Timer);
                 r.pendingPlayer2 = null;

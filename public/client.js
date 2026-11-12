@@ -5152,6 +5152,14 @@ function handleStart(e) {
     const target = e && e.target;
     const hasClosest = target && typeof target.closest === 'function';
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
+    
+    // Agar o'z navbatida bo'lsa va havoda faol nayza yo'q bo'lsa, qotib qolgan animatsiyani tozalash
+    if (currentTurnIndex === myPlayerIndex && (!spear || !spear.active) && (!secondarySpear || !secondarySpear.active)) {
+        isAnimating = false;
+        isCoinTossActive = false;
+        if (gameMode === 'multi') singleShotLocked = false;
+    }
+
     if (isCoinTossActive || isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) {
         if (gameMode === 'multi' && currentTurnIndex !== myPlayerIndex && currentTurnIndex >= 0 && !isCoinTossActive && !isAnimating) {
             showCenterNotice("Hozir raqib navbati! Iltimos, kuting... ⏳", 1500);
@@ -7664,6 +7672,16 @@ socket.on('gameStart', (data) => {
     enemyDuckActive = false;
 
     scene.remove(p1Model); scene.remove(p2Model);
+    // Multiplayerda p3Model (singleplayer 2-dushman) qoldiqlarini to'liq yo'q qilish
+    if (p3Model) {
+        scene.remove(p3Model);
+        p3Model.visible = false;
+        p3Model.position.set(0, -99999, 0);
+        p3Model = null;
+    }
+    enemy2Health = 0;
+    const oldP3HealthContainer = document.getElementById('p3-health-container');
+    if (oldP3HealthContainer) oldP3HealthContainer.remove();
     const myChar = myProfile.charType || 2;
     const oppChar = (data.opponentProfile && data.opponentProfile.charType) || 2;
     const p1Char = myPlayerIndex === 0 ? myChar : oppChar;
@@ -8086,8 +8104,14 @@ socket.on('playerEmote', (data) => {
 
 function showGameOver(winnerIndex, data) {
     if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
-    gameOverScreen.classList.remove('hidden');
-    controlsPanel.classList.add('disabled');
+    hideCoinTossModal();
+    if (gameOverScreen) {
+        gameOverScreen.classList.remove('hidden');
+        gameOverScreen.style.removeProperty('display');
+        gameOverScreen.style.display = 'block';
+        gameOverScreen.style.setProperty('z-index', '10005', 'important');
+    }
+    if (controlsPanel) controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
 
     // Aniq g'olibni hisoblash (3-bosqichli tekshiruv)
@@ -8411,7 +8435,14 @@ function updateTurn(turnIndex, wind) {
 
     if (turnIndex === myPlayerIndex) {
         controlsPanel.classList.remove('disabled');
-        if (turnChanged) controlsPanel.classList.remove('auto-hidden');
+        controlsPanel.classList.remove('auto-hidden');
+        isAnimating = false;
+        isCoinTossActive = false;
+        singleShotLocked = false;
+        isDragging = false;
+        if (spear) spear.active = false;
+        if (secondarySpear) secondarySpear.active = false;
+        hideFlyingSpear();
         turnIndicator.innerText = "Sizning navbatingiz! (Tortib mo'ljalga oling)";
         turnIndicator.classList.add('turn-self');
         turnIndicator.classList.remove('turn-opponent');
@@ -13872,11 +13903,11 @@ function getPendingRoomCode() {
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
         code = String(tg.initDataUnsafe.start_param);
     }
-    // 2. URL search query parametrlari (?room=XYZ, ?startapp=XYZ, ?tgWebAppStartParam=XYZ)
+    // 2. URL search query parametrlari (?room=XYZ, ?startapp=XYZ, ?tgWebAppStartParam=XYZ, ?code=XYZ)
     if (!code && window.location.search) {
         try {
             const sp = new URLSearchParams(window.location.search);
-            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join');
+            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join') || sp.get('duel_room');
         } catch (_) { }
     }
     // 3. URL hash parametrlari (#tgWebAppStartParam=XYZ yoki #tgWebAppData=...&tgWebAppStartParam=XYZ)
@@ -13884,7 +13915,7 @@ function getPendingRoomCode() {
         try {
             const hashRaw = window.location.hash.replace(/^#/, '');
             const hp = new URLSearchParams(hashRaw);
-            code = hp.get('tgWebAppStartParam') || hp.get('startapp') || hp.get('room') || hp.get('code');
+            code = hp.get('tgWebAppStartParam') || hp.get('startapp') || hp.get('room') || hp.get('code') || hp.get('duel_room');
             if (!code && hashRaw.includes('tgWebAppStartParam=')) {
                 const m = hashRaw.match(/tgWebAppStartParam=([^&]+)/);
                 if (m) code = decodeURIComponent(m[1]);
@@ -13920,6 +13951,17 @@ function checkAutoJoinTelegramRoom() {
     // Har qanday holatda inputga ham to'ldirib qo'yamiz
     if (inputJoinCode) inputJoinCode.value = code;
 
+    // Intro ekranni darhol yopish - kutib o'tirmasdan to'g'ridan-to'g'ri jangga ulanish
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
+    if (typeof tryLockLandscapeOrientation === 'function') {
+        try { tryLockLandscapeOrientation(); } catch (_) { }
+    }
+
     if (autoJoinExecuted) return true;
 
     autoJoinExecuted = true;
@@ -13927,12 +13969,6 @@ function checkAutoJoinTelegramRoom() {
     console.log('[AutoJoin] Xonaga avtomatik ulanmoqda:', code);
 
     // Barcha oraliq ekranlarni yashirish
-    const introEl = document.getElementById('intro-screen');
-    if (introEl) {
-        introEl.classList.add('hide');
-        introEl.style.display = 'none';
-        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
-    }
     if (authModal) authModal.classList.add('hidden');
     if (menuScreen) {
         menuScreen.classList.add('hidden');
@@ -13945,6 +13981,7 @@ function checkAutoJoinTelegramRoom() {
     if (waitingScreen) {
         waitingScreen.classList.remove('hidden');
         waitingScreen.style.removeProperty('display');
+        waitingScreen.style.display = 'flex';
         const waitTitle = waitingScreen.querySelector('h1, h2, .title');
         if (waitTitle) waitTitle.innerText = `⚔️ Duelga (${code}) ulanilmoqda...`;
     }
@@ -13966,22 +14003,23 @@ function checkAutoJoinTelegramRoom() {
 
 let waitingForCreatorTimer = null;
 socket.on('waitingForCreator', (data) => {
-    const msg = data?.message || "⏳ Taklif qilgan o'yinchi hozir oflayn. Qaytishi kutilmoqda...";
-    showCenterNotice(msg, 3500);
+    const msg = data?.message || "⏳ Taklif qilgan do'stingiz kutilmoqda... U qaytishi bilanoq jang boshlanadi!";
+    showCenterNotice(msg, 4000);
     if (waitingScreen) {
         waitingScreen.classList.remove('hidden');
         waitingScreen.style.removeProperty('display');
+        waitingScreen.style.display = 'flex';
         const waitTitle = waitingScreen.querySelector('h1, h2, .title');
         if (waitTitle) waitTitle.innerText = msg;
     }
     if (waitingForCreatorTimer) clearTimeout(waitingForCreatorTimer);
-    const timeoutSec = Number(data?.timeoutSeconds) || 15;
+    const timeoutSec = Number(data?.timeoutSeconds) || 180; // 3 daqiqa grace period
     waitingForCreatorTimer = setTimeout(() => {
         if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
         if (socket && socket.connected) {
             socket.emit('cancelFind');
         }
-        showCenterNotice("⚠️ Sizni taklif qilgan o'yinchi oflayn (tarmoqqa ulanmadi).", 4000);
+        showCenterNotice("⚠️ Taklif qilgan o'yinchi tarmoqqa ulanmadi.", 4000);
         returnToMainMenu();
     }, timeoutSec * 1000);
 });
@@ -13991,18 +14029,34 @@ socket.on('joinError', (err) => {
         clearTimeout(waitingForCreatorTimer);
         waitingForCreatorTimer = null;
     }
-    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
+    autoJoinExecuted = false;
+    const msg = (err && err.message) ? err.message : "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!";
+    
+    // Xona kodi saqlanib turishi uchun inputga to'ldiramiz
+    const pendingCode = getPendingRoomCode();
+    if (pendingCode && inputJoinCode) {
+        inputJoinCode.value = pendingCode;
+    }
+    
     if (waitingScreen) {
         waitingScreen.classList.add('hidden');
         waitingScreen.style.setProperty('display', 'none', 'important');
     }
-    const msg = (err && err.message) ? err.message : "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!";
     if (joinError) {
         joinError.style.display = 'block';
         joinError.innerText = msg;
     }
+    if (joinCodeContainer) {
+        joinCodeContainer.classList.remove('hidden');
+        joinCodeContainer.style.removeProperty('display');
+        joinCodeContainer.style.display = 'block';
+    }
+    if (multiMenu) {
+        multiMenu.classList.remove('hidden');
+        multiMenu.style.removeProperty('display');
+        multiMenu.style.display = 'flex';
+    }
     showCenterNotice(`⚠️ ${msg}`, 4000);
-    returnToMainMenu();
 });
 
 socket.on('duelRoomError', (err) => {
@@ -14292,8 +14346,23 @@ function startTurnTimerUI(duration = 30) {
             turnSecondsLeft = 0;
             txt.innerText = '0 s';
             // Agar belgilangan 30 soniyada o'q uzilmasa, serverga vaqt tugaganini bildiramiz
-            if (gameMode === 'multi' && socket && socket.connected) {
-                socket.emit('reportTurnTimeout', { roomName: currentRoomName });
+            if (gameMode === 'multi') {
+                if (socket && socket.connected) {
+                    socket.emit('reportTurnTimeout', { roomName: currentRoomName });
+                }
+                // Agar o'z navbatida bo'lsa va 1.2s da serverdan gameOver kelmasa, lokal ravishda darhol xabardor qilish:
+                if (currentTurnIndex === myPlayerIndex) {
+                    setTimeout(() => {
+                        if (gameMode === 'multi' && gameOverScreen && gameOverScreen.classList.contains('hidden')) {
+                            const oppIdx = myPlayerIndex === 0 ? 1 : 0;
+                            showGameOver(oppIdx, {
+                                winnerIndex: oppIdx,
+                                reason: 'timeout_forfeit',
+                                timedOutIndex: myPlayerIndex
+                            });
+                        }
+                    }, 1200);
+                }
             }
             return;
         }
