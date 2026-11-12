@@ -2025,10 +2025,13 @@ io.on('connection', (socket) => {
         if (playerIndex === -1) return;
 
         room.defending[playerIndex] = !!(data && data.active);
-        socket.to(roomName).emit('defenseStateChanged', {
+        const oppIdDef = room.players.find(id => id !== socket.id);
+        const defPayload = {
             playerIndex,
             active: room.defending[playerIndex]
-        });
+        };
+        socket.to(roomName).emit('defenseStateChanged', defPayload);
+        if (oppIdDef) io.to(oppIdDef).emit('defenseStateChanged', defPayload);
     });
 
     socket.on('duckState', (data) => {
@@ -2038,10 +2041,13 @@ io.on('connection', (socket) => {
         const playerIndex = room.players.indexOf(socket.id);
         if (playerIndex === -1) return;
         room.ducking[playerIndex] = !!(data && data.active);
-        socket.to(roomName).emit('duckStateChanged', {
+        const oppIdDuck = room.players.find(id => id !== socket.id);
+        const duckPayload = {
             playerIndex,
             active: room.ducking[playerIndex]
-        });
+        };
+        socket.to(roomName).emit('duckStateChanged', duckPayload);
+        if (oppIdDuck) io.to(oppIdDuck).emit('duckStateChanged', duckPayload);
     });
 
     socket.on('jumpState', (data) => {
@@ -2052,10 +2058,13 @@ io.on('connection', (socket) => {
         if (playerIndex === -1) return;
         if (!room.jumping) room.jumping = [false, false];
         room.jumping[playerIndex] = !!(data && data.active);
-        socket.to(roomName).emit('jumpStateChanged', {
+        const oppIdJump = room.players.find(id => id !== socket.id);
+        const jumpPayload = {
             playerIndex,
             active: room.jumping[playerIndex]
-        });
+        };
+        socket.to(roomName).emit('jumpStateChanged', jumpPayload);
+        if (oppIdJump) io.to(oppIdJump).emit('jumpStateChanged', jumpPayload);
     });
 
     socket.on('wallPlaced', (data) => {

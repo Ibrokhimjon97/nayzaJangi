@@ -3011,7 +3011,19 @@ function setSoldierVisual(model, state) {
     model.userData.visualState = targetState;
 
     if (model.userData.planeMesh && model.userData.basePlaneY) {
-        model.userData.planeMesh.position.y = model.userData.basePlaneY;
+        if (targetState === 'duck') {
+            // O'tirganda model haqiqatdan ham tik turgandan sezilarli darajada pastroq bo'lishi
+            const duckScaleY = 0.62;
+            const duckScaleX = model.userData.shouldFlip ? -0.88 : 0.88;
+            model.userData.planeMesh.scale.y = duckScaleY;
+            model.userData.planeMesh.scale.x = duckScaleX;
+            // Oyoqlar yerda tekis qolishi uchun markazni pasaytiramiz
+            model.userData.planeMesh.position.y = model.userData.basePlaneY * duckScaleY;
+        } else {
+            model.userData.planeMesh.scale.y = 1.0;
+            model.userData.planeMesh.scale.x = model.userData.shouldFlip ? -1.0 : 1.0;
+            model.userData.planeMesh.position.y = model.userData.basePlaneY;
+        }
     }
 
     if (!model.userData.isOttomanUnit) {
@@ -5464,31 +5476,52 @@ if (crowButton) {
 
 if (duckButton) {
     duckButton.innerHTML = getDuckCrouchSvg();
+    duckButton.style.touchAction = 'none';
+    let duckPressStartTime = 0;
+    let duckAutoReleaseTimer = null;
+
     const pressDuck = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
+        if (duckAutoReleaseTimer) {
+            clearTimeout(duckAutoReleaseTimer);
+            duckAutoReleaseTimer = null;
+        }
+        duckPressStartTime = performance.now();
         setDuckActive(true);
         triggerAbilityPulse(duckButton);
     };
+
     const releaseDuck = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        setDuckActive(false);
+        const pressDuration = performance.now() - duckPressStartTime;
+        // Agar tezda bosib qo'yib yuborilgan bo'lsa (quick tap < 250ms), 
+        // o'yinchining to'liq cho'qqayib nayzadan qutulishini va raqibda sinxron ko'rinishini ta'minlash uchun
+        // kamida 800ms o'tirib turish kafolatlanadi.
+        if (pressDuration < 250) {
+            if (duckAutoReleaseTimer) clearTimeout(duckAutoReleaseTimer);
+            duckAutoReleaseTimer = setTimeout(() => {
+                setDuckActive(false);
+                duckAutoReleaseTimer = null;
+            }, 800 - pressDuration);
+        } else {
+            setDuckActive(false);
+        }
     };
+
     if (window.PointerEvent) {
         duckButton.addEventListener('pointerdown', pressDuck);
         duckButton.addEventListener('pointerup', releaseDuck);
         duckButton.addEventListener('pointercancel', releaseDuck);
-        duckButton.addEventListener('pointerleave', releaseDuck);
         document.addEventListener('pointerup', releaseDuck);
     } else {
         duckButton.addEventListener('mousedown', pressDuck);
         duckButton.addEventListener('mouseup', releaseDuck);
-        duckButton.addEventListener('mouseleave', releaseDuck);
         duckButton.addEventListener('touchstart', pressDuck, { passive: false });
         duckButton.addEventListener('touchend', releaseDuck, { passive: false });
         duckButton.addEventListener('touchcancel', releaseDuck, { passive: false });
