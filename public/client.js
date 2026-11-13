@@ -12143,19 +12143,19 @@ function renderCharacterSelectRoster(activeId) {
             </div>
             <div class="char-card-name" title="${c.name}">${c.name}</div>
             <div class="char-card-selected-indicator">${badgeText}</div>
+            <button type="button" class="char-instant-play-btn" style="margin-top:5px; font-size:0.75rem; padding:4px 6px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:6px; font-weight:800; width:100%; cursor:pointer; box-shadow:0 2px 8px rgba(16,185,129,0.4);">⚔️ Jangga kirish</button>
         `;
 
-        const onSelect = (e) => {
+        const onSelect = (e, forceConfirm = false) => {
             if (e) {
                 if (typeof e.preventDefault === 'function') e.preventDefault();
                 if (typeof e.stopPropagation === 'function') e.stopPropagation();
                 if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
             }
             const now = Date.now();
-            if (now - lastCardSelectTime < 200) return;
-            lastCardSelectTime = now;
-
+            const wasAlreadySelected = (String(selectedCharRosterId) === String(c.id));
             selectedCharRosterId = c.id;
+
             const allCards = charSelectRoster.querySelectorAll('.char-card');
             allCards.forEach(el => {
                 if (el.getAttribute('data-char-id') === String(c.id)) {
@@ -12164,10 +12164,41 @@ function renderCharacterSelectRoster(activeId) {
                     el.classList.remove('selected');
                 }
             });
+
+            if (btnCharSelectConfirm) {
+                const span = btnCharSelectConfirm.querySelector('span') || btnCharSelectConfirm;
+                span.innerText = `⚔️ ${c.name} bilan jangga kirish`;
+            }
+
+            // Agar qahramon allaqachon tanlangan bo'lsa va unga yana bosilsa, yoki force bo'lsa darhol jangga kirish!
+            if (forceConfirm || (wasAlreadySelected && (now - lastCardSelectTime > 250))) {
+                if (typeof triggerCharSelectConfirm === 'function') {
+                    triggerCharSelectConfirm(e);
+                    return;
+                }
+            }
+            lastCardSelectTime = now;
+
             if (typeof playSound === 'function') {
                 try { playSound('click'); } catch (_) { }
             }
         };
+
+        const instantBtn = card.querySelector('.char-instant-play-btn');
+        if (instantBtn) {
+            const handleInstant = (ev) => {
+                if (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                }
+                selectedCharRosterId = c.id;
+                if (typeof triggerCharSelectConfirm === 'function') {
+                    triggerCharSelectConfirm(ev);
+                }
+            };
+            instantBtn.addEventListener('click', handleInstant);
+            instantBtn.addEventListener('touchend', handleInstant, { passive: false });
+        }
 
         let touchStartX = 0;
         let touchStartY = 0;
@@ -12198,6 +12229,11 @@ function renderCharacterSelectRoster(activeId) {
         card.addEventListener('click', (e) => {
             if (hasMoved) return;
             onSelect(e);
+        });
+
+        // Double click / double tap directly enters battle
+        card.addEventListener('dblclick', (e) => {
+            onSelect(e, true);
         });
 
         charSelectRoster.appendChild(card);
@@ -12248,6 +12284,7 @@ function openCharacterSelectModal(options = {}) {
             const el = document.getElementById(id);
             if (el) {
                 el.classList.add('hidden');
+                el.style.display = 'none';
                 el.style.pointerEvents = 'none';
             }
         }
@@ -12256,10 +12293,16 @@ function openCharacterSelectModal(options = {}) {
     const currentLang = (typeof myProfile !== 'undefined' && myProfile.lang) ? myProfile.lang : 'uz';
     const t = translations[currentLang] || translations.uz;
     if (txtCharSelectTitle) txtCharSelectTitle.innerText = t.charSelectTitle || "Qahramoningizni tanlang";
-    if (txtCharSelectSub) txtCharSelectSub.innerText = t.charSelectSub || "Jangga kirishdan oldin jangchi modelini tanlang";
+    if (txtCharSelectSub) {
+        if (options.battleLevel) {
+            txtCharSelectSub.innerText = `${options.battleLevel}-bosqich uchun jangchi modelini tanlang`;
+        } else {
+            txtCharSelectSub.innerText = t.charSelectSub || "Jangga kirishdan oldin jangchi modelini tanlang";
+        }
+    }
     if (btnCharSelectConfirm) {
         const span = btnCharSelectConfirm.querySelector('span') || btnCharSelectConfirm;
-        span.innerText = t.enterBattle || "⚔️ Jangga kirish";
+        span.innerText = options.battleLevel ? `⚔️ Jangga kirish (Lv.${options.battleLevel})` : (t.enterBattle || "⚔️ Jangga kirish");
     }
 
     const initialId = options.defaultCharId !== undefined ? options.defaultCharId : (myProfile?.charType || 2);
@@ -12272,87 +12315,103 @@ function openCharacterSelectModal(options = {}) {
     }
 
     openModalSafely(charSelectModal);
-    if (charSelectModal) charSelectModal.style.pointerEvents = 'auto';
+    if (charSelectModal) {
+        charSelectModal.classList.remove('hidden');
+        charSelectModal.style.removeProperty('display');
+        charSelectModal.style.pointerEvents = 'auto';
+    }
 }
 
 let isCharSelectTransitioning = false;
 let lastConfirmClickTime = 0;
 
-if (btnCharSelectConfirm) {
-    const handleCharConfirm = (e) => {
-        if (e) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if (typeof e.stopPropagation === 'function') e.stopPropagation();
-            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+function triggerCharSelectConfirm(e) {
+    if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+    }
+    const now = Date.now();
+    if (now - lastConfirmClickTime < 450 || isCharSelectTransitioning) return;
+    lastConfirmClickTime = now;
+    isCharSelectTransitioning = true;
+    setTimeout(() => { isCharSelectTransitioning = false; }, 800);
+
+    // Cancel callback is nullified immediately so onCancel can NEVER be triggered!
+    pendingCharSelectCancel = null;
+
+    if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
+        myProfile.charType = selectedCharRosterId;
+        try {
+            localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
+            if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
+        } catch (_) { }
+
+        const s1 = document.getElementById('select-char-type');
+        if (s1) s1.value = String(myProfile.charType);
+        const s2 = document.getElementById('select-char-type-options');
+        if (s2) s2.value = String(myProfile.charType);
+
+        const chars = getAllCharactersList();
+        const chosen = chars.find(c => String(c.id) === String(selectedCharRosterId));
+        if (chosen && chosen.bgMusic) {
+            selectedMusicTrack = chosen.bgMusic;
+        } else {
+            selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
         }
-        const now = Date.now();
-        if (now - lastConfirmClickTime < 600 || isCharSelectTransitioning) return;
-        lastConfirmClickTime = now;
-        isCharSelectTransitioning = true;
-        setTimeout(() => { isCharSelectTransitioning = false; }, 800);
+        if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
 
-        // Cancel callback is nullified immediately so onCancel can NEVER be triggered!
-        pendingCharSelectCancel = null;
-
-        if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
-            myProfile.charType = selectedCharRosterId;
-            try {
-                localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
-                if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
-            } catch (_) { }
-
-            const s1 = document.getElementById('select-char-type');
-            if (s1) s1.value = String(myProfile.charType);
-            const s2 = document.getElementById('select-char-type-options');
-            if (s2) s2.value = String(myProfile.charType);
-
-            const chars = getAllCharactersList();
-            const chosen = chars.find(c => String(c.id) === String(selectedCharRosterId));
-            if (chosen && chosen.bgMusic) {
-                selectedMusicTrack = chosen.bgMusic;
-            } else {
-                selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
-            }
-            if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
-
-            if (socket && socket.connected) {
-                socket.emit('updateProfile', myProfile);
-                socket.emit('registerProfile', myProfile);
-            }
+        if (socket && socket.connected) {
+            socket.emit('updateProfile', myProfile);
+            socket.emit('registerProfile', myProfile);
         }
+    }
 
-        if (charSelectModal) charSelectModal.classList.add('hidden');
+    if (charSelectModal) {
+        charSelectModal.classList.add('hidden');
+        charSelectModal.style.display = 'none';
+    }
+    if (levelSelectModal) {
+        levelSelectModal.classList.add('hidden');
+        levelSelectModal.style.display = 'none';
+    }
+    if (singleModeModal) {
+        singleModeModal.classList.add('hidden');
+        singleModeModal.style.display = 'none';
+    }
+    if (menuScreen) {
+        menuScreen.classList.add('hidden');
+        menuScreen.style.display = 'none';
+    }
 
-        // Prevent ghost click pass-through on release by keeping background non-interactive for 450ms
-        const suppressGhost = (ge) => {
-            ge.preventDefault();
-            ge.stopPropagation();
-            ge.stopImmediatePropagation();
-        };
-        window.addEventListener('click', suppressGhost, { capture: true, once: true });
-        setTimeout(() => {
-            window.removeEventListener('click', suppressGhost, { capture: true });
-            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
-            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
-            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
-            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
-        }, 450);
-
-        const cb = pendingCharSelectCallback;
-        pendingCharSelectCallback = null;
-        if (typeof cb === 'function') {
-            try {
-                cb(myProfile.charType);
-            } catch (err) {
-                console.error("Error executing character confirm callback:", err);
-            }
-        }
+    // Prevent ghost click pass-through on release
+    const suppressGhost = (ge) => {
+        ge.preventDefault();
+        ge.stopPropagation();
+        ge.stopImmediatePropagation();
     };
-    btnCharSelectConfirm.addEventListener('click', handleCharConfirm);
+    window.addEventListener('click', suppressGhost, { capture: true, once: true });
+    setTimeout(() => {
+        window.removeEventListener('click', suppressGhost, { capture: true });
+    }, 450);
+
+    const cb = pendingCharSelectCallback;
+    pendingCharSelectCallback = null;
+    if (typeof cb === 'function') {
+        try {
+            cb(myProfile.charType);
+        } catch (err) {
+            console.error("Error executing character confirm callback:", err);
+        }
+    }
+}
+
+if (btnCharSelectConfirm) {
+    btnCharSelectConfirm.addEventListener('click', triggerCharSelectConfirm);
     btnCharSelectConfirm.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        handleCharConfirm(e);
+        triggerCharSelectConfirm(e);
     }, { passive: false });
 }
 
@@ -12365,7 +12424,10 @@ if (btnCharSelectCancel) {
         }
         if (isCharSelectTransitioning) return; // Prevent cancel while confirmation is in progress
 
-        if (charSelectModal) charSelectModal.classList.add('hidden');
+        if (charSelectModal) {
+            charSelectModal.classList.add('hidden');
+            charSelectModal.style.display = 'none';
+        }
 
         const suppressGhost = (ge) => {
             ge.preventDefault();
@@ -12375,10 +12437,6 @@ if (btnCharSelectCancel) {
         window.addEventListener('click', suppressGhost, { capture: true, once: true });
         setTimeout(() => {
             window.removeEventListener('click', suppressGhost, { capture: true });
-            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
-            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
-            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
-            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
         }, 450);
 
         if (typeof pendingCharSelectCancel === 'function') {
@@ -13428,22 +13486,48 @@ if (btnSingleContinue) {
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
         singlePlayingLevel = Math.max(1, singleCampaignLevel);
+        if (singleModeModal) {
+            singleModeModal.classList.add('hidden');
+            singleModeModal.style.display = 'none';
+        }
         openCharacterSelectModal({
+            battleLevel: singlePlayingLevel,
+            defaultCharId: myProfile?.charType || 2,
             onConfirm: () => {
                 for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.style.display = 'none';
+                    }
                 }
-                if (singleModeModal) singleModeModal.classList.add('hidden');
-                if (levelSelectModal) levelSelectModal.classList.add('hidden');
-                if (menuScreen) menuScreen.classList.add('hidden');
+                if (singleModeModal) {
+                    singleModeModal.classList.add('hidden');
+                    singleModeModal.style.display = 'none';
+                }
+                if (levelSelectModal) {
+                    levelSelectModal.classList.add('hidden');
+                    levelSelectModal.style.display = 'none';
+                }
+                if (charSelectModal) {
+                    charSelectModal.classList.add('hidden');
+                    charSelectModal.style.display = 'none';
+                }
+                if (menuScreen) {
+                    menuScreen.classList.add('hidden');
+                    menuScreen.style.display = 'none';
+                }
                 const level = Math.max(1, singlePlayingLevel);
                 aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
             onCancel: () => {
-                if (singleModeModal) singleModeModal.classList.remove('hidden');
+                if (singleModeModal) {
+                    singleModeModal.classList.remove('hidden');
+                    singleModeModal.style.removeProperty('display');
+                    singleModeModal.style.pointerEvents = 'auto';
+                }
             }
         });
     };
@@ -13461,7 +13545,13 @@ if (btnSingleNew) {
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
         singlePlayingLevel = 1;
+        if (singleModeModal) {
+            singleModeModal.classList.add('hidden');
+            singleModeModal.style.display = 'none';
+        }
         openCharacterSelectModal({
+            battleLevel: 1,
+            defaultCharId: myProfile?.charType || 2,
             onConfirm: () => {
                 singlePlayingLevel = 1;
                 singleCampaignLevel = 1;
@@ -13469,17 +13559,37 @@ if (btnSingleNew) {
                 updateCampaignUI();
                 for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.style.display = 'none';
+                    }
                 }
-                if (singleModeModal) singleModeModal.classList.add('hidden');
-                if (levelSelectModal) levelSelectModal.classList.add('hidden');
-                if (menuScreen) menuScreen.classList.add('hidden');
+                if (singleModeModal) {
+                    singleModeModal.classList.add('hidden');
+                    singleModeModal.style.display = 'none';
+                }
+                if (levelSelectModal) {
+                    levelSelectModal.classList.add('hidden');
+                    levelSelectModal.style.display = 'none';
+                }
+                if (charSelectModal) {
+                    charSelectModal.classList.add('hidden');
+                    charSelectModal.style.display = 'none';
+                }
+                if (menuScreen) {
+                    menuScreen.classList.add('hidden');
+                    menuScreen.style.display = 'none';
+                }
                 aiDifficulty = 'easy';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
             onCancel: () => {
-                if (singleModeModal) singleModeModal.classList.remove('hidden');
+                if (singleModeModal) {
+                    singleModeModal.classList.remove('hidden');
+                    singleModeModal.style.removeProperty('display');
+                    singleModeModal.style.pointerEvents = 'auto';
+                }
             }
         });
     };
@@ -13602,21 +13712,48 @@ function renderLevelGrid() {
             }
 
             singlePlayingLevel = i;
+            if (levelSelectModal) {
+                levelSelectModal.classList.add('hidden');
+                levelSelectModal.style.display = 'none';
+            }
             openCharacterSelectModal({
-                onConfirm: () => {
+                battleLevel: i,
+                defaultCharId: myProfile?.charType || 2,
+                onConfirm: (chosenChar) => {
                     for (const id of ALL_MODAL_IDS) {
                         const el = document.getElementById(id);
-                        if (el) el.classList.add('hidden');
+                        if (el) {
+                            el.classList.add('hidden');
+                            el.style.display = 'none';
+                        }
                     }
-                    if (levelSelectModal) levelSelectModal.classList.add('hidden');
-                    if (singleModeModal) singleModeModal.classList.add('hidden');
-                    if (menuScreen) menuScreen.classList.add('hidden');
+                    if (levelSelectModal) {
+                        levelSelectModal.classList.add('hidden');
+                        levelSelectModal.style.display = 'none';
+                    }
+                    if (singleModeModal) {
+                        singleModeModal.classList.add('hidden');
+                        singleModeModal.style.display = 'none';
+                    }
+                    if (charSelectModal) {
+                        charSelectModal.classList.add('hidden');
+                        charSelectModal.style.display = 'none';
+                    }
+                    if (menuScreen) {
+                        menuScreen.classList.add('hidden');
+                        menuScreen.style.display = 'none';
+                    }
+                    singlePlayingLevel = i;
                     aiDifficulty = i < 6 ? 'easy' : i < 15 ? 'normal' : 'hard';
                     gameMode = 'single';
                     startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
                 },
                 onCancel: () => {
-                    if (levelSelectModal) levelSelectModal.classList.remove('hidden');
+                    if (levelSelectModal) {
+                        levelSelectModal.classList.remove('hidden');
+                        levelSelectModal.style.removeProperty('display');
+                        levelSelectModal.style.pointerEvents = 'auto';
+                    }
                 }
             });
         };
