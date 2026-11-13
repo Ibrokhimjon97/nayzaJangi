@@ -168,105 +168,83 @@
                 </select>
             </div>
 
-            <div class="section-title">Qalqonli holatlar (Shielded)</div>
+            <div class="section-title">Jangchi Harakatlari (Animatsiya holatlari uchun PNG rasmlar)</div>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-top:-5px; margin-bottom:15px;">
+                Har bir harakat uchun shaffof fonli (PNG) rasm yuklang. O'yinda har bir harakat tabiiy chiqishi uchun barchasi o'z o'rnida ishlatiladi.
+            </p>
+
             <div class="flex-row">
                 <div class="form-group">
-                    <label>Tik turgan (Idle):</label>
-                    <input type="file" name="shieldIdle" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-idle')">
-                    <img id="prev-s-idle" class="preview-img">
+                    <label>1. Tik turgan (Idle) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="idle" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-idle')">
+                    <img id="prev-idle" class="preview-img">
                 </div>
                 <div class="form-group">
-                    <label>O'q uzayotgan (Aim):</label>
-                    <input type="file" name="shieldAim" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-aim')">
-                    <img id="prev-s-aim" class="preview-img">
-                </div>
-            </div>
-            <div class="flex-row">
-                <div class="form-group">
-                    <label>O'tirgan (Duck):</label>
-                    <input type="file" name="shieldDuck" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-duck')">
-                    <img id="prev-s-duck" class="preview-img">
-                </div>
-                <div class="form-group">
-                    <label>Himoya (Defend):</label>
-                    <input type="file" name="shieldDefend" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-defend')">
-                    <img id="prev-s-defend" class="preview-img">
-                </div>
-            </div>
-            <div class="flex-row">
-                <div class="form-group">
-                    <label>Yarador/Yiqilish (Hurt):</label>
-                    <input type="file" name="shieldHurt" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-hurt')">
-                    <img id="prev-s-hurt" class="preview-img">
-                </div>
-                <div class="form-group">
-                    <label>Qalqon sinishi (Break):</label>
-                    <input type="file" name="shieldBreak" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-s-break')">
-                    <img id="prev-s-break" class="preview-img">
-                </div>
-            </div>
-            <div class="flex-row">
-                <div class="form-group">
-                    <label>Otgandan so'ng (After Shot):</label>
-                    <input type="file" name="shieldAfterShot" class="file-input" accept="image/png, image/jpeg"
-                        onchange="preview(this, 'prev-s-after')">
-                    <img id="prev-s-after" class="preview-img">
-                </div>
-                <div class="form-group">
-                    <label>Sakrash (Jump):</label>
-                    <input type="file" name="shieldJump" class="file-input" accept="image/png, image/jpeg"
-                        onchange="preview(this, 'prev-s-jump')">
-                    <img id="prev-s-jump" class="preview-img">
+                    <label>2. Mo'ljallayotgan / O'q uzayotgan (Aim) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="aim" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-aim')">
+                    <img id="prev-aim" class="preview-img">
                 </div>
             </div>
 
-            <div class="section-title">Qalqonsiz holatlar (No Shield)</div>
             <div class="flex-row">
                 <div class="form-group">
-                    <label>Tik turgan (Idle):</label>
-                    <input type="file" name="noShieldIdle" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-ns-idle')">
-                    <img id="prev-ns-idle" class="preview-img">
+                    <label>3. Otgandan keyingi holat (After Shot) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="afterShot" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-after-shot')">
+                    <img id="prev-after-shot" class="preview-img">
                 </div>
                 <div class="form-group">
-                    <label>O'q uzayotgan (Aim):</label>
-                    <input type="file" name="noShieldAim" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-ns-aim')">
-                    <img id="prev-ns-aim" class="preview-img">
+                    <label>4. O'tirgan holat (Duck / Crouch) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="duck" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-duck')">
+                    <img id="prev-duck" class="preview-img">
                 </div>
             </div>
+
             <div class="flex-row">
                 <div class="form-group">
-                    <label>O'tirgan (Duck):</label>
-                    <input type="file" name="noShieldDuck" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-ns-duck')">
-                    <img id="prev-ns-duck" class="preview-img">
+                    <label>5. Qalqon bilan himoya (Shield Defense) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="shieldDefend" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-shield-defend')">
+                    <img id="prev-shield-defend" class="preview-img">
                 </div>
                 <div class="form-group">
-                    <label>Himoya (Defend):</label>
-                    <input type="file" name="noShieldDefend" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-ns-defend')">
-                    <img id="prev-ns-defend" class="preview-img">
+                    <label>6. Qo'l bilan himoyalanish (Arm Defense) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="armDefend" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-arm-defend')">
+                    <img id="prev-arm-defend" class="preview-img">
                 </div>
             </div>
+
             <div class="flex-row">
                 <div class="form-group">
-                    <label>Yarador/Yiqilish (Hurt):</label>
-                    <input type="file" name="noShieldHurt" class="file-input" accept="image/png, image/jpeg" required
-                        onchange="preview(this, 'prev-ns-hurt')">
-                    <img id="prev-ns-hurt" class="preview-img">
+                    <label>7. Sakragan holati (Jump) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="jump" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-jump')">
+                    <img id="prev-jump" class="preview-img">
                 </div>
                 <div class="form-group">
-                    <label>Sakrash (Jump):</label>
-                    <input type="file" name="noShieldJump" class="file-input" accept="image/png, image/jpeg"
-                        onchange="preview(this, 'prev-ns-jump')">
-                    <img id="prev-ns-jump" class="preview-img">
+                    <label>8. Yarador bo'lib yiqilish (Hurt) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="hurt" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-hurt')">
+                    <img id="prev-hurt" class="preview-img">
+                </div>
+            </div>
+
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>9. Qalqon sinishi (Break) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="break" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-shield-break')">
+                    <img id="prev-shield-break" class="preview-img">
+                </div>
+                <div class="form-group">
+                    <label>10. O'lim holati (Dead) <span style="color:#ef4444;">*</span>:</label>
+                    <input type="file" name="dead" class="file-input" accept="image/png, image/jpeg, image/webp" required
+                        onchange="preview(this, 'prev-dead')">
+                    <img id="prev-dead" class="preview-img">
                 </div>
             </div>
 
@@ -291,11 +269,15 @@
                     <input type="number" id="modelOffsetX" name="offsetX" value="0">
                 </div>
             </div>
+            <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                <input type="checkbox" id="modelFacesLeft" name="facesLeft" value="true" style="width:20px; height:20px; cursor:pointer;">
+                <label for="modelFacesLeft" style="margin-bottom:0; cursor:pointer;">Model asl rasmlari chapga qarab chizilgan (Flip kerak bo'lsa)</label>
+            </div>
 
             <div class="section-title">Qo'shimcha</div>
             <div class="form-group">
                 <label>G'alaba nishonlash (Celebrate - ixtiyoriy):</label>
-                <input type="file" name="celebrate" class="file-input" accept="image/png, image/jpeg"
+                <input type="file" name="celebrate" class="file-input" accept="image/png, image/jpeg, image/webp"
                     onchange="preview(this, 'prev-celebrate')">
                 <img id="prev-celebrate" class="preview-img">
             </div>
@@ -377,12 +359,14 @@
             allModels.forEach(m => {
                 const card = document.createElement('div');
                 card.className = 'model-card';
+                const thumb = m.textures.idle || m.textures.shieldIdle || (m.textures ? Object.values(m.textures)[0] : '');
+                const wLabel = m.weaponType === 'bow' ? '🏹 Kamon' : '🗡️ Nayza';
                 card.innerHTML = `
                     <div class="model-info">
-                        <img class="model-thumb" src="/${m.textures.shieldIdle}" alt="thumb">
+                        <img class="model-thumb" src="/${thumb}" alt="thumb">
                         <div>
-                            <div style="font-weight: bold; color: white;">${m.name}</div>
-                            <div style="font-size: 0.8rem; color: #94a3b8;">${m.id}</div>
+                            <div style="font-weight: bold; color: white;">${m.name} <span style="font-size:0.8rem; color:#38bdf8; margin-left:6px;">(${wLabel})</span></div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">ID: ${m.id}</div>
                         </div>
                     </div>
                     <div class="model-actions">
@@ -416,32 +400,31 @@
                 document.getElementById('modelHeight').value = m.settings.height !== undefined ? m.settings.height : 430;
                 document.getElementById('modelOffsetY').value = m.settings.offsetY !== undefined ? m.settings.offsetY : 0;
                 document.getElementById('modelOffsetX').value = m.settings.offsetX !== undefined ? m.settings.offsetX : 0;
+                document.getElementById('modelFacesLeft').checked = !!m.settings.facesLeft;
             } else {
                 document.getElementById('modelWidth').value = 560;
                 document.getElementById('modelHeight').value = 430;
                 document.getElementById('modelOffsetY').value = 0;
                 document.getElementById('modelOffsetX').value = 0;
+                document.getElementById('modelFacesLeft').checked = false;
             }
 
             // Remove required attribute from all file inputs during edit mode
             document.querySelectorAll('.file-input').forEach(el => el.removeAttribute('required'));
 
-            // Load previews
-            showPreviewImage('prev-s-idle', m.textures.shieldIdle);
-            showPreviewImage('prev-s-aim', m.textures.shieldAim);
-            showPreviewImage('prev-s-duck', m.textures.shieldDuck);
-            showPreviewImage('prev-s-defend', m.textures.shieldDefend);
-            showPreviewImage('prev-s-hurt', m.textures.shieldHurt);
-            showPreviewImage('prev-s-break', m.textures.shieldBreak);
-            showPreviewImage('prev-s-after', m.textures.shieldAfterShot);
-            showPreviewImage('prev-s-jump', m.textures.shieldJump);
-            showPreviewImage('prev-ns-idle', m.textures.noShieldIdle);
-            showPreviewImage('prev-ns-aim', m.textures.noShieldAim);
-            showPreviewImage('prev-ns-duck', m.textures.noShieldDuck);
-            showPreviewImage('prev-ns-defend', m.textures.noShieldDefend);
-            showPreviewImage('prev-ns-hurt', m.textures.noShieldHurt);
-            showPreviewImage('prev-ns-jump', m.textures.noShieldJump);
-            showPreviewImage('prev-celebrate', m.textures.celebrate);
+            // Load previews for 10 unified states + celebrate
+            const tex = m.textures || {};
+            showPreviewImage('prev-idle', tex.idle || tex.shieldIdle || tex.noShieldIdle);
+            showPreviewImage('prev-aim', tex.aim || tex.shieldAim || tex.noShieldAim);
+            showPreviewImage('prev-after-shot', tex.afterShot || tex.shieldAfterShot || tex.noShieldAfterShot);
+            showPreviewImage('prev-duck', tex.duck || tex.shieldDuck || tex.noShieldDuck);
+            showPreviewImage('prev-shield-defend', tex.shieldDefend || tex.defend);
+            showPreviewImage('prev-arm-defend', tex.armDefend || tex.noShieldDefend || tex.shieldDefend);
+            showPreviewImage('prev-jump', tex.jump || tex.shieldJump || tex.noShieldJump);
+            showPreviewImage('prev-hurt', tex.hurt || tex.shieldHurt || tex.noShieldHurt);
+            showPreviewImage('prev-shield-break', tex.break || tex.shieldBreak);
+            showPreviewImage('prev-dead', tex.dead || tex.hurt);
+            showPreviewImage('prev-celebrate', tex.celebrate);
 
             if (m.bgMusic) {
                 const audio = document.getElementById('prev-audio');
@@ -463,10 +446,11 @@
             document.getElementById('modelHeight').value = 430;
             document.getElementById('modelOffsetY').value = 0;
             document.getElementById('modelOffsetX').value = 0;
+            document.getElementById('modelFacesLeft').checked = false;
 
-            // Make core inputs required again
+            // Make 10 movement inputs required again
             document.querySelectorAll('.file-input').forEach(el => {
-                if (el.name !== 'celebrate' && el.name !== 'bgMusic' && el.name !== 'shieldAfterShot' && el.name !== 'shieldJump' && el.name !== 'noShieldJump') {
+                if (el.name !== 'celebrate' && el.name !== 'bgMusic') {
                     el.setAttribute('required', 'true');
                 }
             });

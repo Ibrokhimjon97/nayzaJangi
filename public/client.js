@@ -240,24 +240,47 @@ async function fetchCustomModels() {
 
         data.forEach(m => {
             const raw = m.textures || {};
-            const defIdle = raw.shieldIdle || raw.noShieldIdle || 'Kamonlik%20Usmoniy/kamonlik%201.png';
+            const defIdle = raw.idle || raw.shieldIdle || raw.noShieldIdle || 'Kamonlik%20Usmoniy/kamonlik%201.png';
+            const defAim = raw.aim || raw.shieldAim || raw.noShieldAim || defIdle;
+            const defAfter = raw.afterShot || raw.shieldAfterShot || raw.noShieldAfterShot || defAim;
+            const defDuck = raw.duck || raw.shieldDuck || raw.noShieldDuck || defIdle;
+            const defJump = raw.jump || raw.shieldJump || raw.noShieldJump || defDuck;
+            const defShieldDef = raw.shieldDefend || raw.defend || raw.noShieldDefend || defIdle;
+            const defArmDef = raw.armDefend || raw.noShieldDefend || raw.shieldDefend || defIdle;
+            const defHurt = raw.hurt || raw.shieldHurt || raw.noShieldHurt || defIdle;
+            const defBreak = raw.break || raw.shieldBreak || defShieldDef;
+            const defDead = raw.dead || defHurt || defIdle;
+            const defCelebrate = raw.celebrate || defIdle;
+
             window.customModelTextures[m.id] = {
+                // 10 ta yangi tabiiy harakatlar:
+                idle: loadTexture(defIdle),
+                aim: loadTexture(defAim),
+                afterShot: loadTexture(defAfter),
+                duck: loadTexture(defDuck),
+                jump: loadTexture(defJump),
+                shieldDefend: loadTexture(defShieldDef),
+                armDefend: loadTexture(defArmDef),
+                hurt: loadTexture(defHurt),
+                break: loadTexture(defBreak),
+                dead: loadTexture(defDead),
+                celebrate: loadTexture(defCelebrate),
+                // Eski modellar uchun moslik (Legacy fallback):
                 shieldIdle: loadTexture(raw.shieldIdle || defIdle),
-                shieldAim: loadTexture(raw.shieldAim || raw.noShieldAim || defIdle),
-                shieldDuck: loadTexture(raw.shieldDuck || raw.noShieldDuck || defIdle),
-                shieldDefend: loadTexture(raw.shieldDefend || raw.noShieldDefend || defIdle),
-                shieldHurt: loadTexture(raw.shieldHurt || raw.noShieldHurt || raw.shieldIdle || defIdle),
-                shieldBreak: loadTexture(raw.shieldBreak || raw.noShieldIdle || raw.shieldIdle || defIdle),
-                shieldAfterShot: loadTexture(raw.shieldAfterShot || raw.noShieldAfterShot || raw.shieldAim || defIdle),
-                shieldJump: loadTexture(raw.shieldJump || raw.shieldDuck || raw.shieldIdle || defIdle),
-                noShieldIdle: loadTexture(raw.noShieldIdle || raw.shieldIdle || defIdle),
-                noShieldAim: loadTexture(raw.noShieldAim || raw.shieldAim || defIdle),
-                noShieldDuck: loadTexture(raw.noShieldDuck || raw.shieldDuck || defIdle),
-                noShieldDefend: loadTexture(raw.noShieldDefend || raw.shieldDefend || defIdle),
-                noShieldHurt: loadTexture(raw.noShieldHurt || raw.shieldHurt || raw.noShieldIdle || defIdle),
-                noShieldAfterShot: loadTexture(raw.noShieldAfterShot || raw.shieldAfterShot || raw.noShieldAim || defIdle),
-                noShieldJump: loadTexture(raw.noShieldJump || raw.shieldJump || raw.noShieldDuck || raw.shieldDuck || defIdle),
-                celebrate: loadTexture(raw.celebrate || raw.shieldIdle || defIdle),
+                shieldAim: loadTexture(raw.shieldAim || defAim),
+                shieldDuck: loadTexture(raw.shieldDuck || defDuck),
+                shieldDefend: loadTexture(raw.shieldDefend || defShieldDef),
+                shieldHurt: loadTexture(raw.shieldHurt || defHurt),
+                shieldBreak: loadTexture(raw.shieldBreak || defBreak),
+                shieldAfterShot: loadTexture(raw.shieldAfterShot || defAfter),
+                shieldJump: loadTexture(raw.shieldJump || defJump),
+                noShieldIdle: loadTexture(raw.noShieldIdle || defIdle),
+                noShieldAim: loadTexture(raw.noShieldAim || defAim),
+                noShieldDuck: loadTexture(raw.noShieldDuck || defDuck),
+                noShieldDefend: loadTexture(raw.noShieldDefend || defArmDef),
+                noShieldHurt: loadTexture(raw.noShieldHurt || defHurt),
+                noShieldAfterShot: loadTexture(raw.noShieldAfterShot || defAfter),
+                noShieldJump: loadTexture(raw.noShieldJump || defJump),
                 bgMusic: m.bgMusic
             };
 
@@ -2835,15 +2858,15 @@ function createSoldier(isP1, charType = 0) {
     if (normalizedCharType === 3) selectedTexture = ottomanSpearmanTextures.shieldIdle;
     if (group.userData.isCustomModel) {
         const customTex = window.customModelTextures && window.customModelTextures[normalizedCharType];
-        if (customTex && (customTex.shieldIdle || customTex.noShieldIdle)) {
-            selectedTexture = customTex.shieldIdle || customTex.noShieldIdle;
+        if (customTex && (customTex.idle || customTex.shieldIdle || customTex.noShieldIdle)) {
+            selectedTexture = customTex.idle || customTex.shieldIdle || customTex.noShieldIdle;
         } else {
             selectedTexture = ottomanArcherTextures.shieldIdle;
             if (typeof fetchCustomModels === 'function') {
                 fetchCustomModels().then(() => {
                     const lateTex = window.customModelTextures && window.customModelTextures[normalizedCharType];
-                    if (lateTex && (lateTex.shieldIdle || lateTex.noShieldIdle) && group.userData.mats && group.userData.mats[0]) {
-                        group.userData.mats[0].map = lateTex.shieldIdle || lateTex.noShieldIdle;
+                    if (lateTex && (lateTex.idle || lateTex.shieldIdle || lateTex.noShieldIdle) && group.userData.mats && group.userData.mats[0]) {
+                        group.userData.mats[0].map = lateTex.idle || lateTex.shieldIdle || lateTex.noShieldIdle;
                         group.userData.mats[0].needsUpdate = true;
                         group.userData.customTextures = lateTex;
                     }
@@ -2938,9 +2961,10 @@ function getOttomanArcherTexture(model, state) {
     const baseDuck = broken ? (ottomanArcherTextures.noShieldDuck || ottomanArcherTextures.shieldDuck || baseIdle) : (ottomanArcherTextures.shieldDuck || ottomanArcherTextures.noShieldDuck || baseIdle);
     const baseDefend = broken ? (ottomanArcherTextures.noShieldDefend || ottomanArcherTextures.shieldDefend || baseIdle) : (ottomanArcherTextures.shieldDefend || ottomanArcherTextures.noShieldDefend || baseIdle);
 
+    if (state === 'dead') return baseHurt || baseIdle;
     if (state === 'celebrate') return ottomanArcherTextures.celebrate || baseIdle;
     if (state === 'break') return ottomanArcherTextures.shieldBreak || baseIdle;
-    if (state === 'hurt') return baseIdle;
+    if (state === 'hurt') return baseHurt || baseIdle;
     if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
@@ -2958,9 +2982,10 @@ function getOttomanSpearmanTexture(model, state) {
     const baseDuck = broken ? (ottomanSpearmanTextures.noShieldDuck || ottomanSpearmanTextures.shieldDuck || baseIdle) : (ottomanSpearmanTextures.shieldDuck || ottomanSpearmanTextures.noShieldDuck || baseIdle);
     const baseDefend = broken ? (ottomanSpearmanTextures.noShieldDefend || ottomanSpearmanTextures.shieldDefend || baseIdle) : (ottomanSpearmanTextures.shieldDefend || ottomanSpearmanTextures.noShieldDefend || baseIdle);
 
+    if (state === 'dead') return baseHurt || baseIdle;
     if (state === 'break') return ottomanSpearmanTextures.shieldBreak || baseIdle;
     if (state === 'celebrate') return ottomanSpearmanTextures.celebrate || baseIdle;
-    if (state === 'hurt') return baseIdle;
+    if (state === 'hurt') return baseHurt || baseIdle;
     if (state === 'jump') return baseDuck;
     if (state === 'duck') return baseDuck;
     if (state === 'defend') return baseDefend;
@@ -2975,20 +3000,24 @@ function getOttomanTexture(model, state) {
     if (charType.startsWith('custom_') && window.customModelTextures && window.customModelTextures[charType]) {
         const t = window.customModelTextures[charType];
         const shieldBroken = !!model.userData.shieldBroken;
-        const baseIdle = shieldBroken ? (t.noShieldIdle || t.shieldIdle) : (t.shieldIdle || t.noShieldIdle);
-        const baseAim = shieldBroken ? (t.noShieldAim || t.shieldAim || baseIdle) : (t.shieldAim || t.noShieldAim || baseIdle);
-        const baseAfterShot = shieldBroken ? (t.noShieldAfterShot || t.shieldAfterShot || baseAim || baseIdle) : (t.shieldAfterShot || t.noShieldAfterShot || baseAim || baseIdle);
-        const baseHurt = shieldBroken ? (t.noShieldHurt || t.shieldHurt || baseIdle) : (t.shieldHurt || t.noShieldHurt || baseIdle);
-        const baseDuck = shieldBroken ? (t.noShieldDuck || t.shieldDuck || baseIdle) : (t.shieldDuck || t.noShieldDuck || baseIdle);
-        const baseJump = shieldBroken ? (t.noShieldJump || t.shieldJump || t.noShieldDuck || t.shieldDuck || baseIdle) : (t.shieldJump || t.noShieldJump || t.shieldDuck || t.noShieldDuck || baseIdle);
-        const baseDefend = shieldBroken ? (t.noShieldDefend || t.shieldDefend || baseIdle) : (t.shieldDefend || t.noShieldDefend || baseIdle);
+        const baseIdle = shieldBroken ? (t.noShieldIdle || t.idle || t.shieldIdle) : (t.idle || t.shieldIdle || t.noShieldIdle);
+        const baseAim = shieldBroken ? (t.noShieldAim || t.aim || t.shieldAim || baseIdle) : (t.aim || t.shieldAim || t.noShieldAim || baseIdle);
+        const baseAfterShot = shieldBroken ? (t.noShieldAfterShot || t.afterShot || t.shieldAfterShot || baseAim || baseIdle) : (t.afterShot || t.shieldAfterShot || t.noShieldAfterShot || baseAim || baseIdle);
+        const baseHurt = shieldBroken ? (t.noShieldHurt || t.hurt || t.shieldHurt || baseIdle) : (t.hurt || t.shieldHurt || t.noShieldHurt || baseIdle);
+        const baseDuck = shieldBroken ? (t.noShieldDuck || t.duck || t.shieldDuck || baseIdle) : (t.duck || t.shieldDuck || t.noShieldDuck || baseIdle);
+        const baseJump = shieldBroken ? (t.noShieldJump || t.jump || t.shieldJump || baseDuck) : (t.jump || t.shieldJump || t.noShieldJump || baseDuck);
+        // Qalqon bilan himoya yoki qo'l bilan himoyalanish:
+        const baseDefend = shieldBroken ? (t.armDefend || t.noShieldDefend || t.shieldDefend || baseIdle) : (t.shieldDefend || t.armDefend || t.noShieldDefend || baseIdle);
+        const baseDead = t.dead || baseHurt || baseIdle;
+        const baseBreak = t.break || t.shieldBreak || baseIdle;
 
+        if (state === 'dead') return baseDead;
         if (state === 'jump') return baseJump;
         if (state === 'duck') return baseDuck;
         if (state === 'aim' || state === 'load') return baseAim;
         if (state === 'defend') return baseDefend;
-        if (state === 'break') return t.shieldBreak || baseIdle;
-        if (state === 'hurt') return baseIdle;
+        if (state === 'break') return baseBreak;
+        if (state === 'hurt') return baseHurt;
         if (state === 'afterShot') return baseAfterShot;
         if (state === 'celebrate') return t.celebrate || baseIdle;
         return baseIdle;
@@ -3002,7 +3031,9 @@ function setSoldierVisual(model, state) {
     let targetState = state;
     const modelIndex = getPlayerIndexByModel(model);
     if (model.userData.isOttomanUnit && modelIndex >= 0) {
-        if (isJumpActiveForPlayer(modelIndex)) {
+        if (model.userData.isDead) {
+            targetState = 'dead';
+        } else if (isJumpActiveForPlayer(modelIndex)) {
             targetState = 'jump';
         } else if (isDuckActiveForPlayer(modelIndex)) {
             targetState = 'duck';
@@ -5019,8 +5050,12 @@ function knockDownModel(model) {
         : (model.position.y || (ground.position.y + 78));
     model.userData.standingY = standingY;
 
-    // Modelning default tik turgan holatini saqlaymiz (alohida yotgan rasm shart emas)
-    setSoldierVisual(model, 'idle');
+    // Modelning holati: agar joni 0 bo'lsa 'dead', yiqilish jarayonida 'hurt'
+    if (isDead) {
+        setSoldierVisual(model, 'dead');
+    } else {
+        setSoldierVisual(model, 'hurt');
+    }
 
     // Yiqilish yo'nalishi:
     // O'ng tomondagi jangchi (x >= 0) o'q zarbidan orqaga (o'ng tomonga) yiqiladi: soat strelkasi bo'yicha -90 gradus (-Math.PI / 2)
@@ -12054,7 +12089,7 @@ function getAllCharactersList() {
     if (Array.isArray(window.customModelsInfo) && window.customModelsInfo.length > 0) {
         window.customModelsInfo.forEach(m => {
             const wType = (m.weaponType === 'spear') ? 'spear' : 'bow';
-            const img = m.textures?.shieldIdle || m.textures?.noShieldIdle || `custom_models/${m.id}.png`;
+            const img = m.textures?.idle || m.textures?.shieldIdle || m.textures?.noShieldIdle || (m.textures ? Object.values(m.textures)[0] : '') || 'Kamonlik%20Usmoniy/kamonlik%201.png';
             list.push({
                 id: m.id,
                 name: m.name || "Qahramon",

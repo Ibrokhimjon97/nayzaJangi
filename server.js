@@ -109,13 +109,25 @@ app.post('/api/models/delete', express.json(), (req, res) => {
     }
 });
 
-app.post('/api/models/update', upload.fields([
+const customModelUploadFields = [
+    { name: 'idle', maxCount: 1 },
+    { name: 'aim', maxCount: 1 },
+    { name: 'afterShot', maxCount: 1 },
+    { name: 'duck', maxCount: 1 },
+    { name: 'shieldDefend', maxCount: 1 },
+    { name: 'armDefend', maxCount: 1 },
+    { name: 'jump', maxCount: 1 },
+    { name: 'hurt', maxCount: 1 },
+    { name: 'break', maxCount: 1 },
+    { name: 'shieldBreak', maxCount: 1 },
+    { name: 'dead', maxCount: 1 },
+    { name: 'celebrate', maxCount: 1 },
+    { name: 'bgMusic', maxCount: 1 },
+    // Eski modellarni qo'llab-quvvatlash uchun (Legacy):
     { name: 'shieldIdle', maxCount: 1 },
     { name: 'shieldAim', maxCount: 1 },
     { name: 'shieldDuck', maxCount: 1 },
-    { name: 'shieldDefend', maxCount: 1 },
     { name: 'shieldHurt', maxCount: 1 },
-    { name: 'shieldBreak', maxCount: 1 },
     { name: 'shieldAfterShot', maxCount: 1 },
     { name: 'shieldJump', maxCount: 1 },
     { name: 'noShieldIdle', maxCount: 1 },
@@ -124,10 +136,10 @@ app.post('/api/models/update', upload.fields([
     { name: 'noShieldDefend', maxCount: 1 },
     { name: 'noShieldHurt', maxCount: 1 },
     { name: 'noShieldAfterShot', maxCount: 1 },
-    { name: 'noShieldJump', maxCount: 1 },
-    { name: 'celebrate', maxCount: 1 },
-    { name: 'bgMusic', maxCount: 1 }
-]), (req, res) => {
+    { name: 'noShieldJump', maxCount: 1 }
+];
+
+app.post('/api/models/update', upload.fields(customModelUploadFields), (req, res) => {
     try {
         const id = req.body.id;
         const models = loadCustomModels();
@@ -144,12 +156,35 @@ app.post('/api/models/update', upload.fields([
         if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
         if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
         if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
+        if (req.body.facesLeft !== undefined) oldModel.settings.facesLeft = (req.body.facesLeft === 'true' || req.body.facesLeft === true);
         if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
 
-        const fileNames = ['shieldIdle', 'shieldAim', 'shieldDuck', 'shieldDefend', 'shieldHurt', 'shieldBreak', 'shieldAfterShot', 'shieldJump', 'noShieldIdle', 'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt', 'noShieldAfterShot', 'noShieldJump', 'celebrate'];
-        fileNames.forEach(fn => {
+        oldModel.textures = oldModel.textures || {};
+
+        const fileMappings = [
+            'idle', 'aim', 'afterShot', 'duck', 'shieldDefend', 'armDefend',
+            'jump', 'hurt', 'break', 'shieldBreak', 'dead', 'celebrate',
+            'shieldIdle', 'shieldAim', 'shieldDuck', 'noShieldIdle',
+            'noShieldAim', 'noShieldDuck', 'noShieldDefend', 'noShieldHurt',
+            'shieldAfterShot', 'noShieldAfterShot', 'shieldJump', 'noShieldJump'
+        ];
+
+        fileMappings.forEach(fn => {
             if (files[fn] && files[fn][0]) {
-                oldModel.textures[fn] = 'custom_models/' + files[fn][0].filename;
+                const fPath = 'custom_models/' + files[fn][0].filename;
+                oldModel.textures[fn] = fPath;
+                // Sinxronizatsiya: Yangi va eski formatlarni birga saqlaymiz
+                if (fn === 'idle') { oldModel.textures.shieldIdle = fPath; oldModel.textures.noShieldIdle = fPath; }
+                if (fn === 'aim') { oldModel.textures.shieldAim = fPath; oldModel.textures.noShieldAim = fPath; }
+                if (fn === 'afterShot') { oldModel.textures.shieldAfterShot = fPath; oldModel.textures.noShieldAfterShot = fPath; }
+                if (fn === 'duck') { oldModel.textures.shieldDuck = fPath; oldModel.textures.noShieldDuck = fPath; }
+                if (fn === 'shieldDefend') { oldModel.textures.shieldDefend = fPath; }
+                if (fn === 'armDefend') { oldModel.textures.noShieldDefend = fPath; }
+                if (fn === 'jump') { oldModel.textures.shieldJump = fPath; oldModel.textures.noShieldJump = fPath; }
+                if (fn === 'hurt') { oldModel.textures.shieldHurt = fPath; oldModel.textures.noShieldHurt = fPath; }
+                if (fn === 'break' || fn === 'shieldBreak') { oldModel.textures.break = fPath; oldModel.textures.shieldBreak = fPath; }
+                if (fn === 'dead') { oldModel.textures.dead = fPath; }
+                if (fn === 'celebrate') { oldModel.textures.celebrate = fPath; }
             }
         });
 
@@ -165,53 +200,69 @@ app.post('/api/models/update', upload.fields([
 });
 
 
-app.post('/api/models/create', upload.fields([
-    { name: 'shieldIdle', maxCount: 1 },
-    { name: 'shieldAim', maxCount: 1 },
-    { name: 'shieldDuck', maxCount: 1 },
-    { name: 'shieldDefend', maxCount: 1 },
-    { name: 'shieldHurt', maxCount: 1 },
-    { name: 'shieldBreak', maxCount: 1 },
-    { name: 'shieldAfterShot', maxCount: 1 },
-    { name: 'shieldJump', maxCount: 1 },
-    { name: 'noShieldIdle', maxCount: 1 },
-    { name: 'noShieldAim', maxCount: 1 },
-    { name: 'noShieldDuck', maxCount: 1 },
-    { name: 'noShieldDefend', maxCount: 1 },
-    { name: 'noShieldHurt', maxCount: 1 },
-    { name: 'noShieldAfterShot', maxCount: 1 },
-    { name: 'noShieldJump', maxCount: 1 },
-    { name: 'celebrate', maxCount: 1 },
-    { name: 'bgMusic', maxCount: 1 }
-]), (req, res) => {
+app.post('/api/models/create', upload.fields(customModelUploadFields), (req, res) => {
     try {
         const name = req.body.name || 'Yangi Model';
         const files = req.files || {};
-        if (!files.shieldIdle || !files.shieldAim || !files.shieldDuck || !files.shieldDefend || !files.shieldHurt || !files.shieldBreak || !files.noShieldIdle || !files.noShieldAim || !files.noShieldDuck || !files.noShieldDefend || !files.noShieldHurt) {
-            console.error('Kemtik fayllar:', Object.keys(files));
-            return res.status(400).json({ ok: false, error: 'Barcha asosiy rasmlar yuklanishi shart. Yuborilgan fayllar: ' + Object.keys(files).join(', ') });
+
+        const getFilePath = (...names) => {
+            for (const n of names) {
+                if (files[n] && files[n][0]) return 'custom_models/' + files[n][0].filename;
+            }
+            return null;
+        };
+
+        const idleFile = getFilePath('idle', 'shieldIdle', 'noShieldIdle');
+        const aimFile = getFilePath('aim', 'shieldAim', 'noShieldAim');
+        const afterShotFile = getFilePath('afterShot', 'shieldAfterShot', 'noShieldAfterShot') || aimFile;
+        const duckFile = getFilePath('duck', 'shieldDuck', 'noShieldDuck');
+        const shieldDefendFile = getFilePath('shieldDefend', 'defend');
+        const armDefendFile = getFilePath('armDefend', 'noShieldDefend') || shieldDefendFile;
+        const jumpFile = getFilePath('jump', 'shieldJump', 'noShieldJump') || duckFile;
+        const hurtFile = getFilePath('hurt', 'shieldHurt', 'noShieldHurt') || idleFile;
+        const breakFile = getFilePath('break', 'shieldBreak') || shieldDefendFile;
+        const deadFile = getFilePath('dead') || hurtFile || idleFile;
+        const celebrateFile = getFilePath('celebrate') || idleFile;
+
+        if (!idleFile || !aimFile || !duckFile || !shieldDefendFile) {
+            return res.status(400).json({
+                ok: false,
+                error: "Asosiy rasmlar (Tik turgan, Mo'ljallayotgan, O'tirgan, Qalqon bilan himoya) yuklanishi shart!"
+            });
         }
+
         const models = loadCustomModels();
         const newModel = {
             id: 'custom_' + Date.now(),
             name: name,
             textures: {
-                shieldIdle: 'custom_models/' + files.shieldIdle[0].filename,
-                shieldAim: 'custom_models/' + files.shieldAim[0].filename,
-                shieldDuck: 'custom_models/' + files.shieldDuck[0].filename,
-                shieldDefend: 'custom_models/' + files.shieldDefend[0].filename,
-                shieldHurt: 'custom_models/' + files.shieldHurt[0].filename,
-                shieldBreak: 'custom_models/' + files.shieldBreak[0].filename,
-                noShieldIdle: 'custom_models/' + files.noShieldIdle[0].filename,
-                noShieldAim: 'custom_models/' + files.noShieldAim[0].filename,
-                noShieldDuck: 'custom_models/' + files.noShieldDuck[0].filename,
-                noShieldDefend: 'custom_models/' + files.noShieldDefend[0].filename,
-                noShieldHurt: 'custom_models/' + files.noShieldHurt[0].filename,
-                shieldAfterShot: files.shieldAfterShot ? 'custom_models/' + files.shieldAfterShot[0].filename : (files.shieldAim ? 'custom_models/' + files.shieldAim[0].filename : 'custom_models/' + files.shieldIdle[0].filename),
-                noShieldAfterShot: files.noShieldAfterShot ? 'custom_models/' + files.noShieldAfterShot[0].filename : (files.shieldAfterShot ? 'custom_models/' + files.shieldAfterShot[0].filename : 'custom_models/' + files.noShieldIdle[0].filename),
-                shieldJump: files.shieldJump ? 'custom_models/' + files.shieldJump[0].filename : (files.shieldDuck ? 'custom_models/' + files.shieldDuck[0].filename : 'custom_models/' + files.shieldIdle[0].filename),
-                noShieldJump: files.noShieldJump ? 'custom_models/' + files.noShieldJump[0].filename : (files.shieldJump ? 'custom_models/' + files.shieldJump[0].filename : (files.noShieldDuck ? 'custom_models/' + files.noShieldDuck[0].filename : 'custom_models/' + files.noShieldIdle[0].filename)),
-                celebrate: files.celebrate ? 'custom_models/' + files.celebrate[0].filename : 'custom_models/' + files.shieldIdle[0].filename
+                idle: idleFile,
+                aim: aimFile,
+                afterShot: afterShotFile,
+                duck: duckFile,
+                shieldDefend: shieldDefendFile,
+                armDefend: armDefendFile,
+                jump: jumpFile,
+                hurt: hurtFile,
+                break: breakFile,
+                shieldBreak: breakFile,
+                dead: deadFile,
+                celebrate: celebrateFile,
+                // Eski kodlar va komponentlar bilan 100% moslik (Legacy fallback):
+                shieldIdle: idleFile,
+                noShieldIdle: idleFile,
+                shieldAim: aimFile,
+                noShieldAim: aimFile,
+                shieldDuck: duckFile,
+                noShieldDuck: duckFile,
+                shieldDefend: shieldDefendFile,
+                noShieldDefend: armDefendFile,
+                shieldHurt: hurtFile,
+                noShieldHurt: hurtFile,
+                shieldAfterShot: afterShotFile,
+                noShieldAfterShot: afterShotFile,
+                shieldJump: jumpFile,
+                noShieldJump: jumpFile
             },
             weaponType: req.body.weaponType || 'spear',
             bgMusic: files.bgMusic ? 'custom_models/' + files.bgMusic[0].filename : null,
@@ -219,7 +270,8 @@ app.post('/api/models/create', upload.fields([
                 width: Number(req.body.width) || 560,
                 height: Number(req.body.height) || 430,
                 offsetY: Number(req.body.offsetY) || 0,
-                offsetX: Number(req.body.offsetX) || 0
+                offsetX: Number(req.body.offsetX) || 0,
+                facesLeft: (req.body.facesLeft === 'true' || req.body.facesLeft === true)
             }
         };
         models.push(newModel);
