@@ -1,8 +1,14 @@
+const fs = require('fs');
+try {
+    if (typeof process.loadEnvFile === 'function' && fs.existsSync('.env')) {
+        process.loadEnvFile('.env');
+    }
+} catch (_) { }
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
