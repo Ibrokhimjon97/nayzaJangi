@@ -6596,10 +6596,7 @@ body.mobile-landscape .coin-3d {
         padding: 8px 14px 8px !important;
         display: flex !important;
         flex-direction: column !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-        touch-action: pan-y !important;
+        overflow: hidden !important;
         box-sizing: border-box !important;
         z-index: 500 !important;
     }
@@ -6617,12 +6614,23 @@ body.mobile-landscape .coin-3d {
             padding: 8px 14px 8px !important;
             display: flex !important;
             flex-direction: column !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
+            overflow: hidden !important;
             box-sizing: border-box !important;
             z-index: 500 !important;
+        }
+
+        #rating-modal #leaderboard-list {
+            flex: 1 1 0 !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            height: 100% !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            overscroll-behavior-y: contain !important;
+            padding: 4px 6px !important;
+            margin: 2px 0 4px !important;
+            font-size: 0.82rem !important;
         }
     }
 
@@ -6672,10 +6680,10 @@ body.mobile-landscape .coin-3d {
 
     body.force-landscape #rating-modal #leaderboard-list,
     body.mobile-landscape #rating-modal #leaderboard-list {
-        flex: 1 1 auto !important;
+        flex: 1 1 0 !important;
         max-height: none !important;
         min-height: 0 !important;
-        height: auto !important;
+        height: 100% !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         touch-action: pan-y !important;
@@ -7206,13 +7214,154 @@ body.mobile-landscape #duel-invites-modal #btn-close-invites-bottom {
 }
 
 @media (orientation: landscape) and (max-height: 560px),
-(max-height: 520px),
+(max-height: 520px) {
+    .player-profile-screen {
+        max-width: min(94vw, 560px) !important;
+        width: min(94vw, 560px) !important;
+        max-height: min(94vh, 340px) !important;
+        height: auto !important;
+        padding: 8px 14px 10px !important;
+        box-sizing: border-box !important;
+        overflow-y: auto !important;
+    }
+    .player-profile-screen .player-profile-header {
+        margin-bottom: 6px !important;
+        gap: 10px !important;
+    }
+    .player-profile-screen .player-profile-avatar-wrap {
+        width: 44px !important;
+        height: 44px !important;
+    }
+    .player-profile-screen .player-profile-avatar-emoji {
+        font-size: 1.5rem !important;
+    }
+    .player-profile-screen .player-profile-name {
+        font-size: 1.05rem !important;
+        margin: 0 0 2px 0 !important;
+    }
+    .player-profile-screen .player-profile-badges {
+        gap: 4px !important;
+    }
+    .player-profile-screen .tier-badge,
+    .player-profile-screen .level-badge {
+        font-size: 0.72rem !important;
+        padding: 2px 6px !important;
+    }
+    .player-profile-screen .player-profile-stats-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        margin-bottom: 8px !important;
+    }
+    .player-profile-screen .profile-stat-box {
+        padding: 4px 6px !important;
+        border-radius: 6px !important;
+    }
+    .player-profile-screen .profile-stat-label {
+        font-size: 0.65rem !important;
+        margin-bottom: 1px !important;
+    }
+    .player-profile-screen .profile-stat-val {
+        font-size: 0.95rem !important;
+    }
+    .player-profile-screen .player-profile-actions {
+        display: flex !important;
+        gap: 8px !important;
+        margin-top: 4px !important;
+    }
+    .player-profile-screen .player-profile-actions button {
+        min-height: 36px !important;
+        height: 36px !important;
+        padding: 4px 8px !important;
+        font-size: 0.82rem !important;
+        line-height: 1.1 !important;
+    }
+}
+
 body.force-landscape .player-profile-screen,
 body.mobile-landscape .player-profile-screen {
-    max-height: 94vh !important;
+    max-width: min(94vw, 560px) !important;
+    width: min(94vw, 560px) !important;
+    max-height: min(94vh, 340px) !important;
     height: auto !important;
+    padding: 8px 14px 10px !important;
+    box-sizing: border-box !important;
     overflow-y: auto !important;
-    padding: 10px 14px 24px !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-header,
+body.mobile-landscape .player-profile-screen .player-profile-header {
+    margin-bottom: 6px !important;
+    gap: 10px !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-avatar-wrap,
+body.mobile-landscape .player-profile-screen .player-profile-avatar-wrap {
+    width: 44px !important;
+    height: 44px !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-avatar-emoji,
+body.mobile-landscape .player-profile-screen .player-profile-avatar-emoji {
+    font-size: 1.5rem !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-name,
+body.mobile-landscape .player-profile-screen .player-profile-name {
+    font-size: 1.05rem !important;
+    margin: 0 0 2px 0 !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-badges,
+body.mobile-landscape .player-profile-screen .player-profile-badges {
+    gap: 4px !important;
+}
+
+body.force-landscape .player-profile-screen .tier-badge,
+body.force-landscape .player-profile-screen .level-badge,
+body.mobile-landscape .player-profile-screen .tier-badge,
+body.mobile-landscape .player-profile-screen .level-badge {
+    font-size: 0.72rem !important;
+    padding: 2px 6px !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-stats-grid,
+body.mobile-landscape .player-profile-screen .player-profile-stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+}
+
+body.force-landscape .player-profile-screen .profile-stat-box,
+body.mobile-landscape .player-profile-screen .profile-stat-box {
+    padding: 4px 6px !important;
+    border-radius: 6px !important;
+}
+
+body.force-landscape .player-profile-screen .profile-stat-label,
+body.mobile-landscape .player-profile-screen .profile-stat-label {
+    font-size: 0.65rem !important;
+    margin-bottom: 1px !important;
+}
+
+body.force-landscape .player-profile-screen .profile-stat-val,
+body.mobile-landscape .player-profile-screen .profile-stat-val {
+    font-size: 0.95rem !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-actions,
+body.mobile-landscape .player-profile-screen .player-profile-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+}
+
+body.force-landscape .player-profile-screen .player-profile-actions button,
+body.mobile-landscape .player-profile-screen .player-profile-actions button {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 4px 8px !important;
+    font-size: 0.82rem !important;
+    line-height: 1.1 !important;
 }
 
 /* Barcha modallarda barmoq bilan erkin scroll qilish */

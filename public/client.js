@@ -504,7 +504,7 @@ function preloadAllSfx() {
                 sfxPool[key] = a;
             }
         });
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function playSfx(key, volumeScale = 1) {
@@ -523,12 +523,12 @@ function playSfx(key, volumeScale = 1) {
         if (!audio.paused && audio.currentTime > 0) {
             const clone = audio.cloneNode();
             clone.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
-            clone.play().catch(() => {});
+            clone.play().catch(() => { });
             return;
         }
         audio.currentTime = 0;
         audio.volume = Math.max(0, Math.min(1, (sfxVolume || 0.8) * volumeScale));
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
     } catch (_) { }
 }
 
@@ -2847,7 +2847,7 @@ function createSoldier(isP1, charType = 0) {
                         group.userData.mats[0].needsUpdate = true;
                         group.userData.customTextures = lateTex;
                     }
-                }).catch(() => {});
+                }).catch(() => { });
             }
         }
     }
@@ -3011,19 +3011,7 @@ function setSoldierVisual(model, state) {
     model.userData.visualState = targetState;
 
     if (model.userData.planeMesh && model.userData.basePlaneY) {
-        if (targetState === 'duck') {
-            // O'tirganda model haqiqatdan ham tik turgandan sezilarli darajada pastroq bo'lishi
-            const duckScaleY = 0.62;
-            const duckScaleX = model.userData.shouldFlip ? -0.88 : 0.88;
-            model.userData.planeMesh.scale.y = duckScaleY;
-            model.userData.planeMesh.scale.x = duckScaleX;
-            // Oyoqlar yerda tekis qolishi uchun markazni pasaytiramiz
-            model.userData.planeMesh.position.y = model.userData.basePlaneY * duckScaleY;
-        } else {
-            model.userData.planeMesh.scale.y = 1.0;
-            model.userData.planeMesh.scale.x = model.userData.shouldFlip ? -1.0 : 1.0;
-            model.userData.planeMesh.position.y = model.userData.basePlaneY;
-        }
+        model.userData.planeMesh.position.y = model.userData.basePlaneY;
     }
 
     if (!model.userData.isOttomanUnit) {
@@ -3706,10 +3694,6 @@ const jumpStates = [
 ];
 let isDoubleSpearActive = false;
 let pendingDoubleShot = null;
-let isDoubleShotInProgress = false;
-let primarySpearFinished = false;
-let secondarySpearFinished = false;
-let pendingPrimaryTargetIndex = null;
 let isFireSpearActive = false; // Olov nayza qobiliyati yoqilganmi
 let pendingFireShot = false;   // Joriy otish olov nayzami
 const SUPER_BUY_COST = 75;
@@ -3766,6 +3750,7 @@ function updateCampaignUI() {
     const t = translations[myProfile.lang] || translations.en || translations.uz;
     const levelWord = t.levelLabel || 'Daraja';
     if (campaignLevelText) campaignLevelText.innerText = `Lv.${singleCampaignLevel}`;
+    if (levelBadge) levelBadge.innerText = gameMode === 'single' ? `${levelWord} ${singleCampaignLevel}` : `${levelWord} -`;
     if (levelBadge) levelBadge.innerText = gameMode === 'single' ? `${levelWord} ${singlePlayingLevel || singleCampaignLevel}` : `${levelWord} -`;
     updateCampaignModalButtons();
     const menuScoreText = document.getElementById('menu-score-text');
@@ -3799,7 +3784,7 @@ function updateCampaignUI() {
     const menuTierBadge = document.getElementById('menu-tier-badge');
     if (menuTierBadge) {
         const score = Number(myStats.score || 0);
-                const t = (typeof translations !== 'undefined' && translations[myProfile?.lang]) ? translations[myProfile.lang] : {};
+        const t = (typeof translations !== 'undefined' && translations[myProfile?.lang]) ? translations[myProfile.lang] : {};
         let tier = t.tierBronze || "🥉 Bronza";
         let tierColor = "#d97706";
         if (score >= 3000) { tier = t.tierLegend || "👑 Afsona"; tierColor = "#ec4899"; }
@@ -3928,21 +3913,6 @@ function getEnemyIndices() {
     if (myPlayerIndex !== 0 && (enemyHealth > 0 || myPlayerIndex === 0)) enemies.push(0);
     if (myPlayerIndex !== 1 && (enemyHealth > 0 || myPlayerIndex === 1)) enemies.push(1);
     if (p3Model && myPlayerIndex !== 2 && enemy2Health > 0) enemies.push(2);
-    return enemies;
-}
-
-function getAliveEnemyIndices(forPlayerIndex = myPlayerIndex) {
-    if (gameMode !== 'single') {
-        return [forPlayerIndex === 0 ? 1 : 0];
-    }
-    const enemies = [];
-    if (forPlayerIndex === myPlayerIndex) {
-        if (myPlayerIndex !== 0 && enemyHealth > 0) enemies.push(0);
-        if (myPlayerIndex !== 1 && enemyHealth > 0) enemies.push(1);
-        if (p3Model && typeof enemy2Health === 'number' && enemy2Health > 0) enemies.push(2);
-    } else {
-        if (myHealth > 0) enemies.push(myPlayerIndex);
-    }
     return enemies;
 }
 
@@ -5164,14 +5134,6 @@ function handleStart(e) {
     const target = e && e.target;
     const hasClosest = target && typeof target.closest === 'function';
     if (hasClosest && (target.closest('button') || target.closest('#chat-container') || target.closest('#in-game-modal'))) return;
-    
-    // Agar o'z navbatida bo'lsa va havoda faol nayza yo'q bo'lsa, qotib qolgan animatsiyani tozalash
-    if (currentTurnIndex === myPlayerIndex && (!spear || !spear.active) && (!secondarySpear || !secondarySpear.active)) {
-        isAnimating = false;
-        isCoinTossActive = false;
-        if (gameMode === 'multi') singleShotLocked = false;
-    }
-
     if (isCoinTossActive || isAnimating || currentTurnIndex !== myPlayerIndex || gameMode === 'menu' || isPaused) {
         if (gameMode === 'multi' && currentTurnIndex !== myPlayerIndex && currentTurnIndex >= 0 && !isCoinTossActive && !isAnimating) {
             showCenterNotice("Hozir raqib navbati! Iltimos, kuting... ⏳", 1500);
@@ -5476,52 +5438,31 @@ if (crowButton) {
 
 if (duckButton) {
     duckButton.innerHTML = getDuckCrouchSvg();
-    duckButton.style.touchAction = 'none';
-    let duckPressStartTime = 0;
-    let duckAutoReleaseTimer = null;
-
     const pressDuck = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        if (duckAutoReleaseTimer) {
-            clearTimeout(duckAutoReleaseTimer);
-            duckAutoReleaseTimer = null;
-        }
-        duckPressStartTime = performance.now();
         setDuckActive(true);
         triggerAbilityPulse(duckButton);
     };
-
     const releaseDuck = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        const pressDuration = performance.now() - duckPressStartTime;
-        // Agar tezda bosib qo'yib yuborilgan bo'lsa (quick tap < 250ms), 
-        // o'yinchining to'liq cho'qqayib nayzadan qutulishini va raqibda sinxron ko'rinishini ta'minlash uchun
-        // kamida 800ms o'tirib turish kafolatlanadi.
-        if (pressDuration < 250) {
-            if (duckAutoReleaseTimer) clearTimeout(duckAutoReleaseTimer);
-            duckAutoReleaseTimer = setTimeout(() => {
-                setDuckActive(false);
-                duckAutoReleaseTimer = null;
-            }, 800 - pressDuration);
-        } else {
-            setDuckActive(false);
-        }
+        setDuckActive(false);
     };
-
     if (window.PointerEvent) {
         duckButton.addEventListener('pointerdown', pressDuck);
         duckButton.addEventListener('pointerup', releaseDuck);
         duckButton.addEventListener('pointercancel', releaseDuck);
+        duckButton.addEventListener('pointerleave', releaseDuck);
         document.addEventListener('pointerup', releaseDuck);
     } else {
         duckButton.addEventListener('mousedown', pressDuck);
         duckButton.addEventListener('mouseup', releaseDuck);
+        duckButton.addEventListener('mouseleave', releaseDuck);
         duckButton.addEventListener('touchstart', pressDuck, { passive: false });
         duckButton.addEventListener('touchend', releaseDuck, { passive: false });
         duckButton.addEventListener('touchcancel', releaseDuck, { passive: false });
@@ -6049,7 +5990,7 @@ function startSinglePlayer(opts) {
     }
     updateSuperUI();
 
-        const botNames = { uz: "Kompyuter", ru: "Компьютер", en: "PC", tr: "Bilgisayar", az: "Kompüter", kk: "Компьютер", ky: "Компьютер", tg: "Компютер" };
+    const botNames = { uz: "Kompyuter", ru: "Компьютер", en: "PC", tr: "Bilgisayar", az: "Kompüter", kk: "Компьютер", ky: "Компьютер", tg: "Компютер" };
     const currentBotName = botNames[myProfile?.lang] || "Kompyuter";
 
     if (myPlayerIndex === 0) {
@@ -6206,70 +6147,37 @@ function throwSpear(angle, power) {
         clearHintTrajectory();
     }
     pendingDoubleShot = null;
-    pendingPrimaryTargetIndex = null;
-    let isDouble = false;
     if (isDoubleSpearActive && Number(myProfile.doubleSpears || 0) > 0) {
         myProfile.doubleSpears = Math.max(0, Number(myProfile.doubleSpears || 0) - 1);
-        isDouble = true;
-        isDoubleSpearActive = false;
-        const doubleBtn = document.getElementById('double-button');
-        if (doubleBtn) doubleBtn.classList.remove('active');
-        saveProfile();
-        updateSuperUI();
-
         const shooterIndex = currentTurnIndex;
-        const aliveEnemies = getAliveEnemyIndices(shooterIndex);
-
-        // O'yinchi raqiblar tomoniga mo'ljallab otganini aniqlaymiz (kuch >= 400 va burchak -25..85)
-        const isAimingTowardsEnemies = (power >= 400 && angle >= -25 && angle <= 85);
-
-        if (isAimingTowardsEnemies && aliveEnemies.length > 0) {
-            if (aliveEnemies.length >= 2) {
-                // 2 ta raqib bo'lsa: ikkalasiga mo'ljallab otilsa ikkala raqibga ham bitadan tegsin!
-                const shot1 = computeTargetShot(shooterIndex, aliveEnemies[0], 28);
-                const shot2 = computeTargetShot(shooterIndex, aliveEnemies[1], 34);
-                if (shot1 && shot2) {
-                    angle = shot1.angle;
-                    power = shot1.power;
-                    pendingPrimaryTargetIndex = aliveEnemies[0];
-                    pendingDoubleShot = {
-                        shooterIndex,
-                        angle: shot2.angle,
-                        power: shot2.power,
-                        wind: currentWind,
-                        targetIndex: aliveEnemies[1],
-                        intendedTargetIndex: aliveEnemies[1]
-                    };
-                }
-            } else {
-                // 1 ta raqib bo'lsa: ikkala o'q (nayza yoki kamon o'qi) ham bitta raqibga tegsin!
-                const targetIdx = aliveEnemies[0];
-                const shot1 = computeTargetShot(shooterIndex, targetIdx, 27);
-                const shot2 = computeTargetShot(shooterIndex, targetIdx, 34);
-                if (shot1 && shot2) {
-                    angle = shot1.angle;
-                    power = shot1.power;
-                    pendingPrimaryTargetIndex = targetIdx;
-                    pendingDoubleShot = {
-                        shooterIndex,
-                        angle: shot2.angle,
-                        power: shot2.power,
-                        wind: currentWind,
-                        targetIndex: targetIdx,
-                        intendedTargetIndex: targetIdx
-                    };
-                }
+        const targetIndex = getDoubleShotTargetIndex(shooterIndex);
+        const shouldAssistDouble = Math.random() < 0.8;
+        if (shouldAssistDouble) {
+            const primaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 0, 1);
+            const secondaryAssisted = computeAccurateShot(shooterIndex, targetIndex, 4.8, 0.97);
+            if (primaryAssisted && secondaryAssisted) {
+                angle = primaryAssisted.angle;
+                power = primaryAssisted.power;
+                pendingDoubleShot = {
+                    shooterIndex,
+                    angle: secondaryAssisted.angle,
+                    power: secondaryAssisted.power,
+                    wind: currentWind,
+                    forceHit: true,
+                    targetIndex
+                };
             }
         }
-
         if (!pendingDoubleShot) {
             pendingDoubleShot = {
-                shooterIndex,
-                angle: Math.max(-60, Math.min(85, angle + 4.5)),
-                power: Math.max(650, power * 0.96),
+                shooterIndex: currentTurnIndex,
+                angle: Math.max(-60, Math.min(85, angle + 5.5)),
+                power: Math.max(650, power * 0.94),
                 wind: currentWind
             };
         }
+        saveProfile();
+        updateSuperUI();
     }
     let artill = false;
     if (isArtilleryAiming) {
@@ -6299,7 +6207,7 @@ function throwSpear(angle, power) {
     }
 
     if (gameMode === 'multi') {
-        socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot, isDouble });
+        socket.emit('throwSpear', { angle, power, isArtillery: artill, isFire: pendingFireShot });
     } else if (gameMode === 'single') {
         if (!artill) {
             if (currentTurnIndex === 0) {
@@ -6809,56 +6717,6 @@ function getDoubleShotTargetIndex(shooterIndex) {
     return shooterIndex === 0 ? 1 : 0;
 }
 
-function computeTargetShot(shooterIndex, targetIndex, preferredAngleDeg = 30) {
-    const shooter = modelForPlayer(shooterIndex);
-    const target = modelForPlayer(targetIndex);
-    if (!shooter || !target) return null;
-    const dx = Math.abs(shooter.position.x - target.position.x);
-    const dir = target.position.x >= shooter.position.x ? 1 : -1;
-    const effectiveWind = currentWind * dir;
-    let angleDeg = preferredAngleDeg;
-    angleDeg = Math.max(15, Math.min(55, angleDeg));
-    const rad = angleDeg * Math.PI / 180;
-    const sin2 = Math.sin(2 * rad);
-    const sin = Math.sin(rad);
-    const K = (sin2 / GRAVITY) + (60 * effectiveWind * sin * sin / (GRAVITY * GRAVITY));
-    let power;
-    if (K <= 0) {
-        power = Math.sqrt((dx * GRAVITY) / Math.max(0.2, sin2));
-    } else {
-        power = Math.sqrt(dx / K);
-    }
-    power = Math.max(700, Math.min(3600, power));
-    return { angle: angleDeg, power, targetIndex };
-}
-
-function checkTurnEndAfterAllShots() {
-    if (isDoubleShotInProgress && secondarySpear && secondarySpear.active) {
-        return; // Ikkinchi o'q hali havoda uchmoqda, navbatni o'tkazmay turamiz
-    }
-    isDoubleShotInProgress = false;
-    primarySpearFinished = false;
-    secondarySpearFinished = false;
-
-    if (gameMode === 'single') {
-        if (myHealth <= 0 || areAllEnemiesDead()) {
-            const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
-            setTimeout(() => showGameOver(winnerIndex), 1500);
-        } else {
-            advanceSingleTurnAfterShot();
-        }
-    }
-}
-
-function onSecondarySpearFinished() {
-    secondarySpearFinished = true;
-    if (secondarySpear) secondarySpear.active = false;
-    if (secondarySpearGroup) secondarySpearGroup.visible = false;
-    if (primarySpearFinished || !spear || !spear.active) {
-        checkTurnEndAfterAllShots();
-    }
-}
-
 function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powerScale = 1) {
     const shooter = modelForPlayer(shooterIndex);
     const target = modelForPlayer(targetIndex);
@@ -6880,16 +6738,99 @@ function computeAccurateShot(shooterIndex, targetIndex, angleOffsetDeg = 0, powe
 }
 
 function simulateDoubleSpearHit() {
-    return null;
+    if (!pendingDoubleShot) return null;
+    const shot = pendingDoubleShot;
+    pendingDoubleShot = null;
+    const shooter = modelForPlayer(shot.shooterIndex);
+    if (!shooter) return null;
+
+    const startX = shot.shooterIndex === 0 ? shooter.position.x + 60 : shooter.position.x - 60;
+    const startY = shooter.position.y + 270;
+    if (shot.forceHit && Number.isFinite(Number(shot.targetIndex))) {
+        const targetIndex = Number(shot.targetIndex);
+        const target = modelForPlayer(targetIndex);
+        if (target && !target.userData.isKnockedDown) {
+            const h = target.userData?.planeMesh?.geometry?.parameters?.height || 430;
+            const hitY = target.position.y + h * 0.62;
+            const hitX = target.position.x + (shot.shooterIndex === 0 ? -8 : 8);
+            const relY = hitY - target.position.y;
+            const hit = calculateHitResult(targetIndex, relY, false);
+            return {
+                targetIndex,
+                hitX,
+                hitY,
+                hitAngle: Math.atan2(hitY - startY, hitX - startX),
+                hitResult: hit,
+                path: [
+                    { x: startX, y: startY },
+                    { x: (startX + hitX) * 0.5, y: Math.max(startY, hitY) + 120 },
+                    { x: hitX, y: hitY }
+                ]
+            };
+        }
+    }
+    const rad = shot.angle * (Math.PI / 180);
+    let vx = shot.power * Math.cos(rad);
+    if (shot.shooterIndex === 1) vx = -vx;
+    let vy = shot.power * Math.sin(rad);
+    let x = startX;
+    let y = startY;
+    const dt = 0.028;
+    const targets = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
+    const path = [{ x: startX, y: startY }];
+
+    for (let i = 0; i < 220; i++) {
+        x += vx * dt;
+        y += vy * dt;
+        path.push({ x, y });
+        vy -= GRAVITY * dt;
+        vx += ((shot.wind || 0) * 30) * dt;
+        if (y <= ground.position.y + 100) {
+            return { hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: null, path };
+        }
+        for (let idx = 0; idx < targets.length; idx++) {
+            if (idx === shot.shooterIndex) continue;
+            const m = targets[idx];
+            if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
+            const h = m.userData?.planeMesh?.geometry?.parameters?.height || 430;
+            if (Math.abs(x - m.position.x) < 55 && y > m.position.y + 30 && y < m.position.y + h) {
+                const relY = y - m.position.y;
+                const hit = calculateHitResult(idx, relY, false);
+                return { targetIndex: idx, hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: hit, path };
+            }
+        }
+    }
+    return { hitX: x, hitY: y, hitAngle: Math.atan2(vy, vx), hitResult: null, path };
 }
 
 function spawnDoubleSpearVisual(doubleOutcome) {
-    // Obsolete: haqiqiy secondarySpear uchib boradi va uriladi
+    if (!doubleOutcome || !Array.isArray(doubleOutcome.path) || doubleOutcome.path.length < 2) return;
+    const ghost = spearGroup.clone();
+    ghost.visible = true;
+    scene.add(ghost);
+    const path = doubleOutcome.path;
+    let idx = 0;
+    const tick = () => {
+        if (idx >= path.length - 1) {
+            scene.remove(ghost);
+            return;
+        }
+        const a = path[idx];
+        const b = path[idx + 1];
+        ghost.position.set(a.x, a.y, 0);
+        ghost.rotation.z = Math.atan2(b.y - a.y, b.x - a.x);
+        idx += 4;
+        requestAnimationFrame(tick);
+    };
+    tick();
 }
 
 function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
     const finalAngle = spearGroup.rotation.z;
-    primarySpearFinished = true;
+    const doubleOutcome = simulateDoubleSpearHit();
+    const doubleShotFired = !!doubleOutcome;
+    const hasExtraHit = !!(doubleOutcome && doubleOutcome.hitResult);
+    if (doubleOutcome) spawnDoubleSpearVisual(doubleOutcome);
 
     if (hitOpponent) {
         const targetModel = modelForPlayer(targetIndex) || (targetIndex === 0 ? p1Model : p2Model);
@@ -6902,7 +6843,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
             hitResult = calculateHitResult(targetIndex, 0, true);
             spawnParticles(hitX, hitY, 50);
         } else {
-            const relativeY = hitY - targetModel.position.y;
+            const relativeY = hitY - targetModel.position.y; // For 440 height plane at y=-360, relativeY goes from 50 (feet) to ~350 (head)
             hitResult = calculateHitResult(targetIndex, relativeY, false);
 
             if (spear && spear.isArtillery) {
@@ -6921,6 +6862,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                     triggerCinematicExplosion(hitX, hitY);
                 }
             } else {
+                if (doubleShotFired) hitResult = applyDoubleDamageBoost(hitResult, 2);
                 // Olov nayza / o'qi: raqibga tekkanda kuchli yonish effekti va yuqori ziyon
                 if (spear && spear.isFire && !hitResult.duckDodged) {
                     if (hitResult.isShieldHit) {
@@ -6961,6 +6903,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         if (hitResult.hitZone === 'head') {
             if (typeof triggerScreenFlash === 'function') triggerScreenFlash('headshot');
             if (typeof checkQuestProgress === 'function') checkQuestProgress('headshot', 1);
+            // Duplicate second headshot banner removed
             screenShake = Math.max(screenShake, 18);
         } else if (targetIndex === myPlayerIndex && hitResult.damage > 0) {
             if (typeof triggerScreenFlash === 'function') triggerScreenFlash('damage');
@@ -6975,6 +6918,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         }
 
         if (gameMode === 'single') {
+            const hitMyself = targetIndex === myPlayerIndex;
             if (hitResult.isShieldHit) {
                 setShieldForPlayer(targetIndex, shieldForPlayer(targetIndex) - 1);
                 const shieldHealth = shieldForPlayer(targetIndex);
@@ -6988,8 +6932,43 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 updateHealthUI();
             }
 
-            checkTurnEndAfterAllShots();
+            if (myHealth <= 0 || areAllEnemiesDead()) {
+                const winnerIndex = myHealth > 0 ? myPlayerIndex : getPrimaryEnemyTurnIndex();
+                setTimeout(() => showGameOver(winnerIndex), 1500);
+            } else {
+                if (!lastRecordedSecondaryHit && hasExtraHit) {
+                    const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
+                    const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
+                    const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
+                    playHitByResult(boostedExtraHit);
+                    showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
+                    if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
+                        addScore(getScoreDeltaForHit(boostedExtraHit));
+                    }
+                    if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
+                    if (boostedExtraHit.isShieldHit) {
+                        setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
+                        if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
+                    }
+                    if (boostedExtraHit.damage > 0) {
+                        applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
+                        updateHealthUI();
+                    }
+                }
+                advanceSingleTurnAfterShot();
+            }
         } else {
+            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
+                targetIndex: doubleOutcome.targetIndex,
+                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
+                hitZone: doubleOutcome.hitResult.hitZone || 'body',
+                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
+                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
+                hitX: doubleOutcome.hitX,
+                hitY: doubleOutcome.hitY,
+                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
+                hitAngle: doubleOutcome.hitAngle
+            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: true,
                 targetIndex: targetIndex,
@@ -7003,7 +6982,7 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
                 isFire: !!(spear && spear.isFire),
-                extraHit: lastRecordedSecondaryHit
+                extraHit: finalExtra
             });
         }
     } else {
@@ -7013,15 +6992,45 @@ function processHit(hitOpponent, targetIndex, hitX, hitY, isSuicide = false) {
         hideFlyingSpear();
 
         if (gameMode === 'single') {
-            checkTurnEndAfterAllShots();
+            if (!lastRecordedSecondaryHit && hasExtraHit) {
+                const extraTarget = modelForPlayer(doubleOutcome.targetIndex);
+                const extraMyself = doubleOutcome.targetIndex === myPlayerIndex;
+                const boostedExtraHit = applyDoubleDamageBoost(doubleOutcome.hitResult, 2);
+                playHitByResult(boostedExtraHit);
+                showDamageText(doubleOutcome.hitX, doubleOutcome.hitY + 70, `Qo'sh nayza: ${boostedExtraHit.msg}`, boostedExtraHit.isCrit, boostedExtraHit.isShieldHit);
+                if (spear && spear.playerIndex === myPlayerIndex && doubleOutcome.targetIndex !== myPlayerIndex) {
+                    addScore(getScoreDeltaForHit(boostedExtraHit));
+                }
+                if (!boostedExtraHit.isShieldHit && extraTarget) knockDownModel(extraTarget);
+                if (boostedExtraHit.isShieldHit) {
+                    setShieldForPlayer(doubleOutcome.targetIndex, shieldForPlayer(doubleOutcome.targetIndex) - 1);
+                    if (shieldForPlayer(doubleOutcome.targetIndex) <= 0 && extraTarget) breakShield(extraTarget);
+                }
+                if (boostedExtraHit.damage > 0) {
+                    applyDamageToTarget(doubleOutcome.targetIndex, boostedExtraHit.damage);
+                    updateHealthUI();
+                }
+            }
+            advanceSingleTurnAfterShot();
         } else {
+            const finalExtra = lastRecordedSecondaryHit || (hasExtraHit ? {
+                targetIndex: doubleOutcome.targetIndex,
+                damage: applyDoubleDamageBoost(doubleOutcome.hitResult, 2).damage,
+                hitZone: doubleOutcome.hitResult.hitZone || 'body',
+                shieldActiveBlock: doubleOutcome.hitResult.shieldActiveBlock || false,
+                shieldlessDefense: doubleOutcome.hitResult.shieldlessDefense || false,
+                hitX: doubleOutcome.hitX,
+                hitY: doubleOutcome.hitY,
+                isShieldHit: doubleOutcome.hitResult.isShieldHit || false,
+                hitAngle: doubleOutcome.hitAngle
+            } : null);
             socket.emit('throwComplete', {
                 hitOpponent: false,
                 hitX,
                 hitY,
                 hitAngle: finalAngle,
                 isArtillery: spear.isArtillery,
-                extraHit: lastRecordedSecondaryHit
+                extraHit: finalExtra
             });
         }
     }
@@ -7705,16 +7714,6 @@ socket.on('gameStart', (data) => {
     enemyDuckActive = false;
 
     scene.remove(p1Model); scene.remove(p2Model);
-    // Multiplayerda p3Model (singleplayer 2-dushman) qoldiqlarini to'liq yo'q qilish
-    if (p3Model) {
-        scene.remove(p3Model);
-        p3Model.visible = false;
-        p3Model.position.set(0, -99999, 0);
-        p3Model = null;
-    }
-    enemy2Health = 0;
-    const oldP3HealthContainer = document.getElementById('p3-health-container');
-    if (oldP3HealthContainer) oldP3HealthContainer.remove();
     const myChar = myProfile.charType || 2;
     const oppChar = (data.opponentProfile && data.opponentProfile.charType) || 2;
     const p1Char = myPlayerIndex === 0 ? myChar : oppChar;
@@ -7846,7 +7845,7 @@ socket.on('playerAimState', (data) => {
 });
 
 socket.on('spearThrown', (data) => {
-    const { playerIndex, angle, power, isArtillery, isFire, isDouble } = data;
+    const { playerIndex, angle, power, isArtillery, isFire } = data;
     remoteAimStates[playerIndex] = { isAiming: false, dist: 0, angle: 0 };
     if (typeof opponent3DBow !== 'undefined' && opponent3DBow) opponent3DBow.visible = false;
     const thrower = modelForPlayer(playerIndex);
@@ -7854,14 +7853,6 @@ socket.on('spearThrown', (data) => {
         setModelActionState(thrower, 'afterShot', 950);
     }
     if (isFire) pendingFireShot = true;
-    if (isDouble && playerIndex !== myPlayerIndex) {
-        pendingDoubleShot = {
-            shooterIndex: playerIndex,
-            angle: angle + 4.5,
-            power: power * 1.02,
-            wind: currentWind
-        };
-    }
     startSpearAnimation(playerIndex, angle, power, isArtillery);
 });
 
@@ -8137,14 +8128,8 @@ socket.on('playerEmote', (data) => {
 
 function showGameOver(winnerIndex, data) {
     if (typeof stopTurnTimerUI === 'function') stopTurnTimerUI();
-    hideCoinTossModal();
-    if (gameOverScreen) {
-        gameOverScreen.classList.remove('hidden');
-        gameOverScreen.style.removeProperty('display');
-        gameOverScreen.style.display = 'block';
-        gameOverScreen.style.setProperty('z-index', '10005', 'important');
-    }
-    if (controlsPanel) controlsPanel.classList.add('disabled');
+    gameOverScreen.classList.remove('hidden');
+    controlsPanel.classList.add('disabled');
     const t = translations[myProfile.lang] || translations.uz;
 
     // Aniq g'olibni hisoblash (3-bosqichli tekshiruv)
@@ -8227,7 +8212,7 @@ function showGameOver(winnerIndex, data) {
             addScore(singleWinBonus);
             showCenterNotice(`+${singleWinBonus} G'alaba bonusi! 🏆`, 2500);
 
-            // Faqat avvalgi eng yuqori daraja yutilganda yangi bosqich ochiladi
+            // Faqat o'ynalgan level joriy ochilgan eng yuqori darajaga teng yoki katta bo'lsa keyingi daraja ochiladi
             const nextLvl = playedLvl + 1;
             if (nextLvl > singleCampaignLevel) {
                 singleCampaignLevel = nextLvl;
@@ -8253,6 +8238,7 @@ function showGameOver(winnerIndex, data) {
     if (btnNextLvl) {
         if (gameMode === 'single' && isMeWinner) {
             btnNextLvl.classList.remove('hidden');
+            btnNextLvl.innerText = `${t.nextLevelBtn || "Keyingi bosqich"} (${singleCampaignLevel}) ➔`;
             btnNextLvl.innerText = `${t.nextLevelBtn || "Keyingi bosqich"} (${singlePlayingLevel}) ➔`;
         } else {
             btnNextLvl.classList.add('hidden');
@@ -8468,14 +8454,7 @@ function updateTurn(turnIndex, wind) {
 
     if (turnIndex === myPlayerIndex) {
         controlsPanel.classList.remove('disabled');
-        controlsPanel.classList.remove('auto-hidden');
-        isAnimating = false;
-        isCoinTossActive = false;
-        singleShotLocked = false;
-        isDragging = false;
-        if (spear) spear.active = false;
-        if (secondarySpear) secondarySpear.active = false;
-        hideFlyingSpear();
+        if (turnChanged) controlsPanel.classList.remove('auto-hidden');
         turnIndicator.innerText = "Sizning navbatingiz! (Tortib mo'ljalga oling)";
         turnIndicator.classList.add('turn-self');
         turnIndicator.classList.remove('turn-opponent');
@@ -8602,13 +8581,8 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
         aiSuperTried: false,
         isArtillery: isArtillery,
         isFire: !isArtillery && pendingFireShot,
-        weaponType: getPlayerWeaponType(playerIndex),
-        intendedTargetIndex: pendingPrimaryTargetIndex
+        weaponType: getPlayerWeaponType(playerIndex)
     };
-    pendingPrimaryTargetIndex = null;
-    isDoubleShotInProgress = !!pendingDoubleShot;
-    primarySpearFinished = false;
-    secondarySpearFinished = !pendingDoubleShot;
     pendingFireShot = false;
 
     let isSpearmanThrow = !!thrower?.userData?.isOttomanSpearman;
@@ -8642,9 +8616,7 @@ function startSpearAnimation(playerIndex, angle, power, isArtillery = false) {
             active: true,
             playerIndex: playerIndex,
             shooterIndex: playerIndex,
-            isSecondary: true,
-            targetIndex: shot.targetIndex,
-            intendedTargetIndex: shot.intendedTargetIndex
+            isSecondary: true
         };
         secondarySpearGroup.position.set(startX, startY + 12, 0);
         secondarySpearGroup.visible = true;
@@ -8814,10 +8786,9 @@ function lineSegmentIntersectsAABB(x0, y0, x1, y1, minX, maxX, minY, maxY) {
     return tmin <= tmax && tmax >= 0 && tmin <= 1;
 }
 
-function getPlayerBoundingBox(playerIndex, allowKnockedDown = false) {
+function getPlayerBoundingBox(playerIndex) {
     const m = modelForPlayer(playerIndex);
-    if (!m || !m.userData || !m.visible || m.userData.isDead) return null;
-    if (!allowKnockedDown && m.userData.isKnockedDown) return null;
+    if (!m || !m.userData || !m.visible || m.userData.isDead || m.userData.isKnockedDown) return null;
 
     const isDucking = isDuckActiveForPlayer(playerIndex);
     const isJumping = isJumpActiveForPlayer(playerIndex);
@@ -8826,7 +8797,7 @@ function getPlayerBoundingBox(playerIndex, allowKnockedDown = false) {
     const baseWidth = m.userData.planeWidth || m.userData?.planeMesh?.geometry?.parameters?.width || (m.userData.isOttomanSpearman ? 640 : (m.userData.isOttomanUnit ? 560 : 360));
 
     // When ducking/crouching, the warrior lowers down to ~52% of base standing height
-    const effectiveHeight = isDucking ? (baseHeight * 0.52) : (m.userData.isKnockedDown ? (baseHeight * 0.6) : baseHeight);
+    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
 
     // Body width: central silhouette of the sprite. When ducking, warrior is compact (~18% narrower)
     const widthFactor = m.userData.isCustomModel ? 0.44 : 0.36;
@@ -8872,7 +8843,6 @@ function checkSecondarySpearCollision() {
         } else {
             applyWallHit(wallOwner, hitX, hitY, false);
         }
-        onSecondarySpearFinished();
         return;
     }
 
@@ -8880,28 +8850,23 @@ function checkSecondarySpearCollision() {
     const models = p3Model ? [p1Model, p2Model, p3Model] : [p1Model, p2Model];
     for (let i = 0; i < models.length; i++) {
         const m = models[i];
-        if (!m || !m.visible || m.userData.isDead) continue;
+        if (!m || !m.visible || m.userData.isDead || m.userData.isKnockedDown) continue;
         if (i === secondarySpear.playerIndex) continue;
         if (areAllies(i, secondarySpear.playerIndex)) continue;
 
-        const box = getPlayerBoundingBox(i, true);
+        const box = getPlayerBoundingBox(i);
         if (!box) continue;
 
         const pX = (secondarySpear.prevX !== undefined) ? secondarySpear.prevX : secondarySpear.x;
         const pY = (secondarySpear.prevY !== undefined) ? secondarySpear.prevY : secondarySpear.y;
 
         const isHit = lineSegmentIntersectsAABB(pX, pY, secondarySpear.x, secondarySpear.y, box.minX, box.maxX, box.minY, box.maxY);
-        const isNearIntended = (secondarySpear.intendedTargetIndex === i) &&
-            Math.abs(secondarySpear.x - m.position.x) < 70 &&
-            (secondarySpear.y >= m.position.y - 20 && secondarySpear.y <= m.position.y + (box.baseHeight || 430));
-
-        if (isHit || isNearIntended) {
+        if (isHit) {
             const hitX = secondarySpear.x;
             const hitY = secondarySpear.y;
             secondarySpear.active = false;
             secondarySpearGroup.visible = false;
             applySecondarySpearHit(i, hitX, hitY);
-            onSecondarySpearFinished();
             return;
         }
     }
@@ -8911,7 +8876,6 @@ function checkSecondarySpearCollision() {
         secondarySpear.active = false;
         secondarySpearGroup.visible = false;
         stickSpear(null, secondarySpear.x, ground.position.y + 100, secondarySpearGroup.rotation.z);
-        onSecondarySpearFinished();
     }
 }
 
@@ -9036,11 +9000,7 @@ function checkCollision() {
         const pY = (spear.prevY !== undefined) ? spear.prevY : spear.y;
 
         const isHit = lineSegmentIntersectsAABB(pX, pY, spear.x, spear.y, box.minX, box.maxX, box.minY, box.maxY);
-        const isNearIntended = (spear.intendedTargetIndex === i) &&
-            Math.abs(spear.x - m.position.x) < 70 &&
-            (spear.y >= m.position.y - 20 && spear.y <= m.position.y + (box.baseHeight || 430));
-
-        if (isHit || isNearIntended) {
+        if (isHit) {
             if (i === spear.playerIndex) {
                 const throwerPos = m.position;
                 const distFromSelf = Math.abs(spear.x - throwerPos.x);
@@ -9102,8 +9062,7 @@ function finishAnimation(hitOpponent, targetIndex, hitX, hitY, hitEntity = null,
                     });
                 }
             } else {
-                primarySpearFinished = true;
-                checkTurnEndAfterAllShots();
+                advanceSingleTurnAfterShot();
             }
         }
         return;
@@ -9465,10 +9424,9 @@ function gameLoop(now) {
         secondarySpearGroup.position.set(secondarySpear.x, secondarySpear.y, 0);
         secondarySpearGroup.rotation.z = Math.atan2(secondarySpear.vy, secondarySpear.vx);
         checkSecondarySpearCollision();
-        if (secondarySpear && secondarySpear.active && (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200)) {
+        if (secondarySpear.active && (secondarySpear.y <= ground.position.y + 100 || secondarySpear.x < -4200 || secondarySpear.x > 4200)) {
             secondarySpear.active = false;
             secondarySpearGroup.visible = false;
-            onSecondarySpearFinished();
         }
     }
 
@@ -9988,7 +9946,7 @@ function applyAuthedUser(user) {
     const userPhoneStr = String(user.phone || '');
     myProfile.phone = userPhoneStr.startsWith('tg_') ? userPhoneStr : userPhoneStr.replace(/\D/g, '').slice(-15);
     myProfile.age = Math.max(7, Math.min(99, Number(user.age) || 18));
-    
+
     // O'yinchining to'plagan ballari va progressi: har safar yangidan 500 bo'lib qolmasligi uchun lokal va serverdagi eng kattasini olamiz
     const localScore = Number(myStats.score || 0);
     const serverScore = Number.isFinite(Number(user.score)) ? Number(user.score) : 0;
@@ -12226,6 +12184,7 @@ function renderCharacterSelectRoster(activeId) {
             if (hasMoved) return;
             onSelect(e);
         }, { passive: false });
+
         card.addEventListener('click', (e) => {
             if (hasMoved) return;
             onSelect(e);
@@ -12239,9 +12198,8 @@ function renderCharacterSelectRoster(activeId) {
         charSelectRoster.appendChild(card);
     });
 
-    // Barmoq va sichqoncha bilan ro'yxatni erkin surib ko'rish (Drag to scroll)
-    if (!charSelectRoster.dataset.dragBound) {
-        charSelectRoster.dataset.dragBound = 'true';
+    if (!charSelectRoster._hasMouseDrag) {
+        charSelectRoster._hasMouseDrag = true;
         let isRosterDown = false;
         let rosterStartX = 0;
         let rosterScrollLeft = 0;
@@ -12284,7 +12242,6 @@ function openCharacterSelectModal(options = {}) {
             const el = document.getElementById(id);
             if (el) {
                 el.classList.add('hidden');
-                el.style.display = 'none';
                 el.style.pointerEvents = 'none';
             }
         }
@@ -12293,16 +12250,10 @@ function openCharacterSelectModal(options = {}) {
     const currentLang = (typeof myProfile !== 'undefined' && myProfile.lang) ? myProfile.lang : 'uz';
     const t = translations[currentLang] || translations.uz;
     if (txtCharSelectTitle) txtCharSelectTitle.innerText = t.charSelectTitle || "Qahramoningizni tanlang";
-    if (txtCharSelectSub) {
-        if (options.battleLevel) {
-            txtCharSelectSub.innerText = `${options.battleLevel}-bosqich uchun jangchi modelini tanlang`;
-        } else {
-            txtCharSelectSub.innerText = t.charSelectSub || "Jangga kirishdan oldin jangchi modelini tanlang";
-        }
-    }
+    if (txtCharSelectSub) txtCharSelectSub.innerText = t.charSelectSub || "Jangga kirishdan oldin jangchi modelini tanlang";
     if (btnCharSelectConfirm) {
         const span = btnCharSelectConfirm.querySelector('span') || btnCharSelectConfirm;
-        span.innerText = options.battleLevel ? `⚔️ Jangga kirish (Lv.${options.battleLevel})` : (t.enterBattle || "⚔️ Jangga kirish");
+        span.innerText = t.enterBattle || "⚔️ Jangga kirish";
     }
 
     const initialId = options.defaultCharId !== undefined ? options.defaultCharId : (myProfile?.charType || 2);
@@ -12315,103 +12266,93 @@ function openCharacterSelectModal(options = {}) {
     }
 
     openModalSafely(charSelectModal);
-    if (charSelectModal) {
-        charSelectModal.classList.remove('hidden');
-        charSelectModal.style.removeProperty('display');
-        charSelectModal.style.pointerEvents = 'auto';
-    }
+    if (charSelectModal) charSelectModal.style.pointerEvents = 'auto';
 }
 
 let isCharSelectTransitioning = false;
 let lastConfirmClickTime = 0;
 
 function triggerCharSelectConfirm(e) {
-    if (e) {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        if (typeof e.stopPropagation === 'function') e.stopPropagation();
-        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-    }
-    const now = Date.now();
-    if (now - lastConfirmClickTime < 450 || isCharSelectTransitioning) return;
-    lastConfirmClickTime = now;
-    isCharSelectTransitioning = true;
-    setTimeout(() => { isCharSelectTransitioning = false; }, 800);
-
-    // Cancel callback is nullified immediately so onCancel can NEVER be triggered!
-    pendingCharSelectCancel = null;
-
-    if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
-        myProfile.charType = selectedCharRosterId;
-        try {
-            localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
-            if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
-        } catch (_) { }
-
-        const s1 = document.getElementById('select-char-type');
-        if (s1) s1.value = String(myProfile.charType);
-        const s2 = document.getElementById('select-char-type-options');
-        if (s2) s2.value = String(myProfile.charType);
-
-        const chars = getAllCharactersList();
-        const chosen = chars.find(c => String(c.id) === String(selectedCharRosterId));
-        if (chosen && chosen.bgMusic) {
-            selectedMusicTrack = chosen.bgMusic;
-        } else {
-            selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
-        }
-        if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
-
-        if (socket && socket.connected) {
-            socket.emit('updateProfile', myProfile);
-            socket.emit('registerProfile', myProfile);
-        }
-    }
-
-    if (charSelectModal) {
-        charSelectModal.classList.add('hidden');
-        charSelectModal.style.display = 'none';
-    }
-    if (levelSelectModal) {
-        levelSelectModal.classList.add('hidden');
-        levelSelectModal.style.display = 'none';
-    }
-    if (singleModeModal) {
-        singleModeModal.classList.add('hidden');
-        singleModeModal.style.display = 'none';
-    }
-    if (menuScreen) {
-        menuScreen.classList.add('hidden');
-        menuScreen.style.display = 'none';
-    }
-
-    // Prevent ghost click pass-through on release
-    const suppressGhost = (ge) => {
-        ge.preventDefault();
-        ge.stopPropagation();
-        ge.stopImmediatePropagation();
-    };
-    window.addEventListener('click', suppressGhost, { capture: true, once: true });
-    setTimeout(() => {
-        window.removeEventListener('click', suppressGhost, { capture: true });
-    }, 450);
-
-    const cb = pendingCharSelectCallback;
-    pendingCharSelectCallback = null;
-    if (typeof cb === 'function') {
-        try {
-            cb(myProfile.charType);
-        } catch (err) {
-            console.error("Error executing character confirm callback:", err);
-        }
+    if (btnCharSelectConfirm) {
+        btnCharSelectConfirm.click();
     }
 }
 
 if (btnCharSelectConfirm) {
-    btnCharSelectConfirm.addEventListener('click', triggerCharSelectConfirm);
+    const handleCharConfirm = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        const now = Date.now();
+        if (now - lastConfirmClickTime < 600 || isCharSelectTransitioning) return;
+        lastConfirmClickTime = now;
+        isCharSelectTransitioning = true;
+        setTimeout(() => { isCharSelectTransitioning = false; }, 800);
+
+        // Cancel callback is nullified immediately so onCancel can NEVER be triggered!
+        pendingCharSelectCancel = null;
+
+        if (selectedCharRosterId !== null && selectedCharRosterId !== undefined) {
+            myProfile.charType = selectedCharRosterId;
+            try {
+                localStorage.setItem('nayza_profile', JSON.stringify(myProfile));
+                if (playerIdReadonly) playerIdReadonly.value = myProfile.playerId;
+            } catch (_) { }
+
+            const s1 = document.getElementById('select-char-type');
+            if (s1) s1.value = String(myProfile.charType);
+            const s2 = document.getElementById('select-char-type-options');
+            if (s2) s2.value = String(myProfile.charType);
+
+            const chars = getAllCharactersList();
+            const chosen = chars.find(c => String(c.id) === String(selectedCharRosterId));
+            if (chosen && chosen.bgMusic) {
+                selectedMusicTrack = chosen.bgMusic;
+            } else {
+                selectedMusicTrack = localStorage.getItem('nayza_music_track') || 'music.mp3';
+            }
+            if (typeof applySelectedMusicTrack === 'function') applySelectedMusicTrack();
+
+            if (socket && socket.connected) {
+                socket.emit('updateProfile', myProfile);
+                socket.emit('registerProfile', myProfile);
+            }
+        }
+
+        if (charSelectModal) charSelectModal.classList.add('hidden');
+
+        // Prevent ghost click pass-through on release by keeping background non-interactive for 450ms
+        const suppressGhost = (ge) => {
+            ge.preventDefault();
+            ge.stopPropagation();
+            ge.stopImmediatePropagation();
+        };
+        window.addEventListener('click', suppressGhost, { capture: true, once: true });
+        setTimeout(() => {
+            window.removeEventListener('click', suppressGhost, { capture: true });
+            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
+            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
+            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
+            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
+        }, 450);
+
+        const cb = pendingCharSelectCallback;
+        pendingCharSelectCallback = null;
+        if (typeof cb === 'function') {
+            try {
+                cb(myProfile.charType);
+            } catch (err) {
+                console.error("Error executing character confirm callback:", err);
+            }
+        }
+    };
+    btnCharSelectConfirm.addEventListener('click', handleCharConfirm);
     btnCharSelectConfirm.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        triggerCharSelectConfirm(e);
+        handleCharConfirm(e);
     }, { passive: false });
 }
 
@@ -12424,10 +12365,7 @@ if (btnCharSelectCancel) {
         }
         if (isCharSelectTransitioning) return; // Prevent cancel while confirmation is in progress
 
-        if (charSelectModal) {
-            charSelectModal.classList.add('hidden');
-            charSelectModal.style.display = 'none';
-        }
+        if (charSelectModal) charSelectModal.classList.add('hidden');
 
         const suppressGhost = (ge) => {
             ge.preventDefault();
@@ -12437,6 +12375,10 @@ if (btnCharSelectCancel) {
         window.addEventListener('click', suppressGhost, { capture: true, once: true });
         setTimeout(() => {
             window.removeEventListener('click', suppressGhost, { capture: true });
+            if (menuScreen && !menuScreen.classList.contains('hidden')) menuScreen.style.pointerEvents = '';
+            if (singleModeModal && !singleModeModal.classList.contains('hidden')) singleModeModal.style.pointerEvents = '';
+            if (levelSelectModal && !levelSelectModal.classList.contains('hidden')) levelSelectModal.style.pointerEvents = '';
+            if (multiMenu && !multiMenu.classList.contains('hidden')) multiMenu.style.pointerEvents = '';
         }, 450);
 
         if (typeof pendingCharSelectCancel === 'function') {
@@ -13486,48 +13428,22 @@ if (btnSingleContinue) {
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
         singlePlayingLevel = Math.max(1, singleCampaignLevel);
-        if (singleModeModal) {
-            singleModeModal.classList.add('hidden');
-            singleModeModal.style.display = 'none';
-        }
         openCharacterSelectModal({
-            battleLevel: singlePlayingLevel,
-            defaultCharId: myProfile?.charType || 2,
             onConfirm: () => {
                 for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
-                    if (el) {
-                        el.classList.add('hidden');
-                        el.style.display = 'none';
-                    }
+                    if (el) el.classList.add('hidden');
                 }
-                if (singleModeModal) {
-                    singleModeModal.classList.add('hidden');
-                    singleModeModal.style.display = 'none';
-                }
-                if (levelSelectModal) {
-                    levelSelectModal.classList.add('hidden');
-                    levelSelectModal.style.display = 'none';
-                }
-                if (charSelectModal) {
-                    charSelectModal.classList.add('hidden');
-                    charSelectModal.style.display = 'none';
-                }
-                if (menuScreen) {
-                    menuScreen.classList.add('hidden');
-                    menuScreen.style.display = 'none';
-                }
+                if (singleModeModal) singleModeModal.classList.add('hidden');
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
                 const level = Math.max(1, singlePlayingLevel);
                 aiDifficulty = level < 6 ? 'easy' : level < 15 ? 'normal' : 'hard';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
             onCancel: () => {
-                if (singleModeModal) {
-                    singleModeModal.classList.remove('hidden');
-                    singleModeModal.style.removeProperty('display');
-                    singleModeModal.style.pointerEvents = 'auto';
-                }
+                if (singleModeModal) singleModeModal.classList.remove('hidden');
             }
         });
     };
@@ -13545,13 +13461,7 @@ if (btnSingleNew) {
             if (typeof e.stopPropagation === 'function') e.stopPropagation();
         }
         singlePlayingLevel = 1;
-        if (singleModeModal) {
-            singleModeModal.classList.add('hidden');
-            singleModeModal.style.display = 'none';
-        }
         openCharacterSelectModal({
-            battleLevel: 1,
-            defaultCharId: myProfile?.charType || 2,
             onConfirm: () => {
                 singlePlayingLevel = 1;
                 singleCampaignLevel = 1;
@@ -13559,37 +13469,17 @@ if (btnSingleNew) {
                 updateCampaignUI();
                 for (const id of ALL_MODAL_IDS) {
                     const el = document.getElementById(id);
-                    if (el) {
-                        el.classList.add('hidden');
-                        el.style.display = 'none';
-                    }
+                    if (el) el.classList.add('hidden');
                 }
-                if (singleModeModal) {
-                    singleModeModal.classList.add('hidden');
-                    singleModeModal.style.display = 'none';
-                }
-                if (levelSelectModal) {
-                    levelSelectModal.classList.add('hidden');
-                    levelSelectModal.style.display = 'none';
-                }
-                if (charSelectModal) {
-                    charSelectModal.classList.add('hidden');
-                    charSelectModal.style.display = 'none';
-                }
-                if (menuScreen) {
-                    menuScreen.classList.add('hidden');
-                    menuScreen.style.display = 'none';
-                }
+                if (singleModeModal) singleModeModal.classList.add('hidden');
+                if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                if (menuScreen) menuScreen.classList.add('hidden');
                 aiDifficulty = 'easy';
                 gameMode = 'single';
                 startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
             },
             onCancel: () => {
-                if (singleModeModal) {
-                    singleModeModal.classList.remove('hidden');
-                    singleModeModal.style.removeProperty('display');
-                    singleModeModal.style.pointerEvents = 'auto';
-                }
+                if (singleModeModal) singleModeModal.classList.remove('hidden');
             }
         });
     };
@@ -13712,48 +13602,21 @@ function renderLevelGrid() {
             }
 
             singlePlayingLevel = i;
-            if (levelSelectModal) {
-                levelSelectModal.classList.add('hidden');
-                levelSelectModal.style.display = 'none';
-            }
             openCharacterSelectModal({
-                battleLevel: i,
-                defaultCharId: myProfile?.charType || 2,
-                onConfirm: (chosenChar) => {
+                onConfirm: () => {
                     for (const id of ALL_MODAL_IDS) {
                         const el = document.getElementById(id);
-                        if (el) {
-                            el.classList.add('hidden');
-                            el.style.display = 'none';
-                        }
+                        if (el) el.classList.add('hidden');
                     }
-                    if (levelSelectModal) {
-                        levelSelectModal.classList.add('hidden');
-                        levelSelectModal.style.display = 'none';
-                    }
-                    if (singleModeModal) {
-                        singleModeModal.classList.add('hidden');
-                        singleModeModal.style.display = 'none';
-                    }
-                    if (charSelectModal) {
-                        charSelectModal.classList.add('hidden');
-                        charSelectModal.style.display = 'none';
-                    }
-                    if (menuScreen) {
-                        menuScreen.classList.add('hidden');
-                        menuScreen.style.display = 'none';
-                    }
-                    singlePlayingLevel = i;
+                    if (levelSelectModal) levelSelectModal.classList.add('hidden');
+                    if (singleModeModal) singleModeModal.classList.add('hidden');
+                    if (menuScreen) menuScreen.classList.add('hidden');
                     aiDifficulty = i < 6 ? 'easy' : i < 15 ? 'normal' : 'hard';
                     gameMode = 'single';
                     startSinglePlayer({ birds: true, animals: Math.random() > 0.45 });
                 },
                 onCancel: () => {
-                    if (levelSelectModal) {
-                        levelSelectModal.classList.remove('hidden');
-                        levelSelectModal.style.removeProperty('display');
-                        levelSelectModal.style.pointerEvents = 'auto';
-                    }
+                    if (levelSelectModal) levelSelectModal.classList.remove('hidden');
                 }
             });
         };
@@ -14073,11 +13936,11 @@ function getPendingRoomCode() {
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
         code = String(tg.initDataUnsafe.start_param);
     }
-    // 2. URL search query parametrlari (?room=XYZ, ?startapp=XYZ, ?tgWebAppStartParam=XYZ, ?code=XYZ)
+    // 2. URL search query parametrlari (?room=XYZ, ?startapp=XYZ, ?tgWebAppStartParam=XYZ)
     if (!code && window.location.search) {
         try {
             const sp = new URLSearchParams(window.location.search);
-            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join') || sp.get('duel_room');
+            code = sp.get('room') || sp.get('startapp') || sp.get('tgWebAppStartParam') || sp.get('code') || sp.get('join');
         } catch (_) { }
     }
     // 3. URL hash parametrlari (#tgWebAppStartParam=XYZ yoki #tgWebAppData=...&tgWebAppStartParam=XYZ)
@@ -14085,7 +13948,7 @@ function getPendingRoomCode() {
         try {
             const hashRaw = window.location.hash.replace(/^#/, '');
             const hp = new URLSearchParams(hashRaw);
-            code = hp.get('tgWebAppStartParam') || hp.get('startapp') || hp.get('room') || hp.get('code') || hp.get('duel_room');
+            code = hp.get('tgWebAppStartParam') || hp.get('startapp') || hp.get('room') || hp.get('code');
             if (!code && hashRaw.includes('tgWebAppStartParam=')) {
                 const m = hashRaw.match(/tgWebAppStartParam=([^&]+)/);
                 if (m) code = decodeURIComponent(m[1]);
@@ -14121,17 +13984,6 @@ function checkAutoJoinTelegramRoom() {
     // Har qanday holatda inputga ham to'ldirib qo'yamiz
     if (inputJoinCode) inputJoinCode.value = code;
 
-    // Intro ekranni darhol yopish - kutib o'tirmasdan to'g'ridan-to'g'ri jangga ulanish
-    const introEl = document.getElementById('intro-screen');
-    if (introEl) {
-        introEl.classList.add('hide');
-        introEl.style.display = 'none';
-        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
-    }
-    if (typeof tryLockLandscapeOrientation === 'function') {
-        try { tryLockLandscapeOrientation(); } catch (_) { }
-    }
-
     if (autoJoinExecuted) return true;
 
     autoJoinExecuted = true;
@@ -14139,6 +13991,12 @@ function checkAutoJoinTelegramRoom() {
     console.log('[AutoJoin] Xonaga avtomatik ulanmoqda:', code);
 
     // Barcha oraliq ekranlarni yashirish
+    const introEl = document.getElementById('intro-screen');
+    if (introEl) {
+        introEl.classList.add('hide');
+        introEl.style.display = 'none';
+        if (introEl.parentNode) introEl.parentNode.removeChild(introEl);
+    }
     if (authModal) authModal.classList.add('hidden');
     if (menuScreen) {
         menuScreen.classList.add('hidden');
@@ -14151,7 +14009,6 @@ function checkAutoJoinTelegramRoom() {
     if (waitingScreen) {
         waitingScreen.classList.remove('hidden');
         waitingScreen.style.removeProperty('display');
-        waitingScreen.style.display = 'flex';
         const waitTitle = waitingScreen.querySelector('h1, h2, .title');
         if (waitTitle) waitTitle.innerText = `⚔️ Duelga (${code}) ulanilmoqda...`;
     }
@@ -14173,23 +14030,22 @@ function checkAutoJoinTelegramRoom() {
 
 let waitingForCreatorTimer = null;
 socket.on('waitingForCreator', (data) => {
-    const msg = data?.message || "⏳ Taklif qilgan do'stingiz kutilmoqda... U qaytishi bilanoq jang boshlanadi!";
-    showCenterNotice(msg, 4000);
+    const msg = data?.message || "⏳ Taklif qilgan o'yinchi hozir oflayn. Qaytishi kutilmoqda...";
+    showCenterNotice(msg, 3500);
     if (waitingScreen) {
         waitingScreen.classList.remove('hidden');
         waitingScreen.style.removeProperty('display');
-        waitingScreen.style.display = 'flex';
         const waitTitle = waitingScreen.querySelector('h1, h2, .title');
         if (waitTitle) waitTitle.innerText = msg;
     }
     if (waitingForCreatorTimer) clearTimeout(waitingForCreatorTimer);
-    const timeoutSec = Number(data?.timeoutSeconds) || 180; // 3 daqiqa grace period
+    const timeoutSec = Number(data?.timeoutSeconds) || 15;
     waitingForCreatorTimer = setTimeout(() => {
         if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
         if (socket && socket.connected) {
             socket.emit('cancelFind');
         }
-        showCenterNotice("⚠️ Taklif qilgan o'yinchi tarmoqqa ulanmadi.", 4000);
+        showCenterNotice("⚠️ Sizni taklif qilgan o'yinchi oflayn (tarmoqqa ulanmadi).", 4000);
         returnToMainMenu();
     }, timeoutSec * 1000);
 });
@@ -14199,34 +14055,18 @@ socket.on('joinError', (err) => {
         clearTimeout(waitingForCreatorTimer);
         waitingForCreatorTimer = null;
     }
-    autoJoinExecuted = false;
-    const msg = (err && err.message) ? err.message : "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!";
-    
-    // Xona kodi saqlanib turishi uchun inputga to'ldiramiz
-    const pendingCode = getPendingRoomCode();
-    if (pendingCode && inputJoinCode) {
-        inputJoinCode.value = pendingCode;
-    }
-    
+    if (typeof clearPendingInviteParams === 'function') clearPendingInviteParams();
     if (waitingScreen) {
         waitingScreen.classList.add('hidden');
         waitingScreen.style.setProperty('display', 'none', 'important');
     }
+    const msg = (err && err.message) ? err.message : "Sizni taklif qilgan o'yinchi onlayn emas yoki taklif kodi eskirgan!";
     if (joinError) {
         joinError.style.display = 'block';
         joinError.innerText = msg;
     }
-    if (joinCodeContainer) {
-        joinCodeContainer.classList.remove('hidden');
-        joinCodeContainer.style.removeProperty('display');
-        joinCodeContainer.style.display = 'block';
-    }
-    if (multiMenu) {
-        multiMenu.classList.remove('hidden');
-        multiMenu.style.removeProperty('display');
-        multiMenu.style.display = 'flex';
-    }
     showCenterNotice(`⚠️ ${msg}`, 4000);
+    returnToMainMenu();
 });
 
 socket.on('duelRoomError', (err) => {
@@ -14516,23 +14356,8 @@ function startTurnTimerUI(duration = 30) {
             turnSecondsLeft = 0;
             txt.innerText = '0 s';
             // Agar belgilangan 30 soniyada o'q uzilmasa, serverga vaqt tugaganini bildiramiz
-            if (gameMode === 'multi') {
-                if (socket && socket.connected) {
-                    socket.emit('reportTurnTimeout', { roomName: currentRoomName });
-                }
-                // Agar o'z navbatida bo'lsa va 1.2s da serverdan gameOver kelmasa, lokal ravishda darhol xabardor qilish:
-                if (currentTurnIndex === myPlayerIndex) {
-                    setTimeout(() => {
-                        if (gameMode === 'multi' && gameOverScreen && gameOverScreen.classList.contains('hidden')) {
-                            const oppIdx = myPlayerIndex === 0 ? 1 : 0;
-                            showGameOver(oppIdx, {
-                                winnerIndex: oppIdx,
-                                reason: 'timeout_forfeit',
-                                timedOutIndex: myPlayerIndex
-                            });
-                        }
-                    }, 1200);
-                }
+            if (gameMode === 'multi' && socket && socket.connected) {
+                socket.emit('reportTurnTimeout', { roomName: currentRoomName });
             }
             return;
         }
@@ -15262,11 +15087,20 @@ document.addEventListener('keydown', (e) => {
         // 3. Rating Modal: Touch anywhere on screen -> scroll leaderboard list
         const ratingModal = document.getElementById('rating-modal');
         if (ratingModal && !ratingModal.classList.contains('hidden')) {
-            if (rawTarget.closest && rawTarget.closest('input, textarea')) {
+            if (rawTarget.closest && rawTarget.closest('input, textarea, #btn-close-rating, #btn-close-rating-x')) {
                 return null;
             }
             const lbList = document.getElementById('leaderboard-list');
             return lbList || ratingModal;
+        }
+
+        // 3.5. Player Profile Modal: Touch anywhere on screen -> scroll player profile
+        const pProfModal = document.getElementById('player-profile-modal');
+        if (pProfModal && !pProfModal.classList.contains('hidden')) {
+            if (rawTarget.closest && rawTarget.closest('button, input, textarea')) {
+                return null;
+            }
+            return pProfModal;
         }
 
         // 4. Duel Invites Modal: Touch anywhere on screen -> scroll active invites list
@@ -15287,13 +15121,14 @@ document.addEventListener('keydown', (e) => {
             const specific = rawTarget.closest(
                 '#char-select-roster, .char-roster-grid, #leaderboard-list, ' +
                 '#incoming-invites-container, #outgoing-invites-container, .duel-invites-list, ' +
-                '#level-grid, .custom-select-menu, .modal-panel, .center-panel, [data-scrollable]'
+                '#level-grid, .custom-select-menu, .modal-panel, .center-panel, [data-scrollable], .player-profile-screen, #player-profile-modal'
             );
             if (specific) return specific;
         }
 
         // 6. Check open modals by active visibility
         const candidatePanels = [
+            document.getElementById('player-profile-modal'),
             document.getElementById('duel-invites-modal'),
             document.getElementById('rating-modal'),
             document.getElementById('profile-modal'),
@@ -15338,7 +15173,14 @@ document.addEventListener('keydown', (e) => {
         // Check if panel can scroll horizontally (X) or vertically (Y)
         const isRoster = (activeScrollPanel.id === 'char-select-roster' || activeScrollPanel.classList.contains('char-roster-grid'));
         canScrollX = isRoster || (activeScrollPanel.scrollWidth > activeScrollPanel.clientWidth + 4);
-        canScrollY = !isRoster && (activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 || activeScrollPanel.id === 'leaderboard-list' || activeScrollPanel.classList.contains('duel-invites-list') || activeScrollPanel.id === 'rating-modal');
+        canScrollY = !isRoster && (
+            activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 ||
+            activeScrollPanel.id === 'leaderboard-list' ||
+            activeScrollPanel.id === 'rating-modal' ||
+            activeScrollPanel.id === 'player-profile-modal' ||
+            activeScrollPanel.classList.contains('player-profile-screen') ||
+            activeScrollPanel.classList.contains('duel-invites-list')
+        );
     }
 
     function handleDragMove(clientX, clientY, rawEvent) {
@@ -15376,7 +15218,13 @@ document.addEventListener('keydown', (e) => {
             } else {
                 scrollVelocity = (vpos.y - lastMoveY) / dt;
                 lastMoveY = vpos.y;
-                activeScrollPanel.scrollTop = initialScrollTop - dy;
+                if (activeScrollPanel.id === 'rating-modal') {
+                    const lb = document.getElementById('leaderboard-list');
+                    if (lb) lb.scrollTop = initialScrollTop - dy;
+                    activeScrollPanel.scrollTop = initialScrollTop - dy;
+                } else {
+                    activeScrollPanel.scrollTop = initialScrollTop - dy;
+                }
             }
             lastMoveTime = now;
         }
@@ -15898,7 +15746,7 @@ async function openPlayerProfileModal(playerId, playerName, preloadedData = {}) 
     } else {
         avatarImg.style.display = 'none';
         avatarFallback.style.display = 'inline-block';
-        avatarFallback.innerText = activeProfileTarget.flag || '👤'; 
+        avatarFallback.innerText = activeProfileTarget.flag || '👤';
     }
 
     document.getElementById('player-profile-score').innerText = activeProfileTarget.score || 0;
@@ -15937,7 +15785,7 @@ async function openPlayerProfileModal(playerId, playerName, preloadedData = {}) 
             else if (p.score >= 600) tier = "🥈 Kumush";
             document.getElementById('player-profile-tier').innerText = tier;
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 async function sendDuelInviteToActiveTarget() {
@@ -15964,15 +15812,27 @@ async function sendDuelInviteToActiveTarget() {
         });
         const data = await res.json().catch(() => ({}));
         if (data && data.ok) {
-            alert(`⚔️ ${activeProfileTarget.name} ga duel taklifi yuborildi!`);
+            if (typeof showCenterNotice === 'function') {
+                showCenterNotice(`⚔️ ${activeProfileTarget.name} ga duel taklifi yuborildi!`, 3000);
+            } else {
+                alert(`⚔️ ${activeProfileTarget.name} ga duel taklifi yuborildi!`);
+            }
             const pModal = document.getElementById('player-profile-modal');
             if (pModal) pModal.classList.add('hidden');
             fetchDuelInvites();
         } else {
-            alert("Taklif yuborishda xatolik yuz berdi!");
+            if (typeof showCenterNotice === 'function') {
+                showCenterNotice("Taklif yuborishda xatolik yuz berdi!", 3000);
+            } else {
+                alert("Taklif yuborishda xatolik yuz berdi!");
+            }
         }
     } catch (e) {
-        alert("Server bilan bog'lanishda xatolik!");
+        if (typeof showCenterNotice === 'function') {
+            showCenterNotice("Server bilan bog'lanishda xatolik!", 3000);
+        } else {
+            alert("Server bilan bog'lanishda xatolik!");
+        }
     }
 }
 
@@ -15982,7 +15842,11 @@ function addFriendFromActiveTarget() {
         friendId: activeProfileTarget.playerId,
         profile: myProfile
     });
-    alert(`👥 ${activeProfileTarget.name} ga do'stlik taklifi yuborildi!`);
+    if (typeof showCenterNotice === 'function') {
+        showCenterNotice(`👥 ${activeProfileTarget.name} ga do'stlik so'rovi yuborildi!`, 3000);
+    } else {
+        alert(`👥 ${activeProfileTarget.name} ga do'stlik taklifi yuborildi!`);
+    }
     const pModal = document.getElementById('player-profile-modal');
     if (pModal) pModal.classList.add('hidden');
 }
@@ -16102,15 +15966,35 @@ function initDuelInvitesUI() {
     const challengeBtn = document.getElementById('btn-profile-challenge-duel');
     const addFriendBtn = document.getElementById('btn-profile-add-friend');
 
-    if (closeProfX) closeProfX.addEventListener('click', () => profileModal && profileModal.classList.add('hidden'));
-    if (challengeBtn) challengeBtn.addEventListener('click', sendDuelInviteToActiveTarget);
-    if (addFriendBtn) addFriendBtn.addEventListener('click', addFriendFromActiveTarget);
+    const handleCloseProf = safeModalAction((e) => {
+        if (profileModal) profileModal.classList.add('hidden');
+    });
+    if (closeProfX) {
+        closeProfX.addEventListener('click', handleCloseProf);
+        closeProfX.addEventListener('touchend', handleCloseProf, { passive: false });
+    }
+
+    const handleChallengeDuel = safeModalAction((e) => {
+        sendDuelInviteToActiveTarget();
+    });
+    if (challengeBtn) {
+        challengeBtn.addEventListener('click', handleChallengeDuel);
+        challengeBtn.addEventListener('touchend', handleChallengeDuel, { passive: false });
+    }
+
+    const handleAddFriend = safeModalAction((e) => {
+        addFriendFromActiveTarget();
+    });
+    if (addFriendBtn) {
+        addFriendBtn.addEventListener('click', handleAddFriend);
+        addFriendBtn.addEventListener('touchend', handleAddFriend, { passive: false });
+    }
 
     // 5. Socket listeners for duel invites
     socket.on('newDuelInvite', (data) => {
         updateDuelInvitesBadge(data?.pendingCount || 1);
         fetchDuelInvites();
-        try { playSound('bonus'); } catch (_) {}
+        try { playSound('bonus'); } catch (_) { }
     });
 
     socket.on('duelInvitesCount', (data) => {
@@ -16191,7 +16075,7 @@ function checkDuelUrlParams() {
             joinDuelRoomDirectly(info.inviteId, info.duelRoom);
             return true;
         }
-    } catch (_) {}
+    } catch (_) { }
     return false;
 }
 
