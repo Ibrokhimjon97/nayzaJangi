@@ -5530,7 +5530,11 @@ if (doubleButton) {
         if (Number(myProfile.doubleSpears || 0) <= 0) return;
         isDoubleSpearActive = !isDoubleSpearActive;
         doubleButton.classList.toggle('active', isDoubleSpearActive);
-        if (isDoubleSpearActive) triggerAbilityPulse(doubleButton);
+        if (isDoubleSpearActive) {
+            triggerAbilityPulse(doubleButton);
+            const myM = modelForPlayer(myPlayerIndex);
+            if (myM) setModelActionState(myM, 'celebrate', 1400);
+        }
     };
     doubleButton.addEventListener('click', toggleDouble);
 }
@@ -5553,6 +5557,8 @@ if (fireButton) {
             triggerAbilityPulse(fireButton);
             playSfx('superPress', 0.7);
             showCenterNotice("🔥 Olovli o'q faollashdi!", 1500);
+            const myM = modelForPlayer(myPlayerIndex);
+            if (myM) setModelActionState(myM, 'celebrate', 1400);
         } else {
             showCenterNotice("Oddiy o'qqa qaytildi", 1200);
         }
@@ -8296,10 +8302,33 @@ function showGameOver(winnerIndex, data) {
     cameraTargetY = camFocus.y;
     cameraZoomTarget = baseZoom * 1.5;
 
-    // G'alaba qozonganda bayram konfetti effekti.
+    // G'alaba qozonganda bayram konfetti effekti va g'olib jangchi 'celebrate' holatiga o'tadi.
     if (isMeWinner) {
         spawnConfetti();
         playSfx('crowDead', 0.6);
+        const winModel = modelForPlayer(myPlayerIndex);
+        if (winModel) {
+            setModelActionState(winModel, 'celebrate', 60000);
+            setSoldierVisual(winModel, 'celebrate');
+        }
+        const enemyWinIdx = (myPlayerIndex === 0 ? 1 : 0);
+        const loseModel = modelForPlayer(enemyWinIdx);
+        if (loseModel) {
+            setModelActionState(loseModel, 'dead', 60000);
+            setSoldierVisual(loseModel, 'dead');
+        }
+    } else {
+        const enemyWinIdx = (myPlayerIndex === 0 ? 1 : 0);
+        const enemyWinModel = modelForPlayer(enemyWinIdx);
+        if (enemyWinModel) {
+            setModelActionState(enemyWinModel, 'celebrate', 60000);
+            setSoldierVisual(enemyWinModel, 'celebrate');
+        }
+        const myM = modelForPlayer(myPlayerIndex);
+        if (myM) {
+            setModelActionState(myM, 'dead', 60000);
+            setSoldierVisual(myM, 'dead');
+        }
     }
 }
 
@@ -16145,6 +16174,8 @@ function _runPageInits() {
 
             if (isArtilleryAiming) {
                 btnArtillery.classList.add('active');
+                const myM = modelForPlayer(myPlayerIndex);
+                if (myM) setModelActionState(myM, 'celebrate', 1400);
                 if (!myArtilleryCannon) {
                     const tex = loadTexture('artileriya.png');
                     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
