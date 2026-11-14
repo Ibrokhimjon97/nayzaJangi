@@ -257,13 +257,14 @@
             </div>
 
             <div class="section-title">O'lcham va Joylashuv Sozlamalari</div>
+            <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Modelning asosiy tik turgan (Idle, Aim, Defend) holatidagi o'lchamlari:</div>
             <div class="flex-row">
                 <div class="form-group">
-                    <label>Eni (Width) (Standart: 560):</label>
+                    <label>Tik turgan Eni (Width) (Standart: 560):</label>
                     <input type="number" id="modelWidth" name="width" value="560">
                 </div>
                 <div class="form-group">
-                    <label>Bo'yi (Height) (Standart: 430):</label>
+                    <label>Tik turgan Bo'yi (Height) (Standart: 430):</label>
                     <input type="number" id="modelHeight" name="height" value="430">
                 </div>
             </div>
@@ -277,6 +278,59 @@
                     <input type="number" id="modelOffsetX" name="offsetX" value="0">
                 </div>
             </div>
+
+            <!-- O'tirgan holat (Duck) sozlamalari -->
+            <div style="background: rgba(56, 189, 248, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.25); margin-top: 14px; margin-bottom: 14px;">
+                <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px;">🧎 O'tirgan holat (Duck / Crouch) o'lchamlari:</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Qahramon o'tirganda (pastga egilganda) band qiladigan eni va bo'yi. Bo'sh qoldirilsa, avtomatik mutanosiblik olinadi.</div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>O'tirgandagi Eni (Duck Width):</label>
+                        <input type="number" id="modelDuckWidth" name="duckWidth" placeholder="Masalan: 450">
+                    </div>
+                    <div class="form-group">
+                        <label>O'tirgandagi Bo'yi (Duck Height):</label>
+                        <input type="number" id="modelDuckHeight" name="duckHeight" placeholder="Masalan: 280">
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>O'tirgandagi Y surilishi (Duck Offset Y):</label>
+                        <input type="number" id="modelDuckOffsetY" name="duckOffsetY" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>O'tirgandagi X surilishi (Duck Offset X):</label>
+                        <input type="number" id="modelDuckOffsetX" name="duckOffsetX" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sakragan holat (Jump) sozlamalari -->
+            <div style="background: rgba(245, 158, 11, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.25); margin-top: 14px; margin-bottom: 14px;">
+                <div style="font-weight: 700; color: #f59e0b; margin-bottom: 6px;">🦘 Sakragan holat (Jump) o'lchamlari:</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Qahramon sakraganda band qiladigan eni va bo'yi. Bo'sh qoldirilsa, asosiy tik turgan o'lcham olinadi.</div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Sakragandagi Eni (Jump Width):</label>
+                        <input type="number" id="modelJumpWidth" name="jumpWidth" placeholder="Masalan: 560">
+                    </div>
+                    <div class="form-group">
+                        <label>Sakragandagi Bo'yi (Jump Height):</label>
+                        <input type="number" id="modelJumpHeight" name="jumpHeight" placeholder="Masalan: 430">
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Sakragandagi Y surilishi (Jump Offset Y):</label>
+                        <input type="number" id="modelJumpOffsetY" name="jumpOffsetY" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Sakragandagi X surilishi (Jump Offset X):</label>
+                        <input type="number" id="modelJumpOffsetX" name="jumpOffsetX" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
                 <input type="checkbox" id="modelFacesLeft" name="facesLeft" value="true" style="width:20px; height:20px; cursor:pointer;">
                 <label for="modelFacesLeft" style="margin-bottom:0; cursor:pointer;">Model asl rasmlari chapga qarab chizilgan (Flip kerak bo'lsa)</label>
@@ -401,12 +455,28 @@
                 document.getElementById('modelHeight').value = m.settings.height !== undefined ? m.settings.height : 430;
                 document.getElementById('modelOffsetY').value = m.settings.offsetY !== undefined ? m.settings.offsetY : 0;
                 document.getElementById('modelOffsetX').value = m.settings.offsetX !== undefined ? m.settings.offsetX : 0;
+                document.getElementById('modelDuckWidth').value = (m.settings.duckWidth !== undefined && m.settings.duckWidth !== null) ? m.settings.duckWidth : '';
+                document.getElementById('modelDuckHeight').value = (m.settings.duckHeight !== undefined && m.settings.duckHeight !== null) ? m.settings.duckHeight : '';
+                document.getElementById('modelDuckOffsetY').value = (m.settings.duckOffsetY !== undefined && m.settings.duckOffsetY !== null) ? m.settings.duckOffsetY : '';
+                document.getElementById('modelDuckOffsetX').value = (m.settings.duckOffsetX !== undefined && m.settings.duckOffsetX !== null) ? m.settings.duckOffsetX : '';
+                document.getElementById('modelJumpWidth').value = (m.settings.jumpWidth !== undefined && m.settings.jumpWidth !== null) ? m.settings.jumpWidth : '';
+                document.getElementById('modelJumpHeight').value = (m.settings.jumpHeight !== undefined && m.settings.jumpHeight !== null) ? m.settings.jumpHeight : '';
+                document.getElementById('modelJumpOffsetY').value = (m.settings.jumpOffsetY !== undefined && m.settings.jumpOffsetY !== null) ? m.settings.jumpOffsetY : '';
+                document.getElementById('modelJumpOffsetX').value = (m.settings.jumpOffsetX !== undefined && m.settings.jumpOffsetX !== null) ? m.settings.jumpOffsetX : '';
                 document.getElementById('modelFacesLeft').checked = !!m.settings.facesLeft;
             } else {
                 document.getElementById('modelWidth').value = 560;
                 document.getElementById('modelHeight').value = 430;
                 document.getElementById('modelOffsetY').value = 0;
                 document.getElementById('modelOffsetX').value = 0;
+                document.getElementById('modelDuckWidth').value = '';
+                document.getElementById('modelDuckHeight').value = '';
+                document.getElementById('modelDuckOffsetY').value = '';
+                document.getElementById('modelDuckOffsetX').value = '';
+                document.getElementById('modelJumpWidth').value = '';
+                document.getElementById('modelJumpHeight').value = '';
+                document.getElementById('modelJumpOffsetY').value = '';
+                document.getElementById('modelJumpOffsetX').value = '';
                 document.getElementById('modelFacesLeft').checked = false;
             }
 
@@ -447,6 +517,14 @@
             document.getElementById('modelHeight').value = 430;
             document.getElementById('modelOffsetY').value = 0;
             document.getElementById('modelOffsetX').value = 0;
+            document.getElementById('modelDuckWidth').value = '';
+            document.getElementById('modelDuckHeight').value = '';
+            document.getElementById('modelDuckOffsetY').value = '';
+            document.getElementById('modelDuckOffsetX').value = '';
+            document.getElementById('modelJumpWidth').value = '';
+            document.getElementById('modelJumpHeight').value = '';
+            document.getElementById('modelJumpOffsetY').value = '';
+            document.getElementById('modelJumpOffsetX').value = '';
             document.getElementById('modelFacesLeft').checked = false;
 
             // Make 10 movement inputs required again

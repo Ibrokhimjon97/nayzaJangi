@@ -121,6 +121,14 @@
       "height": 450,
       "offsetY": 0,
       "offsetX": 0,
+      "duckWidth": 430,
+      "duckHeight": 300,
+      "duckOffsetY": 0,
+      "duckOffsetX": 0,
+      "jumpWidth": 430,
+      "jumpHeight": 450,
+      "jumpOffsetY": 0,
+      "jumpOffsetX": 0,
       "facesLeft": false
     }
   }

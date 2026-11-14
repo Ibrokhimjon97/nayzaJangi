@@ -72,6 +72,10 @@ function loadCustomModels() {
 
 function saveCustomModels(models) {
     fs.writeFileSync(customModelsPath, JSON.stringify(models, null, 2), 'utf8');
+    try {
+        const rootPath = path.join(__dirname, 'custom_models.json');
+        fs.writeFileSync(rootPath, JSON.stringify(models, null, 2), 'utf8');
+    } catch (_) { }
 }
 
 app.get('/api/models', (req, res) => {
@@ -156,6 +160,14 @@ app.post('/api/models/update', upload.fields(customModelUploadFields), (req, res
         if (req.body.height !== undefined) oldModel.settings.height = Number(req.body.height);
         if (req.body.offsetY !== undefined) oldModel.settings.offsetY = Number(req.body.offsetY);
         if (req.body.offsetX !== undefined) oldModel.settings.offsetX = Number(req.body.offsetX);
+        if (req.body.duckWidth !== undefined) oldModel.settings.duckWidth = (req.body.duckWidth !== '' && !isNaN(Number(req.body.duckWidth))) ? Number(req.body.duckWidth) : null;
+        if (req.body.duckHeight !== undefined) oldModel.settings.duckHeight = (req.body.duckHeight !== '' && !isNaN(Number(req.body.duckHeight))) ? Number(req.body.duckHeight) : null;
+        if (req.body.duckOffsetY !== undefined) oldModel.settings.duckOffsetY = (req.body.duckOffsetY !== '' && !isNaN(Number(req.body.duckOffsetY))) ? Number(req.body.duckOffsetY) : null;
+        if (req.body.duckOffsetX !== undefined) oldModel.settings.duckOffsetX = (req.body.duckOffsetX !== '' && !isNaN(Number(req.body.duckOffsetX))) ? Number(req.body.duckOffsetX) : null;
+        if (req.body.jumpWidth !== undefined) oldModel.settings.jumpWidth = (req.body.jumpWidth !== '' && !isNaN(Number(req.body.jumpWidth))) ? Number(req.body.jumpWidth) : null;
+        if (req.body.jumpHeight !== undefined) oldModel.settings.jumpHeight = (req.body.jumpHeight !== '' && !isNaN(Number(req.body.jumpHeight))) ? Number(req.body.jumpHeight) : null;
+        if (req.body.jumpOffsetY !== undefined) oldModel.settings.jumpOffsetY = (req.body.jumpOffsetY !== '' && !isNaN(Number(req.body.jumpOffsetY))) ? Number(req.body.jumpOffsetY) : null;
+        if (req.body.jumpOffsetX !== undefined) oldModel.settings.jumpOffsetX = (req.body.jumpOffsetX !== '' && !isNaN(Number(req.body.jumpOffsetX))) ? Number(req.body.jumpOffsetX) : null;
         if (req.body.facesLeft !== undefined) oldModel.settings.facesLeft = (req.body.facesLeft === 'true' || req.body.facesLeft === true);
         if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
 
@@ -271,6 +283,14 @@ app.post('/api/models/create', upload.fields(customModelUploadFields), (req, res
                 height: Number(req.body.height) || 430,
                 offsetY: Number(req.body.offsetY) || 0,
                 offsetX: Number(req.body.offsetX) || 0,
+                duckWidth: (req.body.duckWidth !== undefined && req.body.duckWidth !== '' && !isNaN(Number(req.body.duckWidth))) ? Number(req.body.duckWidth) : null,
+                duckHeight: (req.body.duckHeight !== undefined && req.body.duckHeight !== '' && !isNaN(Number(req.body.duckHeight))) ? Number(req.body.duckHeight) : null,
+                duckOffsetY: (req.body.duckOffsetY !== undefined && req.body.duckOffsetY !== '' && !isNaN(Number(req.body.duckOffsetY))) ? Number(req.body.duckOffsetY) : null,
+                duckOffsetX: (req.body.duckOffsetX !== undefined && req.body.duckOffsetX !== '' && !isNaN(Number(req.body.duckOffsetX))) ? Number(req.body.duckOffsetX) : null,
+                jumpWidth: (req.body.jumpWidth !== undefined && req.body.jumpWidth !== '' && !isNaN(Number(req.body.jumpWidth))) ? Number(req.body.jumpWidth) : null,
+                jumpHeight: (req.body.jumpHeight !== undefined && req.body.jumpHeight !== '' && !isNaN(Number(req.body.jumpHeight))) ? Number(req.body.jumpHeight) : null,
+                jumpOffsetY: (req.body.jumpOffsetY !== undefined && req.body.jumpOffsetY !== '' && !isNaN(Number(req.body.jumpOffsetY))) ? Number(req.body.jumpOffsetY) : null,
+                jumpOffsetX: (req.body.jumpOffsetX !== undefined && req.body.jumpOffsetX !== '' && !isNaN(Number(req.body.jumpOffsetX))) ? Number(req.body.jumpOffsetX) : null,
                 facesLeft: (req.body.facesLeft === 'true' || req.body.facesLeft === true)
             }
         };

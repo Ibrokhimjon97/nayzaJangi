@@ -292,6 +292,28 @@ async function fetchCustomModels() {
                 }
             }
         });
+
+        if (typeof p1Model !== 'undefined' || typeof p2Model !== 'undefined') {
+            const activeMods = [];
+            if (typeof p1Model !== 'undefined' && p1Model) activeMods.push(p1Model);
+            if (typeof p2Model !== 'undefined' && p2Model) activeMods.push(p2Model);
+            if (typeof p3Model !== 'undefined' && p3Model) activeMods.push(p3Model);
+            activeMods.forEach(mod => {
+                if (mod && mod.userData && mod.userData.isCustomModel) {
+                    const found = data.find(m => m.id == mod.userData.charType);
+                    if (found && found.settings) {
+                        mod.userData.customSettings = found.settings;
+                        mod.userData.baseWidth = found.settings.width || mod.userData.baseWidth;
+                        mod.userData.baseHeight = found.settings.height || mod.userData.baseHeight;
+                        mod.userData.baseOffsetY = found.settings.offsetY || 0;
+                        mod.userData.baseOffsetX = found.settings.offsetX || 0;
+                        if (typeof updateSoldierVisualTransform === 'function') {
+                            updateSoldierVisualTransform(mod, mod.userData.visualState || 'idle');
+                        }
+                    }
+                }
+            });
+        }
     }
 }
 fetchCustomModels();
@@ -2904,9 +2926,11 @@ function createSoldier(isP1, charType = 0) {
     let cOffsetX = 0;
 
     let facesLeft = false;
+    let customSettings = null;
     if (group.userData.isCustomModel) {
         const cModel = (window.customModelsInfo || []).find(m => m.id == normalizedCharType);
         if (cModel && cModel.settings) {
+            customSettings = cModel.settings;
             cWidth = cModel.settings.width || cWidth;
             cHeight = cModel.settings.height || cHeight;
             cOffsetY = cModel.settings.offsetY || 0;
@@ -2934,8 +2958,13 @@ function createSoldier(isP1, charType = 0) {
     group.userData.planeHeight = planeHeight;
     group.userData.baseWidth = cWidth;
     group.userData.baseHeight = cHeight;
+    group.userData.baseOffsetY = cOffsetY;
+    group.userData.baseOffsetX = cOffsetX;
     group.userData.facesLeft = facesLeft;
     group.userData.shouldFlip = shouldFlip;
+    group.userData.isP1 = isP1;
+    group.userData.mobileScaleBoost = mobileScaleBoost;
+    group.userData.customSettings = customSettings;
     planeMesh.castShadow = true;
     group.userData.torso.add(planeMesh); // attach to torso so breath animation works
     group.add(group.userData.torso);
@@ -3026,6 +3055,82 @@ function getOttomanTexture(model, state) {
     return getOttomanArcherTexture(model, state);
 }
 
+function updateSoldierVisualTransform(model, state) {
+    if (!model || !model.userData || !model.userData.planeMesh) return;
+    const mesh = model.userData.planeMesh;
+    const isP1 = !!model.userData.isP1;
+    const mobileScaleBoost = model.userData.mobileScaleBoost || 1;
+    const baseW = model.userData.baseWidth || 560;
+    const baseH = model.userData.baseHeight || 430;
+    const baseOffsetY = model.userData.baseOffsetY || 0;
+    const baseOffsetX = model.userData.baseOffsetX || 0;
+    const shouldFlip = !!model.userData.shouldFlip;
+    let settings = model.userData.customSettings;
+    if (!settings && model.userData.charType) {
+        const found = (window.customModelsInfo || []).find(m => m.id == model.userData.charType);
+        if (found && found.settings) {
+            settings = found.settings;
+            model.userData.customSettings = settings;
+        }
+    }
+
+    let targetW = baseW;
+    let targetH = baseH;
+    let targetOffsetY = baseOffsetY;
+    let targetOffsetX = baseOffsetX;
+
+    if (state === 'duck') {
+        if (settings) {
+            if (settings.duckWidth !== undefined && settings.duckWidth !== null && settings.duckWidth > 0) {
+                targetW = Number(settings.duckWidth);
+            }
+            if (settings.duckHeight !== undefined && settings.duckHeight !== null && settings.duckHeight > 0) {
+                targetH = Number(settings.duckHeight);
+            } else if (!settings.duckWidth) {
+                targetH = Math.round(baseH * 0.72);
+            }
+            if (settings.duckOffsetY !== undefined && settings.duckOffsetY !== null && settings.duckOffsetY !== '') {
+                targetOffsetY = Number(settings.duckOffsetY);
+            }
+            if (settings.duckOffsetX !== undefined && settings.duckOffsetX !== null && settings.duckOffsetX !== '') {
+                targetOffsetX = Number(settings.duckOffsetX);
+            }
+        } else if (model.userData.isOttomanUnit) {
+            targetH = Math.round(baseH * 0.72);
+        }
+    } else if (state === 'jump') {
+        if (settings) {
+            if (settings.jumpWidth !== undefined && settings.jumpWidth !== null && settings.jumpWidth > 0) {
+                targetW = Number(settings.jumpWidth);
+            }
+            if (settings.jumpHeight !== undefined && settings.jumpHeight !== null && settings.jumpHeight > 0) {
+                targetH = Number(settings.jumpHeight);
+            }
+            if (settings.jumpOffsetY !== undefined && settings.jumpOffsetY !== null && settings.jumpOffsetY !== '') {
+                targetOffsetY = Number(settings.jumpOffsetY);
+            }
+            if (settings.jumpOffsetX !== undefined && settings.jumpOffsetX !== null && settings.jumpOffsetX !== '') {
+                targetOffsetX = Number(settings.jumpOffsetX);
+            }
+        }
+    }
+
+    const curPlaneW = targetW * mobileScaleBoost;
+    const curPlaneH = targetH * mobileScaleBoost;
+    const basePlaneW = model.userData.planeWidth || (baseW * mobileScaleBoost);
+    const basePlaneH = model.userData.planeHeight || (baseH * mobileScaleBoost);
+
+    const scaleX = (curPlaneW / basePlaneW) * (shouldFlip ? -1 : 1);
+    const scaleY = (curPlaneH / basePlaneH);
+
+    mesh.scale.set(scaleX, scaleY, 1);
+    mesh.position.y = (curPlaneH / 2) + targetOffsetY;
+    mesh.position.x = isP1 ? targetOffsetX : -targetOffsetX;
+
+    model.userData.currentEffectiveWidth = curPlaneW;
+    model.userData.currentEffectiveHeight = curPlaneH;
+}
+
 function setSoldierVisual(model, state) {
     if (!model || !model.userData) return;
     let targetState = state;
@@ -3041,9 +3146,7 @@ function setSoldierVisual(model, state) {
     }
     model.userData.visualState = targetState;
 
-    if (model.userData.planeMesh && model.userData.basePlaneY) {
-        model.userData.planeMesh.position.y = model.userData.basePlaneY;
-    }
+    updateSoldierVisualTransform(model, targetState);
 
     if (!model.userData.isOttomanUnit) {
         const frameMap = { idle: 0, load: 0.25, aim: 0.5, afterShot: 0.75 };
@@ -6679,7 +6782,22 @@ function calculateHitResult(targetIndex, relativeY, isSuicide = false) {
     const targetModel = modelForPlayer(targetIndex);
     const baseHeight = targetModel?.userData?.planeHeight || targetModel?.userData?.planeMesh?.geometry?.parameters?.height || 430;
     const isDucking = isDuckActiveForPlayer(targetIndex);
-    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
+    const isJumping = isJumpActiveForPlayer(targetIndex);
+    const settings = targetModel?.userData?.customSettings || ((window.customModelsInfo || []).find(x => x.id == targetModel?.userData?.charType)?.settings);
+    const mobileBoost = targetModel?.userData?.mobileScaleBoost || 1;
+
+    let effectiveHeight = baseHeight;
+    if (isDucking) {
+        if (settings && settings.duckHeight) {
+            effectiveHeight = settings.duckHeight * mobileBoost;
+        } else {
+            effectiveHeight = baseHeight * 0.52;
+        }
+    } else if (isJumping) {
+        if (settings && settings.jumpHeight) {
+            effectiveHeight = settings.jumpHeight * mobileBoost;
+        }
+    }
     const headThreshold = effectiveHeight * 0.72;
     const legThreshold = effectiveHeight * 0.28;
 
@@ -8859,13 +8977,32 @@ function getPlayerBoundingBox(playerIndex) {
 
     const baseHeight = m.userData.planeHeight || m.userData?.planeMesh?.geometry?.parameters?.height || (m.userData.isOttomanUnit ? 430 : 480);
     const baseWidth = m.userData.planeWidth || m.userData?.planeMesh?.geometry?.parameters?.width || (m.userData.isOttomanSpearman ? 640 : (m.userData.isOttomanUnit ? 560 : 360));
+    const settings = m.userData.customSettings || ((window.customModelsInfo || []).find(x => x.id == m.userData.charType)?.settings);
+    const mobileBoost = m.userData.mobileScaleBoost || 1;
 
-    // When ducking/crouching, the warrior lowers down to ~52% of base standing height
-    const effectiveHeight = isDucking ? (baseHeight * 0.52) : baseHeight;
+    let effectiveHeight = baseHeight;
+    let effectiveWidth = baseWidth;
 
-    // Body width: central silhouette of the sprite. When ducking, warrior is compact (~18% narrower)
+    if (isDucking) {
+        if (settings && (settings.duckHeight || settings.duckWidth)) {
+            if (settings.duckHeight) effectiveHeight = settings.duckHeight * mobileBoost;
+            else effectiveHeight = baseHeight * 0.52;
+            if (settings.duckWidth) effectiveWidth = settings.duckWidth * mobileBoost;
+            else effectiveWidth = baseWidth * 0.82;
+        } else {
+            effectiveHeight = baseHeight * 0.52;
+            effectiveWidth = baseWidth * 0.82;
+        }
+    } else if (isJumping) {
+        if (settings && (settings.jumpHeight || settings.jumpWidth)) {
+            if (settings.jumpHeight) effectiveHeight = settings.jumpHeight * mobileBoost;
+            if (settings.jumpWidth) effectiveWidth = settings.jumpWidth * mobileBoost;
+        }
+    }
+
+    // Body width: central silhouette of the sprite. When ducking, warrior is compact (~18% narrower if default)
     const widthFactor = m.userData.isCustomModel ? 0.44 : 0.36;
-    const halfWidth = (baseWidth * widthFactor) * (isDucking ? 0.82 : 1.0);
+    const halfWidth = (effectiveWidth * widthFactor);
 
     // Feet Y elevation (m.position.y dynamically tracks ground or airborne jump height!)
     const minY = m.position.y;
