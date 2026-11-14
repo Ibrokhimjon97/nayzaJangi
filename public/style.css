@@ -5385,15 +5385,16 @@ body.mobile-landscape .coin-3d {
 /* ========================================================
    QAHRAMONNI TANLASH MODALI (CHARACTER SELECTION MODAL)
    ======================================================== */
+#character-select-modal,
 .char-select-modal {
     position: fixed !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    max-width: 720px !important;
-    width: 95vw !important;
+    max-width: 760px !important;
+    width: min(94vw, 760px) !important;
     height: auto !important;
-    max-height: 92vh !important;
+    max-height: min(92vh, 680px) !important;
     padding: 16px 20px 18px !important;
     background: radial-gradient(circle at 50% 15%, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99)) !important;
     border: 1.5px solid rgba(148, 163, 184, 0.3) !important;
@@ -5406,8 +5407,12 @@ body.mobile-landscape .coin-3d {
     -webkit-backdrop-filter: blur(12px) !important;
     box-sizing: border-box !important;
     pointer-events: auto !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
 }
 
+#character-select-modal::before,
 .char-select-modal::before {
     content: '';
     position: fixed;
@@ -5422,6 +5427,7 @@ body.mobile-landscape .coin-3d {
     pointer-events: auto;
 }
 
+#character-select-modal.hidden,
 .char-select-modal.hidden {
     display: none !important;
     pointer-events: none !important;
@@ -5435,6 +5441,8 @@ body.mobile-landscape .coin-3d {
     text-align: center;
     margin-bottom: 12px;
     flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .char-select-header h2 {
@@ -5453,21 +5461,22 @@ body.mobile-landscape .coin-3d {
 }
 
 .char-roster-grid {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    gap: 12px;
-    max-height: clamp(220px, 48vh, 380px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 8px 6px;
-    margin-bottom: 14px;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    justify-items: center !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    max-height: clamp(220px, 50vh, 390px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 8px 6px !important;
+    margin-bottom: 14px !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px !important;
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
 .char-roster-grid::-webkit-scrollbar {
@@ -5481,7 +5490,8 @@ body.mobile-landscape .coin-3d {
 
 .char-card {
     position: relative;
-    flex: 0 1 clamp(130px, 26vw, 165px);
+    width: 100% !important;
+    max-width: 180px !important;
     background: rgba(30, 41, 59, 0.75);
     border: 2px solid rgba(148, 163, 184, 0.2);
     border-radius: 14px;
@@ -5494,7 +5504,7 @@ body.mobile-landscape .coin-3d {
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
 }
 
 .char-card:hover {
@@ -5622,6 +5632,8 @@ body.mobile-landscape .coin-3d {
 
 .char-select-actions {
     display: flex;
+    width: 100% !important;
+    box-sizing: border-box !important;
     gap: 10px;
     margin-top: 14px !important;
     flex-shrink: 0;

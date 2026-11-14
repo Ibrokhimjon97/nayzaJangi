@@ -12421,9 +12421,23 @@ function renderCharacterSelectRoster(activeId) {
     }
 
     requestAnimationFrame(() => {
-        const selCard = charSelectRoster.querySelector('.char-card.selected');
-        if (selCard && typeof selCard.scrollIntoView === 'function') {
-            selCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        if (charSelectModal) {
+            charSelectModal.scrollLeft = 0;
+            charSelectModal.scrollTop = 0;
+        }
+        const selCard = charSelectRoster ? charSelectRoster.querySelector('.char-card.selected') : null;
+        if (selCard && charSelectRoster) {
+            if (charSelectRoster.scrollWidth > charSelectRoster.clientWidth + 5) {
+                const rosterRect = charSelectRoster.getBoundingClientRect();
+                const cardRect = selCard.getBoundingClientRect();
+                const targetLeft = (cardRect.left - rosterRect.left) + charSelectRoster.scrollLeft - (rosterRect.width / 2) + (cardRect.width / 2);
+                charSelectRoster.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+            } else if (charSelectRoster.scrollHeight > charSelectRoster.clientHeight + 5) {
+                const rosterRect = charSelectRoster.getBoundingClientRect();
+                const cardRect = selCard.getBoundingClientRect();
+                const targetTop = (cardRect.top - rosterRect.top) + charSelectRoster.scrollTop - (rosterRect.height / 2) + (cardRect.height / 2);
+                charSelectRoster.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+            }
         }
     });
 }
@@ -12432,6 +12446,11 @@ function openCharacterSelectModal(options = {}) {
     pendingCharSelectCallback = options.onConfirm || null;
     pendingCharSelectCancel = options.onCancel || null;
     isCharSelectTransitioning = false;
+
+    if (charSelectModal) {
+        charSelectModal.scrollLeft = 0;
+        charSelectModal.scrollTop = 0;
+    }
 
     // Disallow background touch bleed-through while modal is open
     if (menuScreen) {
@@ -15285,10 +15304,10 @@ document.addEventListener('keydown', (e) => {
             return null;
         }
 
-        // 2. Character Select: Touch anywhere on screen -> scroll the roster grid horizontally
+        // 2. Character Select: Touch anywhere on screen -> scroll the roster grid
         const charModal = document.getElementById('character-select-modal');
         if (charModal && !charModal.classList.contains('hidden')) {
-            return document.getElementById('char-select-roster') || charModal;
+            return document.getElementById('char-select-roster');
         }
 
         // 3. Rating Modal: Touch anywhere on screen -> scroll leaderboard list
