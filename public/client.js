@@ -3113,6 +3113,36 @@ function updateSoldierVisualTransform(model, state) {
                 targetOffsetX = Number(settings.jumpOffsetX);
             }
         }
+    } else if (state === 'hurt') {
+        if (settings) {
+            if (settings.hurtWidth !== undefined && settings.hurtWidth !== null && settings.hurtWidth > 0) {
+                targetW = Number(settings.hurtWidth);
+            }
+            if (settings.hurtHeight !== undefined && settings.hurtHeight !== null && settings.hurtHeight > 0) {
+                targetH = Number(settings.hurtHeight);
+            }
+            if (settings.hurtOffsetY !== undefined && settings.hurtOffsetY !== null && settings.hurtOffsetY !== '') {
+                targetOffsetY = Number(settings.hurtOffsetY);
+            }
+            if (settings.hurtOffsetX !== undefined && settings.hurtOffsetX !== null && settings.hurtOffsetX !== '') {
+                targetOffsetX = Number(settings.hurtOffsetX);
+            }
+        }
+    } else if (state === 'dead') {
+        if (settings) {
+            if (settings.deadWidth !== undefined && settings.deadWidth !== null && settings.deadWidth > 0) {
+                targetW = Number(settings.deadWidth);
+            }
+            if (settings.deadHeight !== undefined && settings.deadHeight !== null && settings.deadHeight > 0) {
+                targetH = Number(settings.deadHeight);
+            }
+            if (settings.deadOffsetY !== undefined && settings.deadOffsetY !== null && settings.deadOffsetY !== '') {
+                targetOffsetY = Number(settings.deadOffsetY);
+            }
+            if (settings.deadOffsetX !== undefined && settings.deadOffsetX !== null && settings.deadOffsetX !== '') {
+                targetOffsetX = Number(settings.deadOffsetX);
+            }
+        }
     }
 
     const curPlaneW = targetW * mobileScaleBoost;
@@ -5192,91 +5222,55 @@ function knockDownModel(model) {
 
     model.userData.isKnockedDown = true;
     model.userData.isDead = false;
+    model.rotation.z = 0; // MUTLAQO AYLANTIRILMAYDI! Yarador holati rasmi o'tirgan/yarador holda chizilgan!
+    model.position.y = standingY;
     setSoldierVisual(model, 'hurt');
+    setModelActionState(model, 'hurt', 800);
 
-    // Tirik modelga o'q tekkanda orqaga yiqilish yo'nalishi:
-    // O'ng tomondagi jangchi (x >= 0) o'q zarbidan orqaga (o'ng tomonga) yiqiladi: soat strelkasi bo'yicha -90 gradus (-Math.PI / 2)
-    // Chap tomondagi jangchi (x < 0) o'q zarbidan orqaga (chap tomonga) yiqiladi: soat strelkasiga qarshi +90 gradus (+Math.PI / 2)
-    const fallDir = (model.position.x >= 0) ? -1 : 1;
-    const targetRotZ = fallDir * (Math.PI / 2);
+    // O'q tekkanda orqaga yengil silkinish (recoil flinch):
+    const recoilDir = (model.position.x >= 0) ? 1 : -1;
+    const origX = (typeof model.userData.basePlacedX === 'number')
+        ? model.userData.basePlacedX
+        : model.position.x;
+    model.userData.basePlacedX = origX;
 
-    // Yer sathiga to'g'ri yotish balandligi (model yer ostiga kirmasligi uchun)
-    const groundSurfaceY = ground.position.y + 100;
-    const fallenY = groundSurfaceY + 68;
+    const recoilX = origX + (recoilDir * 18);
+    model.position.x = recoilX;
 
-    const startRotZ = model.rotation.z || 0;
-    const startY = model.position.y;
-    const fallDuration = 320; // 320ms silliq gravitatsiya bilan yerga yiqilish
-    const startTime = performance.now();
+    playSfx('ground', 0.85);
+    spawnParticles(model.position.x, ground.position.y + 100, 12, false);
+    screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
 
-    function stepFall(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / fallDuration);
-        // Gravitatsiya tezlashuvi effekti (easeInQuad)
-        const ease = progress * progress;
+    // Yengil orqaga silkinishdan so'ng o'z joyiga silliq qaytish
+    setTimeout(() => {
+        model.position.x = origX;
+    }, 180);
 
-        model.rotation.z = startRotZ + (targetRotZ - startRotZ) * ease;
-        model.position.y = startY + (fallenY - startY) * ease;
-
-        if (progress < 1) {
-            model.userData.knockDownAnimId = requestAnimationFrame(stepFall);
-        } else {
-            model.rotation.z = targetRotZ;
-            model.position.y = fallenY;
-            model.userData.knockDownAnimId = null;
-
-            // Yerga zarb bilan tushish effekti
-            playSfx('ground', 0.85);
-            spawnParticles(model.position.x + (fallDir * 90), groundSurfaceY + 14, 10, false);
-            screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
-
-            // Agar joni tugamagan bo'lsa:
-            // Yerda biroz (850ms) yotgach, yana default tikka holatiga qayta turadi!
-            model.userData.knockDownTimer = setTimeout(() => {
-                // Qayta tekshiramiz: agar shu orada joni tugagan bo'lsa turmasin, o'lim holatida qolsin
-                const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
-                if (stillDead) {
-                    model.userData.isDead = true;
-                    model.rotation.z = 0;
-                    model.position.y = standingY;
-                    if (model.userData.planeMesh && model.userData.planeMesh.material) {
-                        model.userData.planeMesh.material.opacity = 1.0;
-                    }
-                    model.visible = true;
-                    setSoldierVisual(model, 'dead');
-                    setModelActionState(model, 'dead', 1000000);
-                    return;
-                }
-
-                const standDuration = 360; // 360ms da silliq tik turish
-                const standStartTime = performance.now();
-
-                function stepStand(sNow) {
-                    const sElapsed = sNow - standStartTime;
-                    const sProgress = Math.min(1, sElapsed / standDuration);
-                    // Qayta tik turish (easeOutQuad)
-                    const sEase = 1 - (1 - sProgress) * (1 - sProgress);
-
-                    model.rotation.z = targetRotZ * (1 - sEase);
-                    model.position.y = fallenY + (standingY - fallenY) * sEase;
-
-                    if (sProgress < 1) {
-                        model.userData.knockDownAnimId = requestAnimationFrame(stepStand);
-                    } else {
-                        model.rotation.z = 0;
-                        model.position.y = standingY;
-                        model.userData.isKnockedDown = false;
-                        model.userData.knockDownAnimId = null;
-                        const def = (modelIndex >= 0 && isDefenseActiveForPlayer(modelIndex));
-                        setSoldierVisual(model, def ? 'defend' : 'idle');
-                    }
-                }
-                model.userData.knockDownAnimId = requestAnimationFrame(stepStand);
-            }, 850);
+    // 800ms dan so'ng yana default tikka/himoya holatiga qaytadi
+    model.userData.knockDownTimer = setTimeout(() => {
+        const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
+        if (stillDead) {
+            model.userData.isDead = true;
+            model.rotation.z = 0;
+            model.position.y = standingY;
+            model.position.x = origX;
+            if (model.userData.planeMesh && model.userData.planeMesh.material) {
+                model.userData.planeMesh.material.opacity = 1.0;
+            }
+            model.visible = true;
+            setSoldierVisual(model, 'dead');
+            setModelActionState(model, 'dead', 1000000);
+            return;
         }
-    }
 
-    model.userData.knockDownAnimId = requestAnimationFrame(stepFall);
+        model.rotation.z = 0;
+        model.position.y = standingY;
+        model.position.x = origX;
+        model.userData.isKnockedDown = false;
+        model.userData.knockDownTimer = null;
+        const def = (modelIndex >= 0 && isDefenseActiveForPlayer(modelIndex));
+        setSoldierVisual(model, def ? 'defend' : 'idle');
+    }, 800);
 }
 
 function breakShield(model) {

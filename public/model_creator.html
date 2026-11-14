@@ -147,6 +147,30 @@
             margin-top: 10px;
             width: 100%;
         }
+
+        .preview-tab {
+            background: #334155;
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preview-tab:hover {
+            background: #475569;
+            color: white;
+        }
+
+        .preview-tab.active {
+            background: #0284c7;
+            color: white;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -256,6 +280,60 @@
                 <img id="prev-celebrate" class="preview-img">
             </div>
 
+            <!-- Jonli Jang Maydoni Preview (Live Battlefield Preview) -->
+            <div class="section-title">🎮 Jonli Jang Maydoni Ko'rinishi (Live Battlefield Visual Preview)</div>
+            <div style="font-size:12px; color:#94a3b8; margin-bottom:10px;">
+                Holat tugmalarini bosing va o'lchamlarni o'zgartirib, model maydonda va yer sathida qanday turishini real vaqtda jonli ko'ring:
+            </div>
+
+            <!-- Holatni tanlash tablari -->
+            <div class="preview-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
+                <button type="button" class="preview-tab active" data-state="idle" onclick="switchPreviewState('idle')">🚶 1. Tikka (Idle)</button>
+                <button type="button" class="preview-tab" data-state="aim" onclick="switchPreviewState('aim')">🏹 2. Mo'ljal (Aim)</button>
+                <button type="button" class="preview-tab" data-state="afterShot" onclick="switchPreviewState('afterShot')">💨 3. Otdi (After Shot)</button>
+                <button type="button" class="preview-tab" data-state="duck" onclick="switchPreviewState('duck')">🧎 4. O'tirgan (Duck)</button>
+                <button type="button" class="preview-tab" data-state="shieldDefend" onclick="switchPreviewState('shieldDefend')">🛡️ 5. Qalqon Himoya</button>
+                <button type="button" class="preview-tab" data-state="armDefend" onclick="switchPreviewState('armDefend')">✋ 6. Qo'l Himoya</button>
+                <button type="button" class="preview-tab" data-state="jump" onclick="switchPreviewState('jump')">🦘 7. Sakragan (Jump)</button>
+                <button type="button" class="preview-tab" data-state="hurt" onclick="switchPreviewState('hurt')">🩸 8. Yarador (Hurt)</button>
+                <button type="button" class="preview-tab" data-state="break" onclick="switchPreviewState('break')">💥 9. Sinish (Break)</button>
+                <button type="button" class="preview-tab" data-state="dead" onclick="switchPreviewState('dead')">💀 10. O'lim (Dead)</button>
+                <button type="button" class="preview-tab" data-state="celebrate" onclick="switchPreviewState('celebrate')">🏆 11. G'alaba (Celebrate)</button>
+            </div>
+
+            <!-- Visual Stage Canvas -->
+            <div style="position:relative; width:100%; height:320px; background:linear-gradient(180deg, #1e293b 0%, #0f172a 70%, #1c1917 100%); border-radius:10px; overflow:hidden; border:2px solid rgba(56, 189, 248, 0.4); box-shadow:inset 0 0 30px rgba(0,0,0,0.6); margin-bottom: 20px;">
+                <!-- Osmon va o'lchov to'ri -->
+                <div style="position:absolute; inset:0; opacity:0.15; background-size: 20px 20px; background-image: linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px);"></div>
+                
+                <!-- Yer sathi (Ground line) -->
+                <div style="position:absolute; bottom:55px; left:0; right:0; height:55px; background:linear-gradient(to bottom, #15803d 0%, #166534 20%, #78350f 25%, #451a03 100%); border-top:3px solid #22c55e;">
+                    <div style="position:absolute; top:-22px; right:12px; font-size:11px; color:#4ade80; font-weight:700; text-shadow:0 1px 3px black;">🌱 YER SATHI (GROUND LEVEL)</div>
+                    <div style="position:absolute; top:2px; left:12px; font-size:10px; color:#86efac; opacity:0.75;">Jang maydoni zamini</div>
+                </div>
+
+                <!-- Markaziy chiziq (Pivot guide) -->
+                <div style="position:absolute; top:0; bottom:55px; left:50%; width:1px; background:rgba(255,255,255,0.15); pointer-events:none;"></div>
+
+                <!-- Jonli Sprite Rendereri -->
+                <div id="visualPreviewStage" style="position:absolute; bottom:55px; left:50%; transform:translateX(-50%); display:flex; align-items:flex-end; justify-content:center; pointer-events:none;">
+                    <img id="visualPreviewImg" src="" alt="" style="display:none; image-rendering:pixelated; object-fit:contain; transition: transform 0.08s ease-out;">
+                    <div id="visualPreviewEmpty" style="color:#64748b; font-size:13px; text-align:center; padding-bottom:40px;">
+                        Hozircha rasm yuklanmagan.<br>Fayl yuklanganda yoki model tanlanganda bu yerda ko'rinadi.
+                    </div>
+                </div>
+
+                <!-- O'lcham indikatori (HUD overlay) -->
+                <div style="position:absolute; top:10px; left:12px; background:rgba(15,23,42,0.85); backdrop-filter:blur(4px); padding:6px 12px; border-radius:6px; border:1px solid rgba(148,163,184,0.3); font-size:11px; color:#e2e8f0; display:flex; flex-wrap:wrap; gap:10px;">
+                    <span id="hudStateName" style="color:#38bdf8; font-weight:700;">Tikka (Idle)</span>
+                    <span>Eni: <strong id="hudW" style="color:#fbbf24;">560</strong>px</span>
+                    <span>Bo'yi: <strong id="hudH" style="color:#fbbf24;">430</strong>px</span>
+                    <span>OffsetY: <strong id="hudOY" style="color:#a7f3d0;">0</strong>px</span>
+                    <span>OffsetX: <strong id="hudOX" style="color:#a7f3d0;">0</strong>px</span>
+                    <span>Flip: <strong id="hudFlip" style="color:#f472b6;">O'ngga</strong></span>
+                </div>
+            </div>
+
             <div class="section-title">O'lcham va Joylashuv Sozlamalari</div>
             <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Modelning asosiy tik turgan (Idle, Aim, Defend) holatidagi o'lchamlari:</div>
             <div class="flex-row">
@@ -331,8 +409,60 @@
                 </div>
             </div>
 
+            <!-- Yaralangan holat (Hurt) sozlamalari -->
+            <div style="background: rgba(239, 68, 68, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 14px; margin-bottom: 14px;">
+                <div style="font-weight: 700; color: #ef4444; margin-bottom: 6px;">🩸 Yaralangan holat (Hurt) o'lchamlari:</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Qahramonga o'q tekkanda (o'tirgan yoki zarba olgan holatida) band qiladigan eni va bo'yi hamda yerdan balandligi. Bo'sh qoldirilsa, asosiy tik turgan o'lcham olinadi.</div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Yaralangandagi Eni (Hurt Width):</label>
+                        <input type="number" id="modelHurtWidth" name="hurtWidth" placeholder="Masalan: 480">
+                    </div>
+                    <div class="form-group">
+                        <label>Yaralangandagi Bo'yi (Hurt Height):</label>
+                        <input type="number" id="modelHurtHeight" name="hurtHeight" placeholder="Masalan: 320">
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Yaralangandagi Y surilishi (Hurt Offset Y):</label>
+                        <input type="number" id="modelHurtOffsetY" name="hurtOffsetY" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Yaralangandagi X surilishi (Hurt Offset X):</label>
+                        <input type="number" id="modelHurtOffsetX" name="hurtOffsetX" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- O'lim holati (Dead) sozlamalari -->
+            <div style="background: rgba(148, 163, 184, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.25); margin-top: 14px; margin-bottom: 14px;">
+                <div style="font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">💀 O'lim holati (Dead - yerda yotish) o'lchamlari:</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Qahramon halok bo'lib yerda gorizontal yotgan holatidagi eni va bo'yi hamda yer sathidagi joylashuvi. Bo'sh qoldirilsa, asosiy tik turgan o'lcham olinadi.</div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>O'lgandagi Eni (Dead Width):</label>
+                        <input type="number" id="modelDeadWidth" name="deadWidth" placeholder="Masalan: 560">
+                    </div>
+                    <div class="form-group">
+                        <label>O'lgandagi Bo'yi (Dead Height):</label>
+                        <input type="number" id="modelDeadHeight" name="deadHeight" placeholder="Masalan: 260">
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>O'lgandagi Y surilishi (Dead Offset Y):</label>
+                        <input type="number" id="modelDeadOffsetY" name="deadOffsetY" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>O'lgandagi X surilishi (Dead Offset X):</label>
+                        <input type="number" id="modelDeadOffsetX" name="deadOffsetX" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                <input type="checkbox" id="modelFacesLeft" name="facesLeft" value="true" style="width:20px; height:20px; cursor:pointer;">
+                <input type="checkbox" id="modelFacesLeft" name="facesLeft" value="true" style="width:20px; height:20px; cursor:pointer;" onchange="updateVisualPreview()">
                 <label for="modelFacesLeft" style="margin-bottom:0; cursor:pointer;">Model asl rasmlari chapga qarab chizilgan (Flip kerak bo'lsa)</label>
             </div>
 
@@ -363,6 +493,135 @@
     <script>
         let allModels = [];
         let editMode = false;
+        let currentPreviewState = 'idle';
+
+        const stateImageMap = {
+            idle: 'prev-idle',
+            aim: 'prev-aim',
+            afterShot: 'prev-after-shot',
+            duck: 'prev-duck',
+            shieldDefend: 'prev-shield-defend',
+            armDefend: 'prev-arm-defend',
+            jump: 'prev-jump',
+            hurt: 'prev-hurt',
+            break: 'prev-shield-break',
+            dead: 'prev-dead',
+            celebrate: 'prev-celebrate'
+        };
+
+        const stateNamesUz = {
+            idle: "Tikka (Idle)",
+            aim: "Mo'ljal (Aim)",
+            afterShot: "Otdi (After Shot)",
+            duck: "O'tirgan (Duck)",
+            shieldDefend: "Qalqon Himoya",
+            armDefend: "Qo'l Himoya",
+            jump: "Sakragan (Jump)",
+            hurt: "Yarador (Hurt)",
+            break: "Sinish (Break)",
+            dead: "O'lim (Dead)",
+            celebrate: "G'alaba (Celebrate)"
+        };
+
+        function switchPreviewState(state) {
+            currentPreviewState = state;
+            document.querySelectorAll('.preview-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-state') === state);
+            });
+            updateVisualPreview();
+        }
+
+        function updateVisualPreview() {
+            const img = document.getElementById('visualPreviewImg');
+            const empty = document.getElementById('visualPreviewEmpty');
+            if (!img) return;
+
+            const thumbId = stateImageMap[currentPreviewState] || 'prev-idle';
+            const thumb = document.getElementById(thumbId);
+            const fallbackThumb = document.getElementById('prev-idle');
+            const src = (thumb && thumb.src && thumb.style.display !== 'none') ? thumb.src : ((fallbackThumb && fallbackThumb.src && fallbackThumb.style.display !== 'none') ? fallbackThumb.src : '');
+
+            if (src) {
+                img.src = src;
+                img.style.display = 'block';
+                if (empty) empty.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                if (empty) empty.style.display = 'block';
+            }
+
+            const baseW = Number(document.getElementById('modelWidth').value) || 560;
+            const baseH = Number(document.getElementById('modelHeight').value) || 430;
+            const baseOY = Number(document.getElementById('modelOffsetY').value) || 0;
+            const baseOX = Number(document.getElementById('modelOffsetX').value) || 0;
+            const facesLeft = document.getElementById('modelFacesLeft') ? document.getElementById('modelFacesLeft').checked : false;
+
+            let w = baseW, h = baseH, oy = baseOY, ox = baseOX;
+
+            if (currentPreviewState === 'duck') {
+                const dw = document.getElementById('modelDuckWidth').value;
+                const dh = document.getElementById('modelDuckHeight').value;
+                const doy = document.getElementById('modelDuckOffsetY').value;
+                const dox = document.getElementById('modelDuckOffsetX').value;
+                if (dw !== '') w = Number(dw);
+                if (dh !== '') h = Number(dh); else if (dw === '') h = Math.round(baseH * 0.72);
+                if (doy !== '') oy = Number(doy);
+                if (dox !== '') ox = Number(dox);
+            } else if (currentPreviewState === 'jump') {
+                const jw = document.getElementById('modelJumpWidth').value;
+                const jh = document.getElementById('modelJumpHeight').value;
+                const joy = document.getElementById('modelJumpOffsetY').value;
+                const jox = document.getElementById('modelJumpOffsetX').value;
+                if (jw !== '') w = Number(jw);
+                if (jh !== '') h = Number(jh);
+                if (joy !== '') oy = Number(joy);
+                if (jox !== '') ox = Number(jox);
+            } else if (currentPreviewState === 'hurt') {
+                const hw = document.getElementById('modelHurtWidth').value;
+                const hh = document.getElementById('modelHurtHeight').value;
+                const hoy = document.getElementById('modelHurtOffsetY').value;
+                const hox = document.getElementById('modelHurtOffsetX').value;
+                if (hw !== '') w = Number(hw);
+                if (hh !== '') h = Number(hh);
+                if (hoy !== '') oy = Number(hoy);
+                if (hox !== '') ox = Number(hox);
+            } else if (currentPreviewState === 'dead') {
+                const dw = document.getElementById('modelDeadWidth').value;
+                const dh = document.getElementById('modelDeadHeight').value;
+                const doy = document.getElementById('modelDeadOffsetY').value;
+                const dox = document.getElementById('modelDeadOffsetX').value;
+                if (dw !== '') w = Number(dw);
+                if (dh !== '') h = Number(dh);
+                if (doy !== '') oy = Number(doy);
+                if (dox !== '') ox = Number(dox);
+            }
+
+            const scale = 0.45;
+            const dispW = Math.max(20, Math.round(w * scale));
+            const dispH = Math.max(20, Math.round(h * scale));
+            const dispOY = Math.round(oy * scale);
+            const dispOX = Math.round(ox * scale);
+
+            img.style.width = dispW + 'px';
+            img.style.height = dispH + 'px';
+            img.style.marginBottom = dispOY + 'px';
+            img.style.marginLeft = dispOX + 'px';
+            img.style.transform = facesLeft ? 'scaleX(-1)' : 'scaleX(1)';
+
+            const hudStateName = document.getElementById('hudStateName');
+            const hudW = document.getElementById('hudW');
+            const hudH = document.getElementById('hudH');
+            const hudOY = document.getElementById('hudOY');
+            const hudOX = document.getElementById('hudOX');
+            const hudFlip = document.getElementById('hudFlip');
+
+            if (hudStateName) hudStateName.innerText = stateNamesUz[currentPreviewState] || currentPreviewState;
+            if (hudW) hudW.innerText = w;
+            if (hudH) hudH.innerText = h;
+            if (hudOY) hudOY.innerText = oy;
+            if (hudOX) hudOX.innerText = ox;
+            if (hudFlip) hudFlip.innerText = facesLeft ? "Chapga (Flipped)" : "O'ngga";
+        }
 
         function preview(input, imgId) {
             const img = document.getElementById(imgId);
@@ -372,6 +631,7 @@
             } else if (!editMode) {
                 img.style.display = 'none';
             }
+            updateVisualPreview();
         }
 
         function previewAudio(input, audioId) {
@@ -392,6 +652,7 @@
             } else {
                 img.style.display = 'none';
             }
+            updateVisualPreview();
         }
 
         async function fetchModels() {
@@ -463,6 +724,14 @@
                 document.getElementById('modelJumpHeight').value = (m.settings.jumpHeight !== undefined && m.settings.jumpHeight !== null) ? m.settings.jumpHeight : '';
                 document.getElementById('modelJumpOffsetY').value = (m.settings.jumpOffsetY !== undefined && m.settings.jumpOffsetY !== null) ? m.settings.jumpOffsetY : '';
                 document.getElementById('modelJumpOffsetX').value = (m.settings.jumpOffsetX !== undefined && m.settings.jumpOffsetX !== null) ? m.settings.jumpOffsetX : '';
+                document.getElementById('modelHurtWidth').value = (m.settings.hurtWidth !== undefined && m.settings.hurtWidth !== null) ? m.settings.hurtWidth : '';
+                document.getElementById('modelHurtHeight').value = (m.settings.hurtHeight !== undefined && m.settings.hurtHeight !== null) ? m.settings.hurtHeight : '';
+                document.getElementById('modelHurtOffsetY').value = (m.settings.hurtOffsetY !== undefined && m.settings.hurtOffsetY !== null) ? m.settings.hurtOffsetY : '';
+                document.getElementById('modelHurtOffsetX').value = (m.settings.hurtOffsetX !== undefined && m.settings.hurtOffsetX !== null) ? m.settings.hurtOffsetX : '';
+                document.getElementById('modelDeadWidth').value = (m.settings.deadWidth !== undefined && m.settings.deadWidth !== null) ? m.settings.deadWidth : '';
+                document.getElementById('modelDeadHeight').value = (m.settings.deadHeight !== undefined && m.settings.deadHeight !== null) ? m.settings.deadHeight : '';
+                document.getElementById('modelDeadOffsetY').value = (m.settings.deadOffsetY !== undefined && m.settings.deadOffsetY !== null) ? m.settings.deadOffsetY : '';
+                document.getElementById('modelDeadOffsetX').value = (m.settings.deadOffsetX !== undefined && m.settings.deadOffsetX !== null) ? m.settings.deadOffsetX : '';
                 document.getElementById('modelFacesLeft').checked = !!m.settings.facesLeft;
             } else {
                 document.getElementById('modelWidth').value = 560;
@@ -477,6 +746,14 @@
                 document.getElementById('modelJumpHeight').value = '';
                 document.getElementById('modelJumpOffsetY').value = '';
                 document.getElementById('modelJumpOffsetX').value = '';
+                document.getElementById('modelHurtWidth').value = '';
+                document.getElementById('modelHurtHeight').value = '';
+                document.getElementById('modelHurtOffsetY').value = '';
+                document.getElementById('modelHurtOffsetX').value = '';
+                document.getElementById('modelDeadWidth').value = '';
+                document.getElementById('modelDeadHeight').value = '';
+                document.getElementById('modelDeadOffsetY').value = '';
+                document.getElementById('modelDeadOffsetX').value = '';
                 document.getElementById('modelFacesLeft').checked = false;
             }
 
@@ -503,6 +780,7 @@
                 audio.style.display = 'block';
             }
 
+            updateVisualPreview();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -525,6 +803,14 @@
             document.getElementById('modelJumpHeight').value = '';
             document.getElementById('modelJumpOffsetY').value = '';
             document.getElementById('modelJumpOffsetX').value = '';
+            document.getElementById('modelHurtWidth').value = '';
+            document.getElementById('modelHurtHeight').value = '';
+            document.getElementById('modelHurtOffsetY').value = '';
+            document.getElementById('modelHurtOffsetX').value = '';
+            document.getElementById('modelDeadWidth').value = '';
+            document.getElementById('modelDeadHeight').value = '';
+            document.getElementById('modelDeadOffsetY').value = '';
+            document.getElementById('modelDeadOffsetX').value = '';
             document.getElementById('modelFacesLeft').checked = false;
 
             // Make 10 movement inputs required again
@@ -538,6 +824,7 @@
             document.querySelectorAll('.preview-img').forEach(el => { el.style.display = 'none'; el.src = ''; });
             document.getElementById('prev-audio').style.display = 'none';
             document.getElementById('prev-audio').src = '';
+            updateVisualPreview();
         }
 
         async function deleteModel(id) {
@@ -592,8 +879,26 @@
             }
         });
 
+        // Wire real-time visual preview on any dimension input change
+        const dimensionInputIds = [
+            'modelWidth', 'modelHeight', 'modelOffsetY', 'modelOffsetX',
+            'modelDuckWidth', 'modelDuckHeight', 'modelDuckOffsetY', 'modelDuckOffsetX',
+            'modelJumpWidth', 'modelJumpHeight', 'modelJumpOffsetY', 'modelJumpOffsetX',
+            'modelHurtWidth', 'modelHurtHeight', 'modelHurtOffsetY', 'modelHurtOffsetX',
+            'modelDeadWidth', 'modelDeadHeight', 'modelDeadOffsetY', 'modelDeadOffsetX',
+            'modelFacesLeft'
+        ];
+        dimensionInputIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', updateVisualPreview);
+                el.addEventListener('change', updateVisualPreview);
+            }
+        });
+
         // Initial load
         fetchModels();
+        updateVisualPreview();
     </script>
 </body>
 

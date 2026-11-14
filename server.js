@@ -168,6 +168,14 @@ app.post('/api/models/update', upload.fields(customModelUploadFields), (req, res
         if (req.body.jumpHeight !== undefined) oldModel.settings.jumpHeight = (req.body.jumpHeight !== '' && !isNaN(Number(req.body.jumpHeight))) ? Number(req.body.jumpHeight) : null;
         if (req.body.jumpOffsetY !== undefined) oldModel.settings.jumpOffsetY = (req.body.jumpOffsetY !== '' && !isNaN(Number(req.body.jumpOffsetY))) ? Number(req.body.jumpOffsetY) : null;
         if (req.body.jumpOffsetX !== undefined) oldModel.settings.jumpOffsetX = (req.body.jumpOffsetX !== '' && !isNaN(Number(req.body.jumpOffsetX))) ? Number(req.body.jumpOffsetX) : null;
+        if (req.body.hurtWidth !== undefined) oldModel.settings.hurtWidth = (req.body.hurtWidth !== '' && !isNaN(Number(req.body.hurtWidth))) ? Number(req.body.hurtWidth) : null;
+        if (req.body.hurtHeight !== undefined) oldModel.settings.hurtHeight = (req.body.hurtHeight !== '' && !isNaN(Number(req.body.hurtHeight))) ? Number(req.body.hurtHeight) : null;
+        if (req.body.hurtOffsetY !== undefined) oldModel.settings.hurtOffsetY = (req.body.hurtOffsetY !== '' && !isNaN(Number(req.body.hurtOffsetY))) ? Number(req.body.hurtOffsetY) : null;
+        if (req.body.hurtOffsetX !== undefined) oldModel.settings.hurtOffsetX = (req.body.hurtOffsetX !== '' && !isNaN(Number(req.body.hurtOffsetX))) ? Number(req.body.hurtOffsetX) : null;
+        if (req.body.deadWidth !== undefined) oldModel.settings.deadWidth = (req.body.deadWidth !== '' && !isNaN(Number(req.body.deadWidth))) ? Number(req.body.deadWidth) : null;
+        if (req.body.deadHeight !== undefined) oldModel.settings.deadHeight = (req.body.deadHeight !== '' && !isNaN(Number(req.body.deadHeight))) ? Number(req.body.deadHeight) : null;
+        if (req.body.deadOffsetY !== undefined) oldModel.settings.deadOffsetY = (req.body.deadOffsetY !== '' && !isNaN(Number(req.body.deadOffsetY))) ? Number(req.body.deadOffsetY) : null;
+        if (req.body.deadOffsetX !== undefined) oldModel.settings.deadOffsetX = (req.body.deadOffsetX !== '' && !isNaN(Number(req.body.deadOffsetX))) ? Number(req.body.deadOffsetX) : null;
         if (req.body.facesLeft !== undefined) oldModel.settings.facesLeft = (req.body.facesLeft === 'true' || req.body.facesLeft === true);
         if (req.body.weaponType !== undefined) oldModel.weaponType = req.body.weaponType;
 
@@ -291,6 +299,14 @@ app.post('/api/models/create', upload.fields(customModelUploadFields), (req, res
                 jumpHeight: (req.body.jumpHeight !== undefined && req.body.jumpHeight !== '' && !isNaN(Number(req.body.jumpHeight))) ? Number(req.body.jumpHeight) : null,
                 jumpOffsetY: (req.body.jumpOffsetY !== undefined && req.body.jumpOffsetY !== '' && !isNaN(Number(req.body.jumpOffsetY))) ? Number(req.body.jumpOffsetY) : null,
                 jumpOffsetX: (req.body.jumpOffsetX !== undefined && req.body.jumpOffsetX !== '' && !isNaN(Number(req.body.jumpOffsetX))) ? Number(req.body.jumpOffsetX) : null,
+                hurtWidth: (req.body.hurtWidth !== undefined && req.body.hurtWidth !== '' && !isNaN(Number(req.body.hurtWidth))) ? Number(req.body.hurtWidth) : null,
+                hurtHeight: (req.body.hurtHeight !== undefined && req.body.hurtHeight !== '' && !isNaN(Number(req.body.hurtHeight))) ? Number(req.body.hurtHeight) : null,
+                hurtOffsetY: (req.body.hurtOffsetY !== undefined && req.body.hurtOffsetY !== '' && !isNaN(Number(req.body.hurtOffsetY))) ? Number(req.body.hurtOffsetY) : null,
+                hurtOffsetX: (req.body.hurtOffsetX !== undefined && req.body.hurtOffsetX !== '' && !isNaN(Number(req.body.hurtOffsetX))) ? Number(req.body.hurtOffsetX) : null,
+                deadWidth: (req.body.deadWidth !== undefined && req.body.deadWidth !== '' && !isNaN(Number(req.body.deadWidth))) ? Number(req.body.deadWidth) : null,
+                deadHeight: (req.body.deadHeight !== undefined && req.body.deadHeight !== '' && !isNaN(Number(req.body.deadHeight))) ? Number(req.body.deadHeight) : null,
+                deadOffsetY: (req.body.deadOffsetY !== undefined && req.body.deadOffsetY !== '' && !isNaN(Number(req.body.deadOffsetY))) ? Number(req.body.deadOffsetY) : null,
+                deadOffsetX: (req.body.deadOffsetX !== undefined && req.body.deadOffsetX !== '' && !isNaN(Number(req.body.deadOffsetX))) ? Number(req.body.deadOffsetX) : null,
                 facesLeft: (req.body.facesLeft === 'true' || req.body.facesLeft === true)
             }
         };
