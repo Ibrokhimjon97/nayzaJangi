@@ -7385,50 +7385,62 @@ body.mobile-landscape #duel-invites-modal #btn-close-invites-bottom {
         box-sizing: border-box !important;
         overflow-y: auto !important;
     }
+
     .player-profile-screen .player-profile-header {
         margin-bottom: 6px !important;
         gap: 10px !important;
     }
+
     .player-profile-screen .player-profile-avatar-wrap {
         width: 44px !important;
         height: 44px !important;
     }
+
     .player-profile-screen .player-profile-avatar-emoji {
         font-size: 1.5rem !important;
     }
+
     .player-profile-screen .player-profile-name {
         font-size: 1.05rem !important;
         margin: 0 0 2px 0 !important;
     }
+
     .player-profile-screen .player-profile-badges {
         gap: 4px !important;
     }
+
     .player-profile-screen .tier-badge,
     .player-profile-screen .level-badge {
         font-size: 0.72rem !important;
         padding: 2px 6px !important;
     }
+
     .player-profile-screen .player-profile-stats-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 6px !important;
         margin-bottom: 8px !important;
     }
+
     .player-profile-screen .profile-stat-box {
         padding: 4px 6px !important;
         border-radius: 6px !important;
     }
+
     .player-profile-screen .profile-stat-label {
         font-size: 0.65rem !important;
         margin-bottom: 1px !important;
     }
+
     .player-profile-screen .profile-stat-val {
         font-size: 0.95rem !important;
     }
+
     .player-profile-screen .player-profile-actions {
         display: flex !important;
         gap: 8px !important;
         margin-top: 4px !important;
     }
+
     .player-profile-screen .player-profile-actions button {
         min-height: 36px !important;
         height: 36px !important;
@@ -7975,6 +7987,7 @@ body.mobile-landscape #character-select-modal {
 }
 
 @media (orientation: landscape) and (max-height: 650px) {
+
     .char-select-modal,
     #character-select-modal {
         position: fixed !important;

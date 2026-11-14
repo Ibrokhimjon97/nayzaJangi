@@ -3144,6 +3144,16 @@ function setSoldierVisual(model, state) {
             targetState = 'duck';
         }
     }
+    if (targetState === 'dead') {
+        model.rotation.z = 0;
+        if (typeof model.userData.standingY === 'number') {
+            model.position.y = model.userData.standingY;
+        }
+        if (model.userData.planeMesh && model.userData.planeMesh.material) {
+            model.userData.planeMesh.material.opacity = 1.0;
+        }
+        model.visible = true;
+    }
     model.userData.visualState = targetState;
 
     updateSoldierVisualTransform(model, targetState);
@@ -4085,9 +4095,12 @@ function applyDamageToTarget(targetIndex, damage) {
             const myModel = modelForPlayer(myPlayerIndex);
             if (myModel) {
                 myModel.userData.isKnockedDown = true;
-                setSoldierVisual(myModel, 'hurt');
+                myModel.userData.isDead = true;
+                myModel.rotation.z = 0;
+                setSoldierVisual(myModel, 'dead');
+                setModelActionState(myModel, 'dead', 1000000);
                 if (myModel.userData.planeMesh && myModel.userData.planeMesh.material) {
-                    myModel.userData.planeMesh.material.opacity = 0.45;
+                    myModel.userData.planeMesh.material.opacity = 1.0;
                 }
                 knockDownModel(myModel);
             }
@@ -4098,9 +4111,12 @@ function applyDamageToTarget(targetIndex, damage) {
             enemy2Health = 0;
             if (p3Model) {
                 p3Model.userData.isKnockedDown = true;
-                setSoldierVisual(p3Model, 'hurt');
+                p3Model.userData.isDead = true;
+                p3Model.rotation.z = 0;
+                setSoldierVisual(p3Model, 'dead');
+                setModelActionState(p3Model, 'dead', 1000000);
                 if (p3Model.userData.planeMesh && p3Model.userData.planeMesh.material) {
-                    p3Model.userData.planeMesh.material.opacity = 0.45;
+                    p3Model.userData.planeMesh.material.opacity = 1.0;
                 }
                 knockDownModel(p3Model);
             }
@@ -4112,9 +4128,12 @@ function applyDamageToTarget(targetIndex, damage) {
             const primaryEnemy = (myPlayerIndex === 0) ? p2Model : p1Model;
             if (primaryEnemy) {
                 primaryEnemy.userData.isKnockedDown = true;
-                setSoldierVisual(primaryEnemy, 'hurt');
+                primaryEnemy.userData.isDead = true;
+                primaryEnemy.rotation.z = 0;
+                setSoldierVisual(primaryEnemy, 'dead');
+                setModelActionState(primaryEnemy, 'dead', 1000000);
                 if (primaryEnemy.userData.planeMesh && primaryEnemy.userData.planeMesh.material) {
-                    primaryEnemy.userData.planeMesh.material.opacity = 0.45;
+                    primaryEnemy.userData.planeMesh.material.opacity = 1.0;
                 }
                 knockDownModel(primaryEnemy);
             }
@@ -5144,23 +5163,38 @@ function knockDownModel(model) {
         model.userData.knockDownAnimId = null;
     }
 
-    model.userData.isKnockedDown = true;
-    model.userData.isDead = isDead;
-
     // Asl tik turgan Y koordinatasini eslab qolamiz
     const standingY = (typeof model.userData.standingY === 'number')
         ? model.userData.standingY
         : (model.position.y || (ground.position.y + 78));
     model.userData.standingY = standingY;
 
-    // Modelning holati: agar joni 0 bo'lsa 'dead', yiqilish jarayonida 'hurt'
+    // AGAR JONI 0 BO'LSA VA O'LGAN BO'LSA:
+    // O'lim rasmlari allaqachon yerda gorizontal yotgan holda chizilgan!
+    // Shuning uchun model 90 gradusga aylantirilmaydi (rotation.z = 0),
+    // yer sathida o'z joyida yotadi va yo'qolib ketmaydi (visible = true).
     if (isDead) {
+        model.userData.isKnockedDown = true;
+        model.userData.isDead = true;
+        model.rotation.z = 0;
+        model.position.y = standingY;
+        if (model.userData.planeMesh && model.userData.planeMesh.material) {
+            model.userData.planeMesh.material.opacity = 1.0;
+        }
+        model.visible = true;
         setSoldierVisual(model, 'dead');
-    } else {
-        setSoldierVisual(model, 'hurt');
+        setModelActionState(model, 'dead', 1000000);
+        playSfx('ground', 0.85);
+        spawnParticles(model.position.x, ground.position.y + 100, 15, false);
+        screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
+        return;
     }
 
-    // Yiqilish yo'nalishi:
+    model.userData.isKnockedDown = true;
+    model.userData.isDead = false;
+    setSoldierVisual(model, 'hurt');
+
+    // Tirik modelga o'q tekkanda orqaga yiqilish yo'nalishi:
     // O'ng tomondagi jangchi (x >= 0) o'q zarbidan orqaga (o'ng tomonga) yiqiladi: soat strelkasi bo'yicha -90 gradus (-Math.PI / 2)
     // Chap tomondagi jangchi (x < 0) o'q zarbidan orqaga (chap tomonga) yiqiladi: soat strelkasiga qarshi +90 gradus (+Math.PI / 2)
     const fallDir = (model.position.x >= 0) ? -1 : 1;
@@ -5196,32 +5230,21 @@ function knockDownModel(model) {
             spawnParticles(model.position.x + (fallDir * 90), groundSurfaceY + 14, 10, false);
             screenShake = Math.max(screenShake, MOBILE_PERF_MODE ? 5 : 8);
 
-            // Agar joni tugagan bo'lsa (o'lgan bo'lsa):
-            // Halok bo'lgan raqib yerga yotgach, 500ms dan so'ng silliq yo'qolib (fade-out) g'oyib bo'ladi:
-            if (isDead) {
-                setTimeout(() => {
-                    let fadeStep = 12;
-                    const fadeInterval = setInterval(() => {
-                        fadeStep--;
-                        if (model.userData && model.userData.planeMesh && model.userData.planeMesh.material) {
-                            model.userData.planeMesh.material.opacity = Math.max(0, (fadeStep / 12) * 0.45);
-                        }
-                        if (fadeStep <= 0) {
-                            clearInterval(fadeInterval);
-                            model.visible = false;
-                        }
-                    }, 35);
-                }, 500);
-                return;
-            }
-
             // Agar joni tugamagan bo'lsa:
             // Yerda biroz (850ms) yotgach, yana default tikka holatiga qayta turadi!
             model.userData.knockDownTimer = setTimeout(() => {
-                // Qayta tekshiramiz: agar shu orada joni tugagan bo'lsa turmasin
+                // Qayta tekshiramiz: agar shu orada joni tugagan bo'lsa turmasin, o'lim holatida qolsin
                 const stillDead = (modelIndex >= 0 && getHealthForTarget(modelIndex) <= 0);
                 if (stillDead) {
                     model.userData.isDead = true;
+                    model.rotation.z = 0;
+                    model.position.y = standingY;
+                    if (model.userData.planeMesh && model.userData.planeMesh.material) {
+                        model.userData.planeMesh.material.opacity = 1.0;
+                    }
+                    model.visible = true;
+                    setSoldierVisual(model, 'dead');
+                    setModelActionState(model, 'dead', 1000000);
                     return;
                 }
 
@@ -8098,7 +8121,18 @@ socket.on('hitRegistered', (data) => {
             showDamageText(hitX, hitY + 80, msg, isCrit);
             if (damage > 0) {
                 knockDownModel(targetModel);
-                setSoldierVisual(targetModel, 'hurt');
+                if (newHealth <= 0) {
+                    targetModel.userData.isKnockedDown = true;
+                    targetModel.userData.isDead = true;
+                    targetModel.rotation.z = 0;
+                    setSoldierVisual(targetModel, 'dead');
+                    setModelActionState(targetModel, 'dead', 1000000);
+                    if (targetModel.userData.planeMesh && targetModel.userData.planeMesh.material) {
+                        targetModel.userData.planeMesh.material.opacity = 1.0;
+                    }
+                } else {
+                    setSoldierVisual(targetModel, 'hurt');
+                }
             }
         }
     }
@@ -8110,10 +8144,14 @@ socket.on('hitRegistered', (data) => {
     }
     if (newHealth <= 0 && targetModel) {
         targetModel.userData.isKnockedDown = true;
-        setSoldierVisual(targetModel, 'hurt');
+        targetModel.userData.isDead = true;
+        targetModel.rotation.z = 0;
+        setSoldierVisual(targetModel, 'dead');
+        setModelActionState(targetModel, 'dead', 1000000);
         if (targetModel.userData.planeMesh && targetModel.userData.planeMesh.material) {
-            targetModel.userData.planeMesh.material.opacity = 0.45;
+            targetModel.userData.planeMesh.material.opacity = 1.0;
         }
+        targetModel.visible = true;
     }
     updateShieldUI();
     if ((shieldBroke || newShield <= 0) && !targetModel.userData.shieldBroken) breakShield(targetModel);
@@ -8432,6 +8470,13 @@ function showGameOver(winnerIndex, data) {
         const enemyWinIdx = (myPlayerIndex === 0 ? 1 : 0);
         const loseModel = modelForPlayer(enemyWinIdx);
         if (loseModel) {
+            loseModel.userData.isDead = true;
+            loseModel.userData.isKnockedDown = true;
+            loseModel.rotation.z = 0;
+            if (loseModel.userData.planeMesh && loseModel.userData.planeMesh.material) {
+                loseModel.userData.planeMesh.material.opacity = 1.0;
+            }
+            loseModel.visible = true;
             setModelActionState(loseModel, 'dead', 60000);
             setSoldierVisual(loseModel, 'dead');
         }
@@ -8444,6 +8489,13 @@ function showGameOver(winnerIndex, data) {
         }
         const myM = modelForPlayer(myPlayerIndex);
         if (myM) {
+            myM.userData.isDead = true;
+            myM.userData.isKnockedDown = true;
+            myM.rotation.z = 0;
+            if (myM.userData.planeMesh && myM.userData.planeMesh.material) {
+                myM.userData.planeMesh.material.opacity = 1.0;
+            }
+            myM.visible = true;
             setModelActionState(myM, 'dead', 60000);
             setSoldierVisual(myM, 'dead');
         }
