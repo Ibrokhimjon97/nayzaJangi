@@ -19,8 +19,8 @@
     },
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
-      "width": 650,
-      "height": 500,
+      "width": 550,
+      "height": 420,
       "offsetY": 0,
       "offsetX": 0
     },
@@ -78,10 +78,50 @@
     "weaponType": "bow",
     "bgMusic": "custom_models/1794125558676-98367961.mp3",
     "settings": {
-      "width": 440,
-      "height": 435,
+      "width": 400,
+      "height": 420,
       "offsetY": 0,
       "offsetX": 0
+    }
+  },
+  {
+    "id": "custom_1794625053344",
+    "name": "Xorazmshoxlar kamonchisi",
+    "textures": {
+      "idle": "custom_models/1794625053228-294057801.png",
+      "aim": "custom_models/1794625053248-803979492.png",
+      "afterShot": "custom_models/1794625053251-408735647.png",
+      "duck": "custom_models/1794625053254-231990880.png",
+      "shieldDefend": "custom_models/1794625053269-793448333.png",
+      "armDefend": "custom_models/1794625053271-591931101.png",
+      "jump": "custom_models/1794625053276-538084538.png",
+      "hurt": "custom_models/1794625053281-997134558.png",
+      "break": "custom_models/1794625053297-691178652.png",
+      "shieldBreak": "custom_models/1794625053297-691178652.png",
+      "dead": "custom_models/1794625053300-759424873.png",
+      "celebrate": "custom_models/1794625166502-36652224.png",
+      "shieldIdle": "custom_models/1794625053228-294057801.png",
+      "noShieldIdle": "custom_models/1794625053228-294057801.png",
+      "shieldAim": "custom_models/1794625053248-803979492.png",
+      "noShieldAim": "custom_models/1794625053248-803979492.png",
+      "shieldDuck": "custom_models/1794625053254-231990880.png",
+      "noShieldDuck": "custom_models/1794625053254-231990880.png",
+      "noShieldDefend": "custom_models/1794625053271-591931101.png",
+      "shieldHurt": "custom_models/1794625053281-997134558.png",
+      "noShieldHurt": "custom_models/1794625053281-997134558.png",
+      "shieldAfterShot": "custom_models/1794625053251-408735647.png",
+      "noShieldAfterShot": "custom_models/1794625053251-408735647.png",
+      "shieldJump": "custom_models/1794625053276-538084538.png",
+      "noShieldJump": "custom_models/1794625053276-538084538.png"
+    },
+    "weaponType": "bow",
+    "bgMusic": "custom_models/1794625053303-729721230.mp3",
+    "settings": {
+      "width": 430,
+      "height": 450,
+      "offsetY": 0,
+      "offsetX": 0,
+      "facesLeft": false
     }
   }
 ]
