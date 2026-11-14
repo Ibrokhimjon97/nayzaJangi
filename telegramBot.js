@@ -1,7 +1,7 @@
 const https = require('https');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const GAME_URL = process.env.GAME_URL || process.env.RENDER_EXTERNAL_URL || 'https://nayza-jangi.onrender.com';
+const GAME_URL = process.env.GAME_URL || process.env.RENDER_EXTERNAL_URL || 'https://nayzajangi.onrender.com';
 
 if (!BOT_TOKEN) {
     console.warn('⚠️ TELEGRAM_BOT_TOKEN muhit o\'zgaruvchisi kiritilmagan. Bot ishga tushmadi.');

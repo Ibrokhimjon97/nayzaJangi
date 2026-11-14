@@ -2673,7 +2673,7 @@ server.listen(PORT, () => {
 });
 
 function startKeepAlive() {
-    const targetUrl = process.env.RENDER_EXTERNAL_URL || process.env.GAME_URL || 'https://nayza-jangi.onrender.com';
+    const targetUrl = process.env.RENDER_EXTERNAL_URL || process.env.GAME_URL || 'https://nayzajangi.onrender.com';
     if (!targetUrl || targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1')) return;
 
     const pingEndpoint = `${targetUrl.replace(/\/$/, '')}/ping`;

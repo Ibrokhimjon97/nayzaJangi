@@ -33,7 +33,7 @@ npx cap init "Nayza Jangi" "uz.nayzajangi.app" --web-dir=public
 ```
 
 Edit `capacitor.config.ts` (or json) and set:
-- `server.url` to your Render URL, e.g. `https://nayza-jangi.onrender.com`
+- `server.url` to your Render URL, e.g. `https://nayzajangi.onrender.com`
 - `android.allowMixedContent` if needed
 
 Then:

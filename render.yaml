@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nayza-jangi
+    name: nayzaJangi
     env: node
     plan: free
     rootDir: .
