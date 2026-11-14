@@ -19,10 +19,26 @@
     },
     "bgMusic": "custom_models/1777838541779-325644575.mp3",
     "settings": {
-      "width": 550,
-      "height": 420,
+      "width": 630,
+      "height": 475,
       "offsetY": 0,
-      "offsetX": 0
+      "offsetX": 0,
+      "duckWidth": 530,
+      "duckHeight": 338,
+      "duckOffsetY": null,
+      "duckOffsetX": null,
+      "jumpWidth": null,
+      "jumpHeight": null,
+      "jumpOffsetY": null,
+      "jumpOffsetX": null,
+      "hurtWidth": 456,
+      "hurtHeight": 400,
+      "hurtOffsetY": null,
+      "hurtOffsetX": null,
+      "deadWidth": null,
+      "deadHeight": null,
+      "deadOffsetY": null,
+      "deadOffsetX": null
     },
     "weaponType": "bow"
   },
@@ -50,7 +66,23 @@
       "height": 480,
       "offsetY": 5,
       "offsetX": 0,
-      "facesLeft": true
+      "facesLeft": true,
+      "duckWidth": 450,
+      "duckHeight": 417,
+      "duckOffsetY": null,
+      "duckOffsetX": null,
+      "jumpWidth": 450,
+      "jumpHeight": 450,
+      "jumpOffsetY": null,
+      "jumpOffsetX": null,
+      "hurtWidth": 499,
+      "hurtHeight": 661,
+      "hurtOffsetY": -200,
+      "hurtOffsetX": null,
+      "deadWidth": null,
+      "deadHeight": null,
+      "deadOffsetY": null,
+      "deadOffsetX": null
     },
     "weaponType": "spear"
   },
@@ -73,7 +105,8 @@
       "noShieldAfterShot": "custom_models/1794125558671-744462011.png",
       "shieldJump": "custom_models/1794125558672-916781883.png",
       "noShieldJump": "custom_models/1794125558675-873412463.png",
-      "celebrate": "custom_models/1794125558676-266533224.png"
+      "celebrate": "custom_models/1794125558676-266533224.png",
+      "dead": "custom_models/1794674079195-244226726.png"
     },
     "weaponType": "bow",
     "bgMusic": "custom_models/1794125558676-98367961.mp3",
@@ -81,7 +114,23 @@
       "width": 400,
       "height": 420,
       "offsetY": 0,
-      "offsetX": 0
+      "offsetX": 0,
+      "duckWidth": null,
+      "duckHeight": null,
+      "duckOffsetY": null,
+      "duckOffsetX": null,
+      "jumpWidth": null,
+      "jumpHeight": null,
+      "jumpOffsetY": null,
+      "jumpOffsetX": null,
+      "hurtWidth": 494,
+      "hurtHeight": 497,
+      "hurtOffsetY": -150,
+      "hurtOffsetX": null,
+      "deadWidth": 488,
+      "deadHeight": 469,
+      "deadOffsetY": -150,
+      "deadOffsetX": null
     }
   },
   {
@@ -121,15 +170,23 @@
       "height": 450,
       "offsetY": 0,
       "offsetX": 0,
-      "duckWidth": 300,
-      "duckHeight": 300,
+      "duckWidth": 320,
+      "duckHeight": 324,
       "duckOffsetY": 0,
       "duckOffsetX": 0,
-      "jumpWidth": 300,
-      "jumpHeight": 350,
+      "jumpWidth": 306,
+      "jumpHeight": 385,
       "jumpOffsetY": 0,
       "jumpOffsetX": 0,
-      "facesLeft": false
+      "facesLeft": false,
+      "hurtWidth": 300,
+      "hurtHeight": 320,
+      "hurtOffsetY": null,
+      "hurtOffsetX": null,
+      "deadWidth": 382,
+      "deadHeight": 332,
+      "deadOffsetY": -100,
+      "deadOffsetX": null
     }
   }
 ]
