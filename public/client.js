@@ -15274,8 +15274,14 @@ document.addEventListener('keydown', (e) => {
     function getActiveScrollTarget(rawTarget) {
         if (!rawTarget) return null;
 
-        // 1. Never intercept horizontal main menu card carousel or language track
-        if (rawTarget.closest && rawTarget.closest('#menu-cards-carousel, .menu-carousel-wrapper, #lang-carousel-track, .lang-carousel-wrapper')) {
+        // 1. Language Select Modal: Touch anywhere on screen -> scroll the language carousel track horizontally
+        const langModal = document.getElementById('language-select-modal');
+        if (langModal && !langModal.classList.contains('hidden') && langModal.style.display !== 'none') {
+            return document.getElementById('lang-carousel-track') || langModal;
+        }
+
+        // 1.5. Never intercept horizontal main menu card carousel
+        if (rawTarget.closest && rawTarget.closest('#menu-cards-carousel, .menu-carousel-wrapper')) {
             return null;
         }
 
@@ -15329,6 +15335,7 @@ document.addEventListener('keydown', (e) => {
 
         // 6. Check open modals by active visibility
         const candidatePanels = [
+            document.getElementById('language-select-modal'),
             document.getElementById('player-profile-modal'),
             document.getElementById('duel-invites-modal'),
             document.getElementById('rating-modal'),
@@ -15347,7 +15354,7 @@ document.addEventListener('keydown', (e) => {
 
         for (const p of candidatePanels) {
             if (p && !p.classList.contains('hidden') && p.style.display !== 'none') {
-                const inner = p.querySelector && p.querySelector('.duel-invites-list:not(.hidden), #leaderboard-list, #level-grid, .char-roster-grid');
+                const inner = p.querySelector && p.querySelector('.duel-invites-list:not(.hidden), #leaderboard-list, #level-grid, .char-roster-grid, #lang-carousel-track, .lang-carousel');
                 if (inner) return inner;
                 return p;
             }
@@ -15372,7 +15379,12 @@ document.addEventListener('keydown', (e) => {
         lastMoveTime = performance.now();
 
         // Check if panel can scroll horizontally (X) or vertically (Y)
-        const isRoster = (activeScrollPanel.id === 'char-select-roster' || activeScrollPanel.classList.contains('char-roster-grid'));
+        const isRoster = (
+            activeScrollPanel.id === 'char-select-roster' ||
+            activeScrollPanel.classList.contains('char-roster-grid') ||
+            activeScrollPanel.id === 'lang-carousel-track' ||
+            activeScrollPanel.classList.contains('lang-carousel')
+        );
         canScrollX = isRoster || (activeScrollPanel.scrollWidth > activeScrollPanel.clientWidth + 4);
         canScrollY = !isRoster && (
             activeScrollPanel.scrollHeight > activeScrollPanel.clientHeight + 4 ||
@@ -15514,16 +15526,31 @@ function initLanguageCarousel() {
     const nextBtn = document.getElementById('btn-lang-next');
 
     if (prevBtn && track) {
-        prevBtn.addEventListener('click', (e) => {
+        const handlePrev = (e) => {
             if (e && e.preventDefault) e.preventDefault();
-            track.scrollBy({ left: -160, behavior: 'smooth' });
-        });
+            if (e && e.stopPropagation) e.stopPropagation();
+            track.scrollBy({ left: -140, behavior: 'smooth' });
+        };
+        prevBtn.addEventListener('click', handlePrev);
+        prevBtn.addEventListener('touchend', handlePrev, { passive: false });
     }
     if (nextBtn && track) {
-        nextBtn.addEventListener('click', (e) => {
+        const handleNext = (e) => {
             if (e && e.preventDefault) e.preventDefault();
-            track.scrollBy({ left: 160, behavior: 'smooth' });
-        });
+            if (e && e.stopPropagation) e.stopPropagation();
+            track.scrollBy({ left: 140, behavior: 'smooth' });
+        };
+        nextBtn.addEventListener('click', handleNext);
+        nextBtn.addEventListener('touchend', handleNext, { passive: false });
+    }
+
+    if (track) {
+        track.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                track.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
     }
 
     const cards = modal.querySelectorAll('.lang-card');

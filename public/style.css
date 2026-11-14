@@ -448,6 +448,155 @@ body.mobile-landscape .char-cancel-btn {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
+/* ============================================================
+   FIRST-LAUNCH LANGUAGE MODAL - MOBILE LANDSCAPE OPTIMIZATION
+   ============================================================ */
+body.force-landscape .language-select-modal,
+body.force-landscape .center-panel.language-select-modal,
+body.mobile-landscape .language-select-modal,
+body.mobile-landscape .center-panel.language-select-modal {
+    width: min(94vw, 650px) !important;
+    max-width: min(94vw, 650px) !important;
+    height: min(93vh, 330px) !important;
+    max-height: min(93vh, 330px) !important;
+    padding: 8px 14px 10px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    overflow: hidden !important;
+    border: 2px solid rgba(245, 158, 11, 0.5) !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96)) !important;
+}
+
+body.force-landscape .language-select-modal .lang-modal-header,
+body.mobile-landscape .language-select-modal .lang-modal-header {
+    margin-bottom: 2px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+body.force-landscape .language-select-modal .lang-modal-icon,
+body.mobile-landscape .language-select-modal .lang-modal-icon {
+    font-size: 1.35rem !important;
+    margin: 0 !important;
+    animation: none !important;
+}
+
+body.force-landscape .language-select-modal .lang-modal-header h2,
+body.mobile-landscape .language-select-modal .lang-modal-header h2 {
+    font-size: 0.98rem !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    color: #fbbf24 !important;
+}
+
+body.force-landscape .language-select-modal .lang-modal-subtitle,
+body.mobile-landscape .language-select-modal .lang-modal-subtitle {
+    display: none !important;
+}
+
+body.force-landscape .language-select-modal .lang-carousel-container,
+body.mobile-landscape .language-select-modal .lang-carousel-container {
+    margin-top: 4px !important;
+    flex: 1 1 auto !important;
+    height: calc(100% - 32px) !important;
+    max-height: calc(100% - 32px) !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    position: relative !important;
+}
+
+body.force-landscape .language-select-modal .lang-carousel,
+body.mobile-landscape .language-select-modal .lang-carousel {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 4px 6px !important;
+    height: 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    box-sizing: border-box !important;
+}
+
+body.force-landscape .language-select-modal .lang-card,
+body.mobile-landscape .language-select-modal .lang-card {
+    flex: 0 0 110px !important;
+    width: 110px !important;
+    height: calc(100% - 4px) !important;
+    max-height: 220px !important;
+    padding: 6px 6px 8px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    background: rgba(30, 41, 59, 0.95) !important;
+}
+
+body.force-landscape .language-select-modal .lang-card-flag,
+body.mobile-landscape .language-select-modal .lang-card-flag {
+    font-size: 2.1rem !important;
+    line-height: 1 !important;
+    margin-bottom: 2px !important;
+}
+
+body.force-landscape .language-select-modal .lang-card-name,
+body.mobile-landscape .language-select-modal .lang-card-name {
+    font-size: 0.88rem !important;
+    margin-bottom: 1px !important;
+    font-weight: 800 !important;
+}
+
+body.force-landscape .language-select-modal .lang-card-desc,
+body.mobile-landscape .language-select-modal .lang-card-desc {
+    font-size: 0.65rem !important;
+    margin-bottom: 4px !important;
+}
+
+body.force-landscape .language-select-modal .lang-card-btn,
+body.mobile-landscape .language-select-modal .lang-card-btn {
+    width: 100% !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    font-size: 0.74rem !important;
+    border-radius: 8px !important;
+    padding: 0 4px !important;
+}
+
+body.force-landscape .language-select-modal .lang-nav-btn,
+body.mobile-landscape .language-select-modal .lang-nav-btn {
+    display: flex !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.25rem !important;
+    z-index: 15 !important;
+}
+
+body.force-landscape .language-select-modal .lang-nav-prev,
+body.mobile-landscape .language-select-modal .lang-nav-prev {
+    left: -6px !important;
+}
+
+body.force-landscape .language-select-modal .lang-nav-next,
+body.mobile-landscape .language-select-modal .lang-nav-next {
+    right: -6px !important;
+}
+
 body.force-landscape .hud {
     display: flex !important;
     flex-direction: row !important;
@@ -7794,9 +7943,26 @@ textarea,
 body.force-landscape .char-select-modal,
 body.force-landscape #character-select-modal,
 body.mobile-landscape .char-select-modal,
-body.mobile-landscape #character-select-modal,
-@media (orientation: landscape) and (max-height: 650px) {
+body.mobile-landscape #character-select-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(94%, 680px) !important;
+    max-width: min(94%, 680px) !important;
+    height: min(92%, 350px) !important;
+    max-height: min(92%, 350px) !important;
+    padding: 6px 14px 8px !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    z-index: 500 !important;
+}
 
+@media (orientation: landscape) and (max-height: 650px) {
     .char-select-modal,
     #character-select-modal {
         position: fixed !important;
@@ -7815,6 +7981,134 @@ body.mobile-landscape #character-select-modal,
         box-sizing: border-box !important;
         overflow: hidden !important;
         z-index: 500 !important;
+    }
+
+    .language-select-modal,
+    #language-select-modal {
+        width: min(94vw, 650px) !important;
+        max-width: min(94vw, 650px) !important;
+        height: min(93vh, 330px) !important;
+        max-height: min(93vh, 330px) !important;
+        padding: 8px 14px 10px !important;
+        border-radius: 16px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        overflow: hidden !important;
+    }
+
+    .language-select-modal .lang-modal-header {
+        margin-bottom: 2px !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+    }
+
+    .language-select-modal .lang-modal-icon {
+        font-size: 1.35rem !important;
+        margin: 0 !important;
+        animation: none !important;
+    }
+
+    .language-select-modal .lang-modal-header h2 {
+        font-size: 0.98rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        color: #fbbf24 !important;
+    }
+
+    .language-select-modal .lang-modal-subtitle {
+        display: none !important;
+    }
+
+    .language-select-modal .lang-carousel-container {
+        margin-top: 4px !important;
+        flex: 1 1 auto !important;
+        height: calc(100% - 32px) !important;
+        max-height: calc(100% - 32px) !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        position: relative !important;
+    }
+
+    .language-select-modal .lang-carousel {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 4px 6px !important;
+        height: 100% !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        box-sizing: border-box !important;
+    }
+
+    .language-select-modal .lang-card {
+        flex: 0 0 110px !important;
+        width: 110px !important;
+        height: calc(100% - 4px) !important;
+        max-height: 220px !important;
+        padding: 6px 6px 8px !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+        background: rgba(30, 41, 59, 0.95) !important;
+    }
+
+    .language-select-modal .lang-card-flag {
+        font-size: 2.1rem !important;
+        line-height: 1 !important;
+        margin-bottom: 2px !important;
+    }
+
+    .language-select-modal .lang-card-name {
+        font-size: 0.88rem !important;
+        margin-bottom: 1px !important;
+        font-weight: 800 !important;
+    }
+
+    .language-select-modal .lang-card-desc {
+        font-size: 0.65rem !important;
+        margin-bottom: 4px !important;
+    }
+
+    .language-select-modal .lang-card-btn {
+        width: 100% !important;
+        min-height: 28px !important;
+        height: 28px !important;
+        font-size: 0.74rem !important;
+        border-radius: 8px !important;
+        padding: 0 4px !important;
+    }
+
+    .language-select-modal .lang-nav-btn {
+        display: flex !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 1.25rem !important;
+        z-index: 15 !important;
+    }
+
+    .language-select-modal .lang-nav-prev {
+        left: -6px !important;
+    }
+
+    .language-select-modal .lang-nav-next {
+        right: -6px !important;
     }
 }
 
